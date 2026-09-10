@@ -14,10 +14,24 @@
   },
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "start": "node dist/index.js"
   },
   "keywords": ["mcp", "postbase", "social", "scheduler", "ai", "claude"],
+  "author": "Berkway Group Limited",
   "license": "AGPL-3.0-or-later",
+  "homepage": "https://postbase.so",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/postbasehq/postbase.git",
+    "directory": "packages/mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/postbasehq/postbase/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
     "zod": "^3.23.8"
