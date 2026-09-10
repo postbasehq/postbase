@@ -10,7 +10,7 @@ work in.
 - **Publishing rail, not a content generator** — it schedules and publishes; it
   doesn't write your content.
 - **MCP-native** — an AI agent (Claude, Cursor, …) can drive posting through the
-  [`@postbasehq/mcp`](packages/mcp) server.
+  [`@postbasehq/mcp`](https://github.com/postbasehq/mcp) server.
 - **Self-host free, or use the hosted cloud** — same product either way.
 
 Channels (v1): **X, LinkedIn, Instagram** · YouTube next.
@@ -39,9 +39,10 @@ npm run inngest   # in a second terminal
 
 ## MCP server
 
-Add Postbase to your AI client and let an agent schedule posts for you. See
-[`packages/mcp`](packages/mcp) for setup. Tools: `list_channels`, `create_post`,
-`list_scheduled`, `cancel_post`.
+Add Postbase to your AI client and let an agent schedule posts for you. The MCP
+server lives in its own repo: **[postbasehq/mcp](https://github.com/postbasehq/mcp)**
+(published as [`@postbasehq/mcp`](https://www.npmjs.com/package/@postbasehq/mcp) on
+npm). Tools: `list_channels`, `create_post`, `list_scheduled`, `cancel_post`.
 
 ## Project layout
 
@@ -49,10 +50,12 @@ Add Postbase to your AI client and let an agent schedule posts for you. See
 app/            Next.js routes (marketing, dashboard, /api, /api/v1)
 components/     UI components
 lib/            Supabase clients, Inngest, publishing adapters, API core
-packages/mcp/   @postbasehq/mcp — the MCP server
 supabase/       SQL migrations
 legal/          Privacy Policy & Terms (source for /privacy and /terms)
 ```
+
+The MCP server is maintained separately at
+[postbasehq/mcp](https://github.com/postbasehq/mcp).
 
 ## License
 
