@@ -1,0 +1,143 @@
+@import "tailwindcss";
+
+/*
+  Postbase design tokens (see docs/DESIGN.md).
+  Palette: brand blue / terracotta / amber on Google-clean surfaces.
+  Type: Plus Jakarta Sans (display) + Inter (body). No warm/muted grounds.
+*/
+
+@theme inline {
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-blue: var(--blue);
+  --color-blue-ink: var(--blue-ink);
+  --color-blue-soft: var(--blue-soft);
+  --color-on-blue: var(--on-blue);
+  --color-terra: var(--terra);
+  --color-amber: var(--amber);
+  --color-amber-bright: var(--amber-bright);
+  --color-green: var(--green);
+
+  --font-display: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  --ground: #f8f9fa;
+  --surface: #ffffff;
+  --surface-2: #f1f3f4;
+  --ink: #202124;
+  --muted: #5f6368;
+  --line: #dadce0;
+  --blue: #3b5bdb;
+  --blue-ink: #2b44ae;
+  --blue-soft: #e8ecfc;
+  --on-blue: #ffffff;
+  --terra: #c0492f;
+  --amber: #b06a0f;
+  --amber-bright: #e3a82c;
+  --green: #188038;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #202124;
+    --surface: #292a2d;
+    --surface-2: #35363a;
+    --ink: #e8eaed;
+    --muted: #9aa0a6;
+    --line: #3c4043;
+    --blue: #8ab4f8;
+    --blue-ink: #aec6fa;
+    --blue-soft: #28304b;
+    --on-blue: #202124;
+    --terra: #e5866c;
+    --amber: #e6b44f;
+    --amber-bright: #e6b44f;
+    --green: #81c995;
+  }
+}
+
+:root[data-theme="dark"] {
+  --ground: #202124;
+  --surface: #292a2d;
+  --surface-2: #35363a;
+  --ink: #e8eaed;
+  --muted: #9aa0a6;
+  --line: #3c4043;
+  --blue: #8ab4f8;
+  --blue-ink: #aec6fa;
+  --blue-soft: #28304b;
+  --on-blue: #202124;
+  --terra: #e5866c;
+  --amber: #e6b44f;
+  --amber-bright: #e6b44f;
+  --green: #81c995;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+/* Rendered legal / prose content */
+.prose-legal h1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-size: clamp(30px, 4.5vw, 42px);
+  margin: 0 0 0.5rem;
+}
+.prose-legal h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 21px;
+  margin: 2.2rem 0 0.6rem;
+}
+.prose-legal p {
+  margin: 0 0 0.9rem;
+  line-height: 1.65;
+}
+.prose-legal ul {
+  margin: 0 0 1rem;
+  padding-left: 1.4rem;
+  list-style: disc;
+}
+.prose-legal li {
+  margin: 0.35rem 0;
+}
+.prose-legal strong {
+  font-weight: 600;
+}
+.prose-legal table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0 1.25rem;
+  font-size: 0.9rem;
+}
+.prose-legal th,
+.prose-legal td {
+  text-align: left;
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.prose-legal th {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.prose-legal a {
+  color: var(--blue-ink);
+  text-decoration: underline;
+}
