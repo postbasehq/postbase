@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { cancelPost } from "../actions";
 
 const pill =
   "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold font-display whitespace-nowrap";
@@ -109,10 +110,23 @@ export default async function DashboardPage() {
                       {platforms.length ? platforms.join(", ") : "No channels"}
                     </div>
                   </div>
-                  <span className={`${pill} ${s.cls}`}>
-                    <span className={`size-2 rounded-full ${s.dot}`} />
-                    {s.label}
-                  </span>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <span className={`${pill} ${s.cls}`}>
+                      <span className={`size-2 rounded-full ${s.dot}`} />
+                      {s.label}
+                    </span>
+                    {p.status === "scheduled" ? (
+                      <form action={cancelPost}>
+                        <input type="hidden" name="post_id" value={p.id} />
+                        <button
+                          type="submit"
+                          className="text-xs text-muted hover:text-terra"
+                        >
+                          Cancel
+                        </button>
+                      </form>
+                    ) : null}
+                  </div>
                 </div>
               );
             })

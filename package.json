@@ -5,6 +5,7 @@
   "description": "The social scheduler even your AI can run.",
   "scripts": {
     "dev": "next dev",
+    "inngest": "npx inngest-cli@latest dev -u http://localhost:3000/api/inngest",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -12,6 +13,7 @@
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.45.4",
+    "inngest": "^4.20.0",
     "marked": "^14.1.2",
     "next": "^15.1.0",
     "react": "^19.0.0",
