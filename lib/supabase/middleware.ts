@@ -35,7 +35,7 @@ export async function updateSession(request: NextRequest) {
 
   // Defense-in-depth: the (app) layout also guards these, but block unauthenticated
   // access to every app route at the edge too.
-  const protectedPrefixes = ["/dashboard", "/composer", "/channels", "/api-keys"];
+  const protectedPrefixes = ["/dashboard", "/composer", "/channels", "/api-keys", "/calendar"];
   const path = request.nextUrl.pathname;
   if (!user && protectedPrefixes.some((p) => path === p || path.startsWith(`${p}/`))) {
     const redirectUrl = request.nextUrl.clone();

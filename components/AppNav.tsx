@@ -7,8 +7,8 @@ const NAV = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Composer", href: "/composer" },
   { label: "Channels", href: "/channels" },
+  { label: "Calendar", href: "/calendar" },
   { label: "MCP & API", href: "/api-keys" },
-  { label: "Calendar", href: "/dashboard", soon: true },
   { label: "Settings", href: "/dashboard", soon: true },
 ];
 

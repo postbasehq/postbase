@@ -115,17 +115,27 @@ export default async function DashboardPage() {
                       <span className={`size-2 rounded-full ${s.dot}`} />
                       {s.label}
                     </span>
-                    {p.status === "scheduled" ? (
-                      <form action={cancelPost}>
-                        <input type="hidden" name="post_id" value={p.id} />
-                        <button
-                          type="submit"
-                          className="text-xs text-muted hover:text-terra"
+                    <div className="flex items-center gap-3">
+                      {p.status !== "published" && p.status !== "publishing" ? (
+                        <Link
+                          href={`/composer/${p.id}`}
+                          className="text-xs text-muted hover:text-ink"
                         >
-                          Cancel
-                        </button>
-                      </form>
-                    ) : null}
+                          Edit
+                        </Link>
+                      ) : null}
+                      {p.status === "scheduled" ? (
+                        <form action={cancelPost}>
+                          <input type="hidden" name="post_id" value={p.id} />
+                          <button
+                            type="submit"
+                            className="text-xs text-muted hover:text-terra"
+                          >
+                            Cancel
+                          </button>
+                        </form>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               );
