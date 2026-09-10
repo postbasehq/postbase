@@ -65,6 +65,17 @@ export async function createPost(formData: FormData) {
   if (error) throw new Error(error.message);
 
   if (channelIds.length > 0) {
+    // Only allow targeting channels in the user's own org. The channels read is
+    // RLS-scoped, so this rejects any channel_id from another tenant.
+    const { data: owned } = await supabase
+      .from("channels")
+      .select("id")
+      .in("id", channelIds);
+    const ownedIds = new Set((owned ?? []).map((c) => c.id));
+    if (channelIds.some((id) => !ownedIds.has(id))) {
+      throw new Error("Invalid channel selection.");
+    }
+
     const targets = channelIds.map((channel_id) => ({
       post_id: post.id,
       channel_id,
@@ -101,12 +112,20 @@ export async function cancelPost(formData: FormData) {
   const postId = String(formData.get("post_id") ?? "");
   if (!postId) throw new Error("Missing post id.");
 
-  const { error } = await supabase
+  // Scope the update to the caller's org and confirm it actually hit a row before
+  // doing anything else — otherwise a known post id from another tenant could be
+  // cancelled.
+  const { data: updated, error } = await supabase
     .from("posts")
     .update({ status: "draft", scheduled_at: null })
     .eq("id", postId)
-    .eq("org_id", orgId);
+    .eq("org_id", orgId)
+    .select("id");
   if (error) throw new Error(error.message);
+  if (!updated || updated.length === 0) {
+    // Not this user's post (or gone) — do nothing.
+    return;
+  }
 
   await supabase.from("post_targets").update({ status: "draft" }).eq("post_id", postId);
 

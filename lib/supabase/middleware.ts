@@ -33,7 +33,11 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user && request.nextUrl.pathname.startsWith("/dashboard")) {
+  // Defense-in-depth: the (app) layout also guards these, but block unauthenticated
+  // access to every app route at the edge too.
+  const protectedPrefixes = ["/dashboard", "/composer", "/channels"];
+  const path = request.nextUrl.pathname;
+  if (!user && protectedPrefixes.some((p) => path === p || path.startsWith(`${p}/`))) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
     return NextResponse.redirect(redirectUrl);
