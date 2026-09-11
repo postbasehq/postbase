@@ -5,7 +5,13 @@ import { publish } from "@/lib/publish/adapters";
 type TargetRow = {
   id: string;
   variant_body: string | null;
-  channels: { platform: string; handle: string | null; encrypted_tokens: string | null } | null;
+  channels: {
+    id: string;
+    platform: string;
+    handle: string | null;
+    encrypted_tokens: string | null;
+    token_expiry: string | null;
+  } | null;
 };
 
 /**
@@ -37,7 +43,7 @@ export const publishPost = inngest.createFunction(
       const { data: post } = await db.from("posts").select("body").eq("id", postId).single();
       const { data: targets } = await db
         .from("post_targets")
-        .select("id, variant_body, channels(platform, handle, encrypted_tokens)")
+        .select("id, variant_body, channels(id, platform, handle, encrypted_tokens, token_expiry)")
         .eq("post_id", postId);
       return { post, targets: (targets ?? []) as unknown as TargetRow[] };
     });
@@ -48,12 +54,13 @@ export const publishPost = inngest.createFunction(
       const ok = await step.run(`publish-${t.id}`, async () => {
         const db = createAdminClient();
         const body = t.variant_body ?? post?.body ?? "";
-        const platform = t.channels?.platform ?? "";
         const result = await publish({
-          platform,
+          platform: t.channels?.platform ?? "",
           body,
+          channelId: t.channels?.id ?? "",
           handle: t.channels?.handle ?? null,
           encryptedTokens: t.channels?.encrypted_tokens ?? null,
+          tokenExpiry: t.channels?.token_expiry ?? null,
         });
         if (result.ok) {
           await db

@@ -8,7 +8,23 @@ const PLATFORM_META: Record<string, { label: string; dot: string }> = {
   youtube: { label: "YouTube", dot: "bg-amber-bright" },
 };
 
-export default async function ChannelsPage() {
+// Platforms still connected via a manual stub (real OAuth lands per-platform).
+const MANUAL = ["linkedin", "instagram", "youtube"];
+
+const ERRORS: Record<string, string> = {
+  x_not_configured: "X isn’t configured on this server yet (missing API keys).",
+  oauth_state: "The X connection couldn’t be verified — please try again.",
+  x_connect_failed: "Connecting X failed — please try again.",
+  save_failed: "Couldn’t save the channel — please try again.",
+  no_workspace: "No workspace found for your account.",
+};
+
+export default async function ChannelsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ connected?: string; error?: string }>;
+}) {
+  const { connected, error } = await searchParams;
   const supabase = await createClient();
   const { data: channels } = await supabase
     .from("channels")
@@ -19,25 +35,50 @@ export default async function ChannelsPage() {
     <div className="mx-auto max-w-[720px]">
       <h1 className="font-display text-2xl font-semibold tracking-[-0.01em]">Channels</h1>
       <p className="mt-1 text-sm text-muted">
-        Add a channel to post to. Real OAuth connections land in Phase 3 — for now these are
-        stub channels so you can build and schedule posts.
+        Connect the accounts you want to publish to.
       </p>
 
-      {/* add channel */}
+      {connected === "x" ? (
+        <div className="mt-4 rounded-xl bg-green/12 px-4 py-3 text-sm text-green">
+          X account connected.
+        </div>
+      ) : null}
+      {error ? (
+        <div className="mt-4 rounded-xl bg-terra/12 px-4 py-3 text-sm text-terra">
+          {ERRORS[error] ?? "Something went wrong."}
+        </div>
+      ) : null}
+
+      {/* connect X (real OAuth) */}
+      <div className="mt-6 flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sm">
+        <span className="size-2.5 rounded-full bg-ink" />
+        <div>
+          <div className="text-sm font-semibold">X</div>
+          <div className="text-xs text-muted">Connect via OAuth to publish to your account.</div>
+        </div>
+        <a
+          href="/api/connect/x"
+          className="ml-auto rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
+        >
+          Connect X
+        </a>
+      </div>
+
+      {/* manual stub add (other platforms until their OAuth ships) */}
       <form
         action={addChannel}
-        className="mt-6 flex flex-wrap items-end gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sm"
+        className="mt-4 flex flex-wrap items-end gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sm"
       >
         <label className="flex flex-col gap-1.5">
           <span className="text-[13px] font-medium text-muted">Platform</span>
           <select
             name="platform"
-            defaultValue="x"
+            defaultValue="linkedin"
             className="rounded-xl border border-line bg-ground px-3 py-2.5 text-sm outline-none focus-visible:border-blue"
           >
-            {Object.entries(PLATFORM_META).map(([value, { label }]) => (
+            {MANUAL.map((value) => (
               <option key={value} value={value}>
-                {label}
+                {PLATFORM_META[value].label}
               </option>
             ))}
           </select>
@@ -52,18 +93,19 @@ export default async function ChannelsPage() {
         </label>
         <button
           type="submit"
-          className="rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
+          className="rounded-full border border-line px-5 py-2.5 font-display text-sm font-semibold text-blue-ink hover:bg-surface-2"
         >
-          Add channel
+          Add stub
         </button>
       </form>
+      <p className="mt-1.5 text-xs text-muted">
+        LinkedIn and Instagram use manual stubs until their OAuth connections ship.
+      </p>
 
       {/* list */}
       <div className="mt-5 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
         {!channels || channels.length === 0 ? (
-          <p className="px-4 py-6 text-center text-sm text-muted">
-            No channels yet. Add one above.
-          </p>
+          <p className="px-4 py-6 text-center text-sm text-muted">No channels yet.</p>
         ) : (
           channels.map((c, i) => {
             const meta = PLATFORM_META[c.platform] ?? { label: c.platform, dot: "bg-muted" };
@@ -80,7 +122,7 @@ export default async function ChannelsPage() {
                   <div className="truncate text-xs text-muted">{c.handle ?? "—"}</div>
                 </div>
                 <span className="ml-auto rounded-full border border-line px-2.5 py-1 text-xs font-medium text-muted">
-                  {c.status === "stub" ? "Stub" : c.status}
+                  {c.status === "active" ? "Connected" : c.status === "stub" ? "Stub" : c.status}
                 </span>
               </div>
             );

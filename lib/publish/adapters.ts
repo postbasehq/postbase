@@ -1,19 +1,22 @@
+import { decryptJson, encryptJson } from "@/lib/crypto";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { postTweet, refreshTokens, type XTokens } from "@/lib/platforms/x";
+
 /**
  * Platform publishing adapters — common interface so adding a platform is additive
- * (docs/TECH_STACK.md §4). Each real adapter posts via that platform's API using the
- * channel's stored (decrypted) OAuth tokens.
+ * (docs/TECH_STACK.md §4). Each adapter posts via that platform's API using the
+ * channel's stored (encrypted) OAuth tokens.
  *
- * These are STUBS for now: they simulate a successful publish so the whole
- * scheduling lifecycle works end-to-end before platform API access is granted.
- * Swap `simulate` for the real API call per platform (X first, once the paid tier
- * app is approved).
+ * X is live. LinkedIn / Instagram remain stubbed until their API access is granted.
  */
 
 export type PublishInput = {
   platform: string;
   body: string;
+  channelId: string;
   handle: string | null;
   encryptedTokens: string | null;
+  tokenExpiry: string | null;
 };
 
 export type PublishResult =
@@ -27,6 +30,47 @@ function simulate(platform: string): PublishResult {
   };
 }
 
+function isExpiring(iso: string | null): boolean {
+  if (!iso) return false;
+  return Date.now() >= Date.parse(iso) - 120_000; // 2-min buffer
+}
+
+async function publishToX(input: PublishInput): Promise<PublishResult> {
+  if (!input.encryptedTokens) return { ok: false, error: "X account not connected." };
+
+  let tokens: XTokens;
+  try {
+    tokens = decryptJson<XTokens>(input.encryptedTokens);
+  } catch {
+    return { ok: false, error: "Could not read stored X credentials." };
+  }
+
+  // Refresh an expiring access token and persist the new tokens.
+  if (isExpiring(input.tokenExpiry) && tokens.refresh_token) {
+    try {
+      const refreshed = await refreshTokens(tokens.refresh_token);
+      tokens = { ...tokens, ...refreshed };
+      const db = createAdminClient();
+      await db
+        .from("channels")
+        .update({
+          encrypted_tokens: encryptJson(tokens),
+          token_expiry: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
+        })
+        .eq("id", input.channelId);
+    } catch {
+      return { ok: false, error: "X token refresh failed — reconnect the channel." };
+    }
+  }
+
+  try {
+    const { id } = await postTweet(tokens.access_token, input.body);
+    return { ok: true, platformPostId: id };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "X publish failed." };
+  }
+}
+
 export async function publish(input: PublishInput): Promise<PublishResult> {
   if (!input.body.trim()) {
     return { ok: false, error: "Post body is empty." };
@@ -34,10 +78,9 @@ export async function publish(input: PublishInput): Promise<PublishResult> {
 
   switch (input.platform) {
     case "x":
-      // TODO: real X API v2 (paid tier) — POST /2/tweets with the channel's OAuth2 token.
-      return simulate("x");
+      return publishToX(input);
     case "linkedin":
-      // TODO: real LinkedIn UGC/Posts API with w_member_social.
+      // TODO: real LinkedIn Posts API with w_member_social.
       return simulate("linkedin");
     case "instagram":
       // TODO: real Instagram Graph API (business/creator accounts).
