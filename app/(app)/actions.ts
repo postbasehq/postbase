@@ -23,6 +23,26 @@ function parseThread(formData: FormData): string[] {
   return body ? [body] : [];
 }
 
+/** Parse the `variants` JSON field into a channelId -> non-empty text map. */
+function parseVariants(formData: FormData): Record<string, string> {
+  const raw = formData.get("variants");
+  if (raw == null) return {};
+  try {
+    const obj = JSON.parse(String(raw));
+    if (obj && typeof obj === "object") {
+      const out: Record<string, string> = {};
+      for (const [k, v] of Object.entries(obj)) {
+        const s = String(v).trim();
+        if (s) out[k] = s;
+      }
+      return out;
+    }
+  } catch {
+    // ignore
+  }
+  return {};
+}
+
 /** Add a channel (a stub connection for now — real OAuth lands in Phase 3). */
 export async function addChannel(formData: FormData) {
   const supabase = await createClient();
@@ -91,9 +111,11 @@ export async function createPost(formData: FormData) {
       throw new Error("Invalid channel selection.");
     }
 
+    const variants = parseVariants(formData);
     const targets = channelIds.map((channel_id) => ({
       post_id: post.id,
       channel_id,
+      variant_body: variants[channel_id] ?? null,
       status,
     }));
     const { error: targetErr } = await supabase.from("post_targets").insert(targets);
@@ -158,9 +180,15 @@ export async function updatePost(formData: FormData) {
   }
   await supabase.from("post_targets").delete().eq("post_id", postId);
   if (channelIds.length > 0) {
-    const { error: tErr } = await supabase
-      .from("post_targets")
-      .insert(channelIds.map((channel_id) => ({ post_id: postId, channel_id, status })));
+    const variants = parseVariants(formData);
+    const { error: tErr } = await supabase.from("post_targets").insert(
+      channelIds.map((channel_id) => ({
+        post_id: postId,
+        channel_id,
+        variant_body: variants[channel_id] ?? null,
+        status,
+      })),
+    );
     if (tErr) throw new Error(tErr.message);
   }
 

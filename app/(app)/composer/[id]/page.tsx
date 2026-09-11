@@ -13,7 +13,7 @@ export default async function EditPostPage({
 
   const { data: post } = await supabase
     .from("posts")
-    .select("id, body, thread_tail, scheduled_at, status, post_targets(channel_id)")
+    .select("id, body, thread_tail, scheduled_at, status, post_targets(channel_id, variant_body)")
     .eq("id", id)
     .maybeSingle();
 
@@ -26,9 +26,13 @@ export default async function EditPostPage({
     .select("id, platform, handle")
     .order("created_at", { ascending: true });
 
-  const channelIds = (post.post_targets ?? []).map(
-    (t: { channel_id: string }) => t.channel_id,
-  );
+  const targets = (post.post_targets ?? []) as {
+    channel_id: string;
+    variant_body: string | null;
+  }[];
+  const channelIds = targets.map((t) => t.channel_id);
+  const variants: Record<string, string> = {};
+  for (const t of targets) if (t.variant_body) variants[t.channel_id] = t.variant_body;
 
   return (
     <div className="mx-auto max-w-[680px]">
@@ -45,6 +49,7 @@ export default async function EditPostPage({
           thread: [post.body, ...((post.thread_tail as string[] | null) ?? [])],
           scheduledAt: post.scheduled_at,
           channelIds,
+          variants,
         }}
       />
     </div>
