@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ScheduleField } from "./ScheduleField";
 
 const PLATFORM_LABEL: Record<string, string> = {
   x: "X",
@@ -20,11 +21,6 @@ type PostFormProps = {
     channelIds: string[];
   };
 };
-
-function toLocalInput(iso: string | null): string {
-  // "YYYY-MM-DDTHH:mm" for <input type="datetime-local">
-  return iso ? iso.slice(0, 16) : "";
-}
 
 export function PostForm({ channels, action, submitLabel, initial }: PostFormProps) {
   const hasChannels = channels.length > 0;
@@ -81,17 +77,7 @@ export function PostForm({ channels, action, submitLabel, initial }: PostFormPro
         )}
       </fieldset>
 
-      <label className="flex flex-col gap-2">
-        <span className="text-[13px] font-medium text-muted">
-          Schedule for <span className="font-normal">(leave empty to save as draft)</span>
-        </span>
-        <input
-          type="datetime-local"
-          name="scheduled_at"
-          defaultValue={toLocalInput(initial?.scheduledAt ?? null)}
-          className="w-fit rounded-xl border border-line bg-ground px-3.5 py-2.5 text-sm outline-none focus-visible:border-blue"
-        />
-      </label>
+      <ScheduleField defaultUtc={initial?.scheduledAt ?? null} />
 
       <div className="flex items-center gap-3">
         <button

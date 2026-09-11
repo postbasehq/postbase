@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getTimeZone, formatInTz, localDateKey } from "@/lib/tz";
 
 const DOT: Record<string, string> = {
   draft: "bg-muted",
@@ -54,18 +55,20 @@ export default async function CalendarPage({
 }) {
   const { month: monthParam } = await searchParams;
   const m = monthMeta(monthParam);
+  const tz = await getTimeZone();
 
   const supabase = await createClient();
   const { data } = await supabase
     .from("posts")
     .select("id, body, scheduled_at, status")
-    .gte("scheduled_at", m.startISO)
-    .lt("scheduled_at", m.endISO)
+    // ±1 day buffer so posts near the month edge land on the right local day
+    .gte("scheduled_at", new Date(Date.parse(m.startISO) - 86_400_000).toISOString())
+    .lt("scheduled_at", new Date(Date.parse(m.endISO) + 86_400_000).toISOString())
     .order("scheduled_at", { ascending: true });
 
   const byDay = new Map<string, PostRow[]>();
   for (const p of (data ?? []) as PostRow[]) {
-    const day = p.scheduled_at.slice(0, 10);
+    const day = localDateKey(p.scheduled_at, tz); // group by the viewer's local date
     (byDay.get(day) ?? byDay.set(day, []).get(day)!).push(p);
   }
 
@@ -142,7 +145,7 @@ export default async function CalendarPage({
                           >
                             <span className={`size-1.5 shrink-0 rounded-full ${DOT[p.status] ?? "bg-muted"}`} />
                             <span className="tabular-nums text-muted">
-                              {p.scheduled_at.slice(11, 16)}
+                              {formatInTz(p.scheduled_at, tz, { hour: "2-digit", minute: "2-digit" })}
                             </span>
                             <span className="truncate">{p.body || "(empty)"}</span>
                           </Link>
@@ -158,7 +161,7 @@ export default async function CalendarPage({
       </div>
 
       <p className="mt-4 text-xs text-muted">
-        Shows posts with a scheduled time (drafts have none). Times are UTC for now.
+        Shows posts with a scheduled time (drafts have none). Times shown in {tz}.
       </p>
     </div>
   );

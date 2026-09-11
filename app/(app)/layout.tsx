@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AppNav } from "@/components/AppNav";
+import { TimezoneSync } from "@/components/TimezoneSync";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({
@@ -24,6 +25,7 @@ export default async function AppLayout({
 
   return (
     <div className="flex min-h-dvh">
+      <TimezoneSync />
       {/* sidebar */}
       <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-surface md:flex">
         <div className="flex h-16 items-center border-b border-line px-5">

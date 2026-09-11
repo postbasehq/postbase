@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getTimeZone, formatInTz } from "@/lib/tz";
 import { cancelPost } from "../actions";
 
 const pill =
@@ -20,16 +21,6 @@ const PLATFORM_LABEL: Record<string, string> = {
   youtube: "YouTube",
 };
 
-function whenLabel(iso: string | null) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 type TargetRow = { channels: { platform: string } | null };
 type PostRow = {
   id: string;
@@ -41,6 +32,11 @@ type PostRow = {
 
 export default async function DashboardPage() {
   const supabase = await createClient();
+  const tz = await getTimeZone();
+  const whenLabel = (iso: string | null) =>
+    iso
+      ? formatInTz(iso, tz, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+      : "—";
 
   const { data: posts } = await supabase
     .from("posts")
