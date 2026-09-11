@@ -95,13 +95,31 @@ export async function getMe(accessToken: string): Promise<{ id: string; username
   return json.data;
 }
 
-export async function postTweet(accessToken: string, text: string): Promise<{ id: string }> {
+export async function postTweet(
+  accessToken: string,
+  text: string,
+  inReplyToId?: string,
+): Promise<{ id: string }> {
+  const body: { text: string; reply?: { in_reply_to_tweet_id: string } } = { text };
+  if (inReplyToId) body.reply = { in_reply_to_tweet_id: inReplyToId };
   const res = await fetch(`${API}/tweets`, {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify(body),
   });
   const json = (await res.json()) as { data?: { id: string }; detail?: string; title?: string };
   if (!res.ok || !json.data) throw new Error(json.detail ?? json.title ?? `X post error ${res.status}`);
   return { id: json.data.id };
+}
+
+/** Post a thread as a reply chain. Returns the first tweet's id. */
+export async function postThread(accessToken: string, texts: string[]): Promise<{ id: string }> {
+  let firstId = "";
+  let prevId: string | undefined;
+  for (const text of texts) {
+    const { id } = await postTweet(accessToken, text, prevId);
+    if (!firstId) firstId = id;
+    prevId = id;
+  }
+  return { id: firstId };
 }

@@ -8,6 +8,21 @@ import { inngest } from "@/lib/inngest/client";
 
 const PLATFORMS = ["x", "linkedin", "instagram", "youtube"] as const;
 
+/** Parse the composer's `thread` JSON field into non-empty, trimmed tweet segments. */
+function parseThread(formData: FormData): string[] {
+  const raw = formData.get("thread");
+  if (raw != null) {
+    try {
+      const arr = JSON.parse(String(raw));
+      if (Array.isArray(arr)) return arr.map((s) => String(s).trim()).filter(Boolean);
+    } catch {
+      // fall through to body
+    }
+  }
+  const body = String(formData.get("body") ?? "").trim();
+  return body ? [body] : [];
+}
+
 /** Add a channel (a stub connection for now — real OAuth lands in Phase 3). */
 export async function addChannel(formData: FormData) {
   const supabase = await createClient();
@@ -42,11 +57,10 @@ export async function createPost(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const body = String(formData.get("body") ?? "").trim();
+  const segments = parseThread(formData);
+  if (segments.length === 0) throw new Error("Write something to post.");
   const scheduledRaw = String(formData.get("scheduled_at") ?? "").trim();
   const channelIds = formData.getAll("channels").map(String).filter(Boolean);
-
-  if (!body) throw new Error("Write something to post.");
 
   const scheduledAt = scheduledRaw ? new Date(scheduledRaw).toISOString() : null;
   const status = scheduledAt ? "scheduled" : "draft";
@@ -56,7 +70,8 @@ export async function createPost(formData: FormData) {
     .insert({
       org_id: orgId,
       author_id: user?.id ?? null,
-      body,
+      body: segments[0],
+      thread_tail: segments.slice(1),
       scheduled_at: scheduledAt,
       status,
     })
@@ -112,8 +127,8 @@ export async function updatePost(formData: FormData) {
   const postId = String(formData.get("post_id") ?? "");
   if (!postId) throw new Error("Missing post id.");
 
-  const body = String(formData.get("body") ?? "").trim();
-  if (!body) throw new Error("Write something to post.");
+  const segments = parseThread(formData);
+  if (segments.length === 0) throw new Error("Write something to post.");
   const scheduledRaw = String(formData.get("scheduled_at") ?? "").trim();
   const channelIds = formData.getAll("channels").map(String).filter(Boolean);
 
@@ -123,7 +138,7 @@ export async function updatePost(formData: FormData) {
   // Update the post, scoped to the org, and confirm it was ours.
   const { data: updated, error } = await supabase
     .from("posts")
-    .update({ body, scheduled_at: scheduledAt, status })
+    .update({ body: segments[0], thread_tail: segments.slice(1), scheduled_at: scheduledAt, status })
     .eq("id", postId)
     .eq("org_id", orgId)
     .select("id");

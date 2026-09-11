@@ -1,6 +1,6 @@
 import { decryptJson, encryptJson } from "@/lib/crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { postTweet, refreshTokens, type XTokens } from "@/lib/platforms/x";
+import { postThread, refreshTokens, type XTokens } from "@/lib/platforms/x";
 
 /**
  * Platform publishing adapters — common interface so adding a platform is additive
@@ -13,6 +13,7 @@ import { postTweet, refreshTokens, type XTokens } from "@/lib/platforms/x";
 export type PublishInput = {
   platform: string;
   body: string;
+  threadTail: string[];
   channelId: string;
   handle: string | null;
   encryptedTokens: string | null;
@@ -63,8 +64,9 @@ async function publishToX(input: PublishInput): Promise<PublishResult> {
     }
   }
 
+  const texts = [input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean);
   try {
-    const { id } = await postTweet(tokens.access_token, input.body);
+    const { id } = await postThread(tokens.access_token, texts);
     return { ok: true, platformPostId: id };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "X publish failed." };

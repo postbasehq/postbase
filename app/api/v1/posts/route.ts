@@ -17,6 +17,7 @@ export async function POST(req: Request) {
 
   let payload: {
     body?: string;
+    thread?: string[];
     channel_ids?: string[];
     scheduled_at?: string | null;
   };
@@ -29,6 +30,7 @@ export async function POST(req: Request) {
   try {
     const post = await createPost(auth.orgId, {
       body: payload.body ?? "",
+      thread: Array.isArray(payload.thread) ? payload.thread : undefined,
       channelIds: Array.isArray(payload.channel_ids) ? payload.channel_ids : [],
       scheduledAt: payload.scheduled_at ?? null,
     });

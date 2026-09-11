@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ScheduleField } from "./ScheduleField";
+import { ThreadComposer } from "./ThreadComposer";
 
 const PLATFORM_LABEL: Record<string, string> = {
   x: "X",
@@ -16,7 +17,7 @@ type PostFormProps = {
   submitLabel: string;
   initial?: {
     id: string;
-    body: string;
+    thread: string[];
     scheduledAt: string | null;
     channelIds: string[];
   };
@@ -33,17 +34,7 @@ export function PostForm({ channels, action, submitLabel, initial }: PostFormPro
     >
       {initial ? <input type="hidden" name="post_id" value={initial.id} /> : null}
 
-      <label className="flex flex-col gap-2">
-        <span className="text-[13px] font-medium text-muted">Post</span>
-        <textarea
-          name="body"
-          rows={5}
-          required
-          defaultValue={initial?.body ?? ""}
-          placeholder="What are you posting?"
-          className="resize-y rounded-xl border border-line bg-ground px-3.5 py-3 text-sm leading-relaxed outline-none focus-visible:border-blue"
-        />
-      </label>
+      <ThreadComposer initial={initial?.thread} />
 
       <fieldset className="flex flex-col gap-2">
         <span className="text-[13px] font-medium text-muted">Channels</span>

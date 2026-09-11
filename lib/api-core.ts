@@ -31,15 +31,23 @@ export async function listPosts(orgId: string, status?: string) {
 }
 
 export type CreatePostInput = {
-  body: string;
+  body?: string;
+  thread?: string[];
   channelIds: string[];
   scheduledAt: string | null;
 };
 
 export async function createPost(orgId: string, input: CreatePostInput) {
   const db = createAdminClient();
-  const body = (input.body ?? "").trim();
-  if (!body) throw new Error("body is required");
+  // A thread (array) takes precedence; otherwise the single body.
+  const segments = (
+    input.thread && input.thread.length ? input.thread : [input.body ?? ""]
+  )
+    .map((s) => String(s).trim())
+    .filter(Boolean);
+  if (segments.length === 0) throw new Error("body (or thread) is required");
+  const body = segments[0];
+  const threadTail = segments.slice(1);
 
   const channelIds = (input.channelIds ?? []).filter(Boolean);
   if (channelIds.length > 0) {
@@ -59,7 +67,7 @@ export async function createPost(orgId: string, input: CreatePostInput) {
 
   const { data: post, error } = await db
     .from("posts")
-    .insert({ org_id: orgId, body, scheduled_at: scheduledAt, status })
+    .insert({ org_id: orgId, body, thread_tail: threadTail, scheduled_at: scheduledAt, status })
     .select("id, body, scheduled_at, status")
     .single();
   if (error) throw new Error(error.message);

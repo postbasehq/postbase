@@ -25,6 +25,7 @@ type TargetRow = { channels: { platform: string } | null };
 type PostRow = {
   id: string;
   body: string;
+  thread_tail: string[] | null;
   scheduled_at: string | null;
   status: string;
   post_targets: TargetRow[];
@@ -40,7 +41,7 @@ export default async function DashboardPage() {
 
   const { data: posts } = await supabase
     .from("posts")
-    .select("id, body, scheduled_at, status, post_targets(channels(platform))")
+    .select("id, body, thread_tail, scheduled_at, status, post_targets(channels(platform))")
     .order("scheduled_at", { ascending: true, nullsFirst: false })
     .limit(25);
 
@@ -101,7 +102,14 @@ export default async function DashboardPage() {
                     {whenLabel(p.scheduled_at)}
                   </span>
                   <div className="min-w-0">
-                    <div className="truncate text-sm">{p.body || "(empty)"}</div>
+                    <div className="truncate text-sm">
+                      {(p.thread_tail?.length ?? 0) > 0 ? (
+                        <span className="mr-1.5 rounded bg-surface-2 px-1.5 py-0.5 text-[11px] font-medium text-muted">
+                          🧵 {(p.thread_tail?.length ?? 0) + 1}
+                        </span>
+                      ) : null}
+                      {p.body || "(empty)"}
+                    </div>
                     <div className="text-xs text-muted">
                       {platforms.length ? platforms.join(", ") : "No channels"}
                     </div>

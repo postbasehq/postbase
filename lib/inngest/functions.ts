@@ -40,7 +40,7 @@ export const publishPost = inngest.createFunction(
       const db = createAdminClient();
       await db.from("posts").update({ status: "publishing" }).eq("id", postId);
       await db.from("post_targets").update({ status: "publishing" }).eq("post_id", postId);
-      const { data: post } = await db.from("posts").select("body").eq("id", postId).single();
+      const { data: post } = await db.from("posts").select("body, thread_tail").eq("id", postId).single();
       const { data: targets } = await db
         .from("post_targets")
         .select("id, variant_body, channels(id, platform, handle, encrypted_tokens, token_expiry)")
@@ -53,10 +53,14 @@ export const publishPost = inngest.createFunction(
     for (const t of targets) {
       const ok = await step.run(`publish-${t.id}`, async () => {
         const db = createAdminClient();
-        const body = t.variant_body ?? post?.body ?? "";
+        const p = post as { body?: string; thread_tail?: string[] } | null;
+        const body = t.variant_body ?? p?.body ?? "";
+        // A per-channel variant is a single tweet; otherwise post the full thread.
+        const threadTail = t.variant_body ? [] : (p?.thread_tail ?? []);
         const result = await publish({
           platform: t.channels?.platform ?? "",
           body,
+          threadTail,
           channelId: t.channels?.id ?? "",
           handle: t.channels?.handle ?? null,
           encryptedTokens: t.channels?.encrypted_tokens ?? null,

@@ -13,7 +13,7 @@ export default async function EditPostPage({
 
   const { data: post } = await supabase
     .from("posts")
-    .select("id, body, scheduled_at, status, post_targets(channel_id)")
+    .select("id, body, thread_tail, scheduled_at, status, post_targets(channel_id)")
     .eq("id", id)
     .maybeSingle();
 
@@ -42,7 +42,7 @@ export default async function EditPostPage({
         submitLabel="Save changes"
         initial={{
           id: post.id,
-          body: post.body,
+          thread: [post.body, ...((post.thread_tail as string[] | null) ?? [])],
           scheduledAt: post.scheduled_at,
           channelIds,
         }}
