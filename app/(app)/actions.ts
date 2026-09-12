@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
 
-const PLATFORMS = ["x", "linkedin", "instagram", "youtube"] as const;
+const PLATFORMS = ["x", "linkedin", "instagram", "tiktok", "youtube"] as const;
 
 /** Parse the composer's `thread` JSON field into non-empty, trimmed tweet segments. */
 function parseThread(formData: FormData): string[] {

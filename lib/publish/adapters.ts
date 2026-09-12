@@ -16,15 +16,24 @@ import {
   refreshTokens as liRefreshTokens,
   type LinkedInTokens,
 } from "@/lib/platforms/linkedin";
+import {
+  initVideoPost,
+  initPhotoPost,
+  waitForPublish,
+  refreshTokens as ttRefreshTokens,
+  defaultPrivacyLevel,
+  type TikTokTokens,
+} from "@/lib/platforms/tiktok";
 
 const MEDIA_BUCKET = "post-media";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 /**
  * Platform publishing adapters — common interface so adding a platform is additive
  * (docs/TECH_STACK.md §4). Each adapter posts via that platform's API using the
  * channel's stored (encrypted) OAuth tokens.
  *
- * X, Instagram, and LinkedIn are live. YouTube remains stubbed.
+ * X, Instagram, LinkedIn, and TikTok are live. YouTube remains stubbed.
  */
 
 export type MediaItem = { url: string; type: string };
@@ -264,6 +273,76 @@ async function publishToLinkedIn(input: PublishInput): Promise<PublishResult> {
   }
 }
 
+// Serve bucket media through our own (TikTok-verified) domain.
+function proxiedMediaUrl(url: string): string {
+  return `${APP_URL}/api/media/proxy?src=${encodeURIComponent(url)}`;
+}
+
+async function publishToTikTok(input: PublishInput): Promise<PublishResult> {
+  if (!input.encryptedTokens) return { ok: false, error: "TikTok account not connected." };
+
+  let tokens: TikTokTokens;
+  try {
+    tokens = decryptJson<TikTokTokens>(input.encryptedTokens);
+  } catch (e) {
+    return {
+      ok: false,
+      error: `Could not read stored TikTok credentials: ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+
+  // Refresh an expiring access token when a refresh token is available.
+  if (isExpiring(input.tokenExpiry) && tokens.refresh_token) {
+    try {
+      const refreshed = await ttRefreshTokens(tokens.refresh_token);
+      tokens = {
+        ...tokens,
+        access_token: refreshed.access_token!,
+        refresh_token: refreshed.refresh_token ?? tokens.refresh_token,
+      };
+      const db = createAdminClient();
+      await db
+        .from("channels")
+        .update({
+          encrypted_tokens: encryptJson(tokens),
+          token_expiry: refreshed.expires_in
+            ? new Date(Date.now() + refreshed.expires_in * 1000).toISOString()
+            : null,
+        })
+        .eq("id", input.channelId);
+    } catch {
+      return { ok: false, error: "TikTok token expired — reconnect the channel." };
+    }
+  }
+
+  const images = input.media.filter((m) => m.type.startsWith("image/"));
+  const videos = input.media.filter((m) => m.type.startsWith("video/"));
+  if (images.length === 0 && videos.length === 0) {
+    return { ok: false, error: "TikTok posts need a video or at least one image." };
+  }
+
+  const caption = [input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean).join(" ");
+  const privacy = defaultPrivacyLevel();
+
+  try {
+    // TikTok pulls the media from our proxy URL (a domain it can verify).
+    const publishId =
+      videos.length > 0
+        ? await initVideoPost(tokens.access_token, proxiedMediaUrl(videos[0].url), caption, privacy)
+        : await initPhotoPost(
+            tokens.access_token,
+            images.slice(0, 35).map((m) => proxiedMediaUrl(m.url)),
+            caption,
+            privacy,
+          );
+
+    await waitForPublish(tokens.access_token, publishId);
+    return { ok: true, platformPostId: publishId };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "TikTok publish failed." };
+  }
+}
+
 export async function publish(input: PublishInput): Promise<PublishResult> {
   if (!input.body.trim()) {
     return { ok: false, error: "Post body is empty." };
@@ -276,6 +355,8 @@ export async function publish(input: PublishInput): Promise<PublishResult> {
       return publishToLinkedIn(input);
     case "instagram":
       return publishToInstagram(input);
+    case "tiktok":
+      return publishToTikTok(input);
     case "youtube":
       return simulate("youtube");
     default:

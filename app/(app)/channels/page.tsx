@@ -5,6 +5,7 @@ const PLATFORM_META: Record<string, { label: string; dot: string }> = {
   x: { label: "X", dot: "bg-ink" },
   linkedin: { label: "LinkedIn", dot: "bg-blue" },
   instagram: { label: "Instagram", dot: "bg-terra" },
+  tiktok: { label: "TikTok", dot: "bg-ink" },
   youtube: { label: "YouTube", dot: "bg-amber-bright" },
 };
 
@@ -15,6 +16,7 @@ const CONNECTED_LABEL: Record<string, string> = {
   x: "X account connected.",
   instagram: "Instagram account connected.",
   linkedin: "LinkedIn account connected.",
+  tiktok: "TikTok account connected.",
 };
 
 const ERRORS: Record<string, string> = {
@@ -26,6 +28,8 @@ const ERRORS: Record<string, string> = {
   ig_connect_failed:
     "Connecting Instagram failed. Make sure the account is a Business/Creator account linked to a Facebook Page.",
   li_connect_failed: "Connecting LinkedIn failed — please try again.",
+  tt_not_configured: "TikTok isn’t configured on this server yet (missing TikTok app keys).",
+  tt_connect_failed: "Connecting TikTok failed — please try again.",
   save_failed: "Couldn’t save the channel — please try again.",
   no_workspace: "No workspace found for your account.",
 };
@@ -104,6 +108,21 @@ export default async function ChannelsPage({
           className="ml-auto rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
         >
           Connect LinkedIn
+        </a>
+      </div>
+
+      {/* connect TikTok (real OAuth) */}
+      <div className="mt-4 flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sm">
+        <span className="size-2.5 rounded-full bg-ink" />
+        <div>
+          <div className="text-sm font-semibold">TikTok</div>
+          <div className="text-xs text-muted">Post videos or photo carousels (no text-only posts).</div>
+        </div>
+        <a
+          href="/api/connect/tiktok"
+          className="ml-auto rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
+        >
+          Connect TikTok
         </a>
       </div>
 
