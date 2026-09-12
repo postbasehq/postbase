@@ -22,6 +22,23 @@ function parseThread(formData: FormData): string[] {
   return body ? [body] : [];
 }
 
+/** Parse the `media` JSON field into {url, type} items. */
+function parseMedia(formData: FormData): { url: string; type: string }[] {
+  const raw = formData.get("media");
+  if (raw == null) return [];
+  try {
+    const arr = JSON.parse(String(raw));
+    if (Array.isArray(arr)) {
+      return arr
+        .filter((m) => m && typeof m.url === "string")
+        .map((m) => ({ url: String(m.url), type: String(m.type ?? "") }));
+    }
+  } catch {
+    // ignore
+  }
+  return [];
+}
+
 /** Parse the `variants` JSON field into a channelId -> non-empty text map. */
 function parseVariants(formData: FormData): Record<string, string> {
   const raw = formData.get("variants");
@@ -121,6 +138,13 @@ export async function createPost(formData: FormData) {
     if (targetErr) throw new Error(targetErr.message);
   }
 
+  const media = parseMedia(formData);
+  if (media.length > 0) {
+    await supabase
+      .from("media")
+      .insert(media.map((m) => ({ post_id: post.id, storage_url: m.url, type: m.type })));
+  }
+
   // The cron poller publishes scheduled posts when their time arrives — no event needed.
 
   revalidatePath("/dashboard");
@@ -178,6 +202,14 @@ export async function updatePost(formData: FormData) {
       })),
     );
     if (tErr) throw new Error(tErr.message);
+  }
+
+  await supabase.from("media").delete().eq("post_id", postId);
+  const media = parseMedia(formData);
+  if (media.length > 0) {
+    await supabase
+      .from("media")
+      .insert(media.map((m) => ({ post_id: postId, storage_url: m.url, type: m.type })));
   }
 
   revalidatePath("/dashboard");

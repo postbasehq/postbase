@@ -36,6 +36,12 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
   for (const post of posts) {
     await db.from("post_targets").update({ status: "publishing" }).eq("post_id", post.id);
 
+    const { data: mediaData } = await db
+      .from("media")
+      .select("storage_url, type")
+      .eq("post_id", post.id);
+    const media = (mediaData ?? []).map((m) => ({ url: m.storage_url, type: m.type }));
+
     const { data: targetsData } = await db
       .from("post_targets")
       .select("id, variant_body, channels(id, platform, handle, encrypted_tokens, token_expiry)")
@@ -51,6 +57,7 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
         platform: t.channels?.platform ?? "",
         body,
         threadTail,
+        media,
         channelId: t.channels?.id ?? "",
         handle: t.channels?.handle ?? null,
         encryptedTokens: t.channels?.encrypted_tokens ?? null,

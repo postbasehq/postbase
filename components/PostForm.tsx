@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ScheduleField } from "./ScheduleField";
 import { ThreadComposer } from "./ThreadComposer";
 import { ChannelSelect } from "./ChannelSelect";
+import { MediaUpload } from "./MediaUpload";
 
 type Channel = { id: string; platform: string; handle: string | null };
 
@@ -15,6 +16,7 @@ type PostFormProps = {
     scheduledAt: string | null;
     channelIds: string[];
     variants: Record<string, string>;
+    media: { url: string; type: string }[];
   };
 };
 
@@ -27,6 +29,8 @@ export function PostForm({ channels, action, submitLabel, initial }: PostFormPro
       {initial ? <input type="hidden" name="post_id" value={initial.id} /> : null}
 
       <ThreadComposer initial={initial?.thread} />
+
+      <MediaUpload initial={initial?.media} />
 
       <ChannelSelect
         channels={channels}

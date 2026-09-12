@@ -8,7 +8,8 @@ import crypto from "node:crypto";
 const AUTHORIZE_URL = "https://twitter.com/i/oauth2/authorize";
 const TOKEN_URL = "https://api.twitter.com/2/oauth2/token";
 const API = "https://api.twitter.com/2";
-const SCOPES = ["tweet.read", "tweet.write", "users.read", "offline.access"];
+const MEDIA_UPLOAD_URL = "https://api.x.com/2/media/upload";
+const SCOPES = ["tweet.read", "tweet.write", "users.read", "offline.access", "media.write"];
 
 export type XTokens = {
   access_token: string;
@@ -95,13 +96,46 @@ export async function getMe(accessToken: string): Promise<{ id: string; username
   return json.data;
 }
 
+/** Upload media (image/video bytes) via the v2 endpoint. Returns a media id. Needs the media.write scope. */
+export async function uploadMedia(
+  accessToken: string,
+  bytes: ArrayBuffer,
+  mimeType: string,
+): Promise<string> {
+  const category = mimeType.startsWith("video/") ? "tweet_video" : "tweet_image";
+  const form = new FormData();
+  form.append("media", new Blob([bytes], { type: mimeType }));
+  form.append("media_category", category);
+  const res = await fetch(MEDIA_UPLOAD_URL, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: form,
+  });
+  const json = (await res.json()) as {
+    data?: { id?: string };
+    id?: string;
+    media_id_string?: string;
+    detail?: string;
+    title?: string;
+  };
+  const id = json.data?.id ?? json.id ?? json.media_id_string;
+  if (!res.ok || !id) throw new Error(json.detail ?? json.title ?? `X media upload error ${res.status}`);
+  return id;
+}
+
 export async function postTweet(
   accessToken: string,
   text: string,
   inReplyToId?: string,
+  mediaIds?: string[],
 ): Promise<{ id: string }> {
-  const body: { text: string; reply?: { in_reply_to_tweet_id: string } } = { text };
+  const body: {
+    text: string;
+    reply?: { in_reply_to_tweet_id: string };
+    media?: { media_ids: string[] };
+  } = { text };
   if (inReplyToId) body.reply = { in_reply_to_tweet_id: inReplyToId };
+  if (mediaIds && mediaIds.length) body.media = { media_ids: mediaIds };
   const res = await fetch(`${API}/tweets`, {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
@@ -112,12 +146,16 @@ export async function postTweet(
   return { id: json.data.id };
 }
 
-/** Post a thread as a reply chain. Returns the first tweet's id. */
-export async function postThread(accessToken: string, texts: string[]): Promise<{ id: string }> {
+/** Post a thread as a reply chain; media (if any) attaches to the first tweet. */
+export async function postThread(
+  accessToken: string,
+  texts: string[],
+  mediaIds?: string[],
+): Promise<{ id: string }> {
   let firstId = "";
   let prevId: string | undefined;
-  for (const text of texts) {
-    const { id } = await postTweet(accessToken, text, prevId);
+  for (let i = 0; i < texts.length; i++) {
+    const { id } = await postTweet(accessToken, texts[i], prevId, i === 0 ? mediaIds : undefined);
     if (!firstId) firstId = id;
     prevId = id;
   }

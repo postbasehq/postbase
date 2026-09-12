@@ -1,6 +1,6 @@
 import { decryptJson, encryptJson } from "@/lib/crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { postThread, refreshTokens, type XTokens } from "@/lib/platforms/x";
+import { postThread, uploadMedia, refreshTokens, type XTokens } from "@/lib/platforms/x";
 
 /**
  * Platform publishing adapters — common interface so adding a platform is additive
@@ -10,10 +10,13 @@ import { postThread, refreshTokens, type XTokens } from "@/lib/platforms/x";
  * X is live. LinkedIn / Instagram remain stubbed until their API access is granted.
  */
 
+export type MediaItem = { url: string; type: string };
+
 export type PublishInput = {
   platform: string;
   body: string;
   threadTail: string[];
+  media: MediaItem[];
   channelId: string;
   handle: string | null;
   encryptedTokens: string | null;
@@ -66,7 +69,15 @@ async function publishToX(input: PublishInput): Promise<PublishResult> {
 
   const texts = [input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean);
   try {
-    const { id } = await postThread(tokens.access_token, texts);
+    // Upload any media first, then attach the ids to the lead tweet.
+    const mediaIds: string[] = [];
+    for (const m of input.media) {
+      const res = await fetch(m.url);
+      if (!res.ok) throw new Error(`Couldn't fetch media (${res.status})`);
+      const bytes = await res.arrayBuffer();
+      mediaIds.push(await uploadMedia(tokens.access_token, bytes, m.type));
+    }
+    const { id } = await postThread(tokens.access_token, texts, mediaIds);
     return { ok: true, platformPostId: id };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "X publish failed." };

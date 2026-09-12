@@ -26,6 +26,12 @@ export default async function EditPostPage({
     .select("id, platform, handle")
     .order("created_at", { ascending: true });
 
+  const { data: mediaRows } = await supabase
+    .from("media")
+    .select("storage_url, type")
+    .eq("post_id", id);
+  const media = (mediaRows ?? []).map((m) => ({ url: m.storage_url, type: m.type }));
+
   const targets = (post.post_targets ?? []) as {
     channel_id: string;
     variant_body: string | null;
@@ -50,6 +56,7 @@ export default async function EditPostPage({
           scheduledAt: post.scheduled_at,
           channelIds,
           variants,
+          media,
         }}
       />
     </div>

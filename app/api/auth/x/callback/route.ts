@@ -39,15 +39,25 @@ export async function GET(request: Request) {
     const tokens = await exchangeCode(code, verifier);
     const me = await getMe(tokens.access_token);
     const tokenExpiry = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
-
-    const { error } = await supabase.from("channels").insert({
-      org_id: orgId,
-      platform: "x",
-      handle: `@${me.username}`,
+    const handle = `@${me.username}`;
+    const fields = {
       encrypted_tokens: encryptJson(tokens),
       token_expiry: tokenExpiry,
       status: "active",
-    });
+    };
+
+    // Reconnecting the same account updates the existing channel instead of duplicating it.
+    const { data: existing } = await supabase
+      .from("channels")
+      .select("id")
+      .eq("org_id", orgId)
+      .eq("platform", "x")
+      .eq("handle", handle)
+      .maybeSingle();
+
+    const { error } = existing
+      ? await supabase.from("channels").update(fields).eq("id", existing.id)
+      : await supabase.from("channels").insert({ org_id: orgId, platform: "x", handle, ...fields });
     if (error) return fail("save_failed");
   } catch {
     return fail("x_connect_failed");
