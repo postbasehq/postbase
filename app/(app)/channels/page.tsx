@@ -9,12 +9,20 @@ const PLATFORM_META: Record<string, { label: string; dot: string }> = {
 };
 
 // Platforms still connected via a manual stub (real OAuth lands per-platform).
-const MANUAL = ["linkedin", "instagram", "youtube"];
+const MANUAL = ["linkedin", "youtube"];
+
+const CONNECTED_LABEL: Record<string, string> = {
+  x: "X account connected.",
+  instagram: "Instagram account connected.",
+};
 
 const ERRORS: Record<string, string> = {
   x_not_configured: "X isn’t configured on this server yet (missing API keys).",
-  oauth_state: "The X connection couldn’t be verified — please try again.",
+  ig_not_configured: "Instagram isn’t configured on this server yet (missing Meta app keys).",
+  oauth_state: "The connection couldn’t be verified — please try again.",
   x_connect_failed: "Connecting X failed — please try again.",
+  ig_connect_failed:
+    "Connecting Instagram failed. Make sure the account is a Business/Creator account linked to a Facebook Page.",
   save_failed: "Couldn’t save the channel — please try again.",
   no_workspace: "No workspace found for your account.",
 };
@@ -38,9 +46,9 @@ export default async function ChannelsPage({
         Connect the accounts you want to publish to.
       </p>
 
-      {connected === "x" ? (
+      {connected && CONNECTED_LABEL[connected] ? (
         <div className="mt-4 rounded-xl bg-green/12 px-4 py-3 text-sm text-green">
-          X account connected.
+          {CONNECTED_LABEL[connected]}
         </div>
       ) : null}
       {error ? (
@@ -61,6 +69,23 @@ export default async function ChannelsPage({
           className="ml-auto rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
         >
           Connect X
+        </a>
+      </div>
+
+      {/* connect Instagram (real OAuth via Facebook Login) */}
+      <div className="mt-4 flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sm">
+        <span className="size-2.5 rounded-full bg-terra" />
+        <div>
+          <div className="text-sm font-semibold">Instagram</div>
+          <div className="text-xs text-muted">
+            Connect a Business/Creator account linked to a Facebook Page.
+          </div>
+        </div>
+        <a
+          href="/api/connect/instagram"
+          className="ml-auto rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
+        >
+          Connect Instagram
         </a>
       </div>
 
@@ -99,7 +124,7 @@ export default async function ChannelsPage({
         </button>
       </form>
       <p className="mt-1.5 text-xs text-muted">
-        LinkedIn and Instagram use manual stubs until their OAuth connections ship.
+        LinkedIn uses a manual stub until its OAuth connection ships.
       </p>
 
       {/* list */}
