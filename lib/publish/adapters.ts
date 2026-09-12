@@ -18,7 +18,7 @@ const MEDIA_BUCKET = "post-media";
  * (docs/TECH_STACK.md §4). Each adapter posts via that platform's API using the
  * channel's stored (encrypted) OAuth tokens.
  *
- * X is live. LinkedIn / Instagram remain stubbed until their API access is granted.
+ * X and Instagram are live. LinkedIn remains stubbed until its API access is granted.
  */
 
 export type MediaItem = { url: string; type: string };
@@ -98,20 +98,44 @@ async function publishToX(input: PublishInput): Promise<PublishResult> {
   }
 }
 
-/**
- * Instagram requires a public **JPEG** image URL. Our uploads may be PNG, so
- * transcode non-JPEG images to JPEG (via sharp) and re-upload to the public
- * bucket, returning the new public URL. JPEGs pass through untouched.
- */
-async function ensureJpegUrl(url: string, type: string): Promise<string> {
-  if (type === "image/jpeg" || type === "image/jpg") return url;
+// Instagram feed images must be JPEG (no alpha) with an aspect ratio between
+// 4:5 (0.8, portrait) and 1.91:1 (1.91, landscape).
+const IG_MIN_RATIO = 0.8;
+const IG_MAX_RATIO = 1.91;
 
+/**
+ * Normalise an image for Instagram: transcode to JPEG, flatten any alpha to
+ * white (JPEG can't carry transparency), and letterbox onto the nearest
+ * supported aspect ratio when the source is out of range. Re-uploads to the
+ * public bucket and returns the new URL. An in-range, alpha-free JPEG passes
+ * through untouched.
+ */
+async function ensureInstagramImageUrl(url: string, type: string): Promise<string> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Couldn't fetch image for Instagram (${res.status}).`);
   const input = Buffer.from(await res.arrayBuffer());
 
   const sharp = (await import("sharp")).default;
-  const jpeg = await sharp(input).jpeg({ quality: 90 }).toBuffer();
+  const meta = await sharp(input).metadata();
+  const w = meta.width ?? 0;
+  const h = meta.height ?? 0;
+  const ratio = w && h ? w / h : 1;
+  const inRange = ratio >= IG_MIN_RATIO && ratio <= IG_MAX_RATIO;
+
+  if ((type === "image/jpeg" || type === "image/jpg") && inRange && !meta.hasAlpha) {
+    return url;
+  }
+
+  let pipeline = sharp(input).flatten({ background: "#ffffff" });
+  if (!inRange && w && h) {
+    // Letterbox onto the nearest supported ratio with a white background.
+    const [cw, ch] =
+      ratio < IG_MIN_RATIO
+        ? [Math.round(h * IG_MIN_RATIO), h] // too tall -> pad width
+        : [w, Math.round(w / IG_MAX_RATIO)]; // too wide -> pad height
+    pipeline = pipeline.resize({ width: cw, height: ch, fit: "contain", background: "#ffffff" });
+  }
+  const jpeg = await pipeline.jpeg({ quality: 90 }).toBuffer();
 
   const db = createAdminClient();
   const path = `ig/${randomUUID()}.jpg`;
@@ -155,13 +179,13 @@ async function publishToInstagram(input: PublishInput): Promise<PublishResult> {
       creationId = await createVideoContainer(igId, token, videos[0].url, caption);
       await waitForContainer(token, creationId);
     } else if (images.length === 1) {
-      const jpeg = await ensureJpegUrl(images[0].url, images[0].type);
+      const jpeg = await ensureInstagramImageUrl(images[0].url, images[0].type);
       creationId = await createImageContainer(igId, token, jpeg, caption);
     } else {
       // 2–10 images -> carousel. Build child containers, then the parent.
       const childIds: string[] = [];
       for (const img of images.slice(0, 10)) {
-        const jpeg = await ensureJpegUrl(img.url, img.type);
+        const jpeg = await ensureInstagramImageUrl(img.url, img.type);
         childIds.push(await createImageContainer(igId, token, jpeg, "", true));
       }
       creationId = await createCarouselContainer(igId, token, childIds, caption);
