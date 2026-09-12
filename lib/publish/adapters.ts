@@ -17,11 +17,13 @@ import {
   type LinkedInTokens,
 } from "@/lib/platforms/linkedin";
 import {
-  initVideoPost,
+  initVideoUpload,
+  uploadVideoFile,
   initPhotoPost,
   waitForPublish,
   refreshTokens as ttRefreshTokens,
   defaultPrivacyLevel,
+  TIKTOK_MAX_SINGLE_CHUNK,
   type TikTokTokens,
 } from "@/lib/platforms/tiktok";
 
@@ -325,16 +327,28 @@ async function publishToTikTok(input: PublishInput): Promise<PublishResult> {
   const privacy = defaultPrivacyLevel();
 
   try {
-    // TikTok pulls the media from our proxy URL (a domain it can verify).
-    const publishId =
-      videos.length > 0
-        ? await initVideoPost(tokens.access_token, proxiedMediaUrl(videos[0].url), caption, privacy)
-        : await initPhotoPost(
-            tokens.access_token,
-            images.slice(0, 35).map((m) => proxiedMediaUrl(m.url)),
-            caption,
-            privacy,
-          );
+    let publishId: string;
+
+    if (videos.length > 0) {
+      // Video: upload the bytes directly (FILE_UPLOAD) — no domain verification.
+      const res = await fetch(videos[0].url);
+      if (!res.ok) throw new Error(`Couldn't fetch video (${res.status})`);
+      const bytes = await res.arrayBuffer();
+      if (bytes.byteLength > TIKTOK_MAX_SINGLE_CHUNK) {
+        throw new Error("TikTok video must be under 64MB.");
+      }
+      const init = await initVideoUpload(tokens.access_token, caption, privacy, bytes.byteLength);
+      await uploadVideoFile(init.uploadUrl, bytes, videos[0].type || "video/mp4");
+      publishId = init.publishId;
+    } else {
+      // Photos: TikTok pulls from our proxy URL (requires a verified domain).
+      publishId = await initPhotoPost(
+        tokens.access_token,
+        images.slice(0, 35).map((m) => proxiedMediaUrl(m.url)),
+        caption,
+        privacy,
+      );
+    }
 
     await waitForPublish(tokens.access_token, publishId);
     return { ok: true, platformPostId: publishId };

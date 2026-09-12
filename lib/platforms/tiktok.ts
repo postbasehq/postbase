@@ -2,11 +2,12 @@
  * TikTok Content Posting API (Direct Post) + OAuth 2.0.
  *
  * TikTok is video/photo only — there are no text posts. Publishing is two steps:
- * initialize a post (TikTok pulls the media from a public URL) then poll status.
+ * initialize a post, provide the media, then poll status.
  *
- * PULL_FROM_URL requires the media URL's domain to be verified in the TikTok app,
- * so we serve media through our own domain (see /api/media/proxy) rather than the
- * Supabase storage domain, which can't be verified.
+ * Video uses FILE_UPLOAD (we upload the bytes directly), which needs no domain
+ * verification. Photos use PULL_FROM_URL, which requires the media URL's domain
+ * to be verified in the TikTok app — so photos are served through our own domain
+ * (see /api/media/proxy), not the Supabase domain, which can't be verified.
  *
  * Until the app passes TikTok's audit, posts are limited to SELF_ONLY (private)
  * visibility on the developer's own account.
@@ -137,28 +138,62 @@ export async function creatorInfo(
   });
 }
 
-/** Initialize a Direct Post video from a public URL. Returns the publish id. */
-export async function initVideoPost(
+// TikTok single-chunk FILE_UPLOAD accepts a whole video up to 64MB in one PUT.
+export const TIKTOK_MAX_SINGLE_CHUNK = 64 * 1024 * 1024;
+
+/**
+ * Initialize a Direct Post video via FILE_UPLOAD (we upload the bytes directly,
+ * so no domain verification is needed). Returns the publish id + the upload URL.
+ */
+export async function initVideoUpload(
   accessToken: string,
-  videoUrl: string,
   caption: string,
   privacyLevel: string,
-): Promise<string> {
-  const data = await tiktokJson<{ publish_id: string }>(`${API}/post/publish/video/init/`, {
-    method: "POST",
-    headers: authHeaders(accessToken),
-    body: JSON.stringify({
-      post_info: {
-        title: caption,
-        privacy_level: privacyLevel,
-        disable_duet: false,
-        disable_comment: false,
-        disable_stitch: false,
-      },
-      source_info: { source: "PULL_FROM_URL", video_url: videoUrl },
-    }),
+  videoSize: number,
+): Promise<{ publishId: string; uploadUrl: string }> {
+  const data = await tiktokJson<{ publish_id: string; upload_url: string }>(
+    `${API}/post/publish/video/init/`,
+    {
+      method: "POST",
+      headers: authHeaders(accessToken),
+      body: JSON.stringify({
+        post_info: {
+          title: caption,
+          privacy_level: privacyLevel,
+          disable_duet: false,
+          disable_comment: false,
+          disable_stitch: false,
+        },
+        // Single chunk: the whole file in one PUT.
+        source_info: {
+          source: "FILE_UPLOAD",
+          video_size: videoSize,
+          chunk_size: videoSize,
+          total_chunk_count: 1,
+        },
+      }),
+    },
+  );
+  return { publishId: data.publish_id, uploadUrl: data.upload_url };
+}
+
+/** Upload the whole video to the init'd upload URL as a single chunk. */
+export async function uploadVideoFile(
+  uploadUrl: string,
+  bytes: ArrayBuffer,
+  mimeType = "video/mp4",
+): Promise<void> {
+  const size = bytes.byteLength;
+  const res = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Type": mimeType,
+      "Content-Length": String(size),
+      "Content-Range": `bytes 0-${size - 1}/${size}`,
+    },
+    body: bytes,
   });
-  return data.publish_id;
+  if (!res.ok) throw new Error(`TikTok video upload failed (${res.status}).`);
 }
 
 /** Initialize a Direct Post photo carousel from public URLs. Returns the publish id. */
