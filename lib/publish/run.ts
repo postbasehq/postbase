@@ -3,6 +3,8 @@ import { publish } from "@/lib/publish/adapters";
 
 type TargetRow = {
   id: string;
+  status: string;
+  platform_post_id: string | null;
   variant_body: string | null;
   channels: {
     id: string;
@@ -13,29 +15,50 @@ type TargetRow = {
   } | null;
 };
 
+// A post claimed but not finished within this window is treated as stranded (its
+// run crashed or timed out) and re-claimed on the next poll.
+const STUCK_AFTER_MS = 5 * 60_000;
+
 /**
  * Publish all posts whose scheduled time has passed. Called by the cron poller.
  *
  * Concurrency-safe: due posts are claimed by atomically flipping scheduled -> publishing
  * (Postgres row locks mean an overlapping run can't claim the same post twice).
+ *
+ * At-least-once with dedupe: if a run dies mid-publish, the post is stranded in
+ * `publishing`; a later poll re-claims it once it's older than STUCK_AFTER_MS, and
+ * targets that already have a platform_post_id are skipped so nothing double-posts.
  */
 export async function publishDuePosts(): Promise<{ processed: number }> {
   const db = createAdminClient();
   const nowIso = new Date().toISOString();
+  const stuckBeforeIso = new Date(Date.now() - STUCK_AFTER_MS).toISOString();
 
-  // Claim due scheduled posts in one atomic update.
+  // Claim due scheduled posts in one atomic update. `updated_at` timestamps the claim
+  // so a stranded post can be recognised later.
   const { data: claimed } = await db
     .from("posts")
-    .update({ status: "publishing" })
+    .update({ status: "publishing", updated_at: nowIso })
     .eq("status", "scheduled")
     .lte("scheduled_at", nowIso)
     .select("id, body, thread_tail");
 
-  const posts = (claimed ?? []) as { id: string; body: string; thread_tail: string[] | null }[];
+  // Re-claim posts stranded in `publishing` past the stuck window (crashed/timed-out runs).
+  // Re-stamp updated_at so overlapping polls can't grab the same straggler.
+  const { data: reclaimed } = await db
+    .from("posts")
+    .update({ status: "publishing", updated_at: nowIso })
+    .eq("status", "publishing")
+    .lt("updated_at", stuckBeforeIso)
+    .select("id, body, thread_tail");
+
+  const posts = [...(claimed ?? []), ...(reclaimed ?? [])] as {
+    id: string;
+    body: string;
+    thread_tail: string[] | null;
+  }[];
 
   for (const post of posts) {
-    await db.from("post_targets").update({ status: "publishing" }).eq("post_id", post.id);
-
     const { data: mediaData } = await db
       .from("media")
       .select("storage_url, type")
@@ -44,12 +67,21 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
 
     const { data: targetsData } = await db
       .from("post_targets")
-      .select("id, variant_body, channels(id, platform, handle, encrypted_tokens, token_expiry)")
+      .select("id, status, platform_post_id, variant_body, channels(id, platform, handle, encrypted_tokens, token_expiry)")
       .eq("post_id", post.id);
     const targets = (targetsData ?? []) as unknown as TargetRow[];
 
     const results: boolean[] = [];
     for (const t of targets) {
+      // Dedupe: a target that already went out (has a platform post id) is done —
+      // never re-publish it, even when the post is being re-claimed after a crash.
+      if (t.platform_post_id) {
+        results.push(true);
+        continue;
+      }
+
+      await db.from("post_targets").update({ status: "publishing" }).eq("id", t.id);
+
       const body = t.variant_body ?? post.body ?? "";
       // A per-channel variant is a single tweet; otherwise post the full thread.
       const threadTail = t.variant_body ? [] : (post.thread_tail ?? []);
@@ -75,7 +107,7 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
     }
 
     const status = results.some((r) => !r) ? "failed" : "published";
-    await db.from("posts").update({ status }).eq("id", post.id);
+    await db.from("posts").update({ status, updated_at: new Date().toISOString() }).eq("id", post.id);
   }
 
   return { processed: posts.length };
