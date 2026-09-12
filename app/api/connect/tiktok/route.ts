@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { authorizeUrl, tiktokConfigured } from "@/lib/platforms/tiktok";
+import { authorizeUrl, createPkce, tiktokConfigured } from "@/lib/platforms/tiktok";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 const cookieOpts = { httpOnly: true, secure: true, sameSite: "lax" as const, path: "/", maxAge: 600 };
@@ -18,7 +18,9 @@ export async function GET() {
   }
 
   const state = crypto.randomUUID();
-  const res = NextResponse.redirect(authorizeUrl(state));
+  const { verifier, challenge } = createPkce();
+  const res = NextResponse.redirect(authorizeUrl(state, challenge));
   res.cookies.set("tt_oauth_state", state, cookieOpts);
+  res.cookies.set("tt_oauth_verifier", verifier, cookieOpts);
   return res;
 }

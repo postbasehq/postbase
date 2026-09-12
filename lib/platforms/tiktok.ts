@@ -16,10 +16,22 @@
  * (+ optional TIKTOK_PRIVACY_LEVEL, default SELF_ONLY).
  */
 
+import crypto from "node:crypto";
+
 const AUTHORIZE_URL = "https://www.tiktok.com/v2/auth/authorize/";
 const TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/";
 const API = "https://open.tiktokapis.com/v2";
 const SCOPES = ["user.info.basic", "video.publish"];
+
+/**
+ * TikTok OAuth requires PKCE. Note: TikTok uses a **hex-encoded** SHA-256 of the
+ * verifier for the challenge (not base64url like standard PKCE).
+ */
+export function createPkce(): { verifier: string; challenge: string } {
+  const verifier = crypto.randomBytes(32).toString("hex"); // 64 hex chars (valid 43–128)
+  const challenge = crypto.createHash("sha256").update(verifier).digest("hex");
+  return { verifier, challenge };
+}
 
 export type TikTokTokens = {
   access_token: string;
@@ -40,13 +52,15 @@ export function defaultPrivacyLevel(): string {
   return process.env.TIKTOK_PRIVACY_LEVEL ?? "SELF_ONLY";
 }
 
-export function authorizeUrl(state: string): string {
+export function authorizeUrl(state: string, challenge: string): string {
   const p = new URLSearchParams({
     client_key: process.env.TIKTOK_CLIENT_KEY!,
     response_type: "code",
     scope: SCOPES.join(","),
     redirect_uri: process.env.TIKTOK_CALLBACK_URL!,
     state,
+    code_challenge: challenge,
+    code_challenge_method: "S256",
   });
   return `${AUTHORIZE_URL}?${p.toString()}`;
 }
@@ -74,7 +88,7 @@ async function tokenRequest(body: URLSearchParams): Promise<TokenResponse> {
   return json;
 }
 
-export function exchangeCode(code: string): Promise<TokenResponse> {
+export function exchangeCode(code: string, codeVerifier: string): Promise<TokenResponse> {
   return tokenRequest(
     new URLSearchParams({
       client_key: process.env.TIKTOK_CLIENT_KEY!,
@@ -82,6 +96,7 @@ export function exchangeCode(code: string): Promise<TokenResponse> {
       code,
       grant_type: "authorization_code",
       redirect_uri: process.env.TIKTOK_CALLBACK_URL!,
+      code_verifier: codeVerifier,
     }),
   );
 }

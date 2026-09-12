@@ -15,16 +15,18 @@ export async function GET(request: Request) {
 
   const jar = await cookies();
   const savedState = jar.get("tt_oauth_state")?.value;
+  const verifier = jar.get("tt_oauth_verifier")?.value;
 
   const fail = (reason: string) => {
     const res = NextResponse.redirect(`${APP_URL}/channels?error=${reason}`);
     res.cookies.delete("tt_oauth_state");
+    res.cookies.delete("tt_oauth_verifier");
     return res;
   };
 
   // TikTok appends error params when the user declines.
   if (searchParams.get("error")) return fail("tt_connect_failed");
-  if (!code || !state || state !== savedState) return fail("oauth_state");
+  if (!code || !state || state !== savedState || !verifier) return fail("oauth_state");
 
   const supabase = await createClient();
   const {
@@ -36,7 +38,7 @@ export async function GET(request: Request) {
   if (!orgId) return fail("no_workspace");
 
   try {
-    const token = await exchangeCode(code);
+    const token = await exchangeCode(code, verifier);
     const me = await getUser(token.access_token!);
 
     const tokens: TikTokTokens = {
@@ -74,5 +76,6 @@ export async function GET(request: Request) {
 
   const res = NextResponse.redirect(`${APP_URL}/channels?connected=tiktok`);
   res.cookies.delete("tt_oauth_state");
+  res.cookies.delete("tt_oauth_verifier");
   return res;
 }
