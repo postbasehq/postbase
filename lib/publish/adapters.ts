@@ -177,7 +177,6 @@ async function publishToInstagram(input: PublishInput): Promise<PublishResult> {
     if (videos.length > 0) {
       // A single Reel/video (Instagram can't mix video with images in one post).
       creationId = await createVideoContainer(igId, token, videos[0].url, caption);
-      await waitForContainer(token, creationId);
     } else if (images.length === 1) {
       const jpeg = await ensureInstagramImageUrl(images[0].url, images[0].type);
       creationId = await createImageContainer(igId, token, jpeg, caption);
@@ -191,6 +190,9 @@ async function publishToInstagram(input: PublishInput): Promise<PublishResult> {
       creationId = await createCarouselContainer(igId, token, childIds, caption);
     }
 
+    // Wait until the container finishes processing — publishing too early fails
+    // with "Media ID is not available". Images usually finish on the first poll.
+    await waitForContainer(token, creationId);
     const id = await publishContainer(igId, token, creationId);
     return { ok: true, platformPostId: id };
   } catch (e) {
