@@ -15,7 +15,7 @@ const API = "https://api.linkedin.com";
 const SCOPES = ["openid", "profile", "w_member_social"];
 
 function apiVersion(): string {
-  return process.env.LINKEDIN_API_VERSION ?? "202409";
+  return process.env.LINKEDIN_API_VERSION ?? "202509";
 }
 
 export type LinkedInTokens = {
