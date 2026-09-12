@@ -1,5 +1,4 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { inngest } from "@/lib/inngest/client";
 
 /**
  * Core operations exposed to the public API / MCP server, always scoped to one org.
@@ -79,14 +78,7 @@ export async function createPost(orgId: string, input: CreatePostInput) {
     if (tErr) throw new Error(tErr.message);
   }
 
-  if (status === "scheduled") {
-    try {
-      await inngest.send({ name: "post/scheduled", data: { postId: post.id, scheduledAt } });
-    } catch {
-      // Inngest unavailable — post is saved; publishing fires once Inngest is up.
-    }
-  }
-
+  // The cron poller publishes scheduled posts when due — no event needed.
   return post;
 }
 
@@ -103,10 +95,5 @@ export async function cancelPost(orgId: string, postId: string): Promise<boolean
   if (!updated || updated.length === 0) return false;
 
   await db.from("post_targets").update({ status: "draft" }).eq("post_id", postId);
-  try {
-    await inngest.send({ name: "post/cancelled", data: { postId } });
-  } catch {
-    // Inngest unavailable — status already reverted.
-  }
   return true;
 }

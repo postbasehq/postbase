@@ -14,39 +14,40 @@ driven by env vars.
 | `NEXT_PUBLIC_APP_URL` | `https://postbase.so` |
 | `TOKEN_ENCRYPTION_KEY` | `openssl rand -base64 32` — encrypts OAuth tokens at rest |
 | `API_KEY_PEPPER` | long random string — hashing API keys |
-| `INNGEST_EVENT_KEY` | from Inngest Cloud (see §3) |
-| `INNGEST_SIGNING_KEY` | from Inngest Cloud (see §3) |
+| `CRON_SECRET` | protects the publish cron (see §3); Vercel Cron sends it as a bearer token |
 | `X_CLIENT_ID` / `X_CLIENT_SECRET` | X OAuth 2.0 app |
 | `X_CALLBACK_URL` | `https://postbase.so/api/auth/x/callback` |
-
-Do **not** set `INNGEST_DEV` in production (it's for local dev only).
 
 ## 2. Database
 
 Apply every migration in `supabase/migrations/` (0001–0005) to the production Supabase
 project (SQL editor, or `supabase db push`).
 
-## 3. Inngest Cloud (this is what makes scheduled publishing fire)
+## 3. Scheduled publishing (cron poller)
 
-Locally, `npm run dev` sets `INNGEST_DEV=1` and `npm run inngest` runs the executor.
-**In production, Inngest Cloud is the executor** and calls back to
-`https://postbase.so/api/inngest` at each post's scheduled time.
+A **Vercel Cron** job calls `GET /api/cron/publish` every minute; the endpoint claims
+any posts whose scheduled time has passed and publishes them. The schedule lives in
+`vercel.json`:
 
-**Recommended — the Vercel integration (auto):**
-1. Create an account at inngest.com.
-2. Install the **Inngest ↔ Vercel integration** and connect this project. It sets
-   `INNGEST_EVENT_KEY` + `INNGEST_SIGNING_KEY` and **auto-syncs** your functions on every
-   deploy (it hits `/api/inngest`).
-3. Redeploy.
+```json
+{ "crons": [{ "path": "/api/cron/publish", "schedule": "* * * * *" }] }
+```
 
-**Manual alternative:**
-1. In Inngest, create an app; copy the **Event Key** and **Signing Key**.
-2. Add both to Vercel env (above); redeploy.
-3. In Inngest → **Sync app** → URL `https://postbase.so/api/inngest`.
+Setup:
+1. Set **`CRON_SECRET`** in Vercel env (`openssl rand -base64 32`). Vercel Cron sends it
+   automatically as `Authorization: Bearer <CRON_SECRET>`; the endpoint rejects calls
+   without it.
+2. Deploy. Vercel registers the cron from `vercel.json`.
 
-**Verify:** the Inngest dashboard lists the `postbase` app with the `publish-post`
-function, and `GET https://postbase.so/api/inngest` returns `200` (not the 500 it returns
-without a signing key in cloud mode).
+Notes:
+- **Minute-level crons require the Vercel Pro plan** (Hobby crons run once/day).
+- The claim is concurrency-safe (atomic `scheduled -> publishing`), so overlapping runs
+  can't double-publish.
+- **Local dev:** run `npm run poll` in a second terminal — it hits the endpoint on an
+  interval, mimicking the cron.
+
+**Verify:** schedule a post a couple of minutes out on the live site → it publishes; the
+Vercel dashboard's Cron logs show the invocations.
 
 ## 4. Auth & platform callbacks
 

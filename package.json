@@ -4,8 +4,8 @@
   "private": true,
   "description": "The social scheduler even your AI can run.",
   "scripts": {
-    "dev": "INNGEST_DEV=1 next dev",
-    "inngest": "npx inngest-cli@latest dev -u http://localhost:3000/api/inngest",
+    "dev": "next dev",
+    "poll": "node --env-file=.env.local scripts/poll.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -14,7 +14,6 @@
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.45.4",
     "@vercel/analytics": "^2.0.1",
-    "inngest": "^4.20.0",
     "marked": "^14.1.2",
     "next": "^15.1.0",
     "react": "^19.0.0",

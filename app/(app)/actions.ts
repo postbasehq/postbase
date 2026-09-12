@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
-import { inngest } from "@/lib/inngest/client";
 
 const PLATFORMS = ["x", "linkedin", "instagram", "youtube"] as const;
 
@@ -122,25 +121,14 @@ export async function createPost(formData: FormData) {
     if (targetErr) throw new Error(targetErr.message);
   }
 
-  // Hand the scheduled post to the Inngest publish loop.
-  if (status === "scheduled") {
-    try {
-      await inngest.send({
-        name: "post/scheduled",
-        data: { postId: post.id, scheduledAt },
-      });
-    } catch {
-      // Inngest not running (e.g. local without the dev server) — the post is still
-      // saved as scheduled; publishing just won't fire until Inngest is available.
-    }
-  }
+  // The cron poller publishes scheduled posts when their time arrives — no event needed.
 
   revalidatePath("/dashboard");
   revalidatePath("/composer");
   redirect("/dashboard");
 }
 
-/** Edit a post: update body/channels/schedule, and reschedule the Inngest job. */
+/** Edit a post: update body/channels/schedule. The poller picks up the new time. */
 export async function updatePost(formData: FormData) {
   const supabase = await createClient();
   const orgId = await getCurrentOrgId();
@@ -192,22 +180,12 @@ export async function updatePost(formData: FormData) {
     if (tErr) throw new Error(tErr.message);
   }
 
-  // Cancel any in-flight scheduled job, then re-schedule with the new details.
-  try {
-    await inngest.send({ name: "post/cancelled", data: { postId } });
-    if (status === "scheduled") {
-      await inngest.send({ name: "post/scheduled", data: { postId, scheduledAt } });
-    }
-  } catch {
-    // Inngest unavailable — the post is saved; publishing fires once it's up.
-  }
-
   revalidatePath("/dashboard");
   revalidatePath("/calendar");
   redirect("/dashboard");
 }
 
-/** Cancel a scheduled post: stop the Inngest job and return it to draft. */
+/** Cancel a scheduled post: return it to draft so the poller skips it. */
 export async function cancelPost(formData: FormData) {
   const supabase = await createClient();
   const orgId = await getCurrentOrgId();
@@ -232,12 +210,6 @@ export async function cancelPost(formData: FormData) {
   }
 
   await supabase.from("post_targets").update({ status: "draft" }).eq("post_id", postId);
-
-  try {
-    await inngest.send({ name: "post/cancelled", data: { postId } });
-  } catch {
-    // Inngest not running — status is already reverted; nothing else to do.
-  }
 
   revalidatePath("/dashboard");
 }
