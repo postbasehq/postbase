@@ -75,7 +75,11 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
     for (const t of targets) {
       // Dedupe: a target that already went out (has a platform post id) is done —
       // never re-publish it, even when the post is being re-claimed after a crash.
+      // Normalise its status in case a prior run died before marking it published.
       if (t.platform_post_id) {
+        if (t.status !== "published") {
+          await db.from("post_targets").update({ status: "published", error: null }).eq("id", t.id);
+        }
         results.push(true);
         continue;
       }
