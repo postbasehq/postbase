@@ -9,20 +9,23 @@ const PLATFORM_META: Record<string, { label: string; dot: string }> = {
 };
 
 // Platforms still connected via a manual stub (real OAuth lands per-platform).
-const MANUAL = ["linkedin", "youtube"];
+const MANUAL = ["youtube"];
 
 const CONNECTED_LABEL: Record<string, string> = {
   x: "X account connected.",
   instagram: "Instagram account connected.",
+  linkedin: "LinkedIn account connected.",
 };
 
 const ERRORS: Record<string, string> = {
   x_not_configured: "X isn’t configured on this server yet (missing API keys).",
   ig_not_configured: "Instagram isn’t configured on this server yet (missing Meta app keys).",
+  li_not_configured: "LinkedIn isn’t configured on this server yet (missing LinkedIn app keys).",
   oauth_state: "The connection couldn’t be verified — please try again.",
   x_connect_failed: "Connecting X failed — please try again.",
   ig_connect_failed:
     "Connecting Instagram failed. Make sure the account is a Business/Creator account linked to a Facebook Page.",
+  li_connect_failed: "Connecting LinkedIn failed — please try again.",
   save_failed: "Couldn’t save the channel — please try again.",
   no_workspace: "No workspace found for your account.",
 };
@@ -89,6 +92,21 @@ export default async function ChannelsPage({
         </a>
       </div>
 
+      {/* connect LinkedIn (real OAuth) */}
+      <div className="mt-4 flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sm">
+        <span className="size-2.5 rounded-full bg-blue" />
+        <div>
+          <div className="text-sm font-semibold">LinkedIn</div>
+          <div className="text-xs text-muted">Publish posts to your LinkedIn profile.</div>
+        </div>
+        <a
+          href="/api/connect/linkedin"
+          className="ml-auto rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
+        >
+          Connect LinkedIn
+        </a>
+      </div>
+
       {/* manual stub add (other platforms until their OAuth ships) */}
       <form
         action={addChannel}
@@ -98,7 +116,7 @@ export default async function ChannelsPage({
           <span className="text-[13px] font-medium text-muted">Platform</span>
           <select
             name="platform"
-            defaultValue="linkedin"
+            defaultValue="youtube"
             className="rounded-xl border border-line bg-ground px-3 py-2.5 text-sm outline-none focus-visible:border-blue"
           >
             {MANUAL.map((value) => (
@@ -124,7 +142,7 @@ export default async function ChannelsPage({
         </button>
       </form>
       <p className="mt-1.5 text-xs text-muted">
-        LinkedIn uses a manual stub until its OAuth connection ships.
+        YouTube uses a manual stub until its OAuth connection ships.
       </p>
 
       {/* list */}

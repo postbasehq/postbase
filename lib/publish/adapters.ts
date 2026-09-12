@@ -10,6 +10,12 @@ import {
   waitForContainer,
   type MetaTokens,
 } from "@/lib/platforms/meta";
+import {
+  createPost as liCreatePost,
+  uploadImage as liUploadImage,
+  refreshTokens as liRefreshTokens,
+  type LinkedInTokens,
+} from "@/lib/platforms/linkedin";
 
 const MEDIA_BUCKET = "post-media";
 
@@ -18,7 +24,7 @@ const MEDIA_BUCKET = "post-media";
  * (docs/TECH_STACK.md §4). Each adapter posts via that platform's API using the
  * channel's stored (encrypted) OAuth tokens.
  *
- * X and Instagram are live. LinkedIn remains stubbed until its API access is granted.
+ * X, Instagram, and LinkedIn are live. YouTube remains stubbed.
  */
 
 export type MediaItem = { url: string; type: string };
@@ -200,6 +206,64 @@ async function publishToInstagram(input: PublishInput): Promise<PublishResult> {
   }
 }
 
+async function publishToLinkedIn(input: PublishInput): Promise<PublishResult> {
+  if (!input.encryptedTokens) return { ok: false, error: "LinkedIn account not connected." };
+
+  let tokens: LinkedInTokens;
+  try {
+    tokens = decryptJson<LinkedInTokens>(input.encryptedTokens);
+  } catch (e) {
+    return {
+      ok: false,
+      error: `Could not read stored LinkedIn credentials: ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+
+  // Refresh an expiring access token when a refresh token is available.
+  if (isExpiring(input.tokenExpiry) && tokens.refresh_token) {
+    try {
+      const refreshed = await liRefreshTokens(tokens.refresh_token);
+      tokens = {
+        ...tokens,
+        access_token: refreshed.access_token!,
+        refresh_token: refreshed.refresh_token ?? tokens.refresh_token,
+      };
+      const db = createAdminClient();
+      await db
+        .from("channels")
+        .update({
+          encrypted_tokens: encryptJson(tokens),
+          token_expiry: refreshed.expires_in
+            ? new Date(Date.now() + refreshed.expires_in * 1000).toISOString()
+            : null,
+        })
+        .eq("id", input.channelId);
+    } catch {
+      return { ok: false, error: "LinkedIn token expired — reconnect the channel." };
+    }
+  }
+
+  // LinkedIn has no threads — fold the whole thing into one post's commentary.
+  const commentary = [input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean).join("\n\n");
+  if (!commentary) return { ok: false, error: "LinkedIn post is empty." };
+
+  try {
+    // Upload any images (PNG/JPEG both fine — no transcode needed). Video is not
+    // supported yet, so non-image media is skipped.
+    const imageUrns: string[] = [];
+    const images = input.media.filter((m) => m.type.startsWith("image/"));
+    for (const img of images.slice(0, 20)) {
+      const res = await fetch(img.url);
+      if (!res.ok) throw new Error(`Couldn't fetch media (${res.status})`);
+      imageUrns.push(await liUploadImage(tokens.access_token, tokens.author_urn, await res.arrayBuffer()));
+    }
+    const id = await liCreatePost(tokens.access_token, tokens.author_urn, commentary, imageUrns);
+    return { ok: true, platformPostId: id || "urn:li:share:unknown" };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "LinkedIn publish failed." };
+  }
+}
+
 export async function publish(input: PublishInput): Promise<PublishResult> {
   if (!input.body.trim()) {
     return { ok: false, error: "Post body is empty." };
@@ -209,8 +273,7 @@ export async function publish(input: PublishInput): Promise<PublishResult> {
     case "x":
       return publishToX(input);
     case "linkedin":
-      // TODO: real LinkedIn Posts API with w_member_social.
-      return simulate("linkedin");
+      return publishToLinkedIn(input);
     case "instagram":
       return publishToInstagram(input);
     case "youtube":
