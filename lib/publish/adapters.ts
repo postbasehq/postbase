@@ -45,8 +45,11 @@ async function publishToX(input: PublishInput): Promise<PublishResult> {
   let tokens: XTokens;
   try {
     tokens = decryptJson<XTokens>(input.encryptedTokens);
-  } catch {
-    return { ok: false, error: "Could not read stored X credentials." };
+  } catch (e) {
+    return {
+      ok: false,
+      error: `Could not read stored X credentials: ${e instanceof Error ? e.message : String(e)}`,
+    };
   }
 
   // Refresh an expiring access token and persist the new tokens.
