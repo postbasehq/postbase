@@ -1,41 +1,139 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { publish } from "@/lib/publish/adapters";
 
+type Db = ReturnType<typeof createAdminClient>;
+
+type ChannelRow = {
+  id: string;
+  platform: string;
+  handle: string | null;
+  encrypted_tokens: string | null;
+  token_expiry: string | null;
+};
 type TargetRow = {
   id: string;
   status: string;
   platform_post_id: string | null;
   variant_body: string | null;
-  channels: {
-    id: string;
-    platform: string;
-    handle: string | null;
-    encrypted_tokens: string | null;
-    token_expiry: string | null;
-  } | null;
+  attempts: number;
+  channels: ChannelRow | null;
 };
+type PostRow = { id: string; body: string; thread_tail: string[] | null };
+type MediaItem = { url: string; type: string };
 
-// A post claimed but not finished within this window is treated as stranded (its
-// run crashed or timed out) and re-claimed on the next poll.
+// A post claimed but not finished within this window is treated as stranded.
 const STUCK_AFTER_MS = 5 * 60_000;
+// How many times to try a target before giving up.
+const MAX_ATTEMPTS = 4;
+
+// Backoff (minutes) indexed by the attempt number just completed (1-based).
+function backoffMs(attempts: number): number {
+  const mins = [5, 15, 30, 60];
+  return (mins[Math.min(attempts - 1, mins.length - 1)] ?? 60) * 60_000;
+}
+
+async function loadMedia(db: Db, postId: string): Promise<MediaItem[]> {
+  const { data } = await db.from("media").select("storage_url, type").eq("post_id", postId);
+  return (data ?? []).map((m) => ({ url: m.storage_url, type: m.type }));
+}
+
+async function loadTargets(db: Db, postId: string): Promise<TargetRow[]> {
+  const { data } = await db
+    .from("post_targets")
+    .select(
+      "id, status, platform_post_id, variant_body, attempts, channels(id, platform, handle, encrypted_tokens, token_expiry)",
+    )
+    .eq("post_id", postId);
+  return (data ?? []) as unknown as TargetRow[];
+}
+
+/** Publish one target and record the outcome (with retry scheduling on failure). */
+async function publishTarget(
+  db: Db,
+  target: TargetRow,
+  post: PostRow,
+  media: MediaItem[],
+): Promise<boolean> {
+  // Dedupe: a target that already went out is done — never re-publish it.
+  if (target.platform_post_id) {
+    if (target.status !== "published") {
+      await db
+        .from("post_targets")
+        .update({ status: "published", error: null, next_attempt_at: null })
+        .eq("id", target.id);
+    }
+    return true;
+  }
+
+  const body = target.variant_body ?? post.body ?? "";
+  const threadTail = target.variant_body ? [] : (post.thread_tail ?? []);
+  const result = await publish({
+    platform: target.channels?.platform ?? "",
+    body,
+    threadTail,
+    media,
+    channelId: target.channels?.id ?? "",
+    handle: target.channels?.handle ?? null,
+    encryptedTokens: target.channels?.encrypted_tokens ?? null,
+    tokenExpiry: target.channels?.token_expiry ?? null,
+  });
+
+  if (result.ok) {
+    await db
+      .from("post_targets")
+      .update({ status: "published", platform_post_id: result.platformPostId, error: null, next_attempt_at: null })
+      .eq("id", target.id);
+    return true;
+  }
+
+  // Failure: schedule a retry with backoff, or give up after MAX_ATTEMPTS.
+  const attempts = (target.attempts ?? 0) + 1;
+  const canRetry = attempts < MAX_ATTEMPTS;
+  await db
+    .from("post_targets")
+    .update({
+      status: "failed",
+      error: result.error,
+      attempts,
+      next_attempt_at: canRetry ? new Date(Date.now() + backoffMs(attempts)).toISOString() : null,
+    })
+    .eq("id", target.id);
+  return false;
+}
+
+/** Roll the per-target outcomes up into the post's status. */
+async function recomputePostStatus(db: Db, postId: string): Promise<void> {
+  const { data } = await db
+    .from("post_targets")
+    .select("status, next_attempt_at, platform_post_id")
+    .eq("post_id", postId);
+  const targets = data ?? [];
+
+  // No targets → nothing to deliver; consider it published.
+  const allDone = targets.every((t) => t.status === "published" || t.platform_post_id);
+  const anyRetrying = targets.some((t) => t.status === "failed" && t.next_attempt_at != null);
+  const anyFailed = targets.some((t) => t.status === "failed");
+
+  const status = allDone ? "published" : anyRetrying ? "publishing" : anyFailed ? "failed" : "publishing";
+  await db.from("posts").update({ status, updated_at: new Date().toISOString() }).eq("id", postId);
+}
 
 /**
- * Publish all posts whose scheduled time has passed. Called by the cron poller.
+ * Publish all posts whose scheduled time has passed, and retry failed targets.
+ * Called by the cron poller.
  *
- * Concurrency-safe: due posts are claimed by atomically flipping scheduled -> publishing
- * (Postgres row locks mean an overlapping run can't claim the same post twice).
- *
- * At-least-once with dedupe: if a run dies mid-publish, the post is stranded in
- * `publishing`; a later poll re-claims it once it's older than STUCK_AFTER_MS, and
- * targets that already have a platform_post_id are skipped so nothing double-posts.
+ * - Claims due `scheduled` posts (atomic scheduled -> publishing).
+ * - Reclaims posts stranded in `publishing` past STUCK_AFTER_MS (crashed runs).
+ * - Sweeps failed targets due for another attempt (backoff, up to MAX_ATTEMPTS).
+ * - Targets that already have a platform_post_id are skipped (no double-post).
  */
 export async function publishDuePosts(): Promise<{ processed: number }> {
   const db = createAdminClient();
   const nowIso = new Date().toISOString();
   const stuckBeforeIso = new Date(Date.now() - STUCK_AFTER_MS).toISOString();
+  const touched = new Set<string>();
 
-  // Claim due scheduled posts in one atomic update. `updated_at` timestamps the claim
-  // so a stranded post can be recognised later.
+  // 1. Claim due scheduled posts.
   const { data: claimed } = await db
     .from("posts")
     .update({ status: "publishing", updated_at: nowIso })
@@ -43,8 +141,7 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
     .lte("scheduled_at", nowIso)
     .select("id, body, thread_tail");
 
-  // Re-claim posts stranded in `publishing` past the stuck window (crashed/timed-out runs).
-  // Re-stamp updated_at so overlapping polls can't grab the same straggler.
+  // 2. Reclaim posts stranded in `publishing` past the stuck window.
   const { data: reclaimed } = await db
     .from("posts")
     .update({ status: "publishing", updated_at: nowIso })
@@ -52,67 +149,50 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
     .lt("updated_at", stuckBeforeIso)
     .select("id, body, thread_tail");
 
-  const posts = [...(claimed ?? []), ...(reclaimed ?? [])] as {
-    id: string;
-    body: string;
-    thread_tail: string[] | null;
-  }[];
-
+  const posts = [...(claimed ?? []), ...(reclaimed ?? [])] as PostRow[];
   for (const post of posts) {
-    const { data: mediaData } = await db
-      .from("media")
-      .select("storage_url, type")
-      .eq("post_id", post.id);
-    const media = (mediaData ?? []).map((m) => ({ url: m.storage_url, type: m.type }));
-
-    const { data: targetsData } = await db
-      .from("post_targets")
-      .select("id, status, platform_post_id, variant_body, channels(id, platform, handle, encrypted_tokens, token_expiry)")
-      .eq("post_id", post.id);
-    const targets = (targetsData ?? []) as unknown as TargetRow[];
-
-    const results: boolean[] = [];
+    touched.add(post.id);
+    const media = await loadMedia(db, post.id);
+    const targets = await loadTargets(db, post.id);
     for (const t of targets) {
-      // Dedupe: a target that already went out (has a platform post id) is done —
-      // never re-publish it, even when the post is being re-claimed after a crash.
-      // Normalise its status in case a prior run died before marking it published.
-      if (t.platform_post_id) {
-        if (t.status !== "published") {
-          await db.from("post_targets").update({ status: "published", error: null }).eq("id", t.id);
-        }
-        results.push(true);
-        continue;
+      if (!t.platform_post_id) {
+        await db.from("post_targets").update({ status: "publishing" }).eq("id", t.id);
       }
-
-      await db.from("post_targets").update({ status: "publishing" }).eq("id", t.id);
-
-      const body = t.variant_body ?? post.body ?? "";
-      // A per-channel variant is a single tweet; otherwise post the full thread.
-      const threadTail = t.variant_body ? [] : (post.thread_tail ?? []);
-      const result = await publish({
-        platform: t.channels?.platform ?? "",
-        body,
-        threadTail,
-        media,
-        channelId: t.channels?.id ?? "",
-        handle: t.channels?.handle ?? null,
-        encryptedTokens: t.channels?.encrypted_tokens ?? null,
-        tokenExpiry: t.channels?.token_expiry ?? null,
-      });
-      if (result.ok) {
-        await db
-          .from("post_targets")
-          .update({ status: "published", platform_post_id: result.platformPostId, error: null })
-          .eq("id", t.id);
-      } else {
-        await db.from("post_targets").update({ status: "failed", error: result.error }).eq("id", t.id);
-      }
-      results.push(result.ok);
+      await publishTarget(db, t, post, media);
     }
-
-    const status = results.some((r) => !r) ? "failed" : "published";
-    await db.from("posts").update({ status, updated_at: new Date().toISOString() }).eq("id", post.id);
   }
 
-  return { processed: posts.length };
+  // 3. Retry sweep: atomically claim failed targets that are due for another try.
+  const { data: retryClaimed } = await db
+    .from("post_targets")
+    .update({ status: "publishing" })
+    .eq("status", "failed")
+    .lt("attempts", MAX_ATTEMPTS)
+    .not("next_attempt_at", "is", null)
+    .lte("next_attempt_at", nowIso)
+    .select("post_id");
+
+  const retryPostIds = Array.from(new Set((retryClaimed ?? []).map((r) => r.post_id as string)));
+  for (const postId of retryPostIds) {
+    touched.add(postId);
+    const { data: postData } = await db
+      .from("posts")
+      .select("id, body, thread_tail")
+      .eq("id", postId)
+      .single();
+    if (!postData) continue;
+    const media = await loadMedia(db, postId);
+    const targets = await loadTargets(db, postId);
+    // Only the targets we just claimed (now `publishing`, not yet sent).
+    for (const t of targets) {
+      if (t.status === "publishing" && !t.platform_post_id) {
+        await publishTarget(db, t, postData as PostRow, media);
+      }
+    }
+  }
+
+  // 4. Roll target outcomes up to each touched post.
+  for (const postId of touched) await recomputePostStatus(db, postId);
+
+  return { processed: posts.length + retryPostIds.length };
 }

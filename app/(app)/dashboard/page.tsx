@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getTimeZone, formatInTz } from "@/lib/tz";
-import { cancelPost } from "../actions";
+import { cancelPost, retryTarget } from "../actions";
 
 const pill =
   "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold font-display whitespace-nowrap";
@@ -18,10 +18,19 @@ const PLATFORM_LABEL: Record<string, string> = {
   x: "X",
   linkedin: "LinkedIn",
   instagram: "Instagram",
+  tiktok: "TikTok",
   youtube: "YouTube",
 };
 
-type TargetRow = { channels: { platform: string } | null };
+type TargetRow = {
+  id: string;
+  status: string;
+  error: string | null;
+  attempts: number;
+  next_attempt_at: string | null;
+  platform_post_id: string | null;
+  channels: { platform: string; handle: string | null } | null;
+};
 type PostRow = {
   id: string;
   body: string;
@@ -30,6 +39,18 @@ type PostRow = {
   status: string;
   post_targets: TargetRow[];
 };
+
+// Per-channel delivery display, derived from a target's row.
+function targetDisplay(t: TargetRow): { label: string; cls: string; dot: string } {
+  if (t.status === "published" || t.platform_post_id)
+    return { label: "Delivered", cls: "text-green", dot: "bg-green" };
+  if (t.status === "failed" && t.next_attempt_at)
+    return { label: "Retrying", cls: "text-amber", dot: "bg-amber-bright" };
+  if (t.status === "failed") return { label: "Failed", cls: "text-terra", dot: "bg-terra" };
+  if (t.status === "publishing")
+    return { label: "Publishing", cls: "text-amber", dot: "bg-amber-bright" };
+  return { label: "Queued", cls: "text-muted", dot: "bg-muted" };
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -41,7 +62,9 @@ export default async function DashboardPage() {
 
   const { data: posts } = await supabase
     .from("posts")
-    .select("id, body, thread_tail, scheduled_at, status, post_targets(channels(platform))")
+    .select(
+      "id, body, thread_tail, scheduled_at, status, post_targets(id, status, error, attempts, next_attempt_at, platform_post_id, channels(platform, handle))",
+    )
     .order("scheduled_at", { ascending: true, nullsFirst: false })
     .limit(25);
 
@@ -51,6 +74,14 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: true });
 
   const rows = (posts ?? []) as unknown as PostRow[];
+
+  // Delivery summary across the loaded posts.
+  const allTargets = rows.flatMap((r) => r.post_targets ?? []);
+  const summary = {
+    delivered: allTargets.filter((t) => t.status === "published" || t.platform_post_id).length,
+    retrying: allTargets.filter((t) => t.status === "failed" && t.next_attempt_at).length,
+    failed: allTargets.filter((t) => t.status === "failed" && !t.next_attempt_at).length,
+  };
 
   return (
     <div className="mx-auto max-w-[960px]">
@@ -70,9 +101,31 @@ export default async function DashboardPage() {
       <div className="mt-6 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
         {/* queue */}
         <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
-          <div className="flex items-center gap-2 border-b border-line px-4 py-3">
+          <div className="flex items-center gap-3 border-b border-line px-4 py-3">
             <h2 className="font-display text-sm font-semibold">Queue</h2>
-            <span className="ml-auto text-xs text-muted">{rows.length} post{rows.length === 1 ? "" : "s"}</span>
+            <div className="ml-auto flex items-center gap-3 text-xs">
+              {summary.delivered > 0 ? (
+                <span className="inline-flex items-center gap-1.5 text-green">
+                  <span className="size-2 rounded-full bg-green" />
+                  {summary.delivered} delivered
+                </span>
+              ) : null}
+              {summary.retrying > 0 ? (
+                <span className="inline-flex items-center gap-1.5 text-amber">
+                  <span className="size-2 rounded-full bg-amber-bright" />
+                  {summary.retrying} retrying
+                </span>
+              ) : null}
+              {summary.failed > 0 ? (
+                <span className="inline-flex items-center gap-1.5 text-terra">
+                  <span className="size-2 rounded-full bg-terra" />
+                  {summary.failed} failed
+                </span>
+              ) : null}
+              <span className="text-muted">
+                {rows.length} post{rows.length === 1 ? "" : "s"}
+              </span>
+            </div>
           </div>
 
           {rows.length === 0 ? (
@@ -88,59 +141,102 @@ export default async function DashboardPage() {
           ) : (
             rows.map((p, i) => {
               const s = STATUS[p.status] ?? STATUS.draft;
-              const platforms = Array.from(
-                new Set((p.post_targets ?? []).map((t) => t.channels?.platform).filter(Boolean)),
-              ).map((pl) => PLATFORM_LABEL[pl as string] ?? pl);
+              const targets = p.post_targets ?? [];
+              const failed = targets.filter((t) => t.status === "failed" && !t.next_attempt_at);
               return (
                 <div
                   key={p.id}
-                  className={`grid grid-cols-[auto_1fr_auto] items-center gap-3.5 px-4 py-3.5 ${
+                  className={`flex flex-col gap-2 px-4 py-3.5 ${
                     i < rows.length - 1 ? "border-b border-line" : ""
                   }`}
                 >
-                  <span className="font-display text-[13px] font-semibold tabular-nums text-muted">
-                    {whenLabel(p.scheduled_at)}
-                  </span>
-                  <div className="min-w-0">
-                    <div className="truncate text-sm">
-                      {(p.thread_tail?.length ?? 0) > 0 ? (
-                        <span className="mr-1.5 rounded bg-surface-2 px-1.5 py-0.5 text-[11px] font-medium text-muted">
-                          🧵 {(p.thread_tail?.length ?? 0) + 1}
-                        </span>
-                      ) : null}
-                      {p.body || "(empty)"}
-                    </div>
-                    <div className="text-xs text-muted">
-                      {platforms.length ? platforms.join(", ") : "No channels"}
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1.5">
-                    <span className={`${pill} ${s.cls}`}>
-                      <span className={`size-2 rounded-full ${s.dot}`} />
-                      {s.label}
+                  <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3.5">
+                    <span className="font-display text-[13px] font-semibold tabular-nums text-muted">
+                      {whenLabel(p.scheduled_at)}
                     </span>
-                    <div className="flex items-center gap-3">
-                      {p.status !== "published" && p.status !== "publishing" ? (
-                        <Link
-                          href={`/composer/${p.id}`}
-                          className="text-xs text-muted hover:text-ink"
-                        >
-                          Edit
-                        </Link>
-                      ) : null}
-                      {p.status === "scheduled" ? (
-                        <form action={cancelPost}>
-                          <input type="hidden" name="post_id" value={p.id} />
-                          <button
-                            type="submit"
-                            className="text-xs text-muted hover:text-terra"
+                    <div className="min-w-0">
+                      <div className="truncate text-sm">
+                        {(p.thread_tail?.length ?? 0) > 0 ? (
+                          <span className="mr-1.5 rounded bg-surface-2 px-1.5 py-0.5 text-[11px] font-medium text-muted">
+                            🧵 {(p.thread_tail?.length ?? 0) + 1}
+                          </span>
+                        ) : null}
+                        {p.body || "(empty)"}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <span className={`${pill} ${s.cls}`}>
+                        <span className={`size-2 rounded-full ${s.dot}`} />
+                        {s.label}
+                      </span>
+                      <div className="flex items-center gap-3">
+                        {p.status !== "published" && p.status !== "publishing" ? (
+                          <Link
+                            href={`/composer/${p.id}`}
+                            className="text-xs text-muted hover:text-ink"
                           >
-                            Cancel
-                          </button>
-                        </form>
-                      ) : null}
+                            Edit
+                          </Link>
+                        ) : null}
+                        {p.status === "scheduled" ? (
+                          <form action={cancelPost}>
+                            <input type="hidden" name="post_id" value={p.id} />
+                            <button type="submit" className="text-xs text-muted hover:text-terra">
+                              Cancel
+                            </button>
+                          </form>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
+
+                  {/* per-channel delivery */}
+                  {targets.length === 0 ? (
+                    <div className="text-xs text-muted">No channels</div>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                      {targets.map((t) => {
+                        const d = targetDisplay(t);
+                        const label = PLATFORM_LABEL[t.channels?.platform ?? ""] ?? t.channels?.platform ?? "—";
+                        return (
+                          <span
+                            key={t.id}
+                            className="inline-flex items-center gap-1.5 text-xs"
+                            title={t.error ?? undefined}
+                          >
+                            <span className={`size-2 rounded-full ${d.dot}`} />
+                            <span className="font-medium">{label}</span>
+                            <span className={d.cls}>{d.label}</span>
+                            {t.status === "failed" ? (
+                              <form action={retryTarget}>
+                                <input type="hidden" name="target_id" value={t.id} />
+                                <button
+                                  type="submit"
+                                  className="rounded-full border border-line px-2 py-0.5 text-[11px] font-medium text-blue-ink hover:bg-surface-2"
+                                >
+                                  Retry
+                                </button>
+                              </form>
+                            ) : null}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* error detail for terminally-failed channels */}
+                  {failed.length > 0 ? (
+                    <div className="flex flex-col gap-0.5">
+                      {failed.map((t) => (
+                        <div key={t.id} className="text-xs text-terra">
+                          <span className="font-medium">
+                            {PLATFORM_LABEL[t.channels?.platform ?? ""] ?? t.channels?.platform}:
+                          </span>{" "}
+                          {t.error ?? "Delivery failed."}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               );
             })

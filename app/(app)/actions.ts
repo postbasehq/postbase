@@ -217,6 +217,32 @@ export async function updatePost(formData: FormData) {
   redirect("/dashboard");
 }
 
+/** Re-queue a failed channel target for another delivery attempt. */
+export async function retryTarget(formData: FormData) {
+  const supabase = await createClient();
+  const orgId = await getCurrentOrgId();
+  if (!orgId) throw new Error("No workspace found for this user.");
+
+  const targetId = String(formData.get("target_id") ?? "");
+  if (!targetId) throw new Error("Missing target id.");
+
+  // Reset the attempt counter and make it due now. RLS scopes this to the
+  // caller's org, so a target id from another tenant hits nothing.
+  const { data: updated } = await supabase
+    .from("post_targets")
+    .update({ status: "failed", error: null, attempts: 0, next_attempt_at: new Date().toISOString() })
+    .eq("id", targetId)
+    .eq("status", "failed")
+    .select("post_id");
+
+  if (updated?.[0]) {
+    // Reflect that the post is being worked on again.
+    await supabase.from("posts").update({ status: "publishing" }).eq("id", updated[0].post_id);
+  }
+
+  revalidatePath("/dashboard");
+}
+
 /** Cancel a scheduled post: return it to draft so the poller skips it. */
 export async function cancelPost(formData: FormData) {
   const supabase = await createClient();
