@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { addChannel, disconnectChannel } from "../actions";
+import { disconnectChannel } from "../actions";
 import { DisconnectButton } from "@/components/DisconnectButton";
 
 const PLATFORM_META: Record<string, { label: string; dot: string }> = {
@@ -9,9 +9,6 @@ const PLATFORM_META: Record<string, { label: string; dot: string }> = {
   tiktok: { label: "TikTok", dot: "bg-ink" },
   youtube: { label: "YouTube", dot: "bg-amber-bright" },
 };
-
-// Platforms still connected via a manual stub (real OAuth lands per-platform).
-const MANUAL = ["youtube"];
 
 const CONNECTED_LABEL: Record<string, string> = {
   x: "X account connected.",
@@ -127,44 +124,6 @@ export default async function ChannelsPage({
           Connect TikTok
         </a>
       </div>
-
-      {/* manual stub add (other platforms until their OAuth ships) */}
-      <form
-        action={addChannel}
-        className="mt-4 flex flex-wrap items-end gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sm"
-      >
-        <label className="flex flex-col gap-1.5">
-          <span className="text-[13px] font-medium text-muted">Platform</span>
-          <select
-            name="platform"
-            defaultValue="youtube"
-            className="rounded-xl border border-line bg-ground px-3 py-2.5 text-sm outline-none focus-visible:border-blue"
-          >
-            {MANUAL.map((value) => (
-              <option key={value} value={value}>
-                {PLATFORM_META[value].label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-1 flex-col gap-1.5">
-          <span className="text-[13px] font-medium text-muted">Handle</span>
-          <input
-            name="handle"
-            placeholder="@yourhandle"
-            className="rounded-xl border border-line bg-ground px-3.5 py-2.5 text-sm outline-none focus-visible:border-blue"
-          />
-        </label>
-        <button
-          type="submit"
-          className="rounded-full border border-line px-5 py-2.5 font-display text-sm font-semibold text-blue-ink hover:bg-surface-2"
-        >
-          Add stub
-        </button>
-      </form>
-      <p className="mt-1.5 text-xs text-muted">
-        YouTube uses a manual stub until its OAuth connection ships.
-      </p>
 
       {/* list */}
       <div className="mt-5 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
