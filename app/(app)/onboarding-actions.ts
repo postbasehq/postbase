@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentOrgId } from "@/lib/org";
@@ -31,4 +32,29 @@ export async function completeOnboarding() {
     .eq("id", orgId);
 
   revalidatePath("/dashboard");
+}
+
+// Clear the flag so the welcome wizard shows again, then drop the user on the
+// dashboard where it renders. Triggered from Settings → "Replay setup".
+export async function restartOnboarding() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const orgId = await getCurrentOrgId();
+  if (!orgId) return;
+
+  const { data: org } = await supabase
+    .from("orgs")
+    .select("id")
+    .eq("id", orgId)
+    .maybeSingle();
+  if (!org) return;
+
+  await createAdminClient().from("orgs").update({ onboarded_at: null }).eq("id", orgId);
+
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
 }

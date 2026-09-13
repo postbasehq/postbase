@@ -12,6 +12,7 @@ const NAV = [
   { label: "MCP & API", href: "/api-keys" },
   { label: "Team", href: "/team" },
   { label: "Billing", href: "/billing" },
+  { label: "Settings", href: "/settings" },
 ];
 
 export function AppNav() {
