@@ -5,6 +5,7 @@ import { getTweetMetrics, refreshTokens as xRefresh } from "@/lib/platforms/x";
 import { getMediaInsights } from "@/lib/platforms/meta";
 import { getSocialActions, refreshTokens as liRefresh } from "@/lib/platforms/linkedin";
 import { getVideoMetrics, refreshTokens as ttRefresh } from "@/lib/platforms/tiktok";
+import { getVideoStats, refreshTokens as ytRefresh } from "@/lib/platforms/youtube";
 
 /**
  * Metrics collector — refreshes normalized engagement metrics for recently
@@ -41,6 +42,7 @@ async function ensureToken(db: SupabaseClient, ch: Channel, tokens: Tokens): Pro
     if (ch.platform === "x") refreshed = await xRefresh(tokens.refresh_token);
     else if (ch.platform === "tiktok") refreshed = await ttRefresh(tokens.refresh_token);
     else if (ch.platform === "linkedin") refreshed = await liRefresh(tokens.refresh_token);
+    else if (ch.platform === "youtube") refreshed = await ytRefresh(tokens.refresh_token);
     else return tokens.access_token;
   } catch {
     return tokens.access_token; // fall back; the read may still work or fail gracefully
@@ -77,6 +79,8 @@ async function fetchMetrics(
       return getSocialActions(token, postId);
     case "tiktok":
       return getVideoMetrics(token, postId);
+    case "youtube":
+      return getVideoStats(token, postId);
     default:
       throw new Error(`No metrics collector for ${platform}`);
   }

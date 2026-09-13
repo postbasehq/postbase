@@ -14,6 +14,7 @@ type PlatformMeta = {
   limit: number;
   needsMedia?: boolean;
   prefersVideo?: boolean;
+  videoOnly?: boolean;
   thread?: boolean;
 };
 
@@ -22,7 +23,7 @@ const PLATFORM: Record<string, PlatformMeta> = {
   linkedin: { label: "LinkedIn", dot: "bg-blue", limit: 3000 },
   instagram: { label: "Instagram", dot: "bg-terra", limit: 2200, needsMedia: true },
   tiktok: { label: "TikTok", dot: "bg-ink", limit: 2200, needsMedia: true, prefersVideo: true },
-  youtube: { label: "YouTube", dot: "bg-amber-bright", limit: 5000 },
+  youtube: { label: "YouTube", dot: "bg-amber-bright", limit: 5000, videoOnly: true },
 };
 const label = (p: string) => PLATFORM[p]?.label ?? p;
 
@@ -113,11 +114,14 @@ export function PostForm({ channels, action, submitLabel, initial }: PostFormPro
         notes.push({ level: "error", text: `Caption is ${over} over ${meta.limit.toLocaleString()}` });
       if (isThread) notes.push({ level: "info", text: "Only the first block posts here" });
     }
-    if (meta.needsMedia && !hasMedia)
+    if (meta.videoOnly && !hasVideo) {
+      notes.push({ level: "error", text: "Needs a video" });
+    } else if (meta.needsMedia && !hasMedia) {
       notes.push({
         level: "error",
         text: meta.prefersVideo ? "Needs a video or images" : "Needs an image or video",
       });
+    }
     if (meta.prefersVideo && hasMedia && !hasVideo)
       notes.push({ level: "info", text: "Posts as a photo carousel" });
     return notes;

@@ -15,6 +15,7 @@ const CONNECTED_LABEL: Record<string, string> = {
   instagram: "Instagram account connected.",
   linkedin: "LinkedIn account connected.",
   tiktok: "TikTok account connected.",
+  youtube: "YouTube channel connected.",
 };
 
 const ERRORS: Record<string, string> = {
@@ -28,6 +29,8 @@ const ERRORS: Record<string, string> = {
   li_connect_failed: "Connecting LinkedIn failed — please try again.",
   tt_not_configured: "TikTok isn’t configured on this server yet (missing TikTok app keys).",
   tt_connect_failed: "Connecting TikTok failed — please try again.",
+  yt_not_configured: "YouTube isn’t configured on this server yet (missing Google app keys).",
+  yt_connect_failed: "Connecting YouTube failed — please try again.",
   save_failed: "Couldn’t save the channel — please try again.",
   no_workspace: "No workspace found for your account.",
   channel_limit: "You’ve reached your plan’s channel limit. Upgrade in Billing to connect more.",
@@ -122,6 +125,21 @@ export default async function ChannelsPage({
           className="ml-auto rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
         >
           Connect TikTok
+        </a>
+      </div>
+
+      {/* connect YouTube (real OAuth via Google) */}
+      <div className="mt-4 flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sm">
+        <span className="size-2.5 rounded-full bg-amber-bright" />
+        <div>
+          <div className="text-sm font-semibold">YouTube</div>
+          <div className="text-xs text-muted">Upload videos to your channel (video only).</div>
+        </div>
+        <a
+          href="/api/connect/youtube"
+          className="ml-auto rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
+        >
+          Connect YouTube
         </a>
       </div>
 

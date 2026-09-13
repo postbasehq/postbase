@@ -27,6 +27,12 @@ import {
   TIKTOK_MAX_SINGLE_CHUNK,
   type TikTokTokens,
 } from "@/lib/platforms/tiktok";
+import {
+  uploadVideo as ytUploadVideo,
+  refreshTokens as ytRefreshTokens,
+  defaultPrivacyStatus,
+  type YouTubeTokens,
+} from "@/lib/platforms/youtube";
 
 const MEDIA_BUCKET = "post-media";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -36,7 +42,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
  * (docs/TECH_STACK.md §4). Each adapter posts via that platform's API using the
  * channel's stored (encrypted) OAuth tokens.
  *
- * X, Instagram, LinkedIn, and TikTok are live. YouTube remains stubbed.
+ * X, Instagram, LinkedIn, TikTok, and YouTube are all live.
  */
 
 export type MediaItem = { url: string; type: string };
@@ -56,13 +62,6 @@ export type PublishInput = {
 export type PublishResult =
   | { ok: true; platformPostId: string }
   | { ok: false; error: string };
-
-function simulate(platform: string): PublishResult {
-  return {
-    ok: true,
-    platformPostId: `${platform}_stub_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-  };
-}
 
 function isExpiring(iso: string | null): boolean {
   if (!iso) return false;
@@ -373,6 +372,61 @@ async function publishToTikTok(input: PublishInput): Promise<PublishResult> {
   }
 }
 
+async function publishToYouTube(input: PublishInput): Promise<PublishResult> {
+  if (!input.encryptedTokens) return { ok: false, error: "YouTube account not connected." };
+
+  let tokens: YouTubeTokens;
+  try {
+    tokens = decryptJson<YouTubeTokens>(input.encryptedTokens);
+  } catch (e) {
+    return {
+      ok: false,
+      error: `Could not read stored YouTube credentials: ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+
+  // Google access tokens last ~1h — refresh when expiring.
+  if (isExpiring(input.tokenExpiry) && tokens.refresh_token) {
+    try {
+      const refreshed = await ytRefreshTokens(tokens.refresh_token);
+      tokens = { ...tokens, access_token: refreshed.access_token! };
+      const db = createAdminClient();
+      await db
+        .from("channels")
+        .update({
+          encrypted_tokens: encryptJson(tokens),
+          token_expiry: refreshed.expires_in
+            ? new Date(Date.now() + refreshed.expires_in * 1000).toISOString()
+            : null,
+        })
+        .eq("id", input.channelId);
+    } catch {
+      return { ok: false, error: "YouTube token expired — reconnect the channel." };
+    }
+  }
+
+  const video = input.media.find((m) => m.type.startsWith("video/"));
+  if (!video) return { ok: false, error: "YouTube posts need a video." };
+
+  const description = [input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean).join("\n\n");
+  const title = (input.body.trim() || "Postbase upload").slice(0, 100);
+
+  try {
+    const res = await fetch(video.url);
+    if (!res.ok) throw new Error(`Couldn't fetch video (${res.status})`);
+    const bytes = await res.arrayBuffer();
+    const id = await ytUploadVideo(tokens.access_token, bytes, {
+      title,
+      description,
+      privacy: defaultPrivacyStatus(),
+      mimeType: video.type,
+    });
+    return { ok: true, platformPostId: id };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "YouTube publish failed." };
+  }
+}
+
 export async function publish(input: PublishInput): Promise<PublishResult> {
   if (!input.body.trim()) {
     return { ok: false, error: "Post body is empty." };
@@ -388,7 +442,7 @@ export async function publish(input: PublishInput): Promise<PublishResult> {
     case "tiktok":
       return publishToTikTok(input);
     case "youtube":
-      return simulate("youtube");
+      return publishToYouTube(input);
     default:
       return { ok: false, error: `Unsupported platform: ${input.platform}` };
   }
