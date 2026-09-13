@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getTimeZone, formatInTz } from "@/lib/tz";
+import { getCurrentOrgId } from "@/lib/org";
+import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { cancelPost, retryTarget } from "../actions";
 
 const pill =
@@ -74,6 +76,19 @@ export default async function DashboardPage() {
     .select("id, platform, handle, status")
     .order("created_at", { ascending: true });
 
+  // First-run onboarding: show the welcome wizard until the owner finishes it.
+  const orgId = await getCurrentOrgId();
+  let showOnboarding = false;
+  if (orgId) {
+    const { data: org } = await supabase
+      .from("orgs")
+      .select("onboarded_at")
+      .eq("id", orgId)
+      .maybeSingle();
+    showOnboarding = !!org && org.onboarded_at === null;
+  }
+  const connectedPlatforms = Array.from(new Set((channels ?? []).map((c) => c.platform)));
+
   const rows = (posts ?? []) as unknown as PostRow[];
 
   // Delivery summary across the loaded posts.
@@ -86,6 +101,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-[960px]">
+      {showOnboarding ? <OnboardingWizard connected={connectedPlatforms} /> : null}
       <div className="flex items-center gap-3">
         <div>
           <h1 className="font-display text-2xl font-semibold tracking-[-0.01em]">Dashboard</h1>
