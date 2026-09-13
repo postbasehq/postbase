@@ -16,11 +16,13 @@
 const SCOPES = [
   "instagram_basic",
   "instagram_content_publish",
-  "instagram_manage_insights", // read post metrics (analytics) — reconnect to grant
   "pages_show_list",
   "pages_read_engagement",
   "business_management",
 ];
+// Note: instagram_manage_insights (post metrics/analytics) is intentionally NOT
+// requested here — Meta rejects it as an "invalid scope" until it's added to the
+// app's permissions and granted via App Review. Add it back once approved.
 
 function version(): string {
   return process.env.META_GRAPH_API_VERSION ?? "v21.0";

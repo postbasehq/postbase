@@ -128,9 +128,10 @@ export default async function AnalyticsPage() {
 
       {!hasAny && posts.length > 0 ? (
         <p className="mt-4 text-center text-xs text-muted">
-          Metrics refresh within a few minutes of publishing, then periodically. LinkedIn shows
-          likes/comments only; Instagram and TikTok metrics need a reconnect to grant the
-          analytics scope.
+          Metrics refresh within a few minutes of publishing, then periodically. Coverage varies:
+          X is full; TikTok needs a reconnect to grant its analytics scope; LinkedIn shows
+          likes/comments only; Instagram insights unlock after the app’s analytics permission is
+          approved.
         </p>
       ) : null}
     </div>
