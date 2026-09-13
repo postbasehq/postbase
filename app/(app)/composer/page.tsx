@@ -10,7 +10,7 @@ export default async function ComposerPage() {
     .order("created_at", { ascending: true });
 
   return (
-    <div className="mx-auto max-w-[680px]">
+    <div className="mx-auto max-w-[980px]">
       <h1 className="font-display text-2xl font-semibold tracking-[-0.01em]">New post</h1>
       <p className="mt-1 text-sm text-muted">
         Write your post, pick channels, and schedule it.
