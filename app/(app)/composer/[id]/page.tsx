@@ -13,7 +13,9 @@ export default async function EditPostPage({
 
   const { data: post } = await supabase
     .from("posts")
-    .select("id, body, thread_tail, scheduled_at, status, post_targets(channel_id, variant_body)")
+    .select(
+      "id, body, thread_tail, scheduled_at, status, tiktok_privacy_level, post_targets(channel_id, variant_body)",
+    )
     .eq("id", id)
     .maybeSingle();
 
@@ -57,6 +59,7 @@ export default async function EditPostPage({
           channelIds,
           variants,
           media,
+          tiktokPrivacy: (post.tiktok_privacy_level as string | null) ?? "SELF_ONLY",
         }}
       />
     </div>

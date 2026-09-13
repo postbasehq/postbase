@@ -21,8 +21,9 @@ import {
   uploadVideoFile,
   initPhotoPost,
   waitForPublish,
+  creatorInfo,
+  pickPrivacyLevel,
   refreshTokens as ttRefreshTokens,
-  defaultPrivacyLevel,
   TIKTOK_MAX_SINGLE_CHUNK,
   type TikTokTokens,
 } from "@/lib/platforms/tiktok";
@@ -49,6 +50,7 @@ export type PublishInput = {
   handle: string | null;
   encryptedTokens: string | null;
   tokenExpiry: string | null;
+  tiktokPrivacyLevel?: string | null;
 };
 
 export type PublishResult =
@@ -324,7 +326,20 @@ async function publishToTikTok(input: PublishInput): Promise<PublishResult> {
   }
 
   const caption = [input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean).join(" ");
-  const privacy = defaultPrivacyLevel();
+
+  // Privacy level: the user's choice, unless TIKTOK_PRIVACY_LEVEL is set — which
+  // acts as a hard override so the app can be capped to SELF_ONLY while it's
+  // unaudited (unset it after TikTok approves public posting). Clamped to what
+  // creator_info reports this creator can use (TikTok requires that query first).
+  const override = process.env.TIKTOK_PRIVACY_LEVEL?.trim();
+  const preferred = override || input.tiktokPrivacyLevel || "SELF_ONLY";
+  let privacy = preferred;
+  try {
+    const info = await creatorInfo(tokens.access_token);
+    privacy = pickPrivacyLevel(info.privacy_level_options, preferred);
+  } catch {
+    // Fall back to the preferred level; the init call will surface any error.
+  }
 
   try {
     let publishId: string;

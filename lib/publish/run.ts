@@ -18,7 +18,12 @@ type TargetRow = {
   attempts: number;
   channels: ChannelRow | null;
 };
-type PostRow = { id: string; body: string; thread_tail: string[] | null };
+type PostRow = {
+  id: string;
+  body: string;
+  thread_tail: string[] | null;
+  tiktok_privacy_level: string | null;
+};
 type MediaItem = { url: string; type: string };
 
 // A post claimed but not finished within this window is treated as stranded.
@@ -76,6 +81,7 @@ async function publishTarget(
     handle: target.channels?.handle ?? null,
     encryptedTokens: target.channels?.encrypted_tokens ?? null,
     tokenExpiry: target.channels?.token_expiry ?? null,
+    tiktokPrivacyLevel: post.tiktok_privacy_level,
   });
 
   if (result.ok) {
@@ -139,7 +145,7 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
     .update({ status: "publishing", updated_at: nowIso })
     .eq("status", "scheduled")
     .lte("scheduled_at", nowIso)
-    .select("id, body, thread_tail");
+    .select("id, body, thread_tail, tiktok_privacy_level");
 
   // 2. Reclaim posts stranded in `publishing` past the stuck window.
   const { data: reclaimed } = await db
@@ -147,7 +153,7 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
     .update({ status: "publishing", updated_at: nowIso })
     .eq("status", "publishing")
     .lt("updated_at", stuckBeforeIso)
-    .select("id, body, thread_tail");
+    .select("id, body, thread_tail, tiktok_privacy_level");
 
   const posts = [...(claimed ?? []), ...(reclaimed ?? [])] as PostRow[];
   for (const post of posts) {
@@ -177,7 +183,7 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
     touched.add(postId);
     const { data: postData } = await db
       .from("posts")
-      .select("id, body, thread_tail")
+      .select("id, body, thread_tail, tiktok_privacy_level")
       .eq("id", postId)
       .single();
     if (!postData) continue;

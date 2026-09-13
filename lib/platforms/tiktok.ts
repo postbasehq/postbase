@@ -52,6 +52,27 @@ export function defaultPrivacyLevel(): string {
   return process.env.TIKTOK_PRIVACY_LEVEL ?? "SELF_ONLY";
 }
 
+export const TIKTOK_PRIVACY_LEVELS = [
+  "PUBLIC_TO_EVERYONE",
+  "MUTUAL_FOLLOW_FRIENDS",
+  "FOLLOWER_OF_CREATOR",
+  "SELF_ONLY",
+] as const;
+
+/**
+ * Choose the privacy level to post with: honor the user's preference when the
+ * creator allows it, else fall back to SELF_ONLY (safe for unaudited apps), else
+ * the first allowed option.
+ */
+export function pickPrivacyLevel(options: string[] | undefined, preferred: string): string {
+  if (options && options.length > 0) {
+    if (options.includes(preferred)) return preferred;
+    if (options.includes("SELF_ONLY")) return "SELF_ONLY";
+    return options[0];
+  }
+  return preferred;
+}
+
 export function authorizeUrl(state: string, challenge: string): string {
   const p = new URLSearchParams({
     client_key: process.env.TIKTOK_CLIENT_KEY!,

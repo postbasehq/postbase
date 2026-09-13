@@ -17,6 +17,7 @@ type PostFormProps = {
     channelIds: string[];
     variants: Record<string, string>;
     media: { url: string; type: string }[];
+    tiktokPrivacy?: string;
   };
 };
 
@@ -36,6 +37,7 @@ export function PostForm({ channels, action, submitLabel, initial }: PostFormPro
         channels={channels}
         initialSelected={initial?.channelIds}
         initialVariants={initial?.variants}
+        initialTiktokPrivacy={initial?.tiktokPrivacy}
       />
 
       <ScheduleField defaultUtc={initial?.scheduledAt ?? null} />

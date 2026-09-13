@@ -6,6 +6,18 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
 
 const PLATFORMS = ["x", "linkedin", "instagram", "tiktok", "youtube"] as const;
+const TIKTOK_PRIVACY = [
+  "PUBLIC_TO_EVERYONE",
+  "MUTUAL_FOLLOW_FRIENDS",
+  "FOLLOWER_OF_CREATOR",
+  "SELF_ONLY",
+];
+
+/** Parse the TikTok privacy level, or null if absent/invalid (server default applies). */
+function parseTiktokPrivacy(formData: FormData): string | null {
+  const v = String(formData.get("tiktok_privacy_level") ?? "");
+  return TIKTOK_PRIVACY.includes(v) ? v : null;
+}
 
 /** Parse the composer's `thread` JSON field into non-empty, trimmed tweet segments. */
 function parseThread(formData: FormData): string[] {
@@ -110,6 +122,7 @@ export async function createPost(formData: FormData) {
       thread_tail: segments.slice(1),
       scheduled_at: scheduledAt,
       status,
+      tiktok_privacy_level: parseTiktokPrivacy(formData),
     })
     .select("id")
     .single();
@@ -172,7 +185,13 @@ export async function updatePost(formData: FormData) {
   // Update the post, scoped to the org, and confirm it was ours.
   const { data: updated, error } = await supabase
     .from("posts")
-    .update({ body: segments[0], thread_tail: segments.slice(1), scheduled_at: scheduledAt, status })
+    .update({
+      body: segments[0],
+      thread_tail: segments.slice(1),
+      scheduled_at: scheduledAt,
+      status,
+      tiktok_privacy_level: parseTiktokPrivacy(formData),
+    })
     .eq("id", postId)
     .eq("org_id", orgId)
     .select("id");

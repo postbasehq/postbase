@@ -7,8 +7,18 @@ const LABEL: Record<string, string> = {
   x: "X",
   linkedin: "LinkedIn",
   instagram: "Instagram",
+  tiktok: "TikTok",
   youtube: "YouTube",
 };
+
+// TikTok post visibility (value → label). SELF_ONLY is the safe default and the
+// only level unaudited apps can use.
+const TIKTOK_PRIVACY: { value: string; label: string }[] = [
+  { value: "PUBLIC_TO_EVERYONE", label: "Public" },
+  { value: "MUTUAL_FOLLOW_FRIENDS", label: "Friends" },
+  { value: "FOLLOWER_OF_CREATOR", label: "Followers" },
+  { value: "SELF_ONLY", label: "Only me" },
+];
 
 type Channel = { id: string; platform: string; handle: string | null };
 
@@ -21,14 +31,17 @@ export function ChannelSelect({
   channels,
   initialSelected = [],
   initialVariants = {},
+  initialTiktokPrivacy = "SELF_ONLY",
 }: {
   channels: Channel[];
   initialSelected?: string[];
   initialVariants?: Record<string, string>;
+  initialTiktokPrivacy?: string;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set(initialSelected));
   const [variants, setVariants] = useState<Record<string, string>>(initialVariants);
   const [open, setOpen] = useState<Set<string>>(new Set(Object.keys(initialVariants)));
+  const [tiktokPrivacy, setTiktokPrivacy] = useState<string>(initialTiktokPrivacy);
 
   if (channels.length === 0) {
     return (
@@ -65,6 +78,7 @@ export function ChannelSelect({
   };
 
   const selectedChannels = channels.filter((c) => selected.has(c.id));
+  const hasTiktok = selectedChannels.some((c) => c.platform === "tiktok");
   const variantsJson = JSON.stringify(
     Object.fromEntries(
       Object.entries(variants).filter(([k, v]) => selected.has(k) && v.trim()),
@@ -133,6 +147,28 @@ export function ChannelSelect({
             ),
           )}
         </div>
+      ) : null}
+
+      {hasTiktok ? (
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[13px] font-medium text-muted">TikTok privacy</span>
+          <select
+            value={tiktokPrivacy}
+            onChange={(e) => setTiktokPrivacy(e.target.value)}
+            className="max-w-[240px] rounded-xl border border-line bg-ground px-3 py-2.5 text-sm outline-none focus-visible:border-blue"
+          >
+            {TIKTOK_PRIVACY.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-muted">
+            Who can see this on TikTok. Until the app is approved by TikTok, posts publish
+            as “Only me”.
+          </span>
+          <input type="hidden" name="tiktok_privacy_level" value={tiktokPrivacy} />
+        </label>
       ) : null}
 
       {[...selected].map((id) => (
