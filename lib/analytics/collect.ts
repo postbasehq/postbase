@@ -14,9 +14,23 @@ import { getVideoStats, refreshTokens as ytRefresh } from "@/lib/platforms/youtu
  * Called by the cron poller alongside publishing; best-effort.
  */
 
-const STALE_HOURS = 6;
 const WINDOW_DAYS = 14;
 const BATCH = 25;
+const MIN_INTERVAL_MS = 15 * 60_000; // tightest refresh (fresh posts)
+
+// Refresh cadence tapers with post age — frequent while engagement is moving,
+// sparse later (keeps metered X reads cheap). Interval by age since publish.
+function refreshInterval(ageMs: number): number {
+  if (ageMs < 6 * 3600_000) return MIN_INTERVAL_MS; // < 6h: every 15 min
+  if (ageMs < 3 * 86400_000) return 3 * 3600_000; // < 3d: every 3h
+  return 12 * 3600_000; // else: every 12h
+}
+
+function isDue(scheduledAt: string | null, metricsAt: string | null): boolean {
+  if (!metricsAt) return true;
+  const age = Date.now() - (scheduledAt ? Date.parse(scheduledAt) : 0);
+  return Date.now() - Date.parse(metricsAt) >= refreshInterval(age);
+}
 
 type Channel = {
   id: string;
@@ -24,7 +38,13 @@ type Channel = {
   encrypted_tokens: string | null;
   token_expiry: string | null;
 };
-type Row = { id: string; platform_post_id: string | null; channels: Channel | null };
+type Row = {
+  id: string;
+  platform_post_id: string | null;
+  metrics_updated_at: string | null;
+  channels: Channel | null;
+  posts: { scheduled_at: string | null } | null;
+};
 type Tokens = { access_token: string; refresh_token?: string };
 
 function isExpiring(iso: string | null): boolean {
@@ -88,18 +108,21 @@ async function fetchMetrics(
 
 export async function refreshMetrics(): Promise<{ refreshed: number }> {
   const db = createAdminClient();
-  const staleIso = new Date(Date.now() - STALE_HOURS * 3600_000).toISOString();
+  const candidateIso = new Date(Date.now() - MIN_INTERVAL_MS).toISOString();
   const sinceIso = new Date(Date.now() - WINDOW_DAYS * 86400_000).toISOString();
 
+  // Candidates: published, recent, and stale past the tightest interval. The
+  // per-row `isDue` tapering below decides which actually get an API read.
   const { data } = await db
     .from("post_targets")
     .select(
-      "id, platform_post_id, channels(id, platform, encrypted_tokens, token_expiry), posts!inner(scheduled_at)",
+      "id, platform_post_id, metrics_updated_at, channels(id, platform, encrypted_tokens, token_expiry), posts!inner(scheduled_at)",
     )
     .eq("status", "published")
     .not("platform_post_id", "is", null)
     .gte("posts.scheduled_at", sinceIso)
-    .or(`metrics_updated_at.is.null,metrics_updated_at.lt.${staleIso}`)
+    .or(`metrics_updated_at.is.null,metrics_updated_at.lt.${candidateIso}`)
+    .order("metrics_updated_at", { ascending: true, nullsFirst: true })
     .limit(BATCH);
 
   const rows = (data ?? []) as unknown as Row[];
@@ -107,6 +130,8 @@ export async function refreshMetrics(): Promise<{ refreshed: number }> {
   let refreshed = 0;
 
   for (const r of rows) {
+    if (!isDue(r.posts?.scheduled_at ?? null, r.metrics_updated_at)) continue;
+
     const ch = r.channels;
     if (!ch?.platform || !ch.encrypted_tokens || !r.platform_post_id) {
       await db.from("post_targets").update({ metrics_updated_at: now }).eq("id", r.id);
