@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
+import { atChannelLimit } from "@/lib/billing-guard";
 
 const PLATFORMS = ["x", "linkedin", "instagram", "tiktok", "youtube"] as const;
 const TIKTOK_PRIVACY = [
@@ -81,6 +82,9 @@ export async function addChannel(formData: FormData) {
   const handle = String(formData.get("handle") ?? "").trim();
   if (!PLATFORMS.includes(platform as (typeof PLATFORMS)[number])) {
     throw new Error("Pick a valid platform.");
+  }
+  if (await atChannelLimit(supabase, orgId)) {
+    throw new Error("You’ve reached your plan’s channel limit. Upgrade in Billing to connect more.");
   }
 
   const { error } = await supabase.from("channels").insert({

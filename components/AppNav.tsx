@@ -9,7 +9,7 @@ const NAV = [
   { label: "Channels", href: "/channels" },
   { label: "Calendar", href: "/calendar" },
   { label: "MCP & API", href: "/api-keys" },
-  { label: "Settings", href: "/dashboard", soon: true },
+  { label: "Billing", href: "/billing" },
 ];
 
 export function AppNav() {
@@ -17,7 +17,7 @@ export function AppNav() {
   return (
     <nav className="flex flex-1 flex-col gap-0.5 p-3">
       {NAV.map((item) => {
-        const active = !item.soon && pathname === item.href;
+        const active = pathname === item.href;
         return (
           <Link
             key={item.label}
@@ -29,11 +29,6 @@ export function AppNav() {
             }`}
           >
             {item.label}
-            {item.soon ? (
-              <span className="rounded-full border border-line px-1.5 text-[10px] text-muted">
-                soon
-              </span>
-            ) : null}
           </Link>
         );
       })}

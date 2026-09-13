@@ -32,6 +32,7 @@ const ERRORS: Record<string, string> = {
   tt_connect_failed: "Connecting TikTok failed — please try again.",
   save_failed: "Couldn’t save the channel — please try again.",
   no_workspace: "No workspace found for your account.",
+  channel_limit: "You’ve reached your plan’s channel limit. Upgrade in Billing to connect more.",
 };
 
 export default async function ChannelsPage({

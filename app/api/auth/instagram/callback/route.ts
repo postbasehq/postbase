@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
+import { atChannelLimit } from "@/lib/billing-guard";
 import { encryptJson } from "@/lib/crypto";
 import { exchangeCode, longLivedToken, resolveInstagram, type MetaTokens } from "@/lib/platforms/meta";
 
@@ -67,6 +68,8 @@ export async function GET(request: Request) {
       .eq("platform", "instagram")
       .eq("handle", handle)
       .maybeSingle();
+
+    if (!existing && (await atChannelLimit(supabase, orgId))) return fail("channel_limit");
 
     const { error } = existing
       ? await supabase.from("channels").update(fields).eq("id", existing.id)
