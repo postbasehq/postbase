@@ -10,6 +10,7 @@ const NAV = [
   { label: "Calendar", href: "/calendar" },
   { label: "Analytics", href: "/analytics" },
   { label: "MCP & API", href: "/api-keys" },
+  { label: "Team", href: "/team" },
   { label: "Billing", href: "/billing" },
 ];
 

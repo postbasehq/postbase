@@ -65,6 +65,14 @@ export const CHANNEL_LIMIT: Record<PlanId, number> = {
   growth: 50,
 };
 
+// Seats (org members, incl. pending invites) by plan.
+export const SEAT_LIMIT: Record<PlanId, number> = {
+  trial: 1,
+  creator: 1,
+  team: 5,
+  growth: 15,
+};
+
 // Statuses that grant access to the product (trialing counts).
 const ACTIVE_STATUSES = new Set(["trialing", "active", "past_due"]);
 

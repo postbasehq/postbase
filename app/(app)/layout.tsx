@@ -3,8 +3,11 @@ import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AppNav } from "@/components/AppNav";
+import { OrgSwitcher } from "@/components/OrgSwitcher";
 import { TimezoneSync } from "@/components/TimezoneSync";
 import { createClient } from "@/lib/supabase/server";
+import { getUserOrgs, getCurrentOrgId } from "@/lib/org";
+import { setActiveOrg } from "./team-actions";
 
 export default async function AppLayout({
   children,
@@ -23,6 +26,8 @@ export default async function AppLayout({
     redirect("/login");
   }
 
+  const [orgs, activeId] = await Promise.all([getUserOrgs(), getCurrentOrgId()]);
+
   return (
     <div className="flex min-h-dvh">
       <TimezoneSync />
@@ -31,6 +36,7 @@ export default async function AppLayout({
         <div className="flex h-16 items-center border-b border-line px-5">
           <Logo />
         </div>
+        <OrgSwitcher orgs={orgs} activeId={activeId} action={setActiveOrg} />
         <AppNav />
         <div className="border-t border-line p-3 text-xs text-muted">
           <div className="truncate px-3 py-1">{email}</div>
