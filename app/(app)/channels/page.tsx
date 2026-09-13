@@ -86,20 +86,10 @@ export default async function ChannelsPage({
         </a>
       </div>
 
-      {/* connect Facebook (real OAuth via Facebook Login) */}
-      <div className="mt-4 flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sm">
-        <span className="size-2.5 rounded-full bg-blue" />
-        <div>
-          <div className="text-sm font-semibold">Facebook</div>
-          <div className="text-xs text-muted">Publish to a Facebook Page you manage.</div>
-        </div>
-        <a
-          href="/api/connect/facebook"
-          className="ml-auto rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
-        >
-          Connect Facebook
-        </a>
-      </div>
+      {/* Facebook Page publishing is built (adapter, OAuth routes, collector) but
+          parked: pages_manage_posts requires Meta Advanced Access, gated behind
+          Business Verification + App Review. Re-enable the connect card below once
+          the app clears App Review. */}
 
       {/* connect Instagram (real OAuth via Facebook Login) */}
       <div className="mt-4 flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sm">
