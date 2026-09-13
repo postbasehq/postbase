@@ -8,7 +8,13 @@ import {
   createVideoContainer,
   publishContainer,
   waitForContainer,
+  postPageFeed,
+  postPagePhoto,
+  uploadUnpublishedPhoto,
+  postPageWithPhotos,
+  postPageVideo,
   type MetaTokens,
+  type FacebookTokens,
 } from "@/lib/platforms/meta";
 import {
   createPost as liCreatePost,
@@ -42,7 +48,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
  * (docs/TECH_STACK.md §4). Each adapter posts via that platform's API using the
  * channel's stored (encrypted) OAuth tokens.
  *
- * X, Instagram, LinkedIn, TikTok, and YouTube are all live.
+ * X, Instagram, Facebook, LinkedIn, TikTok, and YouTube are all live.
  */
 
 export type MediaItem = { url: string; type: string };
@@ -427,6 +433,46 @@ async function publishToYouTube(input: PublishInput): Promise<PublishResult> {
   }
 }
 
+async function publishToFacebook(input: PublishInput): Promise<PublishResult> {
+  if (!input.encryptedTokens) return { ok: false, error: "Facebook Page not connected." };
+
+  let tokens: FacebookTokens;
+  try {
+    tokens = decryptJson<FacebookTokens>(input.encryptedTokens);
+  } catch (e) {
+    return {
+      ok: false,
+      error: `Could not read stored Facebook credentials: ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+
+  const message = [input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean).join("\n\n");
+  const images = input.media.filter((m) => m.type.startsWith("image/"));
+  const videos = input.media.filter((m) => m.type.startsWith("video/"));
+  const { access_token: token, page_id: pageId } = tokens;
+
+  try {
+    let id: string;
+    if (videos.length > 0) {
+      id = await postPageVideo(token, pageId, videos[0].url, message);
+    } else if (images.length === 1) {
+      id = await postPagePhoto(token, pageId, images[0].url, message);
+    } else if (images.length > 1) {
+      const fbids: string[] = [];
+      for (const img of images.slice(0, 10)) {
+        fbids.push(await uploadUnpublishedPhoto(token, pageId, img.url));
+      }
+      id = await postPageWithPhotos(token, pageId, message, fbids);
+    } else {
+      if (!message) return { ok: false, error: "Facebook post is empty." };
+      id = await postPageFeed(token, pageId, message);
+    }
+    return { ok: true, platformPostId: id };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Facebook publish failed." };
+  }
+}
+
 export async function publish(input: PublishInput): Promise<PublishResult> {
   if (!input.body.trim()) {
     return { ok: false, error: "Post body is empty." };
@@ -439,6 +485,8 @@ export async function publish(input: PublishInput): Promise<PublishResult> {
       return publishToLinkedIn(input);
     case "instagram":
       return publishToInstagram(input);
+    case "facebook":
+      return publishToFacebook(input);
     case "tiktok":
       return publishToTikTok(input);
     case "youtube":

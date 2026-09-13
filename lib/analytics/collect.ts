@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decryptJson, encryptJson } from "@/lib/crypto";
 import { getTweetMetrics, refreshTokens as xRefresh } from "@/lib/platforms/x";
-import { getMediaInsights } from "@/lib/platforms/meta";
+import { getMediaInsights, getPagePostMetrics } from "@/lib/platforms/meta";
 import { getSocialActions, refreshTokens as liRefresh } from "@/lib/platforms/linkedin";
 import { getVideoMetrics, refreshTokens as ttRefresh } from "@/lib/platforms/tiktok";
 import { getVideoStats, refreshTokens as ytRefresh } from "@/lib/platforms/youtube";
@@ -54,7 +54,12 @@ function isExpiring(iso: string | null): boolean {
 /** Return a valid access token, refreshing + persisting short-lived ones if needed. */
 async function ensureToken(db: SupabaseClient, ch: Channel, tokens: Tokens): Promise<string> {
   // Instagram/Facebook Page tokens are long-lived — no refresh.
-  if (ch.platform === "instagram" || !tokens.refresh_token || !isExpiring(ch.token_expiry)) {
+  if (
+    ch.platform === "instagram" ||
+    ch.platform === "facebook" ||
+    !tokens.refresh_token ||
+    !isExpiring(ch.token_expiry)
+  ) {
     return tokens.access_token;
   }
   let refreshed: { access_token?: string; refresh_token?: string; expires_in?: number };
@@ -95,6 +100,8 @@ async function fetchMetrics(
       return getTweetMetrics(token, postId);
     case "instagram":
       return getMediaInsights(token, postId);
+    case "facebook":
+      return getPagePostMetrics(token, postId);
     case "linkedin":
       return getSocialActions(token, postId);
     case "tiktok":

@@ -46,12 +46,24 @@ export function metaConfigured(): boolean {
   );
 }
 
-export function authorizeUrl(state: string): string {
+// Facebook Page publishing scopes (reuses the same Meta app / Facebook Login).
+// pages_manage_posts must be added to the app's permissions to be granted.
+export const FACEBOOK_SCOPES = [
+  "pages_show_list",
+  "pages_read_engagement",
+  "pages_manage_posts",
+  "business_management",
+];
+
+export function authorizeUrl(
+  state: string,
+  opts?: { redirectUri?: string; scopes?: string[] },
+): string {
   const p = new URLSearchParams({
     client_id: process.env.META_APP_ID!,
-    redirect_uri: process.env.META_CALLBACK_URL!,
+    redirect_uri: opts?.redirectUri ?? process.env.META_CALLBACK_URL!,
     state,
-    scope: SCOPES.join(","),
+    scope: (opts?.scopes ?? SCOPES).join(","),
     response_type: "code",
   });
   return `https://www.facebook.com/${version()}/dialog/oauth?${p.toString()}`;
@@ -69,11 +81,11 @@ async function graphJson<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 /** Exchange an OAuth code for a short-lived user access token. */
-export async function exchangeCode(code: string): Promise<string> {
+export async function exchangeCode(code: string, redirectUri?: string): Promise<string> {
   const p = new URLSearchParams({
     client_id: process.env.META_APP_ID!,
     client_secret: process.env.META_APP_SECRET!,
-    redirect_uri: process.env.META_CALLBACK_URL!,
+    redirect_uri: redirectUri ?? process.env.META_CALLBACK_URL!,
     code,
   });
   const json = await graphJson<{ access_token?: string }>(`${graph()}/oauth/access_token?${p}`);
@@ -136,6 +148,122 @@ function form(params: Record<string, string>): RequestInit {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams(params).toString(),
+  };
+}
+
+/* ── Facebook Page publishing ─────────────────────────────────────────────── */
+
+export type FacebookTokens = {
+  access_token: string; // long-lived Page access token
+  page_id: string;
+  page_name?: string;
+};
+
+/** List the Facebook Pages the user manages, with their (long-lived) tokens. */
+export async function resolvePages(
+  userToken: string,
+): Promise<{ id: string; name: string; access_token: string }[]> {
+  const p = new URLSearchParams({ fields: "id,name,access_token", access_token: userToken });
+  const json = await graphJson<{
+    data?: { id: string; name: string; access_token: string }[];
+  }>(`${graph()}/me/accounts?${p}`);
+  return json.data ?? [];
+}
+
+/** Publish a text post to a Page feed. Returns the post id. */
+export async function postPageFeed(pageToken: string, pageId: string, message: string): Promise<string> {
+  const json = await graphJson<{ id?: string }>(
+    `${graph()}/${pageId}/feed`,
+    form({ message, access_token: pageToken }),
+  );
+  if (!json.id) throw new Error("Facebook feed post returned no id.");
+  return json.id;
+}
+
+/** Publish a single photo (with caption) to a Page. Returns the post id. */
+export async function postPagePhoto(
+  pageToken: string,
+  pageId: string,
+  imageUrl: string,
+  caption: string,
+): Promise<string> {
+  const json = await graphJson<{ id?: string; post_id?: string }>(
+    `${graph()}/${pageId}/photos`,
+    form({ url: imageUrl, caption, access_token: pageToken }),
+  );
+  const id = json.post_id ?? json.id;
+  if (!id) throw new Error("Facebook photo post returned no id.");
+  return id;
+}
+
+/** Upload an unpublished photo (for a multi-photo post). Returns the media id. */
+export async function uploadUnpublishedPhoto(
+  pageToken: string,
+  pageId: string,
+  imageUrl: string,
+): Promise<string> {
+  const json = await graphJson<{ id?: string }>(
+    `${graph()}/${pageId}/photos`,
+    form({ url: imageUrl, published: "false", access_token: pageToken }),
+  );
+  if (!json.id) throw new Error("Facebook photo upload returned no id.");
+  return json.id;
+}
+
+/** Publish a feed post with attached (already-uploaded) photos. */
+export async function postPageWithPhotos(
+  pageToken: string,
+  pageId: string,
+  message: string,
+  mediaFbids: string[],
+): Promise<string> {
+  const params: Record<string, string> = { message, access_token: pageToken };
+  mediaFbids.forEach((id, i) => {
+    params[`attached_media[${i}]`] = JSON.stringify({ media_fbid: id });
+  });
+  const json = await graphJson<{ id?: string }>(`${graph()}/${pageId}/feed`, form(params));
+  if (!json.id) throw new Error("Facebook post returned no id.");
+  return json.id;
+}
+
+/** Publish a video to a Page (Facebook fetches the URL). Returns the video/post id. */
+export async function postPageVideo(
+  pageToken: string,
+  pageId: string,
+  videoUrl: string,
+  description: string,
+): Promise<string> {
+  const json = await graphJson<{ id?: string }>(
+    `${graph()}/${pageId}/videos`,
+    form({ file_url: videoUrl, description, access_token: pageToken }),
+  );
+  if (!json.id) throw new Error("Facebook video post returned no id.");
+  return json.id;
+}
+
+/** Page post metrics (normalized): impressions, likes (reactions), comments, shares. */
+export async function getPagePostMetrics(
+  pageToken: string,
+  postId: string,
+): Promise<Record<string, number>> {
+  const p = new URLSearchParams({
+    fields:
+      "reactions.summary(true).limit(0),comments.summary(true).limit(0),shares,insights.metric(post_impressions)",
+    access_token: pageToken,
+  });
+  const json = await graphJson<{
+    reactions?: { summary?: { total_count?: number } };
+    comments?: { summary?: { total_count?: number } };
+    shares?: { count?: number };
+    insights?: { data?: { name: string; values?: { value?: number }[] }[] };
+  }>(`${graph()}/${postId}?${p}`);
+  const impressions =
+    json.insights?.data?.find((d) => d.name === "post_impressions")?.values?.[0]?.value ?? 0;
+  return {
+    impressions,
+    likes: json.reactions?.summary?.total_count ?? 0,
+    comments: json.comments?.summary?.total_count ?? 0,
+    shares: json.shares?.count ?? 0,
   };
 }
 

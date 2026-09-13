@@ -20,6 +20,7 @@ type PlatformMeta = {
 
 const PLATFORM: Record<string, PlatformMeta> = {
   x: { label: "X", dot: "bg-ink", limit: 280, thread: true },
+  facebook: { label: "Facebook", dot: "bg-blue", limit: 63206 },
   linkedin: { label: "LinkedIn", dot: "bg-blue", limit: 3000 },
   instagram: { label: "Instagram", dot: "bg-terra", limit: 2200, needsMedia: true },
   tiktok: { label: "TikTok", dot: "bg-ink", limit: 2200, needsMedia: true, prefersVideo: true },

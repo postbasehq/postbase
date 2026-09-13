@@ -16,6 +16,7 @@ const STATUS: Record<string, { cls: string; dot: string; label: string }> = {
 
 const PLATFORM_LABEL: Record<string, string> = {
   x: "X",
+  facebook: "Facebook",
   linkedin: "LinkedIn",
   instagram: "Instagram",
   tiktok: "TikTok",

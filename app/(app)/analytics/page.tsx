@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const PLATFORM_LABEL: Record<string, string> = {
   x: "X",
+  facebook: "Facebook",
   instagram: "Instagram",
   linkedin: "LinkedIn",
   tiktok: "TikTok",

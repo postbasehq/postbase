@@ -4,6 +4,7 @@ import { DisconnectButton } from "@/components/DisconnectButton";
 
 const PLATFORM_META: Record<string, { label: string; dot: string }> = {
   x: { label: "X", dot: "bg-ink" },
+  facebook: { label: "Facebook", dot: "bg-blue" },
   linkedin: { label: "LinkedIn", dot: "bg-blue" },
   instagram: { label: "Instagram", dot: "bg-terra" },
   tiktok: { label: "TikTok", dot: "bg-ink" },
@@ -16,6 +17,7 @@ const CONNECTED_LABEL: Record<string, string> = {
   linkedin: "LinkedIn account connected.",
   tiktok: "TikTok account connected.",
   youtube: "YouTube channel connected.",
+  facebook: "Facebook Page connected.",
 };
 
 const ERRORS: Record<string, string> = {
@@ -31,6 +33,9 @@ const ERRORS: Record<string, string> = {
   tt_connect_failed: "Connecting TikTok failed — please try again.",
   yt_not_configured: "YouTube isn’t configured on this server yet (missing Google app keys).",
   yt_connect_failed: "Connecting YouTube failed — please try again.",
+  fb_not_configured: "Facebook isn’t configured on this server yet (missing Meta app keys).",
+  fb_connect_failed: "Connecting Facebook failed — please try again.",
+  fb_no_page: "No Facebook Page found on your account. Create a Page, then reconnect.",
   save_failed: "Couldn’t save the channel — please try again.",
   no_workspace: "No workspace found for your account.",
   channel_limit: "You’ve reached your plan’s channel limit. Upgrade in Billing to connect more.",
@@ -78,6 +83,21 @@ export default async function ChannelsPage({
           className="ml-auto rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
         >
           Connect X
+        </a>
+      </div>
+
+      {/* connect Facebook (real OAuth via Facebook Login) */}
+      <div className="mt-4 flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sm">
+        <span className="size-2.5 rounded-full bg-blue" />
+        <div>
+          <div className="text-sm font-semibold">Facebook</div>
+          <div className="text-xs text-muted">Publish to a Facebook Page you manage.</div>
+        </div>
+        <a
+          href="/api/connect/facebook"
+          className="ml-auto rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
+        >
+          Connect Facebook
         </a>
       </div>
 
