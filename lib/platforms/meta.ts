@@ -16,6 +16,7 @@
 const SCOPES = [
   "instagram_basic",
   "instagram_content_publish",
+  "instagram_manage_insights", // read post metrics (analytics) — reconnect to grant
   "pages_show_list",
   "pages_read_engagement",
   "business_management",
