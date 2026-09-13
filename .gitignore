@@ -62,3 +62,4 @@ pnpm-debug.log*
 # Windows
 Thumbs.db
 Desktop.ini
+.next-verify/
