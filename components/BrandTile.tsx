@@ -34,7 +34,7 @@ export const BRANDS: Record<string, Brand> = {
 export function BrandTile({
   platform,
   size = 56,
-  radius = 16,
+  radius = 11,
 }: {
   platform: string;
   size?: number;
