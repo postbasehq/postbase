@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { addChannel } from "../actions";
+import { addChannel, disconnectChannel } from "../actions";
+import { DisconnectButton } from "@/components/DisconnectButton";
 
 const PLATFORM_META: Record<string, { label: string; dot: string }> = {
   x: { label: "X", dot: "bg-ink" },
@@ -187,6 +188,11 @@ export default async function ChannelsPage({
                 <span className="ml-auto rounded-full border border-line px-2.5 py-1 text-xs font-medium text-muted">
                   {c.status === "active" ? "Connected" : c.status === "stub" ? "Stub" : c.status}
                 </span>
+                <DisconnectButton
+                  action={disconnectChannel}
+                  channelId={c.id}
+                  label={`${meta.label}${c.handle ? ` (${c.handle})` : ""}`}
+                />
               </div>
             );
           })

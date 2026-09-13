@@ -99,6 +99,28 @@ export async function addChannel(formData: FormData) {
   revalidatePath("/composer");
 }
 
+/** Disconnect a channel — removes it (and its per-channel history) from the org. */
+export async function disconnectChannel(formData: FormData) {
+  const supabase = await createClient();
+  const orgId = await getCurrentOrgId();
+  if (!orgId) throw new Error("No workspace found for this user.");
+
+  const channelId = String(formData.get("channel_id") ?? "");
+  if (!channelId) throw new Error("Missing channel id.");
+
+  // Scoped to the caller's org (RLS + explicit check). post_targets cascade-delete.
+  const { error } = await supabase
+    .from("channels")
+    .delete()
+    .eq("id", channelId)
+    .eq("org_id", orgId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/channels");
+  revalidatePath("/composer");
+  revalidatePath("/dashboard");
+}
+
 /** Create a post targeting the selected channels, scheduled or draft. */
 export async function createPost(formData: FormData) {
   const supabase = await createClient();
