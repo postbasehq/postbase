@@ -2,6 +2,7 @@
   "name": "postbase",
   "version": "0.1.0",
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "description": "The social scheduler even your AI can run.",
   "scripts": {
     "dev": "next dev",
