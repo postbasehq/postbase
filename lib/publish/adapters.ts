@@ -365,8 +365,9 @@ async function publishToTikTok(input: PublishInput): Promise<PublishResult> {
       );
     }
 
-    await waitForPublish(tokens.access_token, publishId);
-    return { ok: true, platformPostId: publishId };
+    const finished = await waitForPublish(tokens.access_token, publishId);
+    // Prefer the real post id (lets us read metrics later); fall back to publish id.
+    return { ok: true, platformPostId: finished.postId ?? publishId };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "TikTok publish failed." };
   }

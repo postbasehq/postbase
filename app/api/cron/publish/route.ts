@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { publishDuePosts } from "@/lib/publish/run";
+import { refreshMetrics } from "@/lib/analytics/collect";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -16,5 +17,12 @@ export async function GET(req: Request) {
   }
 
   const { processed } = await publishDuePosts();
-  return NextResponse.json({ ok: true, processed });
+  // Refresh engagement metrics for recently published posts (bounded internally).
+  let refreshed = 0;
+  try {
+    ({ refreshed } = await refreshMetrics());
+  } catch {
+    // Metrics are best-effort; never fail the publish cron over them.
+  }
+  return NextResponse.json({ ok: true, processed, refreshed });
 }

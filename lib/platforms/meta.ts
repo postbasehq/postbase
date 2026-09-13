@@ -196,6 +196,29 @@ export async function publishContainer(
   return json.id;
 }
 
+/** Instagram media insights (normalized). Free via the Graph API. */
+export async function getMediaInsights(
+  accessToken: string,
+  mediaId: string,
+): Promise<Record<string, number>> {
+  const p = new URLSearchParams({
+    metric: "reach,likes,comments,saved,shares",
+    access_token: accessToken,
+  });
+  const json = await graphJson<{ data?: { name: string; values?: { value?: number }[] }[] }>(
+    `${graph()}/${mediaId}/insights?${p}`,
+  );
+  const by: Record<string, number> = {};
+  for (const d of json.data ?? []) by[d.name] = d.values?.[0]?.value ?? 0;
+  return {
+    impressions: by.reach ?? 0,
+    likes: by.likes ?? 0,
+    comments: by.comments ?? 0,
+    saves: by.saved ?? 0,
+    shares: by.shares ?? 0,
+  };
+}
+
 /** Poll a container until it's FINISHED (needed for video; images are usually instant). */
 export async function waitForContainer(
   token: string,

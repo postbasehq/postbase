@@ -21,7 +21,9 @@ import crypto from "node:crypto";
 const AUTHORIZE_URL = "https://www.tiktok.com/v2/auth/authorize/";
 const TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/";
 const API = "https://open.tiktokapis.com/v2";
-const SCOPES = ["user.info.basic", "video.publish"];
+// video.list is needed to read post metrics (analytics). Existing connections
+// must reconnect to grant it.
+const SCOPES = ["user.info.basic", "video.publish", "video.list"];
 
 /**
  * TikTok OAuth requires PKCE. Note: TikTok uses a **hex-encoded** SHA-256 of the
@@ -258,27 +260,55 @@ export async function initPhotoPost(
   return data.publish_id;
 }
 
-/** Poll a publish job until it completes. Returns the final status. */
+/**
+ * Poll a publish job until it completes. Returns the final status and, when
+ * available, the published post id (used later to read metrics).
+ */
 export async function waitForPublish(
   accessToken: string,
   publishId: string,
   { tries = 20, delayMs = 3000 }: { tries?: number; delayMs?: number } = {},
-): Promise<string> {
+): Promise<{ status: string; postId?: string }> {
   for (let i = 0; i < tries; i++) {
-    const data = await tiktokJson<{ status: string; fail_reason?: string }>(
-      `${API}/post/publish/status/fetch/`,
-      {
-        method: "POST",
-        headers: authHeaders(accessToken),
-        body: JSON.stringify({ publish_id: publishId }),
-      },
-    );
-    if (data.status === "PUBLISH_COMPLETE") return data.status;
+    const data = await tiktokJson<{
+      status: string;
+      fail_reason?: string;
+      publicaly_available_post_id?: string[];
+    }>(`${API}/post/publish/status/fetch/`, {
+      method: "POST",
+      headers: authHeaders(accessToken),
+      body: JSON.stringify({ publish_id: publishId }),
+    });
+    if (data.status === "PUBLISH_COMPLETE") {
+      return { status: data.status, postId: data.publicaly_available_post_id?.[0] };
+    }
     if (data.status === "FAILED") {
       throw new Error(`TikTok publish failed: ${data.fail_reason ?? "unknown"}`);
     }
     await new Promise((r) => setTimeout(r, delayMs));
   }
   // Still processing — TikTok will finish server-side; treat as accepted.
-  return "PROCESSING";
+  return { status: "PROCESSING" };
+}
+
+/** Video metrics (normalized) via the video query API. Needs the video.list scope. */
+export async function getVideoMetrics(
+  accessToken: string,
+  videoId: string,
+): Promise<Record<string, number>> {
+  const data = await tiktokJson<{
+    videos?: { like_count?: number; comment_count?: number; share_count?: number; view_count?: number }[];
+  }>(`${API}/video/query/?fields=like_count,comment_count,share_count,view_count`, {
+    method: "POST",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify({ filters: { video_ids: [videoId] } }),
+  });
+  const v = data.videos?.[0];
+  if (!v) throw new Error("No TikTok video metrics returned.");
+  return {
+    impressions: v.view_count ?? 0,
+    likes: v.like_count ?? 0,
+    comments: v.comment_count ?? 0,
+    shares: v.share_count ?? 0,
+  };
 }

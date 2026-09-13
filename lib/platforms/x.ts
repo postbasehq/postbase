@@ -146,6 +146,38 @@ export async function postTweet(
   return { id: json.data.id };
 }
 
+/** Public engagement metrics for a tweet (normalized). Note: X reads are metered. */
+export async function getTweetMetrics(
+  accessToken: string,
+  tweetId: string,
+): Promise<Record<string, number>> {
+  const res = await fetch(`${API}/tweets/${tweetId}?tweet.fields=public_metrics`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const json = (await res.json()) as {
+    data?: {
+      public_metrics?: {
+        impression_count?: number;
+        like_count?: number;
+        reply_count?: number;
+        retweet_count?: number;
+        quote_count?: number;
+        bookmark_count?: number;
+      };
+    };
+    detail?: string;
+  };
+  const m = json.data?.public_metrics;
+  if (!res.ok || !m) throw new Error(json.detail ?? `X metrics error ${res.status}`);
+  return {
+    impressions: m.impression_count ?? 0,
+    likes: m.like_count ?? 0,
+    comments: m.reply_count ?? 0,
+    shares: (m.retweet_count ?? 0) + (m.quote_count ?? 0),
+    saves: m.bookmark_count ?? 0,
+  };
+}
+
 /** Post a thread as a reply chain; media (if any) attaches to the first tweet. */
 export async function postThread(
   accessToken: string,

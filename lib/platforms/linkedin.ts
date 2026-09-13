@@ -144,6 +144,29 @@ export function escapeCommentary(text: string): string {
   return text.replace(/[\\<>#~@|{}[\]()*_]/g, (c) => `\\${c}`);
 }
 
+/**
+ * Engagement counts for a post (likes + comments). LinkedIn doesn't expose member-post
+ * impressions via API, so those stay unavailable. Best-effort — degrades on error.
+ */
+export async function getSocialActions(
+  accessToken: string,
+  shareUrn: string,
+): Promise<Record<string, number>> {
+  const res = await fetch(`${API}/v2/socialActions/${encodeURIComponent(shareUrn)}`, {
+    headers: { Authorization: `Bearer ${accessToken}`, "X-Restli-Protocol-Version": "2.0.0" },
+  });
+  const json = (await res.json()) as {
+    likesSummary?: { totalLikes?: number };
+    commentsSummary?: { aggregatedTotalComments?: number };
+    message?: string;
+  };
+  if (!res.ok) throw new Error(json.message ?? `LinkedIn socialActions error ${res.status}`);
+  return {
+    likes: json.likesSummary?.totalLikes ?? 0,
+    comments: json.commentsSummary?.aggregatedTotalComments ?? 0,
+  };
+}
+
 /** Create a member post (text, single image, or multi-image). Returns the post URN. */
 export async function createPost(
   accessToken: string,
