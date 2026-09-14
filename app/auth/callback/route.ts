@@ -6,9 +6,9 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   // Only allow same-origin relative redirects (no open redirect via ?next=).
-  const nextParam = searchParams.get("next") ?? "/dashboard";
+  const nextParam = searchParams.get("next") ?? "/calendar";
   const next =
-    nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/dashboard";
+    nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/calendar";
 
   if (code) {
     const supabase = await createClient();

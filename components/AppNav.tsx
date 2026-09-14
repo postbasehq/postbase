@@ -4,10 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV = [
+  { label: "Calendar", href: "/calendar" },
   { label: "Dashboard", href: "/dashboard" },
   { label: "Composer", href: "/composer" },
   { label: "Channels", href: "/channels" },
-  { label: "Calendar", href: "/calendar" },
   { label: "Analytics", href: "/analytics" },
   { label: "MCP & API", href: "/api-keys" },
   { label: "Team", href: "/team" },

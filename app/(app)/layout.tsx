@@ -5,6 +5,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { AppNav } from "@/components/AppNav";
 import { OrgSwitcher } from "@/components/OrgSwitcher";
 import { TimezoneSync } from "@/components/TimezoneSync";
+import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { createClient } from "@/lib/supabase/server";
 import { getUserOrgs, getCurrentOrgId } from "@/lib/org";
 import { setActiveOrg } from "./team-actions";
@@ -28,13 +29,30 @@ export default async function AppLayout({
 
   const [orgs, activeId] = await Promise.all([getUserOrgs(), getCurrentOrgId()]);
 
+  // First-run onboarding: show the welcome wizard on any app page until finished.
+  let onboarding: { show: boolean; connected: string[] } = { show: false, connected: [] };
+  if (activeId) {
+    const supabase = await createClient();
+    const [{ data: org }, { data: channels }] = await Promise.all([
+      supabase.from("orgs").select("onboarded_at").eq("id", activeId).maybeSingle(),
+      supabase.from("channels").select("platform"),
+    ]);
+    if (org && org.onboarded_at === null) {
+      onboarding = {
+        show: true,
+        connected: Array.from(new Set((channels ?? []).map((c) => c.platform))),
+      };
+    }
+  }
+
   return (
     <div className="flex min-h-dvh">
       <TimezoneSync />
+      {onboarding.show ? <OnboardingWizard connected={onboarding.connected} /> : null}
       {/* sidebar */}
       <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-surface md:flex">
         <div className="flex h-16 items-center border-b border-line px-5">
-          <Logo />
+          <Logo href="/calendar" />
         </div>
         <OrgSwitcher orgs={orgs} activeId={activeId} action={setActiveOrg} />
         <AppNav />
