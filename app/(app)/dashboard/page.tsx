@@ -23,6 +23,7 @@ const PLATFORM_LABEL: Record<string, string> = {
   tiktok: "TikTok",
   youtube: "YouTube",
   bluesky: "Bluesky",
+  mastodon: "Mastodon",
 };
 
 type TargetRow = {

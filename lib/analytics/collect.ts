@@ -7,6 +7,7 @@ import { getSocialActions, refreshTokens as liRefresh } from "@/lib/platforms/li
 import { getVideoMetrics, refreshTokens as ttRefresh } from "@/lib/platforms/tiktok";
 import { getVideoStats, refreshTokens as ytRefresh } from "@/lib/platforms/youtube";
 import { getPostMetrics as bskyMetrics, type BlueskyTokens } from "@/lib/platforms/bluesky";
+import { getPostMetrics as mastoMetrics, type MastodonTokens } from "@/lib/platforms/mastodon";
 
 /**
  * Metrics collector — refreshes normalized engagement metrics for recently
@@ -113,6 +114,9 @@ async function fetchMetrics(
     case "bluesky":
       // Bluesky re-mints a session from the stored app password (no bearer token).
       return bskyMetrics(tokens as unknown as BlueskyTokens, postId);
+    case "mastodon":
+      // Mastodon uses the stored instance + access token directly.
+      return mastoMetrics(tokens as unknown as MastodonTokens, postId);
     default:
       throw new Error(`No metrics collector for ${platform}`);
   }

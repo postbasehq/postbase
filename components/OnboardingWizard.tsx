@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrandTile, BRANDS } from "@/components/BrandTile";
 import { BlueskyForm } from "@/components/BlueskyForm";
+import { MastodonForm } from "@/components/MastodonForm";
 import { completeOnboarding } from "@/app/(app)/onboarding-actions";
 import { createApiKey } from "@/app/(app)/apikey-actions";
 
@@ -186,7 +187,9 @@ function StepChannels({
   refresh: () => void | Promise<void>;
 }) {
   const [bskyOpen, setBskyOpen] = useState(false);
+  const [mastoOpen, setMastoOpen] = useState(false);
   const bskyConnected = connected.includes("bluesky");
+  const mastoConnected = connected.includes("mastodon");
   return (
     <div>
       <h2 className="text-center font-display text-2xl font-semibold tracking-[-0.01em]">
@@ -231,7 +234,7 @@ function StepChannels({
 
         {/* Bluesky — form-based connect (no OAuth popup) */}
         <button
-          onClick={() => !bskyConnected && setBskyOpen((v) => !v)}
+          onClick={() => !bskyConnected && (setBskyOpen((v) => !v), setMastoOpen(false))}
           disabled={bskyConnected}
           className={`group relative flex flex-col items-center gap-2.5 rounded-2xl border p-5 transition ${
             bskyConnected
@@ -254,6 +257,32 @@ function StepChannels({
             <span className="text-xs text-muted group-hover:text-blue-ink">Connect</span>
           )}
         </button>
+
+        {/* Mastodon — form-based connect (no OAuth popup) */}
+        <button
+          onClick={() => !mastoConnected && (setMastoOpen((v) => !v), setBskyOpen(false))}
+          disabled={mastoConnected}
+          className={`group relative flex flex-col items-center gap-2.5 rounded-2xl border p-5 transition ${
+            mastoConnected
+              ? "border-green/40 bg-green/[0.06]"
+              : mastoOpen
+                ? "border-blue bg-surface"
+                : "border-line bg-surface hover:border-blue hover:shadow-sm"
+          }`}
+        >
+          <BrandTile platform="mastodon" size={52} />
+          <span className="font-display text-sm font-semibold">Mastodon</span>
+          {mastoConnected ? (
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-green">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+              Connected
+            </span>
+          ) : (
+            <span className="text-xs text-muted group-hover:text-blue-ink">Connect</span>
+          )}
+        </button>
       </div>
 
       {/* Bluesky inline connect form */}
@@ -265,6 +294,19 @@ function StepChannels({
               refresh();
             }}
             onCancel={() => setBskyOpen(false)}
+          />
+        </div>
+      ) : null}
+
+      {/* Mastodon inline connect form */}
+      {mastoOpen && !mastoConnected ? (
+        <div className="mx-auto mt-4 max-w-lg rounded-2xl border border-line bg-surface-2/40 p-4">
+          <MastodonForm
+            onConnected={() => {
+              setMastoOpen(false);
+              refresh();
+            }}
+            onCancel={() => setMastoOpen(false)}
           />
         </div>
       ) : null}

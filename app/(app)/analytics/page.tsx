@@ -8,6 +8,7 @@ const PLATFORM_LABEL: Record<string, string> = {
   tiktok: "TikTok",
   youtube: "YouTube",
   bluesky: "Bluesky",
+  mastodon: "Mastodon",
 };
 
 // Metrics we display, in order, with labels. Missing keys are simply omitted.

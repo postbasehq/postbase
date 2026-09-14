@@ -17,7 +17,7 @@ export default function PricingPage() {
             Let your AI post for you.
           </h1>
           <p className="mt-3 text-muted">
-            One rail for X, LinkedIn, Instagram, TikTok, YouTube, and Bluesky — plus an MCP
+            One rail for X, LinkedIn, Instagram, TikTok, YouTube, Bluesky, and Mastodon — plus an MCP
             server so your agent can publish too. Start with a 7-day free trial.
           </p>
         </div>

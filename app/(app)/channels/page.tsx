@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { disconnectChannel } from "../actions";
 import { DisconnectButton } from "@/components/DisconnectButton";
 import { BlueskyConnect } from "@/components/BlueskyConnect";
+import { MastodonConnect } from "@/components/MastodonConnect";
 
 const PLATFORM_META: Record<string, { label: string; dot: string }> = {
   x: { label: "X", dot: "bg-ink" },
@@ -11,6 +12,7 @@ const PLATFORM_META: Record<string, { label: string; dot: string }> = {
   tiktok: { label: "TikTok", dot: "bg-ink" },
   youtube: { label: "YouTube", dot: "bg-amber-bright" },
   bluesky: { label: "Bluesky", dot: "bg-blue" },
+  mastodon: { label: "Mastodon", dot: "bg-blue" },
 };
 
 const CONNECTED_LABEL: Record<string, string> = {
@@ -21,6 +23,7 @@ const CONNECTED_LABEL: Record<string, string> = {
   youtube: "YouTube channel connected.",
   facebook: "Facebook Page connected.",
   bluesky: "Bluesky account connected.",
+  mastodon: "Mastodon account connected.",
 };
 
 const ERRORS: Record<string, string> = {
@@ -157,6 +160,9 @@ export default async function ChannelsPage({
 
       {/* connect Bluesky (handle + app password — no OAuth) */}
       <BlueskyConnect />
+
+      {/* connect Mastodon (instance + access token — no OAuth) */}
+      <MastodonConnect />
 
       {/* list */}
       <div className="mt-5 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">

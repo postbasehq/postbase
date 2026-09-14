@@ -108,7 +108,7 @@ export function PlanPicker({
         })}
       </div>
       <p className="text-center text-xs text-muted">
-        7-day free trial, card required. Publish to X, LinkedIn, Instagram, TikTok, YouTube & Bluesky. Cancel anytime.
+        7-day free trial, card required. Publish to X, LinkedIn, Instagram, TikTok, YouTube, Bluesky & Mastodon. Cancel anytime.
       </p>
     </div>
   );

@@ -59,6 +59,7 @@ export default function Home() {
           <span className="inline-flex items-center gap-2 font-medium"><Dot className="bg-ink" />TikTok</span>
           <span className="inline-flex items-center gap-2 font-medium"><Dot className="bg-amber-bright" />YouTube</span>
           <span className="inline-flex items-center gap-2 font-medium"><Dot className="bg-[#0085FF]" />Bluesky</span>
+          <span className="inline-flex items-center gap-2 font-medium"><Dot className="bg-[#6364FF]" />Mastodon</span>
         </div>
       </header>
 
@@ -247,7 +248,7 @@ export default function Home() {
             Put your posting on rails.
           </h2>
           <p className="mx-auto mt-3 max-w-[44ch] text-[17px] opacity-90">
-            Schedule across X, LinkedIn, Instagram, TikTok, YouTube, and Bluesky — from a dashboard, or from your AI.
+            Schedule across X, LinkedIn, Instagram, TikTok, YouTube, Bluesky, and Mastodon — from a dashboard, or from your AI.
           </p>
           <a
             href="#pricing"

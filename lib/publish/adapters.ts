@@ -44,6 +44,11 @@ import {
   BLUESKY_MAX_CHARS,
   type BlueskyTokens,
 } from "@/lib/platforms/bluesky";
+import {
+  createPost as mastoCreatePost,
+  MASTODON_MAX_CHARS,
+  type MastodonTokens,
+} from "@/lib/platforms/mastodon";
 
 const MEDIA_BUCKET = "post-media";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -516,6 +521,38 @@ async function publishToBluesky(input: PublishInput): Promise<PublishResult> {
   }
 }
 
+async function publishToMastodon(input: PublishInput): Promise<PublishResult> {
+  if (!input.encryptedTokens) return { ok: false, error: "Mastodon account not connected." };
+
+  let tokens: MastodonTokens;
+  try {
+    tokens = decryptJson<MastodonTokens>(input.encryptedTokens);
+  } catch (e) {
+    return {
+      ok: false,
+      error: `Could not read stored Mastodon credentials: ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+
+  const segments = [input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean);
+  const clip = (s: string) =>
+    Array.from(s).length > MASTODON_MAX_CHARS ? Array.from(s).slice(0, MASTODON_MAX_CHARS).join("") : s;
+
+  try {
+    let replyTo: string | undefined;
+    let leadId = "";
+    for (let i = 0; i < segments.length; i++) {
+      const media = i === 0 ? input.media : [];
+      const { id } = await mastoCreatePost(tokens, clip(segments[i]), media, replyTo);
+      if (i === 0) leadId = id;
+      replyTo = id; // chain the thread as replies
+    }
+    return { ok: true, platformPostId: leadId };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Mastodon publish failed." };
+  }
+}
+
 export async function publish(input: PublishInput): Promise<PublishResult> {
   if (!input.body.trim()) {
     return { ok: false, error: "Post body is empty." };
@@ -536,6 +573,8 @@ export async function publish(input: PublishInput): Promise<PublishResult> {
       return publishToYouTube(input);
     case "bluesky":
       return publishToBluesky(input);
+    case "mastodon":
+      return publishToMastodon(input);
     default:
       return { ok: false, error: `Unsupported platform: ${input.platform}` };
   }

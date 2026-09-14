@@ -27,6 +27,7 @@ const PLATFORM: Record<string, PlatformMeta> = {
   tiktok: { label: "TikTok", dot: "bg-ink", limit: 2200, needsMedia: true, prefersVideo: true },
   youtube: { label: "YouTube", dot: "bg-amber-bright", limit: 5000, videoOnly: true },
   bluesky: { label: "Bluesky", dot: "bg-blue", limit: 300, thread: true },
+  mastodon: { label: "Mastodon", dot: "bg-blue", limit: 500, thread: true },
 };
 const label = (p: string) => PLATFORM[p]?.label ?? p;
 
@@ -116,10 +117,12 @@ export function PostForm({
     const meta = PLATFORM[platform];
     if (!meta) return [];
     const notes: Note[] = [];
-    if (platform === "x") {
+    if (meta.thread) {
+      // Thread-native (X, Bluesky, Mastodon): each block is its own post/reply.
       tweets.forEach((t, i) => {
         const over = t.trim().length - meta.limit;
-        if (over > 0) notes.push({ level: "error", text: `Tweet ${i + 1} is ${over} over 280` });
+        if (over > 0)
+          notes.push({ level: "error", text: `Post ${i + 1} is ${over} over ${meta.limit}` });
       });
     } else {
       const over = caption.length - meta.limit;
