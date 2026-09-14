@@ -47,7 +47,9 @@ export default async function CalendarPage({
 }) {
   const { view: viewParam, date: dateParam } = await searchParams;
   const tz = await getTimeZone();
-  const todayKey = localDateKey(new Date().toISOString(), tz);
+  const nowISO = new Date().toISOString();
+  const todayKey = localDateKey(nowISO, tz);
+  const nowHour = localHM(nowISO, tz).hour;
 
   const view: View =
     viewParam === "day" || viewParam === "month" ? viewParam : "week";
@@ -139,6 +141,7 @@ export default async function CalendarPage({
         view={view}
         anchor={anchor}
         todayKey={todayKey}
+        nowHour={nowHour}
         title={title}
         days={days}
         monthCells={monthCells}

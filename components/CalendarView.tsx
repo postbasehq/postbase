@@ -38,6 +38,12 @@ const ROW = 56; // px per hour row
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
+// Diagonal hatch marking past (unschedulable) slots — subtle in both themes.
+const HATCH: React.CSSProperties = {
+  backgroundImage:
+    "repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(130,130,130,0.14) 5px, rgba(130,130,130,0.14) 6px)",
+};
+
 // Pure calendar-date math on YYYY-MM-DD keys (UTC noon avoids DST drift).
 function shiftKey(key: string, view: View, dir: 1 | -1): string {
   const [y, m, d] = key.split("-").map(Number);
@@ -51,6 +57,7 @@ export function CalendarView({
   view,
   anchor,
   todayKey,
+  nowHour,
   title,
   days,
   monthCells,
@@ -59,6 +66,7 @@ export function CalendarView({
   view: View;
   anchor: string;
   todayKey: string;
+  nowHour: number;
   title: string;
   days: DayCol[];
   monthCells: MonthCell[];
@@ -128,9 +136,9 @@ export function CalendarView({
       {/* body */}
       <div className="mt-4 flex-1 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
         {view === "month" ? (
-          <MonthGrid cells={monthCells} byDay={byDay} />
+          <MonthGrid cells={monthCells} byDay={byDay} todayKey={todayKey} />
         ) : (
-          <TimeGrid days={days} byDayHour={byDayHour} />
+          <TimeGrid days={days} byDayHour={byDayHour} todayKey={todayKey} nowHour={nowHour} />
         )}
       </div>
     </div>
@@ -140,11 +148,20 @@ export function CalendarView({
 function TimeGrid({
   days,
   byDayHour,
+  todayKey,
+  nowHour,
 }: {
   days: DayCol[];
   byDayHour: Map<string, CalPost[]>;
+  todayKey: string;
+  nowHour: number;
 }) {
   const cols = `64px repeat(${days.length}, minmax(0, 1fr))`;
+  // A slot is past (unschedulable) if its day is before today, or it's today
+  // and the hour has already started.
+  const pastHours = (key: string) =>
+    key < todayKey ? 24 : key === todayKey ? Math.min(nowHour + 1, 24) : 0;
+  const isPast = (key: string, hour: number) => hour < pastHours(key);
   return (
     <div className="flex h-full flex-col">
       {/* day headers */}
@@ -179,40 +196,61 @@ function TimeGrid({
           </div>
 
           {/* day columns */}
-          {days.map((d) => (
-            <div key={d.key} className="border-r border-line last:border-r-0">
-              {HOURS.map((h) => {
-                const cell = byDayHour.get(`${d.key}#${h}`) ?? [];
-                return (
-                  <div key={h} className="group relative border-b border-line/60" style={{ height: ROW }}>
-                    {/* click-to-compose on empty space */}
-                    <Link
-                      href={`/composer?at=${d.key}T${pad(h)}:00`}
-                      className="absolute inset-0 flex items-center justify-center text-muted opacity-0 transition group-hover:opacity-100 hover:bg-blue-soft/40"
-                      aria-label={`New post ${d.key} ${pad(h)}:00`}
+          {days.map((d) => {
+            const past = pastHours(d.key);
+            return (
+              <div key={d.key} className="relative border-r border-line last:border-r-0">
+                {HOURS.map((h) => {
+                  const cell = byDayHour.get(`${d.key}#${h}`) ?? [];
+                  const cellPast = isPast(d.key, h);
+                  return (
+                    <div
+                      key={h}
+                      className="group relative border-b border-line/60"
+                      style={{ height: ROW, ...(cellPast ? HATCH : null) }}
                     >
-                      <span className="text-lg leading-none">+</span>
-                    </Link>
-                    {/* events */}
-                    <div className="pointer-events-none absolute inset-x-1 top-1 flex flex-col gap-1">
-                      {cell.map((p) => (
+                      {/* click-to-compose on empty space (future only) */}
+                      {cellPast ? null : (
                         <Link
-                          key={p.id}
-                          href={`/composer/${p.id}`}
-                          className="pointer-events-auto flex items-center gap-1.5 rounded-md border border-line bg-surface-2 px-1.5 py-1 text-[11px] shadow-sm hover:border-blue"
-                          title={`${p.timeLabel} · ${p.body || "(empty)"}`}
+                          href={`/composer?at=${d.key}T${pad(h)}:00`}
+                          className="absolute inset-0 flex items-center justify-center text-muted opacity-0 transition group-hover:opacity-100 hover:bg-blue-soft/40"
+                          aria-label={`New post ${d.key} ${pad(h)}:00`}
                         >
-                          <span className={`size-1.5 shrink-0 rounded-full ${DOT[p.status] ?? "bg-muted"}`} />
-                          <span className="tabular-nums text-muted">{p.timeLabel}</span>
-                          <span className="truncate">{p.body || "(empty)"}</span>
+                          <span className="text-lg leading-none">+</span>
                         </Link>
-                      ))}
+                      )}
+                      {/* events */}
+                      <div className="pointer-events-none absolute inset-x-1 top-1 flex flex-col gap-1">
+                        {cell.map((p) => (
+                          <Link
+                            key={p.id}
+                            href={`/composer/${p.id}`}
+                            className="pointer-events-auto flex items-center gap-1.5 rounded-md border border-line bg-surface-2 px-1.5 py-1 text-[11px] shadow-sm hover:border-blue"
+                            title={`${p.timeLabel} · ${p.body || "(empty)"}`}
+                          >
+                            <span className={`size-1.5 shrink-0 rounded-full ${DOT[p.status] ?? "bg-muted"}`} />
+                            <span className="tabular-nums text-muted">{p.timeLabel}</span>
+                            <span className="truncate">{p.body || "(empty)"}</span>
+                          </Link>
+                        ))}
+                      </div>
                     </div>
+                  );
+                })}
+                {/* "Date passed" label centered over the past region */}
+                {past > 0 ? (
+                  <div
+                    className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-center"
+                    style={{ height: past * ROW }}
+                  >
+                    <span className="rounded-full bg-surface/70 px-2 py-0.5 text-xs font-medium text-muted">
+                      Date passed
+                    </span>
                   </div>
-                );
-              })}
-            </div>
-          ))}
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -224,9 +262,11 @@ const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 function MonthGrid({
   cells,
   byDay,
+  todayKey,
 }: {
   cells: MonthCell[];
   byDay: Map<string, CalPost[]>;
+  todayKey: string;
 }) {
   return (
     <div className="flex h-full flex-col">
@@ -243,9 +283,11 @@ function MonthGrid({
       >
         {cells.map((c, i) => {
           const posts = c.key ? (byDay.get(c.key) ?? []) : [];
+          const isPast = c.key ? c.key < todayKey : false;
           return (
             <div
               key={i}
+              style={isPast ? HATCH : undefined}
               className={`min-h-[92px] border-b border-r border-line p-1.5 ${
                 c.key ? "" : "bg-surface-2/50"
               }`}
@@ -260,12 +302,14 @@ function MonthGrid({
                     >
                       {c.dayNum}
                     </span>
-                    <Link
-                      href={`/composer?at=${c.key}T09:00`}
-                      className="text-muted opacity-0 transition hover:text-blue-ink [.group:hover_&]:opacity-100"
-                    >
-                      +
-                    </Link>
+                    {isPast ? null : (
+                      <Link
+                        href={`/composer?at=${c.key}T09:00`}
+                        className="text-muted opacity-0 transition hover:text-blue-ink [.group:hover_&]:opacity-100"
+                      >
+                        +
+                      </Link>
+                    )}
                   </div>
                   <div className="mt-1 flex flex-col gap-1">
                     {posts.slice(0, 4).map((p) => (
