@@ -14,42 +14,40 @@ export default function Home() {
       <SiteNav />
 
       {/* HERO */}
-      <header className="pt-16 md:pt-20">
-        <div className="mx-auto grid max-w-[1120px] items-center gap-10 px-6 md:grid-cols-[1.05fr_.95fr] md:gap-12">
-          <div>
-            <span className={`${pill} bg-blue-soft text-blue-ink`}>
-              Open-source · MCP-native
-            </span>
-            <h1 className="mt-5 font-display text-[clamp(38px,5.4vw,58px)] font-semibold leading-[1.04] tracking-[-0.02em] text-balance">
-              Let your AI
-              <br />
-              <span className="text-terra">post for you.</span>
-            </h1>
-            <p className="mt-5 max-w-[48ch] text-lg text-muted">
-              Postbase is the open-source, MCP-native scheduler. Connect Claude, Cursor,
-              ChatGPT, or any agent — it drafts, schedules, and publishes across every
-              channel. Or do it yourself from a clean calendar.
-            </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <a
-                href="/login"
-                className="rounded-full bg-blue px-6 py-3 font-display text-[15px] font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
-              >
-                Start for $0
-              </a>
-              <a
-                href="https://github.com/postbasehq"
-                className="rounded-full border border-line px-6 py-3 font-display text-[15px] font-semibold text-blue-ink transition-colors hover:bg-surface-2"
-              >
-                ★ Star on GitHub
-              </a>
-            </div>
-            <p className="mt-4 text-[13.5px] text-muted">
-              7-day trial · cancel anytime · or <b className="text-ink">self-host for free</b>.
-            </p>
+      <header className="pt-16 md:pt-24">
+        <div className="mx-auto flex max-w-[720px] flex-col items-center px-6 text-center">
+          <span className={`${pill} bg-blue-soft text-blue-ink`}>
+            Open-source · MCP-native
+          </span>
+          <h1 className="mt-5 font-display text-[clamp(40px,6.4vw,66px)] font-semibold leading-[1.03] tracking-[-0.02em] text-balance">
+            Let your AI <span className="text-terra">post for you.</span>
+          </h1>
+          <p className="mx-auto mt-5 max-w-[52ch] text-lg text-muted text-balance">
+            Postbase is the open-source, MCP-native scheduler. Connect Claude, Cursor,
+            ChatGPT, or any agent — it drafts, schedules, and publishes across every
+            channel. Or do it yourself from a clean calendar.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <a
+              href="/login"
+              className="rounded-full bg-blue px-6 py-3 font-display text-[15px] font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
+            >
+              Start for $0
+            </a>
+            <a
+              href="https://github.com/postbasehq"
+              className="rounded-full border border-line px-6 py-3 font-display text-[15px] font-semibold text-blue-ink transition-colors hover:bg-surface-2"
+            >
+              ★ Star on GitHub
+            </a>
           </div>
+          <p className="mt-4 text-[13.5px] text-muted">
+            7-day trial · cancel anytime · or <b className="text-ink">self-host for free</b>.
+          </p>
+        </div>
 
-          {/* live agent demo */}
+        {/* live agent demo — full width below the fold-line */}
+        <div className="mx-auto mt-12 max-w-[880px] px-6">
           <AgentDemo />
         </div>
 
