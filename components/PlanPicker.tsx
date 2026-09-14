@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { PLAN_ORDER, PLANS } from "@/lib/plans";
+import { SubmitButton } from "@/components/SubmitButton";
 
 /**
  * Plan cards with a monthly/annual toggle. On the billing page each card submits
@@ -81,15 +82,15 @@ export function PlanPicker({
                   <form action={action}>
                     <input type="hidden" name="plan" value={id} />
                     <input type="hidden" name="interval" value={interval} />
-                    <button
-                      type="submit"
+                    <SubmitButton
                       disabled={isCurrent}
+                      pendingLabel="Starting…"
                       className={`w-full rounded-full px-4 py-2.5 font-display text-sm font-semibold shadow-sm transition-shadow hover:shadow-md disabled:cursor-default disabled:opacity-60 ${
                         featured ? "bg-blue text-on-blue" : "border border-line text-blue-ink hover:bg-surface-2"
                       }`}
                     >
                       {isCurrent ? "Current plan" : "Start 7-day trial"}
-                    </button>
+                    </SubmitButton>
                   </form>
                 ) : (
                   <a

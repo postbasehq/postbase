@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { SubmitButton } from "@/components/SubmitButton";
 
 /**
  * Disconnect a channel behind a custom confirmation modal (it's destructive —
@@ -65,12 +66,12 @@ export function DisconnectButton({
               </button>
               <form action={action}>
                 <input type="hidden" name="channel_id" value={channelId} />
-                <button
-                  type="submit"
-                  className="rounded-full bg-terra px-4 py-2 font-display text-sm font-semibold text-white shadow-sm transition-shadow hover:shadow-md"
+                <SubmitButton
+                  pendingLabel="Disconnecting…"
+                  className="rounded-full bg-terra px-4 py-2 font-display text-sm font-semibold text-white shadow-sm transition-shadow hover:shadow-md disabled:opacity-60"
                 >
                   Disconnect
-                </button>
+                </SubmitButton>
               </form>
             </div>
           </div>

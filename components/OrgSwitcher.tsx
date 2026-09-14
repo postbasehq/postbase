@@ -1,4 +1,5 @@
 import type { UserOrg } from "@/lib/org";
+import { SubmitButton } from "@/components/SubmitButton";
 
 /**
  * Active-workspace indicator + switcher. Renders a plain label when the user is
@@ -37,9 +38,8 @@ export function OrgSwitcher({
         {orgs.map((o) => (
           <form key={o.id} action={action}>
             <input type="hidden" name="org_id" value={o.id} />
-            <button
-              type="submit"
-              className={`flex w-full items-center gap-1.5 truncate rounded-lg px-3 py-1.5 text-left text-sm ${
+            <SubmitButton
+              className={`flex w-full items-center gap-1.5 truncate rounded-lg px-3 py-1.5 text-left text-sm disabled:opacity-60 ${
                 o.id === active.id
                   ? "bg-blue-soft text-blue-ink"
                   : "text-muted hover:bg-surface-2 hover:text-ink"
@@ -47,7 +47,7 @@ export function OrgSwitcher({
             >
               <span className="truncate">{o.name}</span>
               <span className="ml-auto text-[11px] text-muted">{o.role}</span>
-            </button>
+            </SubmitButton>
           </form>
         ))}
       </div>

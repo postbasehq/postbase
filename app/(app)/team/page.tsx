@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentOrgId, getOrgRole } from "@/lib/org";
 import { SEAT_LIMIT, type PlanId } from "@/lib/plans";
 import { CopyField } from "@/components/CopyField";
+import { SubmitButton } from "@/components/SubmitButton";
 import { createInvite, revokeInvite, removeMember } from "../team-actions";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -98,12 +99,12 @@ export default async function TeamPage() {
                     <option value="admin">Admin</option>
                   </select>
                 </label>
-                <button
-                  type="submit"
-                  className="rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm hover:shadow-md"
+                <SubmitButton
+                  pendingLabel="Creating…"
+                  className="rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm hover:shadow-md disabled:opacity-60"
                 >
                   Create invite
-                </button>
+                </SubmitButton>
               </form>
             )}
           </div>
@@ -132,12 +133,11 @@ export default async function TeamPage() {
             {canManage && m.user_id !== user?.id ? (
               <form action={removeMember}>
                 <input type="hidden" name="user_id" value={m.user_id} />
-                <button
-                  type="submit"
-                  className="rounded-full border border-line px-2.5 py-1 text-xs font-medium text-muted hover:border-terra hover:text-terra"
+                <SubmitButton
+                  className="rounded-full border border-line px-2.5 py-1 text-xs font-medium text-muted hover:border-terra hover:text-terra disabled:opacity-50"
                 >
                   Remove
-                </button>
+                </SubmitButton>
               </form>
             ) : null}
           </div>
@@ -162,12 +162,11 @@ export default async function TeamPage() {
                 </span>
                 <form action={revokeInvite}>
                   <input type="hidden" name="invite_id" value={inv.id} />
-                  <button
-                    type="submit"
-                    className="rounded-full border border-line px-2.5 py-1 text-xs font-medium text-muted hover:border-terra hover:text-terra"
+                  <SubmitButton
+                    className="rounded-full border border-line px-2.5 py-1 text-xs font-medium text-muted hover:border-terra hover:text-terra disabled:opacity-50"
                   >
                     Revoke
-                  </button>
+                  </SubmitButton>
                 </form>
               </div>
               <CopyField value={`${APP_URL}/invite/${inv.token}`} />

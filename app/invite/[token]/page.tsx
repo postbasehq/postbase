@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Logo } from "@/components/Logo";
+import { SubmitButton } from "@/components/SubmitButton";
 import { acceptInvite } from "@/app/(app)/team-actions";
 
 export default async function AcceptInvitePage({
@@ -90,12 +91,12 @@ export default async function AcceptInvitePage({
       </p>
       <form action={acceptInvite} className="mt-4">
         <input type="hidden" name="token" value={token} />
-        <button
-          type="submit"
-          className="rounded-full bg-blue px-6 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm hover:shadow-md"
+        <SubmitButton
+          pendingLabel="Accepting…"
+          className="rounded-full bg-blue px-6 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm hover:shadow-md disabled:opacity-60"
         >
           Accept invite
-        </button>
+        </SubmitButton>
       </form>
     </>,
   );

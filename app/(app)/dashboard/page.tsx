@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getTimeZone, formatInTz } from "@/lib/tz";
+import { SubmitButton } from "@/components/SubmitButton";
 import { cancelPost, retryTarget } from "../actions";
 
 const pill =
@@ -181,9 +182,9 @@ export default async function DashboardPage() {
                         {p.status === "scheduled" ? (
                           <form action={cancelPost}>
                             <input type="hidden" name="post_id" value={p.id} />
-                            <button type="submit" className="text-xs text-muted hover:text-terra">
+                            <SubmitButton className="text-xs text-muted hover:text-terra disabled:opacity-50">
                               Cancel
-                            </button>
+                            </SubmitButton>
                           </form>
                         ) : null}
                       </div>
@@ -210,12 +211,9 @@ export default async function DashboardPage() {
                             {t.status === "failed" ? (
                               <form action={retryTarget}>
                                 <input type="hidden" name="target_id" value={t.id} />
-                                <button
-                                  type="submit"
-                                  className="rounded-full border border-line px-2 py-0.5 text-[11px] font-medium text-blue-ink hover:bg-surface-2"
-                                >
+                                <SubmitButton className="rounded-full border border-line px-2 py-0.5 text-[11px] font-medium text-blue-ink hover:bg-surface-2 disabled:opacity-50">
                                   Retry
-                                </button>
+                                </SubmitButton>
                               </form>
                             ) : null}
                           </span>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { SubmitButton } from "@/components/SubmitButton";
 import { createApiKey, revokeApiKey, type CreateKeyState } from "@/app/(app)/apikey-actions";
 
 type KeyRow = {
@@ -76,9 +77,9 @@ export function ApiKeysClient({ keys }: { keys: KeyRow[] }) {
               </div>
               <form action={revokeApiKey} className="ml-auto">
                 <input type="hidden" name="id" value={k.id} />
-                <button type="submit" className="text-xs font-medium text-muted hover:text-terra">
+                <SubmitButton className="text-xs font-medium text-muted hover:text-terra disabled:opacity-50">
                   Revoke
-                </button>
+                </SubmitButton>
               </form>
             </div>
           ))

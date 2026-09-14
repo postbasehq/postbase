@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentOrgId } from "@/lib/org";
 import { PlanPicker } from "@/components/PlanPicker";
+import { SubmitButton } from "@/components/SubmitButton";
 import { PLANS, planIsActive, type PlanId } from "@/lib/plans";
 import { startCheckout, openPortal } from "../billing-actions";
 
@@ -81,12 +82,12 @@ export default async function BillingPage({
         ) : null}
         {org?.stripe_customer_id ? (
           <form action={openPortal} className="ml-auto">
-            <button
-              type="submit"
-              className="rounded-full border border-line px-5 py-2.5 font-display text-sm font-semibold text-blue-ink hover:bg-surface-2"
+            <SubmitButton
+              pendingLabel="Opening…"
+              className="rounded-full border border-line px-5 py-2.5 font-display text-sm font-semibold text-blue-ink hover:bg-surface-2 disabled:opacity-60"
             >
               Manage subscription
-            </button>
+            </SubmitButton>
           </form>
         ) : null}
       </div>

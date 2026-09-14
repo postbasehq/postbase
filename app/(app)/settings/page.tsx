@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/SubmitButton";
 import { restartOnboarding } from "../onboarding-actions";
 
 export default function SettingsPage() {
@@ -17,12 +18,12 @@ export default function SettingsPage() {
             </div>
           </div>
           <form action={restartOnboarding} className="sm:ml-auto">
-            <button
-              type="submit"
-              className="w-full rounded-full border border-line px-5 py-2.5 font-display text-sm font-semibold text-blue-ink hover:bg-surface-2 sm:w-auto"
+            <SubmitButton
+              pendingLabel="Opening…"
+              className="w-full rounded-full border border-line px-5 py-2.5 font-display text-sm font-semibold text-blue-ink hover:bg-surface-2 disabled:opacity-60 sm:w-auto"
             >
               Replay setup
-            </button>
+            </SubmitButton>
           </form>
         </div>
       </div>

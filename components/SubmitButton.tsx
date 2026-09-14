@@ -7,18 +7,19 @@ import { useFormStatus } from "react-dom";
 export function SubmitButton({
   disabled,
   className,
-  pendingLabel = "Working…",
+  pendingLabel,
   children,
 }: {
   disabled?: boolean;
   className?: string;
+  /** Optional label to show while pending; omit to keep the same label (just disabled). */
   pendingLabel?: string;
   children: React.ReactNode;
 }) {
   const { pending } = useFormStatus();
   return (
     <button type="submit" disabled={disabled || pending} className={className}>
-      {pending ? pendingLabel : children}
+      {pending && pendingLabel ? pendingLabel : children}
     </button>
   );
 }
