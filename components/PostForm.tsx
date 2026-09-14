@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { SubmitButton } from "@/components/SubmitButton";
 
 /* ── Platform rules ─────────────────────────────────────────────────────────
    One source of truth for how each network treats a post: character budget,
@@ -493,13 +494,13 @@ export function PostForm({
         {/* Actions */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
-            <button
-              type="submit"
+            <SubmitButton
               disabled={!canSubmit}
+              pendingLabel={isDraft ? "Saving…" : "Scheduling…"}
               className="rounded-full bg-blue px-6 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isDraft ? "Save draft" : submitLabel}
-            </button>
+            </SubmitButton>
             <Link href="/dashboard" className="text-sm font-medium text-muted hover:text-ink">
               Cancel
             </Link>

@@ -110,6 +110,21 @@ export async function createPost(formData: FormData) {
   const scheduledAt = scheduledRaw ? new Date(scheduledRaw).toISOString() : null;
   const status = scheduledAt ? "scheduled" : "draft";
 
+  // Backstop against double-submits: if an identical post was created in this
+  // workspace in the last 15s, treat this as a duplicate click and don't insert
+  // another. (The client also disables the button while submitting.)
+  const { data: recent } = await supabase
+    .from("posts")
+    .select("id")
+    .eq("org_id", orgId)
+    .eq("body", segments[0])
+    .gte("created_at", new Date(Date.now() - 15_000).toISOString())
+    .limit(1);
+  if (recent && recent.length > 0) {
+    revalidatePath("/dashboard");
+    redirect("/dashboard");
+  }
+
   const { data: post, error } = await supabase
     .from("posts")
     .insert({
