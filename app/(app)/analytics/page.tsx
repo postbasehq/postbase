@@ -64,8 +64,7 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="mx-auto max-w-[960px]">
-      <h1 className="font-display text-2xl font-semibold tracking-[-0.01em]">Analytics</h1>
-      <p className="mt-1 text-sm text-muted">Engagement on your published posts.</p>
+      <p className="text-sm text-muted">Engagement on your published posts.</p>
 
       {/* totals */}
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">

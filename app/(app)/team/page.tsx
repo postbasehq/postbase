@@ -52,8 +52,7 @@ export default async function TeamPage() {
     <div className="mx-auto max-w-[760px]">
       <div className="flex items-center gap-3">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-[-0.01em]">Team</h1>
-          <p className="mt-1 text-sm text-muted">People with access to this workspace.</p>
+          <p className="text-sm text-muted">People with access to this workspace.</p>
         </div>
         <span className="ml-auto rounded-full border border-line px-3 py-1.5 text-xs font-medium text-muted">
           {seatsUsed} of {seatLimit} seat{seatLimit === 1 ? "" : "s"}

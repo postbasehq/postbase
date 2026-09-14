@@ -5,8 +5,7 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-[720px]">
-      <h1 className="font-display text-2xl font-semibold tracking-[-0.01em]">Settings</h1>
-      <p className="mt-1 text-sm text-muted">Manage your workspace.</p>
+      <p className="text-sm text-muted">Manage your workspace.</p>
 
       {/* Setup / onboarding */}
       <div className={`mt-6 ${card}`}>

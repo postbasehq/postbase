@@ -42,8 +42,7 @@ export default async function BillingPage({
 
   return (
     <div className="mx-auto max-w-[980px]">
-      <h1 className="font-display text-2xl font-semibold tracking-[-0.01em]">Billing</h1>
-      <p className="mt-1 text-sm text-muted">Manage your Postbase subscription.</p>
+      <p className="text-sm text-muted">Manage your Postbase subscription.</p>
 
       {checkout === "success" ? (
         <div className="mt-4 rounded-xl bg-green/12 px-4 py-3 text-sm text-green">

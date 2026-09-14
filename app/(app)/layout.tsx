@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AppNav } from "@/components/AppNav";
+import { HeaderTitle } from "@/components/HeaderTitle";
 import { OrgSwitcher } from "@/components/OrgSwitcher";
 import { TimezoneSync } from "@/components/TimezoneSync";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
@@ -72,9 +73,7 @@ export default async function AppLayout({
       {/* main */}
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-16 items-center gap-3 border-b border-line px-6">
-          <span className="font-display text-sm font-semibold text-muted md:hidden">
-            Postbase
-          </span>
+          <HeaderTitle />
           <div className="ml-auto flex items-center gap-3">
             <ThemeToggle />
             <Link

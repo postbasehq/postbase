@@ -88,8 +88,7 @@ export default async function DashboardPage() {
     <div className="mx-auto max-w-[960px]">
       <div className="flex items-center gap-3">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-[-0.01em]">Dashboard</h1>
-          <p className="mt-1 text-sm text-muted">Your scheduled posts and channels.</p>
+          <p className="text-sm text-muted">Your scheduled posts and channels.</p>
         </div>
         <Link
           href="/composer"

@@ -79,7 +79,6 @@ export function CalendarView({
     <div className="flex h-[calc(100vh-160px)] min-h-[520px] flex-col">
       {/* toolbar */}
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="font-display text-2xl font-semibold tracking-[-0.01em]">Calendar</h1>
         <div className="flex items-center gap-1">
           <button
             onClick={() => go(view, shiftKey(anchor, view, -1))}

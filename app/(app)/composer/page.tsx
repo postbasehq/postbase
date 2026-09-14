@@ -19,8 +19,7 @@ export default async function ComposerPage({
 
   return (
     <div className="mx-auto max-w-[980px]">
-      <h1 className="font-display text-2xl font-semibold tracking-[-0.01em]">New post</h1>
-      <p className="mt-1 text-sm text-muted">
+      <p className="text-sm text-muted">
         Write your post, pick channels, and schedule it.
       </p>
       <PostForm

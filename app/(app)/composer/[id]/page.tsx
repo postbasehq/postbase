@@ -44,8 +44,7 @@ export default async function EditPostPage({
 
   return (
     <div className="mx-auto max-w-[980px]">
-      <h1 className="font-display text-2xl font-semibold tracking-[-0.01em]">Edit post</h1>
-      <p className="mt-1 text-sm text-muted">
+      <p className="text-sm text-muted">
         Update the content, channels, or schedule. Rescheduling replaces the queued job.
       </p>
       <PostForm

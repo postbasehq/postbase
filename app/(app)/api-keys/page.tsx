@@ -11,8 +11,7 @@ export default async function ApiKeysPage() {
 
   return (
     <div className="mx-auto max-w-[720px]">
-      <h1 className="font-display text-2xl font-semibold tracking-[-0.01em]">MCP &amp; API</h1>
-      <p className="mt-1 text-sm text-muted">
+      <p className="text-sm text-muted">
         Generate an API key, then add the Postbase MCP server to your AI tool so an agent
         can schedule and publish for you.
       </p>
