@@ -39,6 +39,11 @@ import {
   defaultPrivacyStatus,
   type YouTubeTokens,
 } from "@/lib/platforms/youtube";
+import {
+  createPost as bskyCreatePost,
+  BLUESKY_MAX_CHARS,
+  type BlueskyTokens,
+} from "@/lib/platforms/bluesky";
 
 const MEDIA_BUCKET = "post-media";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -473,6 +478,44 @@ async function publishToFacebook(input: PublishInput): Promise<PublishResult> {
   }
 }
 
+async function publishToBluesky(input: PublishInput): Promise<PublishResult> {
+  if (!input.encryptedTokens) return { ok: false, error: "Bluesky account not connected." };
+
+  let tokens: BlueskyTokens;
+  try {
+    tokens = decryptJson<BlueskyTokens>(input.encryptedTokens);
+  } catch (e) {
+    return {
+      ok: false,
+      error: `Could not read stored Bluesky credentials: ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+
+  // Each segment is its own post (300-grapheme cap); a thread becomes a reply
+  // chain. Media rides on the lead post only, mirroring the X adapter.
+  const segments = [input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean);
+  const clip = (s: string) => (Array.from(s).length > BLUESKY_MAX_CHARS ? Array.from(s).slice(0, BLUESKY_MAX_CHARS).join("") : s);
+
+  try {
+    let root: { uri: string; cid: string } | undefined;
+    let parent: { uri: string; cid: string } | undefined;
+    let leadUri = "";
+    for (let i = 0; i < segments.length; i++) {
+      const media = i === 0 ? input.media : [];
+      const reply = root && parent ? { root, parent } : undefined;
+      const { uri, cid } = await bskyCreatePost(tokens, clip(segments[i]), media, reply);
+      if (i === 0) {
+        root = { uri, cid };
+        leadUri = uri;
+      }
+      parent = { uri, cid };
+    }
+    return { ok: true, platformPostId: leadUri };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Bluesky publish failed." };
+  }
+}
+
 export async function publish(input: PublishInput): Promise<PublishResult> {
   if (!input.body.trim()) {
     return { ok: false, error: "Post body is empty." };
@@ -491,6 +534,8 @@ export async function publish(input: PublishInput): Promise<PublishResult> {
       return publishToTikTok(input);
     case "youtube":
       return publishToYouTube(input);
+    case "bluesky":
+      return publishToBluesky(input);
     default:
       return { ok: false, error: `Unsupported platform: ${input.platform}` };
   }

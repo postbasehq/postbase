@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
+import { encryptJson } from "@/lib/crypto";
+import { atChannelLimit } from "@/lib/billing-guard";
+import { connectBluesky } from "@/lib/platforms/bluesky";
 
 const TIKTOK_PRIVACY = [
   "PUBLIC_TO_EVERYONE",
@@ -301,4 +304,54 @@ export async function cancelPost(formData: FormData) {
   await supabase.from("post_targets").update({ status: "draft" }).eq("post_id", postId);
 
   revalidatePath("/dashboard");
+}
+
+export type ConnectBlueskyState = { error?: string };
+
+/**
+ * Connect a Bluesky account from a handle + app password (no OAuth redirect).
+ * We validate by logging in, then store the credentials encrypted.
+ */
+export async function connectBlueskyChannel(
+  _prev: ConnectBlueskyState,
+  formData: FormData,
+): Promise<ConnectBlueskyState> {
+  const supabase = await createClient();
+  const orgId = await getCurrentOrgId();
+  if (!orgId) return { error: "No workspace found for your account." };
+
+  const handle = String(formData.get("handle") ?? "").trim();
+  const appPassword = String(formData.get("app_password") ?? "").trim();
+  if (!handle || !appPassword) return { error: "Enter your handle and an app password." };
+
+  let tokens;
+  try {
+    tokens = await connectBluesky(handle, appPassword);
+  } catch (e) {
+    return {
+      error: `Couldn't connect: ${e instanceof Error ? e.message : "check your handle and app password"}`,
+    };
+  }
+
+  const chHandle = `@${tokens.handle}`;
+  const fields = { encrypted_tokens: encryptJson(tokens), status: "active" };
+  const { data: existing } = await supabase
+    .from("channels")
+    .select("id")
+    .eq("org_id", orgId)
+    .eq("platform", "bluesky")
+    .eq("handle", chHandle)
+    .maybeSingle();
+
+  if (!existing && (await atChannelLimit(supabase, orgId))) {
+    return { error: "You've reached your plan's channel limit. Upgrade in Billing to connect more." };
+  }
+
+  const { error } = existing
+    ? await supabase.from("channels").update(fields).eq("id", existing.id)
+    : await supabase.from("channels").insert({ org_id: orgId, platform: "bluesky", handle: chHandle, ...fields });
+  if (error) return { error: "Couldn't save the channel — please try again." };
+
+  revalidatePath("/channels");
+  redirect("/channels?connected=bluesky");
 }

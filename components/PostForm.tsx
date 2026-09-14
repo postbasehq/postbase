@@ -26,6 +26,7 @@ const PLATFORM: Record<string, PlatformMeta> = {
   instagram: { label: "Instagram", dot: "bg-terra", limit: 2200, needsMedia: true },
   tiktok: { label: "TikTok", dot: "bg-ink", limit: 2200, needsMedia: true, prefersVideo: true },
   youtube: { label: "YouTube", dot: "bg-amber-bright", limit: 5000, videoOnly: true },
+  bluesky: { label: "Bluesky", dot: "bg-blue", limit: 300, thread: true },
 };
 const label = (p: string) => PLATFORM[p]?.label ?? p;
 

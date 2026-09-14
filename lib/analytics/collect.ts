@@ -6,6 +6,7 @@ import { getMediaInsights, getPagePostMetrics } from "@/lib/platforms/meta";
 import { getSocialActions, refreshTokens as liRefresh } from "@/lib/platforms/linkedin";
 import { getVideoMetrics, refreshTokens as ttRefresh } from "@/lib/platforms/tiktok";
 import { getVideoStats, refreshTokens as ytRefresh } from "@/lib/platforms/youtube";
+import { getPostMetrics as bskyMetrics, type BlueskyTokens } from "@/lib/platforms/bluesky";
 
 /**
  * Metrics collector — refreshes normalized engagement metrics for recently
@@ -94,6 +95,7 @@ async function fetchMetrics(
   platform: string,
   token: string,
   postId: string,
+  tokens: Tokens,
 ): Promise<Record<string, number>> {
   switch (platform) {
     case "x":
@@ -108,6 +110,9 @@ async function fetchMetrics(
       return getVideoMetrics(token, postId);
     case "youtube":
       return getVideoStats(token, postId);
+    case "bluesky":
+      // Bluesky re-mints a session from the stored app password (no bearer token).
+      return bskyMetrics(tokens as unknown as BlueskyTokens, postId);
     default:
       throw new Error(`No metrics collector for ${platform}`);
   }
@@ -147,7 +152,7 @@ export async function refreshMetrics(): Promise<{ refreshed: number }> {
     try {
       const tokens = decryptJson<Tokens>(ch.encrypted_tokens);
       const token = await ensureToken(db, ch, tokens);
-      const metrics = await fetchMetrics(ch.platform, token, r.platform_post_id);
+      const metrics = await fetchMetrics(ch.platform, token, r.platform_post_id, tokens);
       await db.from("post_targets").update({ metrics, metrics_updated_at: now }).eq("id", r.id);
       refreshed++;
     } catch {
