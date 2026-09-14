@@ -8,6 +8,12 @@ import { exchangeCode, verifyAccount, type MastodonTokens } from "@/lib/platform
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
+// Reverse the base64url encoding applied when the cookie was set.
+const fromCookie = (s: string) => {
+  const p = s.replace(/-/g, "+").replace(/_/g, "/");
+  return p + "=".repeat((4 - (p.length % 4)) % 4);
+};
+
 type Pending = { instance: string; client_id: string; client_secret: string; state: string };
 
 export async function GET(request: Request) {
@@ -26,7 +32,7 @@ export async function GET(request: Request) {
   if (!raw) return fail("oauth_state");
   let pending: Pending;
   try {
-    pending = decryptJson<Pending>(raw);
+    pending = decryptJson<Pending>(fromCookie(raw));
   } catch {
     return fail("oauth_state");
   }

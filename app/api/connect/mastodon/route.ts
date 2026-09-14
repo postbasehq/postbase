@@ -6,6 +6,10 @@ import { registerApp, authorizeUrl, normalizeInstance } from "@/lib/platforms/ma
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 const cookieOpts = { httpOnly: true, secure: true, sameSite: "lax" as const, path: "/", maxAge: 600 };
 
+// base64 -> base64url so a "+" in the encrypted value can't be mangled to a
+// space during the cookie round-trip.
+const toCookie = (s: string) => s.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
 // Start the Mastodon OAuth flow for a user-supplied instance. Because Mastodon
 // is federated, we register an app on that instance on the fly, then redirect.
 export async function GET(request: Request) {
@@ -35,7 +39,7 @@ export async function GET(request: Request) {
     // Carry the instance + app credentials across the redirect (encrypted).
     res.cookies.set(
       "mastodon_oauth",
-      encryptJson({ instance, client_id: app.client_id, client_secret: app.client_secret, state }),
+      toCookie(encryptJson({ instance, client_id: app.client_id, client_secret: app.client_secret, state })),
       cookieOpts,
     );
     return res;
