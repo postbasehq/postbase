@@ -16,6 +16,13 @@ export function formatInTz(iso: string, tz: string, opts: Intl.DateTimeFormatOpt
   }
 }
 
+/** The local hour (0-23) and minute of a UTC instant, in a timezone. */
+export function localHM(iso: string, tz: string): { hour: number; minute: number } {
+  const s = formatInTz(iso, tz, { hour: "2-digit", minute: "2-digit", hour12: false });
+  const [h, m] = s.split(":").map((n) => parseInt(n, 10));
+  return { hour: (h || 0) % 24, minute: m || 0 };
+}
+
 /** The local calendar date (YYYY-MM-DD) of a UTC instant, in a timezone. */
 export function localDateKey(iso: string, tz: string): string {
   try {

@@ -1,168 +1,149 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getTimeZone, formatInTz, localDateKey } from "@/lib/tz";
+import { getTimeZone, formatInTz, localDateKey, localHM } from "@/lib/tz";
+import {
+  CalendarView,
+  type CalPost,
+  type DayCol,
+  type MonthCell,
+} from "@/components/CalendarView";
 
-const DOT: Record<string, string> = {
-  draft: "bg-muted",
-  scheduled: "bg-blue",
-  publishing: "bg-amber-bright",
-  published: "bg-green",
-  failed: "bg-terra",
-};
+type View = "day" | "week" | "month";
 
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DOW_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const pad = (n: number) => String(n).padStart(2, "0");
 
-type PostRow = { id: string; body: string; scheduled_at: string; status: string };
-
-function monthMeta(param?: string) {
-  const now = new Date();
-  let year = now.getUTCFullYear();
-  let month = now.getUTCMonth(); // 0-based
-  if (param && /^\d{4}-\d{2}$/.test(param)) {
-    const [y, m] = param.split("-").map(Number);
-    year = y;
-    month = m - 1;
-  }
-  const first = new Date(Date.UTC(year, month, 1));
-  const next = new Date(Date.UTC(year, month + 1, 1));
-  const prev = new Date(Date.UTC(year, month - 1, 1));
-  const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-  const leadBlanks = (first.getUTCDay() + 6) % 7; // Mon-start
-  const fmt = (d: Date) =>
-    `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+// --- pure calendar-date helpers over YYYY-MM-DD keys (UTC noon, no DST drift) ---
+function dateFromKey(k: string): Date {
+  const [y, m, d] = k.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d, 12));
+}
+function keyFromDate(dt: Date): string {
+  return `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth() + 1)}-${pad(dt.getUTCDate())}`;
+}
+function addDays(k: string, n: number): string {
+  const dt = dateFromKey(k);
+  dt.setUTCDate(dt.getUTCDate() + n);
+  return keyFromDate(dt);
+}
+function dowMon0(k: string): number {
+  return (dateFromKey(k).getUTCDay() + 6) % 7; // 0 = Monday
+}
+function dayCol(k: string, todayKey: string): DayCol {
+  const dt = dateFromKey(k);
   return {
-    year,
-    month,
-    first,
-    startISO: first.toISOString(),
-    endISO: next.toISOString(),
-    daysInMonth,
-    leadBlanks,
-    prevParam: fmt(prev),
-    nextParam: fmt(next),
-    title: first.toLocaleString("en-GB", {
-      month: "long",
-      year: "numeric",
-      timeZone: "UTC",
-    }),
+    key: k,
+    dow: DOW_SHORT[dowMon0(k)],
+    dayNum: dt.getUTCDate(),
+    monthShort: MONTHS_SHORT[dt.getUTCMonth()],
+    isToday: k === todayKey,
   };
 }
 
 export default async function CalendarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string }>;
+  searchParams: Promise<{ view?: string; date?: string }>;
 }) {
-  const { month: monthParam } = await searchParams;
-  const m = monthMeta(monthParam);
+  const { view: viewParam, date: dateParam } = await searchParams;
   const tz = await getTimeZone();
+  const todayKey = localDateKey(new Date().toISOString(), tz);
 
+  const view: View =
+    viewParam === "day" || viewParam === "month" ? viewParam : "week";
+  const anchor = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : todayKey;
+
+  // Visible day columns + range.
+  let days: DayCol[] = [];
+  let monthCells: MonthCell[] = [];
+  let firstKey: string;
+  let lastKey: string;
+  let title: string;
+
+  if (view === "month") {
+    const dt = dateFromKey(anchor);
+    const y = dt.getUTCFullYear();
+    const mo = dt.getUTCMonth(); // 0-based
+    const firstOfMonth = `${y}-${pad(mo + 1)}-01`;
+    const daysInMonth = new Date(Date.UTC(y, mo + 1, 0)).getUTCDate();
+    const lead = dowMon0(firstOfMonth);
+    const cells: MonthCell[] = [];
+    for (let i = 0; i < lead; i++) cells.push({ key: null, dayNum: null, isToday: false });
+    for (let d = 1; d <= daysInMonth; d++) {
+      const k = `${y}-${pad(mo + 1)}-${pad(d)}`;
+      cells.push({ key: k, dayNum: d, isToday: k === todayKey });
+    }
+    while (cells.length % 7 !== 0) cells.push({ key: null, dayNum: null, isToday: false });
+    monthCells = cells;
+    firstKey = firstOfMonth;
+    lastKey = `${y}-${pad(mo + 1)}-${pad(daysInMonth)}`;
+    title = `${dateFromKey(anchor).toLocaleString("en-GB", { month: "long", timeZone: "UTC" })} ${y}`;
+  } else if (view === "day") {
+    days = [dayCol(anchor, todayKey)];
+    firstKey = anchor;
+    lastKey = anchor;
+    const dt = dateFromKey(anchor);
+    title = dt.toLocaleString("en-GB", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+  } else {
+    const monday = addDays(anchor, -dowMon0(anchor));
+    days = Array.from({ length: 7 }, (_, i) => dayCol(addDays(monday, i), todayKey));
+    firstKey = days[0].key;
+    lastKey = days[6].key;
+    const a = dateFromKey(firstKey);
+    const b = dateFromKey(lastKey);
+    const sameMonth = a.getUTCMonth() === b.getUTCMonth();
+    title = sameMonth
+      ? `${a.getUTCDate()} – ${b.getUTCDate()} ${MONTHS_SHORT[b.getUTCMonth()]} ${b.getUTCFullYear()}`
+      : `${a.getUTCDate()} ${MONTHS_SHORT[a.getUTCMonth()]} – ${b.getUTCDate()} ${MONTHS_SHORT[b.getUTCMonth()]} ${b.getUTCFullYear()}`;
+  }
+
+  // Fetch posts in a UTC window padded ±1 day, then bucket by local day.
   const supabase = await createClient();
   const { data } = await supabase
     .from("posts")
     .select("id, body, scheduled_at, status")
-    // ±1 day buffer so posts near the month edge land on the right local day
-    .gte("scheduled_at", new Date(Date.parse(m.startISO) - 86_400_000).toISOString())
-    .lt("scheduled_at", new Date(Date.parse(m.endISO) + 86_400_000).toISOString())
+    .not("scheduled_at", "is", null)
+    .gte("scheduled_at", `${addDays(firstKey, -1)}T00:00:00Z`)
+    .lt("scheduled_at", `${addDays(lastKey, 2)}T00:00:00Z`)
     .order("scheduled_at", { ascending: true });
 
-  const byDay = new Map<string, PostRow[]>();
-  for (const p of (data ?? []) as PostRow[]) {
-    const day = localDateKey(p.scheduled_at, tz); // group by the viewer's local date
-    (byDay.get(day) ?? byDay.set(day, []).get(day)!).push(p);
+  const visible = new Set(
+    view === "month" ? monthCells.filter((c) => c.key).map((c) => c.key!) : days.map((d) => d.key),
+  );
+
+  const posts: CalPost[] = [];
+  for (const p of (data ?? []) as { id: string; body: string; scheduled_at: string; status: string }[]) {
+    const dayKey = localDateKey(p.scheduled_at, tz);
+    if (!visible.has(dayKey)) continue;
+    const { hour, minute } = localHM(p.scheduled_at, tz);
+    posts.push({
+      id: p.id,
+      body: p.body,
+      status: p.status,
+      dayKey,
+      hour,
+      minute,
+      timeLabel: formatInTz(p.scheduled_at, tz, { hour: "2-digit", minute: "2-digit", hour12: false }),
+    });
   }
 
-  const cells: (number | null)[] = [
-    ...Array(m.leadBlanks).fill(null),
-    ...Array.from({ length: m.daysInMonth }, (_, i) => i + 1),
-  ];
-  while (cells.length % 7 !== 0) cells.push(null);
-
-  const dayKey = (day: number) =>
-    `${m.year}-${String(m.month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-
   return (
-    <div className="mx-auto max-w-[960px]">
-      <div className="flex items-center gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-semibold tracking-[-0.01em]">Calendar</h1>
-          <p className="mt-1 text-sm text-muted">{m.title}</p>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <Link
-            href={`/calendar?month=${m.prevParam}`}
-            className="rounded-full border border-line px-3 py-1.5 text-sm text-muted hover:text-ink"
-          >
-            ← Prev
-          </Link>
-          <Link
-            href="/calendar"
-            className="rounded-full border border-line px-3 py-1.5 text-sm text-muted hover:text-ink"
-          >
-            Today
-          </Link>
-          <Link
-            href={`/calendar?month=${m.nextParam}`}
-            className="rounded-full border border-line px-3 py-1.5 text-sm text-muted hover:text-ink"
-          >
-            Next →
-          </Link>
-        </div>
-      </div>
-
-      <div className="mt-6 overflow-x-auto">
-        <div className="min-w-[720px]">
-          <div className="grid grid-cols-7 gap-px">
-            {WEEKDAYS.map((d) => (
-              <div
-                key={d}
-                className="pb-2 text-center font-display text-xs font-semibold uppercase tracking-wide text-muted"
-              >
-                {d}
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-px overflow-hidden rounded-2xl border border-line bg-line">
-            {cells.map((day, i) => {
-              const posts = day ? (byDay.get(dayKey(day)) ?? []) : [];
-              return (
-                <div
-                  key={i}
-                  className={`min-h-[104px] bg-surface p-2 ${day ? "" : "bg-surface-2"}`}
-                >
-                  {day ? (
-                    <>
-                      <div className="mb-1.5 text-xs font-semibold text-muted tabular-nums">
-                        {day}
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        {posts.map((p) => (
-                          <Link
-                            key={p.id}
-                            href={`/composer/${p.id}`}
-                            className="flex items-center gap-1.5 rounded-md bg-surface-2 px-1.5 py-1 text-[11px] hover:bg-blue-soft"
-                            title={p.body}
-                          >
-                            <span className={`size-1.5 shrink-0 rounded-full ${DOT[p.status] ?? "bg-muted"}`} />
-                            <span className="tabular-nums text-muted">
-                              {formatInTz(p.scheduled_at, tz, { hour: "2-digit", minute: "2-digit" })}
-                            </span>
-                            <span className="truncate">{p.body || "(empty)"}</span>
-                          </Link>
-                        ))}
-                      </div>
-                    </>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      <p className="mt-4 text-xs text-muted">
-        Shows posts with a scheduled time (drafts have none). Times shown in {tz}.
-      </p>
+    <div className="mx-auto max-w-[1180px]">
+      <CalendarView
+        view={view}
+        anchor={anchor}
+        todayKey={todayKey}
+        title={title}
+        days={days}
+        monthCells={monthCells}
+        posts={posts}
+      />
     </div>
   );
 }

@@ -45,6 +45,8 @@ type PostFormProps = {
   channels: Channel[];
   action: (formData: FormData) => Promise<void>;
   submitLabel: string;
+  /** Prefill the schedule field with a local wall-clock time (YYYY-MM-DDTHH:MM). */
+  defaultScheduleLocal?: string;
   initial?: {
     id: string;
     thread: string[];
@@ -64,7 +66,13 @@ function utcToLocalInput(utc?: string | null): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-export function PostForm({ channels, action, submitLabel, initial }: PostFormProps) {
+export function PostForm({
+  channels,
+  action,
+  submitLabel,
+  defaultScheduleLocal,
+  initial,
+}: PostFormProps) {
   const [tweets, setTweets] = useState<string[]>(
     initial?.thread?.length ? initial.thread : [""],
   );
@@ -75,7 +83,9 @@ export function PostForm({ channels, action, submitLabel, initial }: PostFormPro
     new Set(Object.keys(initial?.variants ?? {})),
   );
   const [tiktokPrivacy, setTiktokPrivacy] = useState(initial?.tiktokPrivacy ?? "SELF_ONLY");
-  const [scheduleLocal, setScheduleLocal] = useState(() => utcToLocalInput(initial?.scheduledAt));
+  const [scheduleLocal, setScheduleLocal] = useState(
+    () => utcToLocalInput(initial?.scheduledAt) || defaultScheduleLocal || "",
+  );
   const [busy, setBusy] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
