@@ -306,7 +306,7 @@ export async function cancelPost(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
-export type ConnectBlueskyState = { error?: string };
+export type ConnectBlueskyState = { ok?: boolean; error?: string };
 
 /**
  * Connect a Bluesky account from a handle + app password (no OAuth redirect).
@@ -353,5 +353,5 @@ export async function connectBlueskyChannel(
   if (error) return { error: "Couldn't save the channel — please try again." };
 
   revalidatePath("/channels");
-  redirect("/channels?connected=bluesky");
+  return { ok: true };
 }

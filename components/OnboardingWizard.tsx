@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrandTile, BRANDS } from "@/components/BrandTile";
+import { BlueskyForm } from "@/components/BlueskyForm";
 import { completeOnboarding } from "@/app/(app)/onboarding-actions";
 import { createApiKey } from "@/app/(app)/apikey-actions";
 
@@ -130,7 +131,7 @@ export function OnboardingWizard({ connected: initial }: { connected: string[] }
         {/* body */}
         <div className="flex-1 overflow-y-auto px-6 py-7 sm:px-10">
           {step === 1 ? (
-            <StepChannels connected={connected} busy={busy} onConnect={connect} />
+            <StepChannels connected={connected} busy={busy} onConnect={connect} refresh={refresh} />
           ) : step === 2 ? (
             <StepAgent />
           ) : (
@@ -177,11 +178,15 @@ function StepChannels({
   connected,
   busy,
   onConnect,
+  refresh,
 }: {
   connected: string[];
   busy: string | null;
   onConnect: (p: string) => void;
+  refresh: () => void | Promise<void>;
 }) {
+  const [bskyOpen, setBskyOpen] = useState(false);
+  const bskyConnected = connected.includes("bluesky");
   return (
     <div>
       <h2 className="text-center font-display text-2xl font-semibold tracking-[-0.01em]">
@@ -223,7 +228,46 @@ function StepChannels({
             </button>
           );
         })}
+
+        {/* Bluesky — form-based connect (no OAuth popup) */}
+        <button
+          onClick={() => !bskyConnected && setBskyOpen((v) => !v)}
+          disabled={bskyConnected}
+          className={`group relative flex flex-col items-center gap-2.5 rounded-2xl border p-5 transition ${
+            bskyConnected
+              ? "border-green/40 bg-green/[0.06]"
+              : bskyOpen
+                ? "border-blue bg-surface"
+                : "border-line bg-surface hover:border-blue hover:shadow-sm"
+          }`}
+        >
+          <BrandTile platform="bluesky" size={52} />
+          <span className="font-display text-sm font-semibold">Bluesky</span>
+          {bskyConnected ? (
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-green">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+              Connected
+            </span>
+          ) : (
+            <span className="text-xs text-muted group-hover:text-blue-ink">Connect</span>
+          )}
+        </button>
       </div>
+
+      {/* Bluesky inline connect form */}
+      {bskyOpen && !bskyConnected ? (
+        <div className="mx-auto mt-4 max-w-lg rounded-2xl border border-line bg-surface-2/40 p-4">
+          <BlueskyForm
+            onConnected={() => {
+              setBskyOpen(false);
+              refresh();
+            }}
+            onCancel={() => setBskyOpen(false)}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
