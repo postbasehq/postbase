@@ -26,12 +26,12 @@ export function SiteNav() {
         </div>
         <div className="ml-auto flex items-center gap-3.5">
           <ThemeToggle />
-          <Link href="/login" className="text-sm font-semibold text-ink">
+          <Link href="/login" className="hidden text-sm font-semibold text-ink sm:inline">
             Sign in
           </Link>
           <Link
             href="/login"
-            className="rounded-full bg-blue px-4 py-2 text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md font-display"
+            className="whitespace-nowrap rounded-full bg-blue px-4 py-2 text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md font-display"
           >
             Start for $0
           </Link>

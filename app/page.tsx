@@ -14,20 +14,19 @@ export default function Home() {
       <SiteNav />
 
       {/* HERO */}
-      <header className="pt-16 md:pt-24">
+      <header className="pt-9 md:pt-24">
         <div className="mx-auto flex max-w-[720px] flex-col items-center px-6 text-center">
           <span className={`${pill} bg-blue-soft text-blue-ink`}>
             Open-source · MCP-native
           </span>
-          <h1 className="mt-5 font-display text-[clamp(40px,6.4vw,66px)] font-semibold leading-[1.03] tracking-[-0.02em] text-balance">
+          <h1 className="mt-4 font-display text-[clamp(34px,6.4vw,66px)] font-semibold leading-[1.03] tracking-[-0.02em] text-balance md:mt-5">
             Let your AI <span className="text-terra">post for you.</span>
           </h1>
-          <p className="mx-auto mt-5 max-w-[52ch] text-lg text-muted text-balance">
-            Postbase is the open-source, MCP-native scheduler. Connect Claude, Cursor,
-            ChatGPT, or any agent — it drafts, schedules, and publishes across every
-            channel. Or do it yourself from a clean calendar.
+          <p className="mx-auto mt-4 max-w-[48ch] text-[17px] text-muted text-balance md:mt-5 md:text-lg">
+            The open-source, MCP-native scheduler. Connect Claude, Cursor, or any
+            agent — it drafts, schedules, and publishes for you.
           </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <div className="mt-6 flex flex-wrap justify-center gap-3 md:mt-8">
             <a
               href="/login"
               className="rounded-full bg-blue px-6 py-3 font-display text-[15px] font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
@@ -47,7 +46,7 @@ export default function Home() {
         </div>
 
         {/* live agent demo — full width below the fold-line */}
-        <div className="mx-auto mt-12 max-w-[880px] px-6">
+        <div className="mx-auto mt-7 max-w-[880px] px-6 md:mt-12">
           <AgentDemo />
         </div>
 
