@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrandTile, BRANDS } from "@/components/BrandTile";
 import { BlueskyForm } from "@/components/BlueskyForm";
-import { MastodonForm } from "@/components/MastodonForm";
 import { completeOnboarding } from "@/app/(app)/onboarding-actions";
 import { createApiKey } from "@/app/(app)/apikey-actions";
 
@@ -32,21 +31,16 @@ export function OnboardingWizard({ connected: initial }: { connected: string[] }
     }
   }, []);
 
-  // Open the platform OAuth in a popup; when it lands back on our domain,
-  // close it and re-read the connected list. Falls back to a full redirect
-  // if the popup is blocked.
-  const connect = useCallback(
-    (platform: string) => {
-      const w = window.open(
-        `/api/connect/${platform}`,
-        "pb_connect",
-        "width=680,height=820,menubar=no,toolbar=no",
-      );
+  // Open an OAuth flow in a popup; when it lands back on our domain, close it
+  // and re-read the connected list. Falls back to a full redirect if blocked.
+  const openConnect = useCallback(
+    (url: string, key: string) => {
+      const w = window.open(url, "pb_connect", "width=680,height=820,menubar=no,toolbar=no");
       if (!w) {
-        window.location.href = `/api/connect/${platform}`;
+        window.location.href = url;
         return;
       }
-      setBusy(platform);
+      setBusy(key);
       if (pollRef.current) clearInterval(pollRef.current);
       pollRef.current = setInterval(async () => {
         if (w.closed) {
@@ -68,6 +62,12 @@ export function OnboardingWizard({ connected: initial }: { connected: string[] }
       }, 600);
     },
     [refresh],
+  );
+
+  const connect = useCallback((platform: string) => openConnect(`/api/connect/${platform}`, platform), [openConnect]);
+  const connectMastodon = useCallback(
+    (instance: string) => openConnect(`/api/connect/mastodon?instance=${encodeURIComponent(instance)}`, "mastodon"),
+    [openConnect],
   );
 
   useEffect(() => () => void (pollRef.current && clearInterval(pollRef.current)), []);
@@ -132,7 +132,13 @@ export function OnboardingWizard({ connected: initial }: { connected: string[] }
         {/* body */}
         <div className="flex-1 overflow-y-auto px-6 py-7 sm:px-10">
           {step === 1 ? (
-            <StepChannels connected={connected} busy={busy} onConnect={connect} refresh={refresh} />
+            <StepChannels
+              connected={connected}
+              busy={busy}
+              onConnect={connect}
+              onConnectMastodon={connectMastodon}
+              refresh={refresh}
+            />
           ) : step === 2 ? (
             <StepAgent />
           ) : (
@@ -179,15 +185,18 @@ function StepChannels({
   connected,
   busy,
   onConnect,
+  onConnectMastodon,
   refresh,
 }: {
   connected: string[];
   busy: string | null;
   onConnect: (p: string) => void;
+  onConnectMastodon: (instance: string) => void;
   refresh: () => void | Promise<void>;
 }) {
   const [bskyOpen, setBskyOpen] = useState(false);
   const [mastoOpen, setMastoOpen] = useState(false);
+  const [mastoInstance, setMastoInstance] = useState("");
   const bskyConnected = connected.includes("bluesky");
   const mastoConnected = connected.includes("mastodon");
   return (
@@ -298,17 +307,48 @@ function StepChannels({
         </div>
       ) : null}
 
-      {/* Mastodon inline connect form */}
+      {/* Mastodon inline instance picker → OAuth */}
       {mastoOpen && !mastoConnected ? (
-        <div className="mx-auto mt-4 max-w-lg rounded-2xl border border-line bg-surface-2/40 p-4">
-          <MastodonForm
-            onConnected={() => {
-              setMastoOpen(false);
-              refresh();
-            }}
-            onCancel={() => setMastoOpen(false)}
-          />
-        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const v = mastoInstance.trim().replace(/^https?:\/\//, "").replace(/\/+$/, "");
+            if (v) onConnectMastodon(v);
+          }}
+          className="mx-auto mt-4 flex max-w-lg flex-col gap-2 rounded-2xl border border-line bg-surface-2/40 p-4 text-left"
+        >
+          <span className="text-[13px] font-medium text-muted">Your Mastodon server</span>
+          <div className="flex items-center rounded-xl border border-line bg-ground px-3.5 focus-within:border-blue">
+            <span className="text-sm text-muted">https://</span>
+            <input
+              value={mastoInstance}
+              onChange={(e) => setMastoInstance(e.target.value)}
+              autoFocus
+              spellCheck={false}
+              placeholder="mastodon.social"
+              className="min-w-0 flex-1 bg-transparent py-2.5 pl-1 text-sm outline-none"
+            />
+          </div>
+          <span className="text-xs text-muted">
+            You&rsquo;ll approve access on your server, then land back here.
+          </span>
+          <div className="flex items-center gap-3 pt-1">
+            <button
+              type="submit"
+              disabled={busy === "mastodon"}
+              className="rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm disabled:opacity-60"
+            >
+              {busy === "mastodon" ? "Connecting…" : "Continue →"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMastoOpen(false)}
+              className="text-sm font-medium text-muted hover:text-ink"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
       ) : null}
     </div>
   );

@@ -20,7 +20,7 @@ export type MastodonTokens = {
 
 export type MastodonMedia = { url: string; type: string };
 
-function normalizeInstance(url: string): string {
+export function normalizeInstance(url: string): string {
   let u = url.trim().replace(/\/+$/, "");
   if (!/^https?:\/\//i.test(u)) u = `https://${u}`;
   return u;
@@ -60,21 +60,99 @@ async function api<T>(
   return json as T;
 }
 
-/** Validate an instance + access token; returns tokens to store. */
-export async function connectMastodon(instanceUrl: string, token: string): Promise<MastodonTokens> {
+const OAUTH_SCOPES = "read write";
+
+/** Fetch the account for a token → the fields we store. */
+export async function verifyAccount(
+  instanceUrl: string,
+  token: string,
+): Promise<{ instance: string; account_id: string; handle: string }> {
   const instance = normalizeInstance(instanceUrl);
   const account = await api<{ id: string; username: string }>(
     instance,
     "/api/v1/accounts/verify_credentials",
     { token: token.trim() },
   );
-  const host = new URL(instance).host;
   return {
     instance,
-    access_token: token.trim(),
     account_id: account.id,
-    handle: `@${account.username}@${host}`,
+    handle: `@${account.username}@${new URL(instance).host}`,
   };
+}
+
+/**
+ * Register an OAuth app on the given instance. Mastodon is federated — every
+ * instance is its own OAuth server — so we register dynamically at connect time
+ * instead of pre-creating an app. No stored client id/secret env needed.
+ */
+export async function registerApp(
+  instanceUrl: string,
+  redirectUri: string,
+): Promise<{ client_id: string; client_secret: string }> {
+  const instance = normalizeInstance(instanceUrl);
+  const form = new URLSearchParams({
+    client_name: "Postbase",
+    redirect_uris: redirectUri,
+    scopes: OAUTH_SCOPES,
+    website: "https://www.postbase.so",
+  });
+  const res = await fetch(`${instance}/api/v1/apps`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: form,
+  });
+  const json = (await res.json().catch(() => ({}))) as Record<string, string>;
+  if (!res.ok || !json.client_id) {
+    throw new Error(json.error || `Couldn't register with ${instance} (${res.status})`);
+  }
+  return { client_id: json.client_id, client_secret: json.client_secret };
+}
+
+/** The instance's OAuth authorize URL to redirect the user to. */
+export function authorizeUrl(
+  instanceUrl: string,
+  clientId: string,
+  redirectUri: string,
+  state: string,
+): string {
+  const instance = normalizeInstance(instanceUrl);
+  const p = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: OAUTH_SCOPES,
+    state,
+  });
+  return `${instance}/oauth/authorize?${p.toString()}`;
+}
+
+/** Exchange an authorization code for an access token. */
+export async function exchangeCode(
+  instanceUrl: string,
+  clientId: string,
+  clientSecret: string,
+  redirectUri: string,
+  code: string,
+): Promise<string> {
+  const instance = normalizeInstance(instanceUrl);
+  const form = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
+    redirect_uri: redirectUri,
+    grant_type: "authorization_code",
+    code,
+    scope: OAUTH_SCOPES,
+  });
+  const res = await fetch(`${instance}/oauth/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: form,
+  });
+  const json = (await res.json().catch(() => ({}))) as Record<string, string>;
+  if (!res.ok || !json.access_token) {
+    throw new Error(json.error_description || json.error || `Token exchange failed (${res.status})`);
+  }
+  return json.access_token;
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
