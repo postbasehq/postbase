@@ -197,7 +197,6 @@ function TimeGrid({
 
           {/* day columns */}
           {days.map((d) => {
-            const past = pastHours(d.key);
             return (
               <div key={d.key} className="relative border-r border-line last:border-r-0">
                 {HOURS.map((h) => {
@@ -209,8 +208,14 @@ function TimeGrid({
                       className="group relative border-b border-line/60"
                       style={{ height: ROW, ...(cellPast ? HATCH : null) }}
                     >
-                      {/* click-to-compose on empty space (future only) */}
-                      {cellPast ? null : (
+                      {/* future: click-to-compose · past: "Date passed" on hover */}
+                      {cellPast ? (
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition group-hover:opacity-100">
+                          <span className="rounded-full bg-surface/80 px-2 py-0.5 text-[11px] font-medium text-muted">
+                            Date passed
+                          </span>
+                        </div>
+                      ) : (
                         <Link
                           href={`/composer?at=${d.key}T${pad(h)}:00`}
                           className="absolute inset-0 flex items-center justify-center text-muted opacity-0 transition group-hover:opacity-100 hover:bg-blue-soft/40"
@@ -237,17 +242,6 @@ function TimeGrid({
                     </div>
                   );
                 })}
-                {/* "Date passed" label centered over the past region */}
-                {past > 0 ? (
-                  <div
-                    className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-center"
-                    style={{ height: past * ROW }}
-                  >
-                    <span className="rounded-full bg-surface/70 px-2 py-0.5 text-xs font-medium text-muted">
-                      Date passed
-                    </span>
-                  </div>
-                ) : null}
               </div>
             );
           })}
