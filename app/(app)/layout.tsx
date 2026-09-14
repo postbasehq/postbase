@@ -4,6 +4,7 @@ import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AppNav } from "@/components/AppNav";
 import { HeaderTitle } from "@/components/HeaderTitle";
+import { NotificationBell, type Notice } from "@/components/NotificationBell";
 import { OrgSwitcher } from "@/components/OrgSwitcher";
 import { TimezoneSync } from "@/components/TimezoneSync";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
@@ -30,13 +31,21 @@ export default async function AppLayout({
 
   const [orgs, activeId] = await Promise.all([getUserOrgs(), getCurrentOrgId()]);
 
-  // First-run onboarding: show the welcome wizard on any app page until finished.
+  // First-run onboarding + notification bell data (both scoped by RLS).
   let onboarding: { show: boolean; connected: string[] } = { show: false, connected: [] };
+  let notices: Notice[] = [];
   if (activeId) {
     const supabase = await createClient();
-    const [{ data: org }, { data: channels }] = await Promise.all([
+    const [{ data: org }, { data: channels }, { data: failed }] = await Promise.all([
       supabase.from("orgs").select("onboarded_at").eq("id", activeId).maybeSingle(),
       supabase.from("channels").select("platform"),
+      // Terminally-failed deliveries (no retry pending) become notifications.
+      supabase
+        .from("post_targets")
+        .select("id, error, posts(id, body), channels(platform)")
+        .eq("status", "failed")
+        .is("next_attempt_at", null)
+        .limit(20),
     ]);
     if (org && org.onboarded_at === null) {
       onboarding = {
@@ -44,6 +53,20 @@ export default async function AppLayout({
         connected: Array.from(new Set((channels ?? []).map((c) => c.platform))),
       };
     }
+    notices = ((failed ?? []) as unknown as {
+      id: string;
+      error: string | null;
+      posts: { id: string; body: string } | null;
+      channels: { platform: string } | null;
+    }[])
+      .filter((t) => t.posts)
+      .map((t) => ({
+        id: t.id,
+        postId: t.posts!.id,
+        platform: t.channels?.platform ?? "—",
+        body: t.posts!.body,
+        error: t.error,
+      }));
   }
 
   return (
@@ -75,6 +98,7 @@ export default async function AppLayout({
         <header className="flex h-16 items-center gap-3 border-b border-line px-6">
           <HeaderTitle />
           <div className="ml-auto flex items-center gap-3">
+            <NotificationBell items={notices} />
             <ThemeToggle />
             <Link
               href="/composer"
