@@ -1,14 +1,22 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { connectBlueskyChannel, type ConnectBlueskyState } from "@/app/(app)/actions";
 
 export function BlueskyConnect() {
   const [open, setOpen] = useState(false);
+  const [handle, setHandle] = useState("");
+  const [inputWidth, setInputWidth] = useState(0);
+  const measureRef = useRef<HTMLSpanElement>(null);
   const [state, action, pending] = useActionState<ConnectBlueskyState, FormData>(
     connectBlueskyChannel,
     {},
   );
+
+  // Size the input to its text so ".bsky.social" hugs right after it.
+  useEffect(() => {
+    if (measureRef.current) setInputWidth(measureRef.current.offsetWidth);
+  }, [handle, open]);
 
   return (
     <div className="mt-4 rounded-2xl border border-line bg-surface p-4 shadow-sm">
@@ -58,16 +66,27 @@ export function BlueskyConnect() {
 
           <label className="flex flex-col gap-1">
             <span className="text-[13px] font-medium text-muted">Handle</span>
-            <div className="flex items-center rounded-xl border border-line bg-ground pr-3.5 focus-within:border-blue">
+            <div className="flex items-center overflow-x-auto rounded-xl border border-line bg-ground px-3.5 py-2.5 text-sm focus-within:border-blue">
+              {/* hidden measurer — same font metrics as the input */}
+              <span
+                ref={measureRef}
+                aria-hidden
+                className="pointer-events-none invisible absolute whitespace-pre text-sm"
+              >
+                {handle || "yourname"}
+              </span>
               <input
                 name="handle"
+                value={handle}
+                onChange={(e) => setHandle(e.target.value)}
                 required
                 autoComplete="off"
                 spellCheck={false}
                 placeholder="yourname"
-                className="min-w-0 flex-1 bg-transparent py-2.5 pl-3.5 text-sm outline-none"
+                style={{ width: Math.max(inputWidth, 8) }}
+                className="bg-transparent outline-none"
               />
-              <span className="shrink-0 text-sm text-muted">.bsky.social</span>
+              <span className="shrink-0 text-muted">.bsky.social</span>
             </div>
             <span className="text-xs text-muted">
               Just your username. Using a custom domain? Type your full handle.
