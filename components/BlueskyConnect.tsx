@@ -58,13 +58,22 @@ export function BlueskyConnect() {
 
           <label className="flex flex-col gap-1">
             <span className="text-[13px] font-medium text-muted">Handle</span>
-            <input
-              name="handle"
-              required
-              autoComplete="off"
-              placeholder="you.bsky.social"
-              className="rounded-xl border border-line bg-ground px-3.5 py-2.5 text-sm outline-none focus-visible:border-blue"
-            />
+            <div className="flex items-stretch overflow-hidden rounded-xl border border-line bg-ground focus-within:border-blue">
+              <input
+                name="handle"
+                required
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="yourname"
+                className="min-w-0 flex-1 bg-transparent px-3.5 py-2.5 text-sm outline-none"
+              />
+              <span className="flex items-center border-l border-line bg-surface-2 px-3 text-sm text-muted">
+                .bsky.social
+              </span>
+            </div>
+            <span className="text-xs text-muted">
+              Just your username. Using a custom domain? Type your full handle.
+            </span>
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-[13px] font-medium text-muted">App password</span>

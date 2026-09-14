@@ -70,7 +70,10 @@ export async function connectBluesky(
   appPassword: string,
   service = DEFAULT_SERVICE,
 ): Promise<BlueskyTokens> {
-  const id = handle.trim().replace(/^@/, "");
+  // Accept just a username ("alice") and default the domain; a value that already
+  // contains a dot is treated as a full handle (custom domains like alice.com).
+  const raw = handle.trim().replace(/^@/, "").toLowerCase();
+  const id = raw.includes(".") ? raw : `${raw}.bsky.social`;
   const password = appPassword.trim();
   const session = await createSession(service, id, password);
   return { service, identifier: id, app_password: password, did: session.did, handle: session.handle };
