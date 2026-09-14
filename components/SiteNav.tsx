@@ -29,12 +29,12 @@ export function SiteNav() {
           <Link href="/login" className="text-sm font-semibold text-ink">
             Sign in
           </Link>
-          <a
-            href="#pricing"
+          <Link
+            href="/login"
             className="rounded-full bg-blue px-4 py-2 text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md font-display"
           >
-            Start free trial
-          </a>
+            Start for $0
+          </Link>
         </div>
       </div>
     </nav>

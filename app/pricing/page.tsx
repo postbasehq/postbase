@@ -4,7 +4,7 @@ import { PlanPicker } from "@/components/PlanPicker";
 
 export const metadata = {
   title: "Pricing — Postbase",
-  description: "Simple plans for creators. Post everywhere, even from your AI.",
+  description: "Simple plans for creators. Let your AI post for you.",
 };
 
 export default function PricingPage() {
@@ -14,11 +14,11 @@ export default function PricingPage() {
       <main className="mx-auto max-w-[1120px] px-6 py-16">
         <div className="mx-auto max-w-[640px] text-center">
           <h1 className="font-display text-4xl font-semibold tracking-[-0.02em]">
-            Post everywhere. Even from your AI.
+            Let your AI post for you.
           </h1>
           <p className="mt-3 text-muted">
-            One rail for X, Instagram, LinkedIn, and TikTok — plus an MCP server so your agent
-            can publish too. Start with a 7-day free trial.
+            One rail for X, LinkedIn, Instagram, TikTok, and YouTube — plus an MCP server so
+            your agent can publish too. Start with a 7-day free trial.
           </p>
         </div>
 

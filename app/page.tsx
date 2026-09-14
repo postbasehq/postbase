@@ -247,7 +247,7 @@ export default function Home() {
             Put your posting on rails.
           </h2>
           <p className="mx-auto mt-3 max-w-[44ch] text-[17px] opacity-90">
-            Schedule across X, LinkedIn, and Instagram — from a dashboard, or from your AI.
+            Schedule across X, LinkedIn, Instagram, TikTok, and YouTube — from a dashboard, or from your AI.
           </p>
           <a
             href="#pricing"
