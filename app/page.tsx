@@ -1,5 +1,6 @@
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
+import { AgentDemo } from "@/components/AgentDemo";
 
 const pill = "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold font-display";
 
@@ -17,23 +18,24 @@ export default function Home() {
         <div className="mx-auto grid max-w-[1120px] items-center gap-10 px-6 md:grid-cols-[1.05fr_.95fr] md:gap-12">
           <div>
             <span className={`${pill} bg-blue-soft text-blue-ink`}>
-              Open-source · self-host free
+              Open-source · MCP-native
             </span>
             <h1 className="mt-5 font-display text-[clamp(38px,5.4vw,58px)] font-semibold leading-[1.04] tracking-[-0.02em] text-balance">
-              Post everywhere.
+              Let your AI
               <br />
-              <span className="text-terra">Even from your AI.</span>
+              <span className="text-terra">post for you.</span>
             </h1>
-            <p className="mt-5 max-w-[46ch] text-lg text-muted">
-              Postbase schedules and publishes your posts across every channel — from one
-              clean dashboard, or straight from the AI tools you already work in.
+            <p className="mt-5 max-w-[48ch] text-lg text-muted">
+              Postbase is the open-source, MCP-native scheduler. Connect Claude, Cursor,
+              ChatGPT, or any agent — it drafts, schedules, and publishes across every
+              channel. Or do it yourself from a clean calendar.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <a
-                href="#pricing"
+                href="/login"
                 className="rounded-full bg-blue px-6 py-3 font-display text-[15px] font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
               >
-                Start 7-day free trial
+                Start for $0
               </a>
               <a
                 href="https://github.com/postbasehq"
@@ -43,44 +45,12 @@ export default function Home() {
               </a>
             </div>
             <p className="mt-4 text-[13.5px] text-muted">
-              No free-forever plan · <b className="text-ink">7-day trial</b> · cancel
-              anytime · or <b className="text-ink">self-host for free</b>.
+              7-day trial · cancel anytime · or <b className="text-ink">self-host for free</b>.
             </p>
           </div>
 
-          {/* product mock */}
-          <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-md">
-            <div className="flex items-center gap-2 border-b border-line px-4 py-3">
-              <span className={`${pill} bg-blue-soft text-blue-ink !px-2.5`}>Queue</span>
-              <span className="ml-1 font-display text-[13px] font-semibold text-muted">Today</span>
-              <span className="ml-auto rounded-full bg-blue px-3 py-1.5 font-display text-xs font-semibold text-on-blue">
-                + New post
-              </span>
-            </div>
-            {[
-              ["09:00", "X", "launch thread", "Scheduled", "bg-blue-soft text-blue-ink", "bg-blue"],
-              ["13:15", "LinkedIn", "hiring post", "Publishing", "bg-amber-bright/15 text-amber", "bg-amber-bright"],
-              ["18:30", "Instagram", "product reel", "Published", "bg-green/15 text-green", "bg-green"],
-              ["21:00", "X + LinkedIn", "recap", "Scheduled", "bg-blue-soft text-blue-ink", "bg-blue"],
-            ].map(([time, ch, note, status, pillCls, dotCls], i, arr) => (
-              <div
-                key={time}
-                className={`grid grid-cols-[auto_1fr_auto] items-center gap-3.5 px-4 py-3 ${
-                  i < arr.length - 1 ? "border-b border-line" : ""
-                }`}
-              >
-                <span className="font-display text-sm font-semibold tabular-nums">{time}</span>
-                <span className="text-[13.5px]">
-                  <b className="font-semibold">{ch}</b>{" "}
-                  <span className="text-muted">· {note}</span>
-                </span>
-                <span className={`${pill} ${pillCls}`}>
-                  <Dot className={dotCls as string} />
-                  {status}
-                </span>
-              </div>
-            ))}
-          </div>
+          {/* live agent demo */}
+          <AgentDemo />
         </div>
 
         {/* channels */}
@@ -89,10 +59,8 @@ export default function Home() {
           <span className="inline-flex items-center gap-2 font-medium"><Dot className="bg-ink" />X</span>
           <span className="inline-flex items-center gap-2 font-medium"><Dot className="bg-blue" />LinkedIn</span>
           <span className="inline-flex items-center gap-2 font-medium"><Dot className="bg-terra" />Instagram</span>
-          <span className="inline-flex items-center gap-2 font-medium">
-            <Dot className="bg-amber-bright" />YouTube
-            <span className="rounded-full border border-line px-1.5 text-[11px]">soon</span>
-          </span>
+          <span className="inline-flex items-center gap-2 font-medium"><Dot className="bg-ink" />TikTok</span>
+          <span className="inline-flex items-center gap-2 font-medium"><Dot className="bg-amber-bright" />YouTube</span>
         </div>
       </header>
 
