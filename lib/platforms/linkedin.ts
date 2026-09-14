@@ -6,7 +6,7 @@
  * id from /v2/userinfo) and w_member_social (to post on their behalf).
  *
  * Requires LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, LINKEDIN_CALLBACK_URL
- * (+ optional LINKEDIN_API_VERSION, default 202409).
+ * (+ optional LINKEDIN_API_VERSION, default 202509).
  */
 
 const AUTHORIZE_URL = "https://www.linkedin.com/oauth/v2/authorization";

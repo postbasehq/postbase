@@ -10,7 +10,7 @@
  * Publishing is two steps: create a media container, then publish it.
  *
  * Requires META_APP_ID, META_APP_SECRET, META_CALLBACK_URL (+ optional
- * META_GRAPH_API_VERSION, default v21.0).
+ * META_GRAPH_API_VERSION, default v25.0).
  */
 
 const SCOPES = [
@@ -25,7 +25,7 @@ const SCOPES = [
 // app's permissions and granted via App Review. Add it back once approved.
 
 function version(): string {
-  return process.env.META_GRAPH_API_VERSION ?? "v21.0";
+  return process.env.META_GRAPH_API_VERSION ?? "v25.0";
 }
 
 function graph(): string {
