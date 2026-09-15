@@ -157,10 +157,10 @@ function TimeGrid({
   nowHour: number;
 }) {
   const cols = `64px repeat(${days.length}, minmax(0, 1fr))`;
-  // A slot is past (unschedulable) if its day is before today, or it's today
-  // and the hour has already started.
+  // A slot is past only once it has fully elapsed: an earlier day, or today and
+  // strictly before the current hour (the in-progress hour stays schedulable).
   const pastHours = (key: string) =>
-    key < todayKey ? 24 : key === todayKey ? Math.min(nowHour + 1, 24) : 0;
+    key < todayKey ? 24 : key === todayKey ? nowHour : 0;
   const isPast = (key: string, hour: number) => hour < pastHours(key);
   return (
     <div className="flex h-full flex-col">
