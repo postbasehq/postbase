@@ -55,7 +55,7 @@ function PlatformIcons({ platforms, status }: { platforms: string[]; status: str
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const ROW = 56; // px per hour row
+const ROW = 68; // px per hour row
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
