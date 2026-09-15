@@ -7,7 +7,7 @@ import {
   type MonthCell,
 } from "@/components/CalendarView";
 
-type View = "day" | "week" | "month";
+type View = "day" | "week" | "month" | "list";
 
 const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DOW_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -52,7 +52,7 @@ export default async function CalendarPage({
   const nowHour = localHM(nowISO, tz).hour;
 
   const view: View =
-    viewParam === "day" || viewParam === "month" ? viewParam : "week";
+    viewParam === "day" || viewParam === "month" || viewParam === "list" ? viewParam : "week";
   const anchor = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : todayKey;
 
   // Visible day columns + range.
@@ -62,7 +62,12 @@ export default async function CalendarPage({
   let lastKey: string;
   let title: string;
 
-  if (view === "month") {
+  if (view === "list") {
+    // A chronological feed: recent + upcoming, grouped by day in the client.
+    firstKey = addDays(todayKey, -7);
+    lastKey = addDays(todayKey, 90);
+    title = "Scheduled & recent";
+  } else if (view === "month") {
     const dt = dateFromKey(anchor);
     const y = dt.getUTCFullYear();
     const mo = dt.getUTCMonth(); // 0-based
@@ -130,7 +135,7 @@ export default async function CalendarPage({
   const posts: CalPost[] = [];
   for (const p of (data ?? []) as unknown as Row[]) {
     const dayKey = localDateKey(p.scheduled_at, tz);
-    if (!visible.has(dayKey)) continue;
+    if (view !== "list" && !visible.has(dayKey)) continue;
     const { hour, minute } = localHM(p.scheduled_at, tz);
     const platforms = Array.from(
       new Set((p.post_targets ?? []).map((t) => t.channels?.platform).filter(Boolean) as string[]),

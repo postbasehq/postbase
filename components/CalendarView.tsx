@@ -25,7 +25,7 @@ export type DayCol = {
 
 export type MonthCell = { key: string | null; dayNum: number | null; isToday: boolean };
 
-type View = "day" | "week" | "month";
+type View = "day" | "week" | "month" | "list";
 
 const DOT: Record<string, string> = {
   draft: "bg-muted",
@@ -108,33 +108,35 @@ export function CalendarView({
     <div className="flex h-[calc(100vh-160px)] min-h-[520px] flex-col">
       {/* toolbar */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => go(view, shiftKey(anchor, view, -1))}
-            aria-label="Previous"
-            className="rounded-full border border-line p-1.5 text-muted hover:text-ink"
-          >
-            <Chevron dir="left" />
-          </button>
-          <button
-            onClick={() => go(view, todayKey)}
-            className="rounded-full border border-line px-3 py-1.5 text-sm font-medium text-ink hover:bg-surface-2"
-          >
-            Today
-          </button>
-          <button
-            onClick={() => go(view, shiftKey(anchor, view, 1))}
-            aria-label="Next"
-            className="rounded-full border border-line p-1.5 text-muted hover:text-ink"
-          >
-            <Chevron dir="right" />
-          </button>
-        </div>
+        {view !== "list" ? (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => go(view, shiftKey(anchor, view, -1))}
+              aria-label="Previous"
+              className="rounded-full border border-line p-1.5 text-muted hover:text-ink"
+            >
+              <Chevron dir="left" />
+            </button>
+            <button
+              onClick={() => go(view, todayKey)}
+              className="rounded-full border border-line px-3 py-1.5 text-sm font-medium text-ink hover:bg-surface-2"
+            >
+              Today
+            </button>
+            <button
+              onClick={() => go(view, shiftKey(anchor, view, 1))}
+              aria-label="Next"
+              className="rounded-full border border-line p-1.5 text-muted hover:text-ink"
+            >
+              <Chevron dir="right" />
+            </button>
+          </div>
+        ) : null}
         <span className="font-display text-sm font-semibold tabular-nums">{title}</span>
 
         {/* view switch */}
         <div className="ml-auto flex items-center gap-1 rounded-full border border-line p-1">
-          {(["day", "week", "month"] as View[]).map((v) => (
+          {(["day", "week", "month", "list"] as View[]).map((v) => (
             <button
               key={v}
               onClick={() => go(v, anchor)}
@@ -156,7 +158,9 @@ export function CalendarView({
 
       {/* body */}
       <div className="mt-4 flex-1 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
-        {view === "month" ? (
+        {view === "list" ? (
+          <ListView posts={posts} todayKey={todayKey} />
+        ) : view === "month" ? (
           <MonthGrid cells={monthCells} byDay={byDay} todayKey={todayKey} />
         ) : (
           <TimeGrid days={days} byDayHour={byDayHour} todayKey={todayKey} nowHour={nowHour} />
@@ -349,6 +353,79 @@ function MonthGrid({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+const STATUS_LABEL: Record<string, { text: string; cls: string }> = {
+  draft: { text: "Draft", cls: "text-muted" },
+  scheduled: { text: "Scheduled", cls: "text-blue-ink" },
+  publishing: { text: "Publishing", cls: "text-amber" },
+  published: { text: "Published", cls: "text-green" },
+  failed: { text: "Failed", cls: "text-terra" },
+};
+
+function dayHeader(key: string, todayKey: string): string {
+  const [y, m, d] = key.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  const [ty, tm, td] = todayKey.split("-").map(Number);
+  const diff = Math.round((dt.getTime() - Date.UTC(ty, tm - 1, td)) / 86_400_000);
+  const rel = diff === 0 ? "Today" : diff === 1 ? "Tomorrow" : diff === -1 ? "Yesterday" : null;
+  const base = dt.toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  });
+  return rel ? `${rel} · ${base}` : base;
+}
+
+// Chronological feed of posts grouped by day (server sends them time-ordered).
+function ListView({ posts, todayKey }: { posts: CalPost[]; todayKey: string }) {
+  const groups = new Map<string, CalPost[]>();
+  for (const p of posts) (groups.get(p.dayKey) ?? groups.set(p.dayKey, []).get(p.dayKey)!).push(p);
+  const days = Array.from(groups.keys()).sort();
+
+  if (days.length === 0) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+        <p className="text-sm text-muted">Nothing scheduled.</p>
+        <Link
+          href="/composer"
+          className="rounded-full border border-line px-4 py-2 text-sm font-medium text-blue-ink hover:bg-surface-2"
+        >
+          Write a post
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full overflow-y-auto">
+      {days.map((dayKey) => (
+        <div key={dayKey}>
+          <div className="sticky top-0 z-10 border-b border-line bg-surface/95 px-4 py-2 font-display text-xs font-semibold uppercase tracking-wide text-muted backdrop-blur">
+            {dayHeader(dayKey, todayKey)}
+          </div>
+          {groups.get(dayKey)!.map((p) => {
+            const s = STATUS_LABEL[p.status] ?? { text: p.status, cls: "text-muted" };
+            return (
+              <Link
+                key={p.id}
+                href={`/composer/${p.id}`}
+                className="flex items-center gap-3 border-b border-line px-4 py-3 last:border-b-0 hover:bg-surface-2"
+              >
+                <span className="w-12 shrink-0 font-display text-sm font-semibold tabular-nums text-muted">
+                  {p.timeLabel}
+                </span>
+                <PlatformIcons platforms={p.platforms} status={p.status} />
+                <span className="min-w-0 flex-1 truncate text-sm">{p.body || "(no text)"}</span>
+                <span className={`shrink-0 text-xs font-medium ${s.cls}`}>{s.text}</span>
+              </Link>
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }
