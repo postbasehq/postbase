@@ -50,7 +50,7 @@ export default async function TeamPage() {
   const card = "overflow-hidden rounded-2xl border border-line bg-surface shadow-sm";
 
   return (
-    <div className="mx-auto max-w-[760px]">
+    <div>
       <div className="flex items-center gap-3">
         <div>
           <p className="text-sm text-muted">People with access to this workspace.</p>

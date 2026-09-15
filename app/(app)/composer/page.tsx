@@ -17,8 +17,13 @@ export default async function ComposerPage({
     .select("id, platform, handle")
     .order("created_at", { ascending: true });
 
+  const { data: library } = await supabase
+    .from("media_library")
+    .select("id, url, name, type, size_bytes")
+    .order("created_at", { ascending: false });
+
   return (
-    <div className="mx-auto max-w-[980px]">
+    <div>
       <p className="text-sm text-muted">
         Write your post, pick channels, and schedule it.
       </p>
@@ -27,6 +32,7 @@ export default async function ComposerPage({
         action={createPost}
         submitLabel="Schedule post"
         defaultScheduleLocal={defaultScheduleLocal}
+        libraryItems={library ?? []}
       />
     </div>
   );

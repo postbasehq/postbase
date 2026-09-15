@@ -70,11 +70,11 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="flex min-h-dvh">
+    <div className="flex h-dvh overflow-hidden">
       <TimezoneSync />
       {onboarding.show ? <OnboardingWizard connected={onboarding.connected} /> : null}
       {/* sidebar */}
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-surface md:flex">
+      <aside className="hidden w-60 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface md:flex">
         <div className="flex h-16 items-center border-b border-line px-5">
           <Logo href="/calendar" />
         </div>
@@ -94,8 +94,8 @@ export default async function AppLayout({
       </aside>
 
       {/* main */}
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 items-center gap-3 border-b border-line px-6">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-line px-6">
           <HeaderTitle />
           <div className="ml-auto flex items-center gap-3">
             <NotificationBell items={notices} />
@@ -108,7 +108,9 @@ export default async function AppLayout({
             </Link>
           </div>
         </header>
-        <main className="flex-1 p-6">{children}</main>
+        <main className="min-h-0 flex-1 overflow-y-auto p-6">
+          <div className="mx-auto w-full max-w-[1200px]">{children}</div>
+        </main>
       </div>
     </div>
   );

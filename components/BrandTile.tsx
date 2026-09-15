@@ -57,7 +57,7 @@ export function BrandTile({
     <span
       aria-hidden
       style={{ width: size, height: size, background: b.bg, borderRadius: radius }}
-      className="inline-flex items-center justify-center"
+      className="inline-flex shrink-0 items-center justify-center"
     >
       <svg width={glyph} height={glyph} viewBox={b.viewBox ?? "0 0 24 24"} fill="#fff">
         <path d={b.path} />

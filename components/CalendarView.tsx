@@ -105,7 +105,7 @@ export function CalendarView({
   }
 
   return (
-    <div className="flex h-[calc(100dvh-112px)] min-h-[520px] flex-col">
+    <div className="flex h-full min-h-[520px] flex-col">
       {/* toolbar */}
       <div className="flex flex-wrap items-center gap-3">
         {/* date-range switcher */}

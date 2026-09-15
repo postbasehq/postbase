@@ -24,9 +24,9 @@ export function OrgSwitcher({
     </>
   );
 
-  if (orgs.length <= 1) {
-    return <div className="border-b border-line px-5 py-3">{label}</div>;
-  }
+  // Solo users only ever have their one personal workspace — the label is just
+  // noise for them. Show the switcher only once they belong to more than one.
+  if (orgs.length <= 1) return null;
 
   return (
     <details className="border-b border-line">

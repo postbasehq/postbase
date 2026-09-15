@@ -65,7 +65,7 @@ export default async function AnalyticsPage() {
   const card = "rounded-2xl border border-line bg-surface shadow-sm";
 
   return (
-    <div className="mx-auto max-w-[960px]">
+    <div>
       <p className="text-sm text-muted">Engagement on your published posts.</p>
 
       {/* totals */}

@@ -10,7 +10,7 @@ export default async function ApiKeysPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <div className="mx-auto max-w-[720px]">
+    <div>
       <p className="text-sm text-muted">
         Generate an API key, then add the Postbase MCP server to your AI tool so an agent
         can schedule and publish for you.

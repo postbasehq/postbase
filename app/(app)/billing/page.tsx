@@ -42,7 +42,7 @@ export default async function BillingPage({
   const planName = plan !== "trial" ? PLANS[plan as Exclude<PlanId, "trial">]?.name : "No plan";
 
   return (
-    <div className="mx-auto max-w-[980px]">
+    <div>
       <p className="text-sm text-muted">Manage your Postbase subscription.</p>
 
       {checkout === "success" ? (

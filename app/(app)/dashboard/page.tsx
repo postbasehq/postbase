@@ -88,7 +88,7 @@ export default async function DashboardPage() {
   };
 
   return (
-    <div className="mx-auto max-w-[960px]">
+    <div>
       <div className="flex items-center gap-3">
         <div>
           <p className="text-sm text-muted">Your scheduled posts and channels.</p>

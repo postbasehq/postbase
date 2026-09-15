@@ -5,7 +5,7 @@ export default function SettingsPage() {
   const card = "rounded-2xl border border-line bg-surface shadow-sm";
 
   return (
-    <div className="mx-auto max-w-[720px]">
+    <div>
       <p className="text-sm text-muted">Manage your workspace.</p>
 
       {/* Setup / onboarding */}

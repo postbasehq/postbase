@@ -8,6 +8,7 @@ const NAV = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Composer", href: "/composer" },
   { label: "Channels", href: "/channels" },
+  { label: "Media", href: "/media" },
   { label: "Analytics", href: "/analytics" },
   { label: "MCP & API", href: "/api-keys" },
   { label: "Team", href: "/team" },

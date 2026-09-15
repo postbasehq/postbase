@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/SubmitButton";
+import { Modal } from "@/components/Modal";
 
 /* ── Platform rules ─────────────────────────────────────────────────────────
    One source of truth for how each network treats a post: character budget,
@@ -42,6 +43,7 @@ const MAX_TWEETS = 25;
 
 type Channel = { id: string; platform: string; handle: string | null };
 type Media = { url: string; type: string };
+type LibraryItem = { id: string; url: string; name: string; type: string; size_bytes: number };
 type Note = { level: "error" | "info"; text: string };
 
 type PostFormProps = {
@@ -50,6 +52,8 @@ type PostFormProps = {
   submitLabel: string;
   /** Prefill the schedule field with a local wall-clock time (YYYY-MM-DDTHH:MM). */
   defaultScheduleLocal?: string;
+  /** Reusable assets from the media library, for the "Pick from library" picker. */
+  libraryItems?: LibraryItem[];
   initial?: {
     id: string;
     thread: string[];
@@ -74,6 +78,7 @@ export function PostForm({
   action,
   submitLabel,
   defaultScheduleLocal,
+  libraryItems = [],
   initial,
 }: PostFormProps) {
   const [tweets, setTweets] = useState<string[]>(
@@ -91,6 +96,8 @@ export function PostForm({
   );
   const [busy, setBusy] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
 
   /* derived */
@@ -190,6 +197,26 @@ export function PostForm({
       setBusy(false);
       if (fileRef.current) fileRef.current.value = "";
     }
+  }
+
+  const togglePick = (url: string) =>
+    setPicked((p) => {
+      const n = new Set(p);
+      n.has(url) ? n.delete(url) : n.add(url);
+      return n;
+    });
+
+  function addPicked() {
+    const have = new Set(media.map((m) => m.url));
+    const add = libraryItems
+      .filter((it) => picked.has(it.url) && !have.has(it.url))
+      .map((it) => ({ url: it.url, type: it.type }));
+    setMedia((m) => [...m, ...add]);
+    closeLibrary();
+  }
+  function closeLibrary() {
+    setPicked(new Set());
+    setLibraryOpen(false);
   }
 
   const card = "overflow-hidden rounded-2xl border border-line bg-surface shadow-sm";
@@ -296,6 +323,13 @@ export function PostForm({
                 className="self-start rounded-full border border-line px-3.5 py-1.5 text-sm font-medium text-blue-ink hover:bg-surface-2 disabled:opacity-50"
               >
                 {busy ? "Uploading…" : media.length ? "+ Add more" : "+ Add media"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setLibraryOpen(true)}
+                className="self-start rounded-full border border-line px-3.5 py-1.5 text-sm font-medium text-blue-ink hover:bg-surface-2"
+              >
+                Pick from library
               </button>
               {uploadError ? <span className="text-xs text-terra">{uploadError}</span> : null}
             </div>
@@ -518,6 +552,91 @@ export function PostForm({
           ) : null}
         </div>
       </div>
+
+      {/* Pick from library */}
+      <Modal open={libraryOpen} onClose={closeLibrary} labelledBy="lib-picker-title">
+        <div className="flex items-center gap-2">
+          <h3
+            id="lib-picker-title"
+            className="font-display text-lg font-semibold tracking-[-0.01em]"
+          >
+            Pick from library
+          </h3>
+          <Link href="/media" className="ml-auto text-xs font-medium text-blue-ink hover:underline">
+            Manage media
+          </Link>
+        </div>
+
+        {libraryItems.length === 0 ? (
+          <p className="mt-4 text-sm text-muted">
+            Your library is empty.{" "}
+            <Link href="/media" className="font-medium text-blue-ink underline">
+              Upload media
+            </Link>{" "}
+            to reuse it here.
+          </p>
+        ) : (
+          <div className="mt-4 grid max-h-[52vh] grid-cols-3 gap-2.5 overflow-y-auto sm:grid-cols-4">
+            {libraryItems.map((item) => {
+              const already = media.some((m) => m.url === item.url);
+              const on = already || picked.has(item.url);
+              return (
+                <button
+                  type="button"
+                  key={item.id}
+                  onClick={() => !already && togglePick(item.url)}
+                  disabled={already}
+                  title={item.name}
+                  className={`relative aspect-square overflow-hidden rounded-xl border-2 bg-surface-2 transition-colors ${
+                    on ? "border-blue" : "border-line"
+                  } ${already ? "opacity-60" : ""}`}
+                >
+                  {item.type.startsWith("video/") ? (
+                    <video
+                      src={`${item.url}#t=0.1`}
+                      muted
+                      playsInline
+                      preload="metadata"
+                      className="size-full object-cover"
+                    />
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={item.url} alt={item.name} className="size-full object-cover" />
+                  )}
+                  {on ? (
+                    <span className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-blue text-xs font-bold text-on-blue">
+                      ✓
+                    </span>
+                  ) : null}
+                  {already ? (
+                    <span className="absolute inset-x-0 bottom-0 bg-ink/70 py-0.5 text-center text-[10px] font-semibold text-white">
+                      Added
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="mt-5 flex justify-end gap-2.5">
+          <button
+            type="button"
+            onClick={closeLibrary}
+            className="rounded-full border border-line px-4 py-2 text-sm font-medium text-muted hover:bg-surface-2 hover:text-ink"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={addPicked}
+            disabled={picked.size === 0}
+            className="rounded-full bg-blue px-5 py-2 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md disabled:opacity-50"
+          >
+            {picked.size > 0 ? `Add ${picked.size}` : "Add"}
+          </button>
+        </div>
+      </Modal>
 
       {/* hidden fields for the server action */}
       <input type="hidden" name="thread" value={JSON.stringify(cleanTweets)} />

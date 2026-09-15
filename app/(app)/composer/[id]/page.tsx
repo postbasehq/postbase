@@ -42,6 +42,11 @@ export default async function EditPostPage({
     .eq("post_id", id);
   const media = (mediaRows ?? []).map((m) => ({ url: m.storage_url, type: m.type }));
 
+  const { data: library } = await supabase
+    .from("media_library")
+    .select("id, url, name, type, size_bytes")
+    .order("created_at", { ascending: false });
+
   const targets = (post.post_targets ?? []) as {
     channel_id: string;
     variant_body: string | null;
@@ -51,7 +56,7 @@ export default async function EditPostPage({
   for (const t of targets) if (t.variant_body) variants[t.channel_id] = t.variant_body;
 
   return (
-    <div className="mx-auto max-w-[980px]">
+    <div>
       <p className="text-sm text-muted">
         Update the content, channels, or schedule. Rescheduling replaces the queued job.
       </p>
@@ -59,6 +64,7 @@ export default async function EditPostPage({
         channels={channels ?? []}
         action={updatePost}
         submitLabel="Save changes"
+        libraryItems={library ?? []}
         initial={{
           id: post.id,
           thread: [post.body, ...((post.thread_tail as string[] | null) ?? [])],

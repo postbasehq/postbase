@@ -1,19 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { disconnectChannel } from "../actions";
-import { DisconnectButton } from "@/components/DisconnectButton";
-import { BlueskyConnect } from "@/components/BlueskyConnect";
-import { MastodonConnect } from "@/components/MastodonConnect";
-
-const PLATFORM_META: Record<string, { label: string; dot: string }> = {
-  x: { label: "X", dot: "bg-ink" },
-  facebook: { label: "Facebook", dot: "bg-blue" },
-  linkedin: { label: "LinkedIn", dot: "bg-blue" },
-  instagram: { label: "Instagram", dot: "bg-terra" },
-  tiktok: { label: "TikTok", dot: "bg-ink" },
-  youtube: { label: "YouTube", dot: "bg-amber-bright" },
-  bluesky: { label: "Bluesky", dot: "bg-blue" },
-  mastodon: { label: "Mastodon", dot: "bg-blue" },
-};
+import { ChannelsBoard } from "@/components/ChannelsBoard";
 
 const CONNECTED_LABEL: Record<string, string> = {
   x: "X account connected.",
@@ -62,142 +49,63 @@ export default async function ChannelsPage({
     .select("id, platform, handle, status")
     .order("created_at", { ascending: true });
 
+  // Group connected accounts by platform for the board.
+  const accountsByPlatform: Record<
+    string,
+    { id: string; handle: string | null; status: string }[]
+  > = {};
+  for (const c of channels ?? []) {
+    (accountsByPlatform[c.platform] ??= []).push({
+      id: c.id,
+      handle: c.handle,
+      status: c.status,
+    });
+  }
+  const connectedCount = channels?.length ?? 0;
+
   return (
-    <div className="mx-auto max-w-[720px]">
-      <p className="text-sm text-muted">
-        Connect the accounts you want to publish to.
-      </p>
+    <div>
+      <header className="flex items-end justify-between gap-4 pb-5 [border-bottom:0.5px_solid_var(--line)]">
+        <div>
+          <h1 className="font-display text-2xl font-semibold tracking-[-0.02em]">
+            Publishing channels
+          </h1>
+          <p className="mt-1.5 max-w-xl text-sm text-muted">
+            Connect the accounts you want to publish to. Postbase drafts, schedules, and
+            tracks every post from one place.
+          </p>
+        </div>
+        {connectedCount > 0 ? (
+          <div className="hidden shrink-0 text-right sm:block">
+            <div className="font-display text-2xl font-semibold leading-none tabular-nums">
+              {connectedCount}
+            </div>
+            <div className="mt-1 text-xs text-muted">connected</div>
+          </div>
+        ) : null}
+      </header>
 
       {connected && CONNECTED_LABEL[connected] ? (
-        <div className="mt-4 rounded-xl bg-green/12 px-4 py-3 text-sm text-green">
+        <div className="mt-5 rounded-xl bg-green/12 px-4 py-3 text-sm text-green">
           {CONNECTED_LABEL[connected]}
         </div>
       ) : null}
       {error ? (
-        <div className="mt-4 rounded-xl bg-terra/12 px-4 py-3 text-sm text-terra">
+        <div className="mt-5 rounded-xl bg-terra/12 px-4 py-3 text-sm text-terra">
           {ERRORS[error] ?? "Something went wrong."}
         </div>
       ) : null}
 
-      {/* connect X (real OAuth) */}
-      <div className="mt-6 flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sm">
-        <span className="size-2.5 rounded-full bg-ink" />
-        <div>
-          <div className="text-sm font-semibold">X</div>
-          <div className="text-xs text-muted">Connect via OAuth to publish to your account.</div>
-        </div>
-        <a
-          href="/api/connect/x"
-          className="ml-auto rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
-        >
-          Connect X
-        </a>
-      </div>
-
       {/* Facebook Page publishing is built (adapter, OAuth routes, collector) but
           parked: pages_manage_posts requires Meta Advanced Access, gated behind
-          Business Verification + App Review. Re-enable the connect card below once
-          the app clears App Review. */}
+          Business Verification + App Review. Add it back to PLATFORMS in
+          ChannelsBoard once the app clears App Review. */}
 
-      {/* connect Instagram (real OAuth via Facebook Login) */}
-      <div className="mt-4 flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sm">
-        <span className="size-2.5 rounded-full bg-terra" />
-        <div>
-          <div className="text-sm font-semibold">Instagram</div>
-          <div className="text-xs text-muted">
-            Connect a Business/Creator account linked to a Facebook Page.
-          </div>
-        </div>
-        <a
-          href="/api/connect/instagram"
-          className="ml-auto rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
-        >
-          Connect Instagram
-        </a>
-      </div>
-
-      {/* connect LinkedIn (real OAuth) */}
-      <div className="mt-4 flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sm">
-        <span className="size-2.5 rounded-full bg-blue" />
-        <div>
-          <div className="text-sm font-semibold">LinkedIn</div>
-          <div className="text-xs text-muted">Publish posts to your LinkedIn profile.</div>
-        </div>
-        <a
-          href="/api/connect/linkedin"
-          className="ml-auto rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
-        >
-          Connect LinkedIn
-        </a>
-      </div>
-
-      {/* connect TikTok (real OAuth) */}
-      <div className="mt-4 flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sm">
-        <span className="size-2.5 rounded-full bg-ink" />
-        <div>
-          <div className="text-sm font-semibold">TikTok</div>
-          <div className="text-xs text-muted">Post videos or photo carousels (no text-only posts).</div>
-        </div>
-        <a
-          href="/api/connect/tiktok"
-          className="ml-auto rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
-        >
-          Connect TikTok
-        </a>
-      </div>
-
-      {/* connect YouTube (real OAuth via Google) */}
-      <div className="mt-4 flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sm">
-        <span className="size-2.5 rounded-full bg-amber-bright" />
-        <div>
-          <div className="text-sm font-semibold">YouTube</div>
-          <div className="text-xs text-muted">Upload videos to your channel (video only).</div>
-        </div>
-        <a
-          href="/api/connect/youtube"
-          className="ml-auto rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
-        >
-          Connect YouTube
-        </a>
-      </div>
-
-      {/* connect Bluesky (handle + app password — no OAuth) */}
-      <BlueskyConnect />
-
-      {/* connect Mastodon (instance + access token — no OAuth) */}
-      <MastodonConnect />
-
-      {/* list */}
-      <div className="mt-5 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
-        {!channels || channels.length === 0 ? (
-          <p className="px-4 py-6 text-center text-sm text-muted">No channels yet.</p>
-        ) : (
-          channels.map((c, i) => {
-            const meta = PLATFORM_META[c.platform] ?? { label: c.platform, dot: "bg-muted" };
-            return (
-              <div
-                key={c.id}
-                className={`flex items-center gap-3 px-4 py-3.5 ${
-                  i < channels.length - 1 ? "border-b border-line" : ""
-                }`}
-              >
-                <span className={`size-2.5 rounded-full ${meta.dot}`} />
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold">{meta.label}</div>
-                  <div className="truncate text-xs text-muted">{c.handle ?? "—"}</div>
-                </div>
-                <span className="ml-auto rounded-full border border-line px-2.5 py-1 text-xs font-medium text-muted">
-                  {c.status === "active" ? "Connected" : c.status === "stub" ? "Stub" : c.status}
-                </span>
-                <DisconnectButton
-                  action={disconnectChannel}
-                  channelId={c.id}
-                  label={`${meta.label}${c.handle ? ` (${c.handle})` : ""}`}
-                />
-              </div>
-            );
-          })
-        )}
+      <div className="mt-6">
+        <ChannelsBoard
+          accountsByPlatform={accountsByPlatform}
+          disconnectAction={disconnectChannel}
+        />
       </div>
     </div>
   );
