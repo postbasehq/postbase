@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentOrgId } from "@/lib/org";
 import { encryptJson } from "@/lib/crypto";
 import { atChannelLimit } from "@/lib/billing-guard";
@@ -255,8 +256,25 @@ export async function updatePost(formData: FormData) {
     if (tErr) throw new Error(tErr.message);
   }
 
-  await supabase.from("media").delete().eq("post_id", postId);
+  // Replace media rows, and delete any now-removed files from the bucket so they
+  // don't orphan. Storage deletion needs the admin client (the bucket only allows
+  // authenticated uploads, not deletes — see the security-hardening migration).
   const media = parseMedia(formData);
+  const { data: oldMedia } = await supabase
+    .from("media")
+    .select("storage_url")
+    .eq("post_id", postId);
+  const keptUrls = new Set(media.map((m) => m.url));
+  const removedPaths = (oldMedia ?? [])
+    .map((m) => m.storage_url)
+    .filter((u) => u && !keptUrls.has(u))
+    .map((u) => u.split("/post-media/")[1])
+    .filter(Boolean) as string[];
+  if (removedPaths.length > 0) {
+    await createAdminClient().storage.from("post-media").remove(removedPaths);
+  }
+
+  await supabase.from("media").delete().eq("post_id", postId);
   if (media.length > 0) {
     await supabase
       .from("media")
