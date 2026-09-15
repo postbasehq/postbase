@@ -70,17 +70,23 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="flex h-dvh overflow-hidden">
+    <div
+      className="flex h-dvh overflow-hidden"
+      style={{
+        background:
+          "radial-gradient(1000px 520px at 12% -8%, color-mix(in oklab, var(--blue-soft) 65%, transparent), transparent 70%), radial-gradient(900px 600px at 100% 110%, color-mix(in oklab, var(--blue-soft) 40%, transparent), transparent 65%), var(--ground)",
+      }}
+    >
       <TimezoneSync />
       {onboarding.show ? <OnboardingWizard connected={onboarding.connected} /> : null}
-      {/* sidebar */}
-      <aside className="hidden w-60 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface md:flex">
-        <div className="flex h-16 items-center border-b border-line px-5">
+      {/* sidebar — transparent, sits on the backdrop (a layer behind the panel) */}
+      <aside className="hidden w-60 shrink-0 flex-col overflow-y-auto md:flex">
+        <div className="flex h-16 items-center px-5">
           <Logo href="/calendar" />
         </div>
         <OrgSwitcher orgs={orgs} activeId={activeId} action={setActiveOrg} />
         <AppNav />
-        <div className="border-t border-line p-3 text-xs text-muted">
+        <div className="p-3 text-xs text-muted">
           <div className="truncate px-3 py-1">{email}</div>
           <form action="/auth/signout" method="post">
             <button
@@ -93,24 +99,26 @@ export default async function AppLayout({
         </div>
       </aside>
 
-      {/* main */}
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-line px-6">
-          <HeaderTitle />
-          <div className="ml-auto flex items-center gap-3">
-            <NotificationBell items={notices} />
-            <ThemeToggle />
-            <Link
-              href="/composer"
-              className="rounded-full bg-blue px-4 py-2 font-display text-sm font-semibold text-on-blue shadow-sm"
-            >
-              New post
-            </Link>
-          </div>
-        </header>
-        <main className="min-h-0 flex-1 overflow-y-auto p-6">
-          <div className="mx-auto w-full max-w-[1200px]">{children}</div>
-        </main>
+      {/* floating content panel — inset from the edges, elevated over the backdrop */}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col py-3 pl-0 pr-3">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_18px_50px_-20px_rgba(16,24,40,0.35)]">
+          <header className="flex h-16 shrink-0 items-center gap-3 border-b border-line px-6">
+            <HeaderTitle />
+            <div className="ml-auto flex items-center gap-3">
+              <NotificationBell items={notices} />
+              <ThemeToggle />
+              <Link
+                href="/composer"
+                className="rounded-full bg-blue px-4 py-2 font-display text-sm font-semibold text-on-blue shadow-sm"
+              >
+                New post
+              </Link>
+            </div>
+          </header>
+          <main className="min-h-0 flex-1 overflow-y-auto p-6">
+            <div className="mx-auto h-full w-full max-w-[1200px]">{children}</div>
+          </main>
+        </div>
       </div>
     </div>
   );

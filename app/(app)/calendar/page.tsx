@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { disconnectChannel } from "../actions";
 import { getTimeZone, formatInTz, localDateKey, localHM } from "@/lib/tz";
 import {
   CalendarView,
@@ -124,6 +125,19 @@ export default async function CalendarPage({
     .lt("scheduled_at", `${addDays(lastKey, 2)}T00:00:00Z`)
     .order("scheduled_at", { ascending: true });
 
+  // Connected channels, grouped by platform, for the "Manage channels" bar.
+  const { data: channels } = await supabase
+    .from("channels")
+    .select("id, platform, handle, status")
+    .order("created_at", { ascending: true });
+  const accountsByPlatform: Record<
+    string,
+    { id: string; handle: string | null; status: string }[]
+  > = {};
+  for (const c of channels ?? []) {
+    (accountsByPlatform[c.platform] ??= []).push({ id: c.id, handle: c.handle, status: c.status });
+  }
+
   let visible: Set<string>;
   if (view === "month") {
     visible = new Set(monthCells.filter((c) => c.key).map((c) => c.key!));
@@ -173,6 +187,8 @@ export default async function CalendarPage({
         days={days}
         monthCells={monthCells}
         posts={posts}
+        accountsByPlatform={accountsByPlatform}
+        disconnectAction={disconnectChannel}
       />
     </div>
   );

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BrandTile } from "@/components/BrandTile";
+import { CalendarChannelsBar } from "@/components/CalendarChannelsBar";
 
 export type CalPost = {
   id: string;
@@ -83,6 +84,8 @@ export function CalendarView({
   days,
   monthCells,
   posts,
+  accountsByPlatform,
+  disconnectAction,
 }: {
   view: View;
   anchor: string;
@@ -92,6 +95,8 @@ export function CalendarView({
   days: DayCol[];
   monthCells: MonthCell[];
   posts: CalPost[];
+  accountsByPlatform: Record<string, { id: string; handle: string | null; status: string }[]>;
+  disconnectAction: (formData: FormData) => Promise<void>;
 }) {
   const router = useRouter();
   const go = (v: View, date: string) => router.push(`/calendar?view=${v}&date=${date}`);
@@ -172,18 +177,11 @@ export function CalendarView({
               <ListIcon />
             </button>
           </div>
-
-          <Link
-            href="/composer"
-            className="rounded-full bg-blue px-4 py-2 font-display text-sm font-semibold text-on-blue shadow-sm"
-          >
-            New post
-          </Link>
         </div>
       </div>
 
       {/* body */}
-      <div className="mt-4 flex-1 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
+      <div className="mt-4 flex-1 min-h-0 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
         {view === "list" ? (
           <ListView posts={posts} todayKey={todayKey} />
         ) : view === "month" ? (
@@ -192,6 +190,11 @@ export function CalendarView({
           <TimeGrid days={days} byDayHour={byDayHour} todayKey={todayKey} nowHour={nowHour} />
         )}
       </div>
+
+      <CalendarChannelsBar
+        accountsByPlatform={accountsByPlatform}
+        disconnectAction={disconnectAction}
+      />
     </div>
   );
 }
@@ -233,7 +236,7 @@ function TimeGrid({
       </div>
 
       {/* scrollable hour grid */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="grid" style={{ gridTemplateColumns: cols }}>
           {/* hour gutter */}
           <div className="border-r border-line">
