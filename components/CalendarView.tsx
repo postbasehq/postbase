@@ -108,52 +108,84 @@ export function CalendarView({
     <div className="flex h-[calc(100vh-160px)] min-h-[520px] flex-col">
       {/* toolbar */}
       <div className="flex flex-wrap items-center gap-3">
+        {/* date-range switcher (grid views) */}
         {view !== "list" ? (
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => go(view, shiftKey(anchor, view, -1))}
-              aria-label="Previous"
-              className="rounded-full border border-line p-1.5 text-muted hover:text-ink"
-            >
-              <Chevron dir="left" />
-            </button>
+          <>
+            <div className="flex items-center rounded-full border border-line">
+              <button
+                onClick={() => go(view, shiftKey(anchor, view, -1))}
+                aria-label="Previous"
+                className="rounded-l-full px-2 py-1.5 text-muted hover:text-ink"
+              >
+                <Chevron dir="left" />
+              </button>
+              <span className="px-2 font-display text-sm font-semibold tabular-nums">{title}</span>
+              <button
+                onClick={() => go(view, shiftKey(anchor, view, 1))}
+                aria-label="Next"
+                className="rounded-r-full px-2 py-1.5 text-muted hover:text-ink"
+              >
+                <Chevron dir="right" />
+              </button>
+            </div>
             <button
               onClick={() => go(view, todayKey)}
               className="rounded-full border border-line px-3 py-1.5 text-sm font-medium text-ink hover:bg-surface-2"
             >
               Today
             </button>
-            <button
-              onClick={() => go(view, shiftKey(anchor, view, 1))}
-              aria-label="Next"
-              className="rounded-full border border-line p-1.5 text-muted hover:text-ink"
-            >
-              <Chevron dir="right" />
-            </button>
-          </div>
-        ) : null}
-        <span className="font-display text-sm font-semibold tabular-nums">{title}</span>
+          </>
+        ) : (
+          <span className="font-display text-sm font-semibold">{title}</span>
+        )}
 
-        {/* view switch */}
-        <div className="ml-auto flex items-center gap-1 rounded-full border border-line p-1">
-          {(["day", "week", "month", "list"] as View[]).map((v) => (
+        <div className="ml-auto flex items-center gap-2">
+          {/* granularity (calendar only) */}
+          {view !== "list" ? (
+            <div className="flex items-center gap-1 rounded-full border border-line p-1">
+              {(["day", "week", "month"] as View[]).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => go(v, anchor)}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold capitalize transition ${
+                    view === v ? "bg-blue text-on-blue shadow-sm" : "text-muted hover:text-ink"
+                  }`}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          {/* calendar / list display toggle */}
+          <div className="flex items-center gap-1 rounded-full border border-line p-1">
             <button
-              key={v}
-              onClick={() => go(v, anchor)}
-              className={`rounded-full px-3 py-1 text-xs font-semibold capitalize transition ${
-                view === v ? "bg-blue text-on-blue shadow-sm" : "text-muted hover:text-ink"
+              onClick={() => go(view === "list" ? "week" : view, anchor)}
+              aria-label="Calendar view"
+              className={`flex size-7 items-center justify-center rounded-full transition ${
+                view !== "list" ? "bg-blue text-on-blue shadow-sm" : "text-muted hover:text-ink"
               }`}
             >
-              {v}
+              <CalendarIcon />
             </button>
-          ))}
+            <button
+              onClick={() => go("list", anchor)}
+              aria-label="List view"
+              className={`flex size-7 items-center justify-center rounded-full transition ${
+                view === "list" ? "bg-blue text-on-blue shadow-sm" : "text-muted hover:text-ink"
+              }`}
+            >
+              <ListIcon />
+            </button>
+          </div>
+
+          <Link
+            href="/composer"
+            className="rounded-full bg-blue px-4 py-2 font-display text-sm font-semibold text-on-blue shadow-sm"
+          >
+            New post
+          </Link>
         </div>
-        <Link
-          href="/composer"
-          className="rounded-full bg-blue px-4 py-2 font-display text-sm font-semibold text-on-blue shadow-sm"
-        >
-          New post
-        </Link>
       </div>
 
       {/* body */}
@@ -427,6 +459,23 @@ function ListView({ posts, todayKey }: { posts: CalPost[]; todayKey: string }) {
         </div>
       ))}
     </div>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+    </svg>
+  );
+}
+
+function ListIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+    </svg>
   );
 }
 
