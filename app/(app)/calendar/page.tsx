@@ -63,10 +63,14 @@ export default async function CalendarPage({
   let title: string;
 
   if (view === "list") {
-    // A chronological feed: recent + upcoming, grouped by day in the client.
-    firstKey = addDays(todayKey, -7);
-    lastKey = addDays(todayKey, 90);
-    title = "Scheduled & recent";
+    // A chronological feed for the anchor's month, navigable by the switcher.
+    const dt = dateFromKey(anchor);
+    const y = dt.getUTCFullYear();
+    const mo = dt.getUTCMonth();
+    firstKey = `${y}-${pad(mo + 1)}-01`;
+    const daysInMonth = new Date(Date.UTC(y, mo + 1, 0)).getUTCDate();
+    lastKey = `${y}-${pad(mo + 1)}-${pad(daysInMonth)}`;
+    title = `${dt.toLocaleString("en-GB", { month: "long", timeZone: "UTC" })} ${y}`;
   } else if (view === "month") {
     const dt = dateFromKey(anchor);
     const y = dt.getUTCFullYear();
@@ -120,9 +124,15 @@ export default async function CalendarPage({
     .lt("scheduled_at", `${addDays(lastKey, 2)}T00:00:00Z`)
     .order("scheduled_at", { ascending: true });
 
-  const visible = new Set(
-    view === "month" ? monthCells.filter((c) => c.key).map((c) => c.key!) : days.map((d) => d.key),
-  );
+  let visible: Set<string>;
+  if (view === "month") {
+    visible = new Set(monthCells.filter((c) => c.key).map((c) => c.key!));
+  } else if (view === "list") {
+    visible = new Set<string>();
+    for (let k = firstKey; k <= lastKey; k = addDays(k, 1)) visible.add(k);
+  } else {
+    visible = new Set(days.map((d) => d.key));
+  }
 
   type Row = {
     id: string;
@@ -135,7 +145,7 @@ export default async function CalendarPage({
   const posts: CalPost[] = [];
   for (const p of (data ?? []) as unknown as Row[]) {
     const dayKey = localDateKey(p.scheduled_at, tz);
-    if (view !== "list" && !visible.has(dayKey)) continue;
+    if (!visible.has(dayKey)) continue;
     const { hour, minute } = localHM(p.scheduled_at, tz);
     const platforms = Array.from(
       new Set((p.post_targets ?? []).map((t) => t.channels?.platform).filter(Boolean) as string[]),

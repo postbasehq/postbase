@@ -69,7 +69,7 @@ const HATCH: React.CSSProperties = {
 function shiftKey(key: string, view: View, dir: 1 | -1): string {
   const [y, m, d] = key.split("-").map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d, 12));
-  if (view === "month") dt.setUTCMonth(dt.getUTCMonth() + dir);
+  if (view === "month" || view === "list") dt.setUTCMonth(dt.getUTCMonth() + dir);
   else dt.setUTCDate(dt.getUTCDate() + dir * (view === "week" ? 7 : 1));
   return `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth() + 1)}-${pad(dt.getUTCDate())}`;
 }
@@ -108,36 +108,30 @@ export function CalendarView({
     <div className="flex h-[calc(100vh-160px)] min-h-[520px] flex-col">
       {/* toolbar */}
       <div className="flex flex-wrap items-center gap-3">
-        {/* date-range switcher (grid views) */}
-        {view !== "list" ? (
-          <>
-            <div className="flex items-center rounded-full border border-line">
-              <button
-                onClick={() => go(view, shiftKey(anchor, view, -1))}
-                aria-label="Previous"
-                className="rounded-l-full px-2 py-1.5 text-muted hover:text-ink"
-              >
-                <Chevron dir="left" />
-              </button>
-              <span className="px-2 font-display text-sm font-semibold tabular-nums">{title}</span>
-              <button
-                onClick={() => go(view, shiftKey(anchor, view, 1))}
-                aria-label="Next"
-                className="rounded-r-full px-2 py-1.5 text-muted hover:text-ink"
-              >
-                <Chevron dir="right" />
-              </button>
-            </div>
-            <button
-              onClick={() => go(view, todayKey)}
-              className="rounded-full border border-line px-3 py-1.5 text-sm font-medium text-ink hover:bg-surface-2"
-            >
-              Today
-            </button>
-          </>
-        ) : (
-          <span className="font-display text-sm font-semibold">{title}</span>
-        )}
+        {/* date-range switcher */}
+        <div className="flex items-center rounded-full border border-line">
+          <button
+            onClick={() => go(view, shiftKey(anchor, view, -1))}
+            aria-label="Previous"
+            className="rounded-l-full px-2 py-1.5 text-muted hover:text-ink"
+          >
+            <Chevron dir="left" />
+          </button>
+          <span className="px-2 font-display text-sm font-semibold tabular-nums">{title}</span>
+          <button
+            onClick={() => go(view, shiftKey(anchor, view, 1))}
+            aria-label="Next"
+            className="rounded-r-full px-2 py-1.5 text-muted hover:text-ink"
+          >
+            <Chevron dir="right" />
+          </button>
+        </div>
+        <button
+          onClick={() => go(view, todayKey)}
+          className="rounded-full border border-line px-3 py-1.5 text-sm font-medium text-ink hover:bg-surface-2"
+        >
+          Today
+        </button>
 
         <div className="ml-auto flex items-center gap-2">
           {/* granularity (calendar only) */}
