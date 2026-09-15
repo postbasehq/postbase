@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AppNav } from "@/components/AppNav";
+import { UserMenu } from "@/components/UserMenu";
+import { SidebarSearch } from "@/components/SidebarSearch";
 import { HeaderTitle } from "@/components/HeaderTitle";
 import { NotificationBell, type Notice } from "@/components/NotificationBell";
 import { OrgSwitcher } from "@/components/OrgSwitcher";
@@ -17,14 +19,20 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  let email: string | undefined;
+  let email = "";
+  let displayName = "";
+  let avatarUrl: string | undefined;
   try {
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) redirect("/login");
-    email = user.email ?? undefined;
+    email = user.email ?? "";
+    const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+    displayName =
+      (meta.full_name as string) || (meta.name as string) || (meta.user_name as string) || "";
+    avatarUrl = (meta.avatar_url as string) || (meta.picture as string) || undefined;
   } catch {
     redirect("/login");
   }
@@ -80,23 +88,14 @@ export default async function AppLayout({
       <TimezoneSync />
       {onboarding.show ? <OnboardingWizard connected={onboarding.connected} /> : null}
       {/* sidebar — transparent, sits on the backdrop (a layer behind the panel) */}
-      <aside className="hidden w-60 shrink-0 flex-col overflow-y-auto md:flex">
-        <div className="flex h-16 items-center px-5">
+      <aside className="hidden w-60 shrink-0 flex-col md:flex">
+        <div className="flex h-16 shrink-0 items-center px-5">
           <Logo href="/calendar" />
         </div>
+        <SidebarSearch />
         <OrgSwitcher orgs={orgs} activeId={activeId} action={setActiveOrg} />
         <AppNav />
-        <div className="p-3 text-xs text-muted">
-          <div className="truncate px-3 py-1">{email}</div>
-          <form action="/auth/signout" method="post">
-            <button
-              type="submit"
-              className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-muted hover:bg-surface-2 hover:text-ink"
-            >
-              Sign out
-            </button>
-          </form>
-        </div>
+        <UserMenu name={displayName} email={email} avatarUrl={avatarUrl} />
       </aside>
 
       {/* floating content panel — inset from the edges, elevated over the backdrop */}

@@ -341,6 +341,47 @@ export async function cancelPost(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
+export async function deleteDraft(formData: FormData) {
+  const supabase = await createClient();
+  const orgId = await getCurrentOrgId();
+  if (!orgId) throw new Error("No workspace found for this user.");
+
+  const postId = String(formData.get("post_id") ?? "");
+  if (!postId) throw new Error("Missing post id.");
+
+  // Only delete a post that is this org's AND still a draft — never a scheduled,
+  // publishing, or published post (those aren't discardable from here).
+  const { data: post } = await supabase
+    .from("posts")
+    .select("id, status")
+    .eq("id", postId)
+    .eq("org_id", orgId)
+    .maybeSingle();
+  if (!post || post.status !== "draft") return;
+
+  // Remove any media files from the bucket (rows cascade with the post). Storage
+  // deletes need the admin client — the bucket only allows authenticated uploads.
+  const { data: media } = await supabase
+    .from("media")
+    .select("storage_url")
+    .eq("post_id", postId);
+  const paths = (media ?? [])
+    .map((m) => m.storage_url)
+    .filter(Boolean)
+    .map((u) => u.split("/post-media/")[1])
+    .filter(Boolean) as string[];
+  if (paths.length > 0) {
+    await createAdminClient().storage.from("post-media").remove(paths);
+  }
+
+  // post_targets + media rows cascade on delete (see 0001_init).
+  await supabase.from("posts").delete().eq("id", postId).eq("org_id", orgId);
+
+  revalidatePath("/drafts");
+  revalidatePath("/dashboard");
+  revalidatePath("/calendar");
+}
+
 export type ConnectBlueskyState = { ok?: boolean; error?: string };
 
 /**

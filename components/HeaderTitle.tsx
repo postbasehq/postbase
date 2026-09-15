@@ -8,6 +8,7 @@ const TITLES: { prefix: string; title: string }[] = [
   { prefix: "/dashboard", title: "Dashboard" },
   { prefix: "/composer/", title: "Edit post" },
   { prefix: "/composer", title: "New post" },
+  { prefix: "/drafts", title: "Drafts" },
   { prefix: "/channels", title: "Channels" },
   { prefix: "/media", title: "Media" },
   { prefix: "/analytics", title: "Analytics" },
