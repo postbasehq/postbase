@@ -101,7 +101,7 @@ export default async function ChannelsPage({
           Business Verification + App Review. Add it back to PLATFORMS in
           ChannelsBoard once the app clears App Review. */}
 
-      <div className="mt-6">
+      <div className="mt-6 pb-10">
         <ChannelsBoard
           accountsByPlatform={accountsByPlatform}
           disconnectAction={disconnectChannel}
