@@ -199,7 +199,7 @@ export async function updatePost(formData: FormData) {
     .eq("id", postId)
     .eq("org_id", orgId)
     .maybeSingle();
-  if (!current) return; // not ours / gone
+  if (!current) redirect("/dashboard"); // not ours / gone — bounce with feedback
   const anyDelivered = (
     (current.post_targets ?? []) as { status: string; platform_post_id: string | null }[]
   ).some((t) => t.status === "published" || t.platform_post_id);
@@ -229,7 +229,7 @@ export async function updatePost(formData: FormData) {
     .eq("org_id", orgId)
     .select("id");
   if (error) throw new Error(error.message);
-  if (!updated || updated.length === 0) return;
+  if (!updated || updated.length === 0) redirect("/dashboard");
 
   // Validate channels belong to the org, then replace the targets.
   if (channelIds.length > 0) {
