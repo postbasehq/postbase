@@ -189,6 +189,23 @@ export async function updatePost(formData: FormData) {
   const postId = String(formData.get("post_id") ?? "");
   if (!postId) throw new Error("Missing post id.");
 
+  // Guard: never edit a post that has already published to any channel (or is
+  // mid-publish) — re-saving deletes/recreates targets and would republish
+  // duplicates. Retrying a failed channel is handled by the dashboard Retry.
+  const { data: current } = await supabase
+    .from("posts")
+    .select("status, post_targets(status, platform_post_id)")
+    .eq("id", postId)
+    .eq("org_id", orgId)
+    .maybeSingle();
+  if (!current) return; // not ours / gone
+  const anyDelivered = (
+    (current.post_targets ?? []) as { status: string; platform_post_id: string | null }[]
+  ).some((t) => t.status === "published" || t.platform_post_id);
+  if (current.status === "published" || current.status === "publishing" || anyDelivered) {
+    redirect("/dashboard");
+  }
+
   const segments = parseThread(formData);
   if (segments.length === 0) throw new Error("Write something to post.");
   const scheduledRaw = String(formData.get("scheduled_at") ?? "").trim();

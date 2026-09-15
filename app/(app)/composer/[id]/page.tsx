@@ -14,14 +14,22 @@ export default async function EditPostPage({
   const { data: post } = await supabase
     .from("posts")
     .select(
-      "id, body, thread_tail, scheduled_at, status, tiktok_privacy_level, post_targets(channel_id, variant_body)",
+      "id, body, thread_tail, scheduled_at, status, tiktok_privacy_level, post_targets(channel_id, variant_body, status, platform_post_id)",
     )
     .eq("id", id)
     .maybeSingle();
 
   if (!post) notFound();
-  // Published posts can't be edited (they've already gone out).
-  if (post.status === "published") redirect("/dashboard");
+  // Can't edit a post that has already published (fully or partially) or is
+  // mid-publish — re-saving would republish duplicates to channels that already
+  // got it. (Retry a failed channel from the dashboard instead.)
+  const anyDelivered = (post.post_targets ?? []).some(
+    (t) => (t as { status?: string; platform_post_id?: string | null }).status === "published" ||
+      (t as { platform_post_id?: string | null }).platform_post_id,
+  );
+  if (post.status === "published" || post.status === "publishing" || anyDelivered) {
+    redirect("/dashboard");
+  }
 
   const { data: channels } = await supabase
     .from("channels")
