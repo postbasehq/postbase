@@ -2,11 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { BrandTile } from "@/components/BrandTile";
 
 export type CalPost = {
   id: string;
   body: string;
   status: string;
+  platforms: string[]; // channels this post targets
   dayKey: string; // YYYY-MM-DD (local)
   hour: number; // 0-23 local
   minute: number;
@@ -32,6 +34,25 @@ const DOT: Record<string, string> = {
   published: "bg-green",
   failed: "bg-terra",
 };
+
+// Overlapping channel brand icons for a post (falls back to a status dot).
+function PlatformIcons({ platforms, status }: { platforms: string[]; status: string }) {
+  if (!platforms.length) {
+    return <span className={`size-1.5 shrink-0 rounded-full ${DOT[status] ?? "bg-muted"}`} />;
+  }
+  return (
+    <span className="flex shrink-0 -space-x-1">
+      {platforms.slice(0, 3).map((p) => (
+        <span key={p} className="rounded-[4px] ring-1 ring-surface">
+          <BrandTile platform={p} size={13} radius={4} />
+        </span>
+      ))}
+      {platforms.length > 3 ? (
+        <span className="pl-1 text-[10px] text-muted">+{platforms.length - 3}</span>
+      ) : null}
+    </span>
+  );
+}
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const ROW = 56; // px per hour row
@@ -233,7 +254,7 @@ function TimeGrid({
                             className="pointer-events-auto flex items-center gap-1.5 rounded-md border border-line bg-surface-2 px-1.5 py-1 text-[11px] shadow-sm hover:border-blue"
                             title={`${p.timeLabel} · ${p.body || "(empty)"}`}
                           >
-                            <span className={`size-1.5 shrink-0 rounded-full ${DOT[p.status] ?? "bg-muted"}`} />
+                            <PlatformIcons platforms={p.platforms} status={p.status} />
                             <span className="tabular-nums text-muted">{p.timeLabel}</span>
                             <span className="truncate">{p.body || "(empty)"}</span>
                           </Link>
@@ -313,7 +334,7 @@ function MonthGrid({
                         className="flex items-center gap-1.5 rounded bg-surface-2 px-1.5 py-0.5 text-[11px] hover:bg-blue-soft"
                         title={p.body}
                       >
-                        <span className={`size-1.5 shrink-0 rounded-full ${DOT[p.status] ?? "bg-muted"}`} />
+                        <PlatformIcons platforms={p.platforms} status={p.status} />
                         <span className="tabular-nums text-muted">{p.timeLabel}</span>
                         <span className="truncate">{p.body || "(empty)"}</span>
                       </Link>

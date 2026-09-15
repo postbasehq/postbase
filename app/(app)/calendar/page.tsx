@@ -109,7 +109,7 @@ export default async function CalendarPage({
   const supabase = await createClient();
   const { data } = await supabase
     .from("posts")
-    .select("id, body, scheduled_at, status")
+    .select("id, body, scheduled_at, status, post_targets(channels(platform))")
     .not("scheduled_at", "is", null)
     .gte("scheduled_at", `${addDays(firstKey, -1)}T00:00:00Z`)
     .lt("scheduled_at", `${addDays(lastKey, 2)}T00:00:00Z`)
@@ -119,15 +119,27 @@ export default async function CalendarPage({
     view === "month" ? monthCells.filter((c) => c.key).map((c) => c.key!) : days.map((d) => d.key),
   );
 
+  type Row = {
+    id: string;
+    body: string;
+    scheduled_at: string;
+    status: string;
+    post_targets: { channels: { platform: string } | null }[] | null;
+  };
+
   const posts: CalPost[] = [];
-  for (const p of (data ?? []) as { id: string; body: string; scheduled_at: string; status: string }[]) {
+  for (const p of (data ?? []) as unknown as Row[]) {
     const dayKey = localDateKey(p.scheduled_at, tz);
     if (!visible.has(dayKey)) continue;
     const { hour, minute } = localHM(p.scheduled_at, tz);
+    const platforms = Array.from(
+      new Set((p.post_targets ?? []).map((t) => t.channels?.platform).filter(Boolean) as string[]),
+    );
     posts.push({
       id: p.id,
       body: p.body,
       status: p.status,
+      platforms,
       dayKey,
       hour,
       minute,
