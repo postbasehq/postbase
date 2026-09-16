@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { publish } from "@/lib/publish/adapters";
+import { isRepeatEvery, nextOccurrence } from "@/lib/publish/repeat";
 
 type Db = ReturnType<typeof createAdminClient>;
 
@@ -125,6 +126,68 @@ async function recomputePostStatus(db: Db, postId: string): Promise<void> {
 }
 
 /**
+ * If a just-published post repeats, spawn the next occurrence one cadence
+ * step ahead (same body, channels and media). The claim flips
+ * `repeat_next_spawned` atomically so a repeating post is never cloned twice,
+ * even if the status is recomputed on a later run.
+ */
+async function spawnRepeatIfDue(db: Db, postId: string): Promise<void> {
+  const { data: origin } = await db
+    .from("posts")
+    .update({ repeat_next_spawned: true })
+    .eq("id", postId)
+    .eq("status", "published")
+    .eq("repeat_next_spawned", false)
+    .not("repeat_every", "is", null)
+    .select("org_id, author_id, body, thread_tail, tiktok_privacy_level, scheduled_at, repeat_every")
+    .maybeSingle();
+  if (!origin || !isRepeatEvery(origin.repeat_every)) return;
+
+  const nextAt = nextOccurrence(origin.scheduled_at ?? new Date().toISOString(), origin.repeat_every);
+
+  const { data: clone } = await db
+    .from("posts")
+    .insert({
+      org_id: origin.org_id,
+      author_id: origin.author_id,
+      body: origin.body,
+      thread_tail: origin.thread_tail ?? [],
+      scheduled_at: nextAt,
+      status: "scheduled",
+      tiktok_privacy_level: origin.tiktok_privacy_level,
+      repeat_every: origin.repeat_every,
+    })
+    .select("id")
+    .single();
+  if (!clone) return;
+
+  const { data: targets } = await db
+    .from("post_targets")
+    .select("channel_id, variant_body")
+    .eq("post_id", postId);
+  if (targets && targets.length > 0) {
+    await db.from("post_targets").insert(
+      targets.map((t) => ({
+        post_id: clone.id,
+        channel_id: t.channel_id,
+        variant_body: t.variant_body,
+        status: "scheduled",
+      })),
+    );
+  }
+
+  const { data: media } = await db
+    .from("media")
+    .select("storage_url, type")
+    .eq("post_id", postId);
+  if (media && media.length > 0) {
+    await db.from("media").insert(
+      media.map((m) => ({ post_id: clone.id, storage_url: m.storage_url, type: m.type })),
+    );
+  }
+}
+
+/**
  * Publish all posts whose scheduled time has passed, and retry failed targets.
  * Called by the cron poller.
  *
@@ -197,8 +260,12 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
     }
   }
 
-  // 4. Roll target outcomes up to each touched post.
-  for (const postId of touched) await recomputePostStatus(db, postId);
+  // 4. Roll target outcomes up to each touched post, then spawn the next
+  //    occurrence for any repeating post that just published.
+  for (const postId of touched) {
+    await recomputePostStatus(db, postId);
+    await spawnRepeatIfDue(db, postId);
+  }
 
   return { processed: posts.length + retryPostIds.length };
 }

@@ -30,6 +30,19 @@ const PLATFORM_LABEL: Record<string, string> = {
   mastodon: "Mastodon",
 };
 
+// Compact repeat-cadence labels for the queue chip.
+const REPEAT_SHORT: Record<string, string> = {
+  day: "Daily",
+  "2_days": "Every 2d",
+  "3_days": "Every 3d",
+  "4_days": "Every 4d",
+  "5_days": "Every 5d",
+  "6_days": "Every 6d",
+  week: "Weekly",
+  "2_weeks": "Every 2w",
+  month: "Monthly",
+};
+
 type TargetRow = {
   id: string;
   status: string;
@@ -47,6 +60,7 @@ type PostRow = {
   thread_tail: string[] | null;
   scheduled_at: string | null;
   status: string;
+  repeat_every: string | null;
   media: { storage_url: string; type: string }[] | null;
   post_targets: TargetRow[];
 };
@@ -111,7 +125,7 @@ export default async function QueuePage({
   let query = supabase
     .from("posts")
     .select(
-      "id, body, thread_tail, scheduled_at, status, media(storage_url, type), post_targets(id, status, error, attempts, next_attempt_at, platform_post_id, metrics, metrics_updated_at, channels(platform, handle))",
+      "id, body, thread_tail, scheduled_at, status, repeat_every, media(storage_url, type), post_targets(id, status, error, attempts, next_attempt_at, platform_post_id, metrics, metrics_updated_at, channels(platform, handle))",
       { count: "exact" },
     )
     .order("scheduled_at", { ascending: true, nullsFirst: false });
@@ -233,6 +247,20 @@ export default async function QueuePage({
                       {/* content */}
                       <Link href={`/composer/${p.id}`} className={`${cell} group min-w-0`}>
                         <span className="truncate group-hover:text-blue-ink">
+                          {p.repeat_every ? (
+                            <span
+                              title="Repeating post"
+                              className="mr-1.5 inline-flex items-center gap-1 rounded bg-surface-2 px-1.5 py-0.5 text-[11px] font-medium text-muted align-middle"
+                            >
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                                <path d="m17 2 4 4-4 4" />
+                                <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+                                <path d="m7 22-4-4 4-4" />
+                                <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+                              </svg>
+                              {REPEAT_SHORT[p.repeat_every] ?? "Repeats"}
+                            </span>
+                          ) : null}
                           {threadLen > 0 ? (
                             <span className="mr-1.5 rounded bg-surface-2 px-1.5 py-0.5 text-[11px] font-medium text-muted">
                               🧵 {threadLen + 1}

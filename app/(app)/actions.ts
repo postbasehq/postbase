@@ -8,6 +8,7 @@ import { getCurrentOrgId } from "@/lib/org";
 import { encryptJson } from "@/lib/crypto";
 import { atChannelLimit } from "@/lib/billing-guard";
 import { connectBluesky } from "@/lib/platforms/bluesky";
+import { isRepeatEvery } from "@/lib/publish/repeat";
 
 const TIKTOK_PRIVACY = [
   "PUBLIC_TO_EVERYONE",
@@ -20,6 +21,38 @@ const TIKTOK_PRIVACY = [
 function parseTiktokPrivacy(formData: FormData): string | null {
   const v = String(formData.get("tiktok_privacy_level") ?? "");
   return TIKTOK_PRIVACY.includes(v) ? v : null;
+}
+
+/** Parse the repeat cadence, or null if absent/invalid or the post isn't scheduled. */
+function parseRepeatEvery(formData: FormData, scheduled: boolean): string | null {
+  if (!scheduled) return null; // drafts don't repeat
+  const v = String(formData.get("repeat_every") ?? "");
+  return isRepeatEvery(v) ? v : null;
+}
+
+/**
+ * Given a set of media URLs about to be freed by a post, return only the
+ * storage paths that no *other* post still references — so deleting one
+ * occurrence of a repeating post never removes a file a pending occurrence
+ * (which shares the same storage_url) still needs.
+ */
+async function orphanedStoragePaths(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  urls: string[],
+  excludePostId: string,
+): Promise<string[]> {
+  const clean = urls.filter(Boolean);
+  if (clean.length === 0) return [];
+  const { data } = await supabase
+    .from("media")
+    .select("storage_url")
+    .in("storage_url", clean)
+    .neq("post_id", excludePostId);
+  const stillUsed = new Set((data ?? []).map((m) => m.storage_url));
+  return clean
+    .filter((u) => !stillUsed.has(u))
+    .map((u) => u.split("/post-media/")[1])
+    .filter(Boolean) as string[];
 }
 
 /** Parse the composer's `thread` JSON field into non-empty, trimmed tweet segments. */
@@ -139,6 +172,7 @@ export async function createPost(formData: FormData) {
       scheduled_at: scheduledAt,
       status,
       tiktok_privacy_level: parseTiktokPrivacy(formData),
+      repeat_every: parseRepeatEvery(formData, status === "scheduled"),
     })
     .select("id")
     .single();
@@ -224,6 +258,9 @@ export async function updatePost(formData: FormData) {
       scheduled_at: scheduledAt,
       status,
       tiktok_privacy_level: parseTiktokPrivacy(formData),
+      repeat_every: parseRepeatEvery(formData, status === "scheduled"),
+      // Editing re-arms the repeat: a rescheduled post hasn't published yet.
+      repeat_next_spawned: false,
     })
     .eq("id", postId)
     .eq("org_id", orgId)
@@ -265,11 +302,11 @@ export async function updatePost(formData: FormData) {
     .select("storage_url")
     .eq("post_id", postId);
   const keptUrls = new Set(media.map((m) => m.url));
-  const removedPaths = (oldMedia ?? [])
+  const removedUrls = (oldMedia ?? [])
     .map((m) => m.storage_url)
-    .filter((u) => u && !keptUrls.has(u))
-    .map((u) => u.split("/post-media/")[1])
-    .filter(Boolean) as string[];
+    .filter((u) => u && !keptUrls.has(u)) as string[];
+  // Only delete files no other post (e.g. a repeat occurrence) still references.
+  const removedPaths = await orphanedStoragePaths(supabase, removedUrls, postId);
   if (removedPaths.length > 0) {
     await createAdminClient().storage.from("post-media").remove(removedPaths);
   }
@@ -366,11 +403,12 @@ export async function deletePost(formData: FormData) {
     .from("media")
     .select("storage_url")
     .eq("post_id", postId);
-  const paths = (media ?? [])
-    .map((m) => m.storage_url)
-    .filter(Boolean)
-    .map((u) => u.split("/post-media/")[1])
-    .filter(Boolean) as string[];
+  // Only delete files no other post (e.g. a repeat occurrence) still references.
+  const paths = await orphanedStoragePaths(
+    supabase,
+    (media ?? []).map((m) => m.storage_url).filter(Boolean) as string[],
+    postId,
+  );
   if (paths.length > 0) {
     await createAdminClient().storage.from("post-media").remove(paths);
   }

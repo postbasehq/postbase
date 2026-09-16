@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/SubmitButton";
 import { Modal } from "@/components/Modal";
 import { BrandTile } from "@/components/BrandTile";
+import { REPEAT_OPTIONS } from "@/lib/publish/repeat";
 import { PostPreview } from "@/components/PostPreview";
 
 /* ── Platform rules ─────────────────────────────────────────────────────────
@@ -67,6 +68,7 @@ type PostFormProps = {
     variants: Record<string, string>;
     media: Media[];
     tiktokPrivacy?: string;
+    repeatEvery?: string | null;
   };
 };
 
@@ -109,6 +111,7 @@ export function PostForm({
   const [scheduleLocal, setScheduleLocal] = useState(
     () => utcToLocalInput(initial?.scheduledAt) || defaultScheduleLocal || "",
   );
+  const [repeatEvery, setRepeatEvery] = useState(initial?.repeatEvery ?? "");
   const [busy, setBusy] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -540,8 +543,40 @@ export function PostForm({
             className="bg-transparent py-2 text-sm outline-none"
           />
         </label>
+
+        {!isDraft ? (
+          <label
+            title="Automatically re-post on a fixed cadence"
+            className="flex items-center gap-1.5 rounded-lg border border-line bg-ground pl-2.5 pr-1 text-sm focus-within:border-blue"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted" aria-hidden>
+              <path d="m17 2 4 4-4 4" />
+              <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+              <path d="m7 22-4-4 4-4" />
+              <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+            </svg>
+            <select
+              value={repeatEvery}
+              onChange={(e) => setRepeatEvery(e.target.value)}
+              aria-label="Repeat"
+              className={`bg-transparent py-2 text-sm outline-none ${repeatEvery ? "text-ink" : "text-muted"}`}
+            >
+              <option value="">Don’t repeat</option>
+              {REPEAT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+
         <span className="text-xs text-muted">
-          {isDraft ? "No time — saves as a draft" : `Publishes · ${tz}`}
+          {isDraft
+            ? "No time — saves as a draft"
+            : repeatEvery
+              ? `Repeats · ${tz}`
+              : `Publishes · ${tz}`}
         </span>
 
         {selectedPlatforms.length > 0 ? (
@@ -681,6 +716,7 @@ export function PostForm({
         <input type="hidden" name="tiktok_privacy_level" value={tiktokPrivacy} />
       ) : null}
       <input type="hidden" name="scheduled_at" value={utc} />
+      <input type="hidden" name="repeat_every" value={isDraft ? "" : repeatEvery} />
     </form>
   );
 }

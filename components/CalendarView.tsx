@@ -14,6 +14,7 @@ export type CalPost = {
   hour: number; // 0-23 local
   minute: number;
   timeLabel: string; // "09:00"
+  repeat?: boolean; // part of a repeating series
 };
 
 export type DayCol = {
@@ -62,6 +63,29 @@ function PlatformIcons({ platforms, status }: { platforms: string[]; status: str
         <span className="pl-1 text-[10px] text-muted">+{platforms.length - 3}</span>
       ) : null}
     </span>
+  );
+}
+
+// Small marker shown on a pill that's part of a repeating series.
+function RepeatGlyph() {
+  return (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="ml-auto shrink-0 text-muted"
+      aria-label="Repeating"
+    >
+      <path d="m17 2 4 4-4 4" />
+      <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+      <path d="m7 22-4-4 4-4" />
+      <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+    </svg>
   );
 }
 
@@ -305,6 +329,7 @@ function TimeGrid({
                             <PlatformIcons platforms={p.platforms} status={p.status} />
                             <span className="tabular-nums text-muted">{p.timeLabel}</span>
                             <span className="truncate">{p.body || "(empty)"}</span>
+                            {p.repeat ? <RepeatGlyph /> : null}
                           </Link>
                         ))}
                       </div>
@@ -385,6 +410,7 @@ function MonthGrid({
                         <PlatformIcons platforms={p.platforms} status={p.status} />
                         <span className="tabular-nums text-muted">{p.timeLabel}</span>
                         <span className="truncate">{p.body || "(empty)"}</span>
+                        {p.repeat ? <RepeatGlyph /> : null}
                       </Link>
                     ))}
                     {posts.length > 4 ? (

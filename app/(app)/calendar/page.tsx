@@ -119,7 +119,7 @@ export default async function CalendarPage({
   const supabase = await createClient();
   const { data } = await supabase
     .from("posts")
-    .select("id, body, scheduled_at, status, post_targets(channels(platform))")
+    .select("id, body, scheduled_at, status, repeat_every, post_targets(channels(platform))")
     .not("scheduled_at", "is", null)
     .gte("scheduled_at", `${addDays(firstKey, -1)}T00:00:00Z`)
     .lt("scheduled_at", `${addDays(lastKey, 2)}T00:00:00Z`)
@@ -153,6 +153,7 @@ export default async function CalendarPage({
     body: string;
     scheduled_at: string;
     status: string;
+    repeat_every: string | null;
     post_targets: { channels: { platform: string } | null }[] | null;
   };
 
@@ -173,6 +174,7 @@ export default async function CalendarPage({
       hour,
       minute,
       timeLabel: formatInTz(p.scheduled_at, tz, { hour: "2-digit", minute: "2-digit", hour12: false }),
+      repeat: Boolean(p.repeat_every),
     });
   }
 
