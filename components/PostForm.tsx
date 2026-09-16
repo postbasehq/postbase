@@ -257,7 +257,7 @@ export function PostForm({
   const cardTitle = "font-display text-sm font-semibold";
 
   return (
-    <form action={action} className="mt-6 flex flex-col gap-4">
+    <form action={action} className="mt-6 flex flex-col gap-4 pb-24">
       {initial ? <input type="hidden" name="post_id" value={initial.id} /> : null}
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -525,8 +525,9 @@ export function PostForm({
         </div>
       </div>
 
-      {/* ── Action bar (sticky footer) ────────────────────────── */}
-      <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-line bg-surface px-6 py-3.5 shadow-[0_-8px_24px_-16px_rgba(16,24,40,0.35)]">
+      {/* ── Action bar (fixed footer, spans the whole panel) ──── */}
+      <div className="fixed bottom-3 left-0 right-3 z-30 rounded-b-2xl border-t border-line bg-surface shadow-[0_-10px_30px_-18px_rgba(16,24,40,0.45)] md:left-60">
+        <div className="mx-auto flex w-full max-w-[1248px] flex-wrap items-center gap-x-4 gap-y-3 px-6 py-3.5">
         <label className="flex items-center gap-2 rounded-lg border border-line bg-ground px-2.5 focus-within:border-blue">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted" aria-hidden>
             <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -572,6 +573,7 @@ export function PostForm({
           >
             {isDraft ? "Save draft" : submitLabel}
           </SubmitButton>
+        </div>
         </div>
       </div>
 
