@@ -21,7 +21,7 @@ type PlatformMeta = {
   prefersVideo?: boolean;
   videoOnly?: boolean;
   thread?: boolean;
-  /** Non-thread platforms where extra parts post as a first comment. */
+  /** Non-thread platforms where extra posts publish as a first comment. */
   firstComment?: boolean;
 };
 
@@ -166,8 +166,8 @@ export function PostForm({
         notes.push({
           level: "info",
           text: meta.firstComment
-            ? "Extra parts post as a first comment"
-            : "Extra parts are added to the post text",
+            ? "Extra posts publish as a first comment"
+            : "Extra posts are added to the post text",
         });
     }
     if (meta.videoOnly && !hasVideo) {
