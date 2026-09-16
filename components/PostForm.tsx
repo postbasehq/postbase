@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/SubmitButton";
 import { Modal } from "@/components/Modal";
@@ -86,6 +87,19 @@ export function PostForm({
   );
   const [media, setMedia] = useState<Media[]>(initial?.media ?? []);
   const [selected, setSelected] = useState<Set<string>>(new Set(initial?.channelIds ?? []));
+
+  // When arriving via a "+"/manage-channels link (?focus=channels), scroll to
+  // the Channels card and flash a highlight so it's obvious where to act.
+  const channelsRef = useRef<HTMLElement>(null);
+  const searchParams = useSearchParams();
+  const [flashChannels, setFlashChannels] = useState(false);
+  useEffect(() => {
+    if (searchParams.get("focus") !== "channels") return;
+    channelsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setFlashChannels(true);
+    const t = setTimeout(() => setFlashChannels(false), 2600);
+    return () => clearTimeout(t);
+  }, [searchParams]);
   const [variants, setVariants] = useState<Record<string, string>>(initial?.variants ?? {});
   const [openVariants, setOpenVariants] = useState<Set<string>>(
     new Set(Object.keys(initial?.variants ?? {})),
@@ -348,7 +362,12 @@ export function PostForm({
       {/* ── Destinations · Schedule · Preflight ─────────────────── */}
       <div className="flex flex-col gap-5 lg:sticky lg:top-6 lg:self-start">
         {/* Channels */}
-        <section className={card}>
+        <section
+          ref={channelsRef}
+          className={`${card} transition-all duration-300 ${
+            flashChannels ? "ring-2 ring-blue ring-offset-2 ring-offset-ground" : ""
+          }`}
+        >
           <div className={cardHead}>
             <span className={cardTitle}>Channels</span>
             <Link href="/channels" className="ml-auto text-xs font-medium text-blue-ink hover:underline">

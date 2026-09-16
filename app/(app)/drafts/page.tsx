@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getTimeZone, formatInTz } from "@/lib/tz";
 import { BrandTile } from "@/components/BrandTile";
 import { DeletePostButton } from "@/components/DeletePostButton";
-import { deletePost } from "../actions";
+import { CalendarChannelsBar } from "@/components/CalendarChannelsBar";
+import { deletePost, disconnectChannel } from "../actions";
 
 type Row = {
   id: string;
@@ -13,9 +13,25 @@ type Row = {
   post_targets: { channels: { platform: string } | null }[] | null;
 };
 
-const COLS = "grid grid-cols-[140px_minmax(0,1fr)_96px_112px]";
+const COLS = "grid grid-cols-[132px_minmax(0,1fr)_150px_112px]";
 const cell = "flex items-center border-r border-line/70 px-3 py-2";
 const PAGE_SIZE = 10;
+
+// Friendly relative time for the "Updated" column.
+function timeAgo(iso: string | null): string {
+  if (!iso) return "—";
+  const s = Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 1000));
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d ago`;
+  const w = Math.floor(d / 7);
+  if (w < 5) return `${w}w ago`;
+  return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+}
 
 export default async function DraftsPage({
   searchParams,
@@ -23,11 +39,6 @@ export default async function DraftsPage({
   searchParams: Promise<{ page?: string; q?: string }>;
 }) {
   const supabase = await createClient();
-  const tz = await getTimeZone();
-  const whenLabel = (iso: string | null) =>
-    iso
-      ? formatInTz(iso, tz, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
-      : "—";
 
   const { page: pageParam, q: qParam } = await searchParams;
   const q = (qParam ?? "").trim();
@@ -43,6 +54,20 @@ export default async function DraftsPage({
   const { data, count } = await query.range(from, from + PAGE_SIZE - 1);
 
   const rows = (data ?? []) as unknown as Row[];
+
+  // Connected channels for the "Manage channels" bar under the table.
+  const { data: channels } = await supabase
+    .from("channels")
+    .select("id, platform, handle, status")
+    .order("created_at", { ascending: true });
+  const accountsByPlatform: Record<
+    string,
+    { id: string; handle: string | null; status: string }[]
+  > = {};
+  for (const c of channels ?? []) {
+    (accountsByPlatform[c.platform] ??= []).push({ id: c.id, handle: c.handle, status: c.status });
+  }
+
   const total = count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const page = Math.min(requested, totalPages);
@@ -58,9 +83,9 @@ export default async function DraftsPage({
   };
 
   return (
-    <div className="mx-auto max-w-[1000px]">
+    <div className="mx-auto max-w-[1200px]">
       <div className="flex flex-wrap items-center gap-3">
-        <form className="flex w-full items-center gap-2 rounded-lg border border-line bg-surface px-2.5 focus-within:border-blue sm:w-64">
+        <form className="flex w-full items-center gap-2 rounded-lg border border-line bg-surface px-3 focus-within:border-blue sm:w-80">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted" aria-hidden>
             <circle cx="11" cy="11" r="8" />
             <path d="m21 21-4.3-4.3" />
@@ -71,7 +96,7 @@ export default async function DraftsPage({
             defaultValue={q}
             placeholder="Search drafts…"
             aria-label="Search drafts"
-            className="min-w-0 flex-1 bg-transparent py-1.5 text-sm outline-none placeholder:text-muted"
+            className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-none placeholder:text-muted"
           />
           {q ? (
             <Link href="/drafts" aria-label="Clear search" className="shrink-0 text-muted hover:text-ink">
@@ -81,12 +106,9 @@ export default async function DraftsPage({
             </Link>
           ) : null}
         </form>
-        <Link
-          href="/composer"
-          className="ml-auto rounded-full bg-blue px-4 py-2 font-display text-sm font-semibold text-on-blue shadow-sm"
-        >
-          New draft
-        </Link>
+        <p className="ml-auto hidden text-sm text-muted sm:block">
+          Unscheduled posts you’re still working on.
+        </p>
       </div>
 
       <div className="mt-5 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
@@ -121,8 +143,8 @@ export default async function DraftsPage({
                 return (
                   <div key={p.id} className="border-b border-line last:border-b-0">
                     <div className={`${COLS} text-sm transition-colors hover:bg-surface-2/30`}>
-                      <div className={`${cell} whitespace-nowrap font-display text-[13px] font-semibold tabular-nums text-muted`}>
-                        {whenLabel(p.updated_at)}
+                      <div className={`${cell} whitespace-nowrap text-[13px] font-medium text-muted`}>
+                        {timeAgo(p.updated_at)}
                       </div>
 
                       <Link href={`/composer/${p.id}`} className={`${cell} group min-w-0`}>
@@ -137,22 +159,32 @@ export default async function DraftsPage({
                       </Link>
 
                       <div className={cell}>
-                        {platforms.length > 0 ? (
-                          <div className="flex -space-x-1.5">
-                            {platforms.slice(0, 3).map((pl) => (
-                              <span key={pl} className="rounded-[6px] bg-surface p-[1.5px] shadow-sm ring-1 ring-line">
-                                <BrandTile platform={pl} size={19} radius={5} />
-                              </span>
-                            ))}
-                            {platforms.length > 3 ? (
-                              <span className="flex size-[22px] items-center justify-center rounded-full bg-surface-2 text-[10px] font-semibold text-muted ring-1 ring-line">
-                                +{platforms.length - 3}
-                              </span>
-                            ) : null}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted">—</span>
-                        )}
+                        <div className="flex items-center gap-1.5">
+                          {platforms.length > 0 ? (
+                            <div className="flex -space-x-1.5">
+                              {platforms.slice(0, 3).map((pl) => (
+                                <span key={pl} className="rounded-[6px] bg-surface p-[1.5px] shadow-sm ring-1 ring-line">
+                                  <BrandTile platform={pl} size={19} radius={5} />
+                                </span>
+                              ))}
+                              {platforms.length > 3 ? (
+                                <span className="flex size-[22px] items-center justify-center rounded-full bg-surface-2 text-[10px] font-semibold text-muted ring-1 ring-line">
+                                  +{platforms.length - 3}
+                                </span>
+                              ) : null}
+                            </div>
+                          ) : null}
+                          <Link
+                            href={`/composer/${p.id}?focus=channels`}
+                            aria-label="Add channels to this draft"
+                            title="Add channels"
+                            className="flex size-[23px] shrink-0 items-center justify-center rounded-[6px] bg-surface text-blue-ink shadow-sm ring-1 ring-line transition hover:ring-blue"
+                          >
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+                              <path d="M12 5v14M5 12h14" />
+                            </svg>
+                          </Link>
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-1.5 px-2 py-2">
@@ -205,6 +237,8 @@ export default async function DraftsPage({
           </div>
         ) : null}
       </div>
+
+      <CalendarChannelsBar accountsByPlatform={accountsByPlatform} disconnectAction={disconnectChannel} />
     </div>
   );
 }

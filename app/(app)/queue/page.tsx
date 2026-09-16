@@ -142,7 +142,7 @@ export default async function QueuePage({
   };
 
   return (
-    <div className="mx-auto max-w-[1120px]">
+    <div className="mx-auto max-w-[1200px]">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <QueueControls channels={channelOptions} />
         <div className="ml-auto flex items-center gap-1 rounded-full bg-surface-2 p-1">
