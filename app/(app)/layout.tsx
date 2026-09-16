@@ -101,7 +101,7 @@ export default async function AppLayout({
       {/* floating content panel — inset from the edges, elevated over the backdrop */}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col py-3 pl-0 pr-3">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_18px_50px_-20px_rgba(16,24,40,0.35)]">
-          <header className="flex h-16 shrink-0 items-center gap-3 border-b border-line px-6">
+          <header className="flex h-16 shrink-0 items-center gap-3 px-6">
             <HeaderTitle />
             <div className="ml-auto flex items-center gap-3">
               <NotificationBell items={notices} />

@@ -111,29 +111,34 @@ export function CalendarView({
 
   return (
     <div className="flex h-full min-h-[520px] flex-col">
-      {/* toolbar */}
-      <div className="flex flex-wrap items-center gap-3">
-        {/* date-range switcher */}
-        <div className="flex items-center rounded-full border border-line">
+      {/* header bar */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-line bg-gradient-to-b from-surface to-surface-2/40 px-3.5 py-2.5 shadow-sm">
+        {/* prev / next stepper */}
+        <div className="flex items-center gap-0.5">
           <button
             onClick={() => go(view, shiftKey(anchor, view, -1))}
             aria-label="Previous"
-            className="rounded-l-full px-2 py-1.5 text-muted hover:text-ink"
+            className="flex size-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-2 hover:text-ink"
           >
             <Chevron dir="left" />
           </button>
-          <span className="px-2 font-display text-sm font-semibold tabular-nums">{title}</span>
           <button
             onClick={() => go(view, shiftKey(anchor, view, 1))}
             aria-label="Next"
-            className="rounded-r-full px-2 py-1.5 text-muted hover:text-ink"
+            className="flex size-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-2 hover:text-ink"
           >
             <Chevron dir="right" />
           </button>
         </div>
+
+        {/* period title */}
+        <h2 className="font-display text-lg font-semibold tracking-[-0.01em] tabular-nums text-ink">
+          {title}
+        </h2>
+
         <button
           onClick={() => go(view, todayKey)}
-          className="rounded-full border border-line px-3 py-1.5 text-sm font-medium text-ink hover:bg-surface-2"
+          className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-surface-2"
         >
           Today
         </button>
@@ -141,7 +146,7 @@ export function CalendarView({
         <div className="ml-auto flex items-center gap-2">
           {/* granularity (calendar only) */}
           {view !== "list" ? (
-            <div className="flex items-center gap-1 rounded-full border border-line p-1">
+            <div className="flex items-center gap-1 rounded-full bg-surface-2 p-1">
               {(["day", "week", "month"] as View[]).map((v) => (
                 <button
                   key={v}
@@ -157,7 +162,7 @@ export function CalendarView({
           ) : null}
 
           {/* calendar / list display toggle */}
-          <div className="flex items-center gap-1 rounded-full border border-line p-1">
+          <div className="flex items-center gap-1 rounded-full bg-surface-2 p-1">
             <button
               onClick={() => go(view === "list" ? "week" : view, anchor)}
               aria-label="Calendar view"
@@ -181,7 +186,7 @@ export function CalendarView({
       </div>
 
       {/* body */}
-      <div className="mt-4 flex-1 min-h-0 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
+      <div className="mt-3 flex-1 min-h-0 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
         {view === "list" ? (
           <ListView posts={posts} todayKey={todayKey} />
         ) : view === "month" ? (
@@ -219,7 +224,7 @@ function TimeGrid({
   return (
     <div className="flex h-full flex-col">
       {/* day headers */}
-      <div className="grid border-b border-line" style={{ gridTemplateColumns: cols }}>
+      <div className="grid border-b border-line bg-surface-2/60" style={{ gridTemplateColumns: cols }}>
         <div className="border-r border-line" />
         {days.map((d) => (
           <div key={d.key} className="border-r border-line px-2 py-2.5 text-center last:border-r-0">
@@ -318,7 +323,7 @@ function MonthGrid({
 }) {
   return (
     <div className="flex h-full flex-col">
-      <div className="grid grid-cols-7 border-b border-line">
+      <div className="grid grid-cols-7 border-b border-line bg-surface-2/60">
         {WEEKDAYS.map((d) => (
           <div key={d} className="px-2 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-muted">
             {d}
