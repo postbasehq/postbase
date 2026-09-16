@@ -6,6 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/SubmitButton";
 import { Modal } from "@/components/Modal";
+import { BrandTile } from "@/components/BrandTile";
+import { PostPreview } from "@/components/PostPreview";
 
 /* ── Platform rules ─────────────────────────────────────────────────────────
    One source of truth for how each network treats a post: character budget,
@@ -19,12 +21,14 @@ type PlatformMeta = {
   prefersVideo?: boolean;
   videoOnly?: boolean;
   thread?: boolean;
+  /** Non-thread platforms where extra parts post as a first comment. */
+  firstComment?: boolean;
 };
 
 const PLATFORM: Record<string, PlatformMeta> = {
   x: { label: "X", dot: "bg-ink", limit: 280, thread: true },
   facebook: { label: "Facebook", dot: "bg-blue", limit: 63206 },
-  linkedin: { label: "LinkedIn", dot: "bg-blue", limit: 3000 },
+  linkedin: { label: "LinkedIn", dot: "bg-blue", limit: 3000, firstComment: true },
   instagram: { label: "Instagram", dot: "bg-terra", limit: 2200, needsMedia: true },
   tiktok: { label: "TikTok", dot: "bg-ink", limit: 2200, needsMedia: true, prefersVideo: true },
   youtube: { label: "YouTube", dot: "bg-amber-bright", limit: 5000, videoOnly: true },
@@ -90,7 +94,7 @@ export function PostForm({
 
   // When arriving via a "+"/manage-channels link (?focus=channels), scroll to
   // the Channels card and flash a highlight so it's obvious where to act.
-  const channelsRef = useRef<HTMLElement>(null);
+  const channelsRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
   const [flashChannels, setFlashChannels] = useState(false);
   useEffect(() => {
@@ -100,10 +104,7 @@ export function PostForm({
     const t = setTimeout(() => setFlashChannels(false), 2600);
     return () => clearTimeout(t);
   }, [searchParams]);
-  const [variants, setVariants] = useState<Record<string, string>>(initial?.variants ?? {});
-  const [openVariants, setOpenVariants] = useState<Set<string>>(
-    new Set(Object.keys(initial?.variants ?? {})),
-  );
+  const [variants] = useState<Record<string, string>>(initial?.variants ?? {});
   const [tiktokPrivacy, setTiktokPrivacy] = useState(initial?.tiktokPrivacy ?? "SELF_ONLY");
   const [scheduleLocal, setScheduleLocal] = useState(
     () => utcToLocalInput(initial?.scheduledAt) || defaultScheduleLocal || "",
@@ -122,6 +123,18 @@ export function PostForm({
   const hasVideo = media.some((m) => m.type.startsWith("video/"));
   const selectedChannels = channels.filter((c) => selected.has(c.id));
   const selectedPlatforms = Array.from(new Set(selectedChannels.map((c) => c.platform)));
+
+  // Live preview: which selected channel is being previewed.
+  const [previewIdx, setPreviewIdx] = useState(0);
+  const previewClamped = Math.min(previewIdx, Math.max(0, selectedChannels.length - 1));
+  const previewChannel = selectedChannels[previewClamped];
+
+  // Strictest character budget across the selected platforms (null when none).
+  const charLimit = (() => {
+    if (selectedPlatforms.length === 0) return null;
+    const min = Math.min(...selectedPlatforms.map((p) => PLATFORM[p]?.limit ?? Infinity));
+    return Number.isFinite(min) ? min : null;
+  })();
 
   let tz = "your timezone";
   try {
@@ -149,7 +162,13 @@ export function PostForm({
       const over = caption.length - meta.limit;
       if (over > 0)
         notes.push({ level: "error", text: `Caption is ${over} over ${meta.limit.toLocaleString()}` });
-      if (isThread) notes.push({ level: "info", text: "Only the first block posts here" });
+      if (isThread)
+        notes.push({
+          level: "info",
+          text: meta.firstComment
+            ? "Extra parts post as a first comment"
+            : "Extra parts are added to the post text",
+        });
     }
     if (meta.videoOnly && !hasVideo) {
       notes.push({ level: "error", text: "Needs a video" });
@@ -238,39 +257,95 @@ export function PostForm({
   const cardTitle = "font-display text-sm font-semibold";
 
   return (
-    <form action={action} className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+    <form action={action} className="mt-6 flex flex-col gap-4">
       {initial ? <input type="hidden" name="post_id" value={initial.id} /> : null}
 
-      {/* ── Compose ─────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-5">
-        <section className={card}>
-          <div className={cardHead}>
-            <span className={cardTitle}>{isThread ? "Thread" : "Post"}</span>
-            {isThread ? (
-              <span className="ml-auto text-xs text-muted">{tweets.length} parts</span>
-            ) : null}
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+        {/* ── Compose ──────────────────────────────────────────── */}
+        <div className="flex flex-col gap-5">
+          {/* channels */}
+          <div
+            ref={channelsRef}
+            className={`flex flex-wrap items-center gap-2 rounded-xl transition-all duration-300 ${
+              flashChannels ? "p-1 ring-2 ring-blue" : ""
+            }`}
+          >
+            {channels.length === 0 ? (
+              <span className="text-sm text-muted">
+                No channels yet.{" "}
+                <Link href="/channels" className="font-medium text-blue-ink underline">
+                  Connect one
+                </Link>
+                .
+              </span>
+            ) : (
+              <>
+                {channels.map((c) => {
+                  const on = selected.has(c.id);
+                  const blocking =
+                    on && checkPlatform(c.platform).some((n) => n.level === "error");
+                  return (
+                    <button
+                      type="button"
+                      key={c.id}
+                      onClick={() => toggleChannel(c.id)}
+                      title={`${label(c.platform)}${c.handle ? ` ${c.handle}` : ""}`}
+                      className={`relative flex items-center gap-2 rounded-full border px-2.5 py-1.5 text-sm transition ${
+                        on
+                          ? "border-blue bg-blue-soft text-blue-ink"
+                          : "border-line text-muted hover:text-ink"
+                      }`}
+                    >
+                      <BrandTile platform={c.platform} size={18} radius={5} />
+                      <span className="font-medium">{label(c.platform)}</span>
+                      {blocking ? (
+                        <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-terra ring-2 ring-surface" />
+                      ) : null}
+                    </button>
+                  );
+                })}
+                <Link
+                  href="/channels"
+                  className="ml-auto text-xs font-medium text-blue-ink hover:underline"
+                >
+                  Manage
+                </Link>
+              </>
+            )}
           </div>
 
-          <div className="flex flex-col gap-4 p-4">
+          {/* editor */}
+          <div className="flex flex-col gap-4">
             {tweets.map((t, i) => {
-              const len = t.trim().length;
-              const xOver = selectedPlatforms.includes("x") && len > 280;
+              const len = t.length;
+              const nearLimit = charLimit != null && len >= charLimit * 0.9;
+              const atLimit = charLimit != null && len >= charLimit;
               return (
-                <div key={i}>
+                <div
+                  key={i}
+                  className="rounded-xl border border-line p-3.5 transition-colors focus-within:border-blue"
+                >
                   {isThread ? (
-                    <div className="mb-1.5 text-xs font-semibold text-muted">Part {i + 1}</div>
+                    <div className="mb-1.5 text-xs font-semibold text-muted">
+                      {i === 0 ? "Post" : `Comment / post ${i}`}
+                    </div>
                   ) : null}
                   <textarea
                     value={t}
                     onChange={(e) => updateTweet(i, e.target.value)}
-                    rows={i === 0 ? 5 : 3}
-                    placeholder={i === 0 ? "What are you posting?" : "Continue the thread…"}
-                    className="w-full resize-y rounded-xl border border-line bg-ground px-3.5 py-3 text-sm leading-relaxed outline-none focus-visible:border-blue"
+                    rows={i === 0 ? 6 : 3}
+                    maxLength={charLimit ?? undefined}
+                    placeholder={i === 0 ? "What do you want to say?" : "Add a comment or next post…"}
+                    className="w-full resize-none bg-transparent text-[15px] leading-relaxed outline-none placeholder:text-muted/70"
                   />
                   <div className="mt-1 flex items-center gap-3 text-xs">
-                    <span className={xOver ? "font-medium text-terra" : "text-muted"}>
-                      {len}
-                      {selectedPlatforms.includes("x") ? " / 280" : " characters"}
+                    <span
+                      className={
+                        atLimit ? "font-medium text-terra" : nearLimit ? "font-medium text-amber" : "text-muted"
+                      }
+                    >
+                      {len.toLocaleString()}
+                      {charLimit != null ? ` / ${charLimit.toLocaleString()}` : " characters"}
                     </span>
                     {tweets.length > 1 ? (
                       <button
@@ -286,30 +361,13 @@ export function PostForm({
               );
             })}
 
-            <button
-              type="button"
-              onClick={addTweet}
-              disabled={tweets.length >= MAX_TWEETS}
-              className="self-start rounded-full border border-line px-3.5 py-1.5 text-sm font-medium text-blue-ink hover:bg-surface-2 disabled:opacity-50"
-            >
-              + Add part
-            </button>
-          </div>
-        </section>
-
-        {/* Media */}
-        <section className={card}>
-          <div className={cardHead}>
-            <span className={cardTitle}>Media</span>
-            <span className="ml-auto text-xs text-muted">Images or MP4 video</span>
-          </div>
-          <div className="flex flex-col gap-3 p-4">
+            {/* media thumbnails */}
             {media.length > 0 ? (
               <div className="flex flex-wrap gap-2.5">
                 {media.map((m, i) => (
                   <div
                     key={i}
-                    className="relative size-24 overflow-hidden rounded-xl border border-line"
+                    className="relative size-20 overflow-hidden rounded-xl border border-line"
                   >
                     {m.type.startsWith("video/") ? (
                       <video src={m.url} className="size-full object-cover" />
@@ -329,24 +387,90 @@ export function PostForm({
                 ))}
               </div>
             ) : null}
-            <div className="flex items-center gap-3">
+            {uploadError ? <span className="text-xs text-terra">{uploadError}</span> : null}
+
+            {/* inline toolbar */}
+            <div className="flex flex-wrap items-center gap-0.5">
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
                 disabled={busy}
-                className="self-start rounded-full border border-line px-3.5 py-1.5 text-sm font-medium text-blue-ink hover:bg-surface-2 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-50"
               >
-                {busy ? "Uploading…" : media.length ? "+ Add more" : "+ Add media"}
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="9" cy="9" r="2" />
+                  <path d="m21 15-4.5-4.5L5 21" />
+                </svg>
+                {busy ? "Uploading…" : "Media"}
               </button>
               <button
                 type="button"
                 onClick={() => setLibraryOpen(true)}
-                className="self-start rounded-full border border-line px-3.5 py-1.5 text-sm font-medium text-blue-ink hover:bg-surface-2"
+                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-2 hover:text-ink"
               >
-                Pick from library
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <rect x="3" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="14" width="7" height="7" rx="1" />
+                  <rect x="3" y="14" width="7" height="7" rx="1" />
+                </svg>
+                Library
               </button>
-              {uploadError ? <span className="text-xs text-terra">{uploadError}</span> : null}
+              <button
+                type="button"
+                onClick={addTweet}
+                disabled={tweets.length >= MAX_TWEETS}
+                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-50"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Add comment / post
+              </button>
             </div>
+
+            {/* TikTok privacy */}
+            {selectedPlatforms.includes("tiktok") ? (
+              <label className="flex flex-col gap-1.5 pt-1">
+                <span className="text-xs font-medium text-muted">TikTok privacy</span>
+                <select
+                  value={tiktokPrivacy}
+                  onChange={(e) => setTiktokPrivacy(e.target.value)}
+                  className="rounded-lg border border-line bg-ground px-3 py-2 text-sm outline-none focus-visible:border-blue"
+                >
+                  {TIKTOK_PRIVACY.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-[11px] text-muted">
+                  Until TikTok approves the app, posts publish as “Only me”.
+                </span>
+              </label>
+            ) : null}
+
+            {/* preflight — inline warnings */}
+            {selectedPlatforms.length > 0 && checks.some((c) => c.notes.length > 0) ? (
+              <div className="flex flex-col gap-1.5 pt-1">
+                {checks
+                  .filter((c) => c.notes.length > 0)
+                  .map(({ platform, notes }) => (
+                    <div key={platform} className="flex items-start gap-2 text-xs">
+                      <span className="shrink-0 font-medium">{label(platform)}</span>
+                      <span className="flex flex-col">
+                        {notes.map((n, i) => (
+                          <span key={i} className={n.level === "error" ? "text-terra" : "text-muted"}>
+                            {n.text}
+                          </span>
+                        ))}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            ) : null}
+
             <input
               ref={fileRef}
               type="file"
@@ -356,219 +480,98 @@ export function PostForm({
               onChange={(e) => e.target.files && handleFiles(e.target.files)}
             />
           </div>
-        </section>
-      </div>
+        </div>
 
-      {/* ── Destinations · Schedule · Preflight ─────────────────── */}
-      <div className="flex flex-col gap-5 lg:sticky lg:top-6 lg:self-start">
-        {/* Channels */}
-        <section
-          ref={channelsRef}
-          className={`${card} transition-all duration-300 ${
-            flashChannels ? "ring-2 ring-blue ring-offset-2 ring-offset-ground" : ""
-          }`}
-        >
-          <div className={cardHead}>
-            <span className={cardTitle}>Channels</span>
-            <Link href="/channels" className="ml-auto text-xs font-medium text-blue-ink hover:underline">
-              Manage
-            </Link>
-          </div>
-          <div className="flex flex-col gap-3 p-4">
-            {channels.length === 0 ? (
-              <p className="text-sm text-muted">
-                No channels yet.{" "}
-                <Link href="/channels" className="font-medium text-blue-ink underline">
-                  Connect one
-                </Link>
-                .
-              </p>
-            ) : (
-              <>
-                <div className="flex flex-wrap gap-2">
-                  {channels.map((c) => {
-                    const on = selected.has(c.id);
-                    return (
-                      <button
-                        type="button"
-                        key={c.id}
-                        onClick={() => toggleChannel(c.id)}
-                        className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm ${
-                          on ? "border-blue bg-blue-soft text-blue-ink" : "border-line bg-ground"
-                        }`}
-                      >
-                        <span className={`size-2 rounded-full ${PLATFORM[c.platform]?.dot ?? "bg-muted"}`} />
-                        <span className="font-medium">{label(c.platform)}</span>
-                        {c.handle ? <span className="text-muted">{c.handle}</span> : null}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* per-channel variants */}
-                {selectedChannels.map((c) =>
-                  openVariants.has(c.id) ? (
-                    <div key={c.id} className="rounded-xl border border-line bg-ground p-3">
-                      <div className="mb-1.5 flex items-center gap-2">
-                        <span className="text-xs font-medium text-muted">{label(c.platform)} variant</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setOpenVariants((s) => {
-                              const n = new Set(s);
-                              n.delete(c.id);
-                              return n;
-                            });
-                            setVariants((v) => {
-                              const n = { ...v };
-                              delete n[c.id];
-                              return n;
-                            });
-                          }}
-                          className="ml-auto text-xs text-muted hover:text-terra"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                      <textarea
-                        value={variants[c.id] ?? ""}
-                        onChange={(e) => setVariants((v) => ({ ...v, [c.id]: e.target.value }))}
-                        rows={2}
-                        placeholder={`Custom text for ${label(c.platform)} — overrides the default`}
-                        className="w-full resize-y rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none focus-visible:border-blue"
-                      />
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      key={c.id}
-                      onClick={() => setOpenVariants((s) => new Set(s).add(c.id))}
-                      className="self-start text-xs font-medium text-blue-ink hover:underline"
-                    >
-                      + Customize for {label(c.platform)}
-                    </button>
-                  ),
-                )}
-
-                {/* TikTok privacy */}
-                {selectedPlatforms.includes("tiktok") ? (
-                  <label className="flex flex-col gap-1.5 border-t border-line pt-3">
-                    <span className="text-xs font-medium text-muted">TikTok privacy</span>
-                    <select
-                      value={tiktokPrivacy}
-                      onChange={(e) => setTiktokPrivacy(e.target.value)}
-                      className="rounded-lg border border-line bg-ground px-3 py-2 text-sm outline-none focus-visible:border-blue"
-                    >
-                      {TIKTOK_PRIVACY.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="text-[11px] text-muted">
-                      Until TikTok approves the app, posts publish as “Only me”.
-                    </span>
-                  </label>
-                ) : null}
-              </>
-            )}
-          </div>
-        </section>
-
-        {/* Schedule */}
-        <section className={card}>
-          <div className={cardHead}>
-            <span className={cardTitle}>Schedule</span>
-            <span className="ml-auto text-xs text-muted">{isDraft ? "Draft" : tz}</span>
-          </div>
-          <div className="flex flex-col gap-2 p-4">
-            <input
-              type="datetime-local"
-              value={scheduleLocal}
-              onChange={(e) => setScheduleLocal(e.target.value)}
-              className="w-full rounded-xl border border-line bg-ground px-3.5 py-2.5 text-sm outline-none focus-visible:border-blue"
-            />
-            <span className="text-xs text-muted">
-              {isDraft
-                ? "No time set — saves as a draft you can schedule later."
-                : `Publishes at this time (${tz}).`}
-            </span>
-          </div>
-        </section>
-
-        {/* Preflight */}
-        <section className={card}>
-          <div className={cardHead}>
-            <span className={cardTitle}>Preflight</span>
-            {selectedPlatforms.length > 0 ? (
-              <span
-                className={`ml-auto inline-flex items-center gap-1.5 text-xs font-medium ${
-                  hasBlocking ? "text-terra" : "text-green"
-                }`}
-              >
-                <span className={`size-2 rounded-full ${hasBlocking ? "bg-terra" : "bg-green"}`} />
-                {hasBlocking ? "Needs attention" : "Ready"}
-              </span>
+        {/* ── Preview ──────────────────────────────────────────── */}
+        <div className="flex flex-col gap-3 lg:sticky lg:top-6 lg:self-start">
+          <div className="flex items-center gap-2 px-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted">Preview</span>
+            {selectedChannels.length > 1 ? (
+              <div className="ml-auto flex items-center gap-1">
+                {selectedChannels.map((c, i) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setPreviewIdx(i)}
+                    aria-label={`Preview ${label(c.platform)}`}
+                    title={label(c.platform)}
+                    className={`flex size-7 items-center justify-center rounded-lg transition ${
+                      i === previewClamped ? "bg-blue-soft" : "opacity-50 hover:bg-surface-2 hover:opacity-100"
+                    }`}
+                  >
+                    <BrandTile platform={c.platform} size={16} radius={4} />
+                  </button>
+                ))}
+              </div>
             ) : null}
           </div>
-          <div className="flex flex-col gap-2.5 p-4">
-            {selectedPlatforms.length === 0 ? (
-              <p className="text-sm text-muted">Select a channel to check readiness.</p>
-            ) : (
-              checks.map(({ platform, notes }) => {
-                const blocking = notes.some((n) => n.level === "error");
-                return (
-                  <div key={platform} className="flex items-start gap-2.5 text-sm">
-                    <span
-                      className={`mt-1.5 size-2 shrink-0 rounded-full ${
-                        blocking ? "bg-terra" : "bg-green"
-                      }`}
-                    />
-                    <div className="min-w-0">
-                      <span className="font-medium">{label(platform)}</span>{" "}
-                      {notes.length === 0 ? (
-                        <span className="text-green">Ready</span>
-                      ) : (
-                        <span className="flex flex-col">
-                          {notes.map((n, i) => (
-                            <span
-                              key={i}
-                              className={n.level === "error" ? "text-terra" : "text-muted"}
-                            >
-                              {n.text}
-                            </span>
-                          ))}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </section>
+          {previewChannel ? (
+            <PostPreview
+              platform={previewChannel.platform}
+              handle={previewChannel.handle}
+              thread={
+                variants[previewChannel.id]?.trim() ? [variants[previewChannel.id]] : tweets
+              }
+              media={media.map((m) => ({ url: m.url, type: m.type }))}
+              metrics={null}
+              publishedAt={utc || null}
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-1.5 rounded-2xl border border-dashed border-line py-16 text-center">
+              <p className="text-sm font-medium text-ink">Nothing to preview yet</p>
+              <p className="text-xs text-muted">Pick a channel to see how your post will look.</p>
+            </div>
+          )}
+        </div>
+      </div>
 
-        {/* Actions */}
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <SubmitButton
-              disabled={!canSubmit}
-              pendingLabel={isDraft ? "Saving…" : "Scheduling…"}
-              className="rounded-full bg-blue px-6 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isDraft ? "Save draft" : submitLabel}
-            </SubmitButton>
-            <Link href="/queue" className="text-sm font-medium text-muted hover:text-ink">
-              Cancel
-            </Link>
-          </div>
+      {/* ── Action bar (sticky footer) ────────────────────────── */}
+      <div className="sticky bottom-0 z-10 -mb-6 flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-line bg-surface/90 py-3.5 backdrop-blur-sm">
+        <label className="flex items-center gap-2 rounded-lg border border-line bg-ground px-2.5 focus-within:border-blue">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted" aria-hidden>
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <path d="M16 2v4M8 2v4M3 10h18" />
+          </svg>
+          <input
+            type="datetime-local"
+            value={scheduleLocal}
+            onChange={(e) => setScheduleLocal(e.target.value)}
+            className="bg-transparent py-2 text-sm outline-none"
+          />
+        </label>
+        <span className="text-xs text-muted">
+          {isDraft ? "No time — saves as a draft" : `Publishes · ${tz}`}
+        </span>
+
+        {selectedPlatforms.length > 0 ? (
+          <span
+            className={`inline-flex items-center gap-1.5 text-xs font-medium ${
+              hasBlocking ? "text-terra" : "text-green"
+            }`}
+          >
+            <span className={`size-2 rounded-full ${hasBlocking ? "bg-terra" : "bg-green"}`} />
+            {hasBlocking ? "Needs attention" : "Ready to publish"}
+          </span>
+        ) : null}
+
+        <div className="ml-auto flex items-center gap-3">
           {bodyEmpty ? (
-            <span className="text-xs text-muted">Write something to continue.</span>
+            <span className="hidden text-xs text-muted sm:inline">Write something to continue.</span>
           ) : hasBlocking && !isDraft ? (
-            <span className="text-xs text-terra">
-              Fix the flagged channels above, or clear the schedule to save a draft.
+            <span className="hidden text-xs text-terra sm:inline">
+              Fix the flagged channels, or clear the time to save a draft.
             </span>
           ) : null}
+          <Link href="/queue" className="text-sm font-medium text-muted hover:text-ink">
+            Cancel
+          </Link>
+          <SubmitButton
+            disabled={!canSubmit}
+            pendingLabel={isDraft ? "Saving…" : "Scheduling…"}
+            className="rounded-full bg-blue px-6 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isDraft ? "Save draft" : submitLabel}
+          </SubmitButton>
         </div>
       </div>
 

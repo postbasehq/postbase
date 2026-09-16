@@ -20,6 +20,7 @@ import {
   createPost as liCreatePost,
   uploadImage as liUploadImage,
   refreshTokens as liRefreshTokens,
+  postComment as liPostComment,
   type LinkedInTokens,
 } from "@/lib/platforms/linkedin";
 import {
@@ -271,9 +272,11 @@ async function publishToLinkedIn(input: PublishInput): Promise<PublishResult> {
     }
   }
 
-  // LinkedIn has no threads — fold the whole thing into one post's commentary.
-  const commentary = [input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean).join("\n\n");
+  // LinkedIn isn't a thread — part 1 is the post; any following parts become a
+  // first comment (LinkedIn supports comments under the existing scope).
+  const commentary = input.body.trim();
   if (!commentary) return { ok: false, error: "LinkedIn post is empty." };
+  const firstComment = input.threadTail.map((t) => t.trim()).filter(Boolean).join("\n\n");
 
   try {
     // Upload any images (PNG/JPEG both fine — no transcode needed). Video is not
@@ -286,6 +289,15 @@ async function publishToLinkedIn(input: PublishInput): Promise<PublishResult> {
       imageUrns.push(await liUploadImage(tokens.access_token, tokens.author_urn, await res.arrayBuffer()));
     }
     const id = await liCreatePost(tokens.access_token, tokens.author_urn, commentary, imageUrns);
+
+    // First comment — best-effort. Never fail the published post over it.
+    if (id && firstComment) {
+      try {
+        await liPostComment(tokens.access_token, tokens.author_urn, id, firstComment);
+      } catch {
+        // swallow — the post went out; the comment is a nice-to-have.
+      }
+    }
     return { ok: true, platformPostId: id || "urn:li:share:unknown" };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "LinkedIn publish failed." };

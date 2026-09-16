@@ -167,6 +167,33 @@ export async function getSocialActions(
   };
 }
 
+/**
+ * Post a comment on an existing share/post — powers the "first comment" feature.
+ * Uses the same `w_member_social` scope as publishing, so no extra grant is
+ * needed. Callers treat this as best-effort (a failed comment must not fail the
+ * post it belongs to).
+ */
+export async function postComment(
+  accessToken: string,
+  authorUrn: string,
+  shareUrn: string,
+  text: string,
+): Promise<void> {
+  const res = await fetch(`${API}/v2/socialActions/${encodeURIComponent(shareUrn)}/comments`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      "X-Restli-Protocol-Version": "2.0.0",
+    },
+    body: JSON.stringify({ actor: authorUrn, message: { text } }),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message ?? `LinkedIn comment error ${res.status}`);
+  }
+}
+
 /** Create a member post (text, single image, or multi-image). Returns the post URN. */
 export async function createPost(
   accessToken: string,
