@@ -526,7 +526,7 @@ export function PostForm({
       </div>
 
       {/* ── Action bar (fixed footer, spans the whole panel) ──── */}
-      <div className="fixed bottom-3 left-0 right-3 z-30 rounded-b-2xl border-t border-line bg-surface shadow-[0_-10px_30px_-18px_rgba(16,24,40,0.45)] md:left-60">
+      <div className="fixed bottom-3 left-0 right-3 z-30 rounded-b-2xl border border-line bg-surface shadow-[0_-10px_30px_-18px_rgba(16,24,40,0.45)] md:left-60">
         <div className="mx-auto flex w-full max-w-[1248px] flex-wrap items-center gap-x-4 gap-y-3 px-6 py-3.5">
         <label className="flex items-center gap-2 rounded-lg border border-line bg-ground px-2.5 focus-within:border-blue">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted" aria-hidden>
