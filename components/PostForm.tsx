@@ -526,7 +526,7 @@ export function PostForm({
       </div>
 
       {/* ── Action bar (sticky footer) ────────────────────────── */}
-      <div className="sticky bottom-0 z-10 -mb-6 flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-line bg-surface/90 py-3.5 backdrop-blur-sm">
+      <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-line bg-surface px-6 py-3.5 shadow-[0_-8px_24px_-16px_rgba(16,24,40,0.35)]">
         <label className="flex items-center gap-2 rounded-lg border border-line bg-ground px-2.5 focus-within:border-blue">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted" aria-hidden>
             <rect x="3" y="4" width="18" height="18" rx="2" />
