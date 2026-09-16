@@ -266,7 +266,7 @@ export function PostForm({
           {/* channels */}
           <div
             ref={channelsRef}
-            className={`flex flex-wrap items-center gap-2 rounded-xl transition-all duration-300 ${
+            className={`flex flex-wrap items-center gap-3 rounded-xl transition-all duration-300 ${
               flashChannels ? "p-1 ring-2 ring-blue" : ""
             }`}
           >
@@ -289,15 +289,15 @@ export function PostForm({
                       type="button"
                       key={c.id}
                       onClick={() => toggleChannel(c.id)}
+                      aria-pressed={on}
                       title={`${label(c.platform)}${c.handle ? ` ${c.handle}` : ""}`}
-                      className={`relative flex items-center gap-2 rounded-full border px-2.5 py-1.5 text-sm transition ${
+                      className={`relative rounded-full transition ${
                         on
-                          ? "border-blue bg-blue-soft text-blue-ink"
-                          : "border-line text-muted hover:text-ink"
+                          ? "ring-2 ring-blue ring-offset-2 ring-offset-surface"
+                          : "opacity-45 hover:opacity-100"
                       }`}
                     >
-                      <BrandTile platform={c.platform} size={18} radius={5} />
-                      <span className="font-medium">{label(c.platform)}</span>
+                      <BrandTile platform={c.platform} size={34} radius={17} />
                       {blocking ? (
                         <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-terra ring-2 ring-surface" />
                       ) : null}
