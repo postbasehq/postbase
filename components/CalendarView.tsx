@@ -36,6 +36,16 @@ const DOT: Record<string, string> = {
   failed: "bg-terra",
 };
 
+// Event-pill styling by status: a colored left accent + a subtle tinted fill.
+const PILL: Record<string, string> = {
+  draft: "border-line bg-surface-2 border-l-muted",
+  scheduled: "border-line bg-blue-soft border-l-blue",
+  publishing: "border-line bg-amber-bright/10 border-l-amber-bright",
+  published: "border-line bg-green/10 border-l-green",
+  failed: "border-line bg-terra/10 border-l-terra",
+};
+const pillClass = (status: string) => PILL[status] ?? PILL.draft;
+
 // Overlapping channel brand icons for a post (falls back to a status dot).
 function PlatformIcons({ platforms, status }: { platforms: string[]; status: string }) {
   if (!platforms.length) {
@@ -289,7 +299,7 @@ function TimeGrid({
                           <Link
                             key={p.id}
                             href={`/composer/${p.id}`}
-                            className="pointer-events-auto flex items-center gap-1.5 rounded-md border border-line bg-surface-2 px-1.5 py-1 text-[11px] shadow-sm hover:border-blue"
+                            className={`pointer-events-auto flex items-center gap-1.5 rounded-md border border-l-[3px] px-1.5 py-1 text-[11px] shadow-sm transition hover:shadow ${pillClass(p.status)}`}
                             title={`${p.timeLabel} · ${p.body || "(empty)"}`}
                           >
                             <PlatformIcons platforms={p.platforms} status={p.status} />
@@ -369,7 +379,7 @@ function MonthGrid({
                       <Link
                         key={p.id}
                         href={`/composer/${p.id}`}
-                        className="flex items-center gap-1.5 rounded bg-surface-2 px-1.5 py-0.5 text-[11px] hover:bg-blue-soft"
+                        className={`flex items-center gap-1.5 rounded border border-l-[3px] px-1.5 py-0.5 text-[11px] transition hover:shadow-sm ${pillClass(p.status)}`}
                         title={p.body}
                       >
                         <PlatformIcons platforms={p.platforms} status={p.status} />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BrandTile, BRANDS } from "@/components/BrandTile";
 import { BlueskyForm } from "@/components/BlueskyForm";
@@ -97,6 +98,19 @@ export function CalendarChannelsBar({
               </button>
             );
           })}
+
+          {/* add / manage channels */}
+          <Link
+            href="/channels"
+            aria-label="Add or manage channels"
+            title="Add channels"
+            style={{ marginLeft: 6, zIndex: n }}
+            className="relative flex size-[31px] items-center justify-center rounded-[9px] bg-surface text-blue-ink shadow-sm ring-1 ring-line transition-transform duration-150 hover:-translate-y-1 hover:ring-blue"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </Link>
         </div>
       </div>
 
