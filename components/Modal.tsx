@@ -7,15 +7,19 @@ import { useEffect, useRef, type ReactNode } from "react";
  * body-scroll lock. Mirrors the inline dialog in DisconnectButton so connect
  * and disconnect flows feel identical.
  */
+const SIZES = { md: "max-w-md", lg: "max-w-2xl", xl: "max-w-4xl" } as const;
+
 export function Modal({
   open,
   onClose,
   labelledBy,
+  size = "md",
   children,
 }: {
   open: boolean;
   onClose: () => void;
   labelledBy?: string;
+  size?: keyof typeof SIZES;
   children: ReactNode;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -51,7 +55,7 @@ export function Modal({
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="relative z-10 max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl border border-line bg-surface p-5 shadow-lg outline-none"
+        className={`relative z-10 max-h-[88vh] w-full ${SIZES[size]} overflow-y-auto rounded-2xl border border-line bg-surface p-5 shadow-lg outline-none`}
       >
         {children}
       </div>

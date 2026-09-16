@@ -93,7 +93,7 @@ export async function disconnectChannel(formData: FormData) {
 
   revalidatePath("/channels");
   revalidatePath("/composer");
-  revalidatePath("/dashboard");
+  revalidatePath("/queue");
 }
 
 /** Create a post targeting the selected channels, scheduled or draft. */
@@ -125,8 +125,8 @@ export async function createPost(formData: FormData) {
     .gte("created_at", new Date(Date.now() - 15_000).toISOString())
     .limit(1);
   if (recent && recent.length > 0) {
-    revalidatePath("/dashboard");
-    redirect("/dashboard");
+    revalidatePath("/queue");
+    redirect("/queue");
   }
 
   const { data: post, error } = await supabase
@@ -176,9 +176,9 @@ export async function createPost(formData: FormData) {
 
   // The cron poller publishes scheduled posts when their time arrives — no event needed.
 
-  revalidatePath("/dashboard");
+  revalidatePath("/queue");
   revalidatePath("/composer");
-  redirect("/dashboard");
+  redirect("/queue");
 }
 
 /** Edit a post: update body/channels/schedule. The poller picks up the new time. */
@@ -192,19 +192,19 @@ export async function updatePost(formData: FormData) {
 
   // Guard: never edit a post that has already published to any channel (or is
   // mid-publish) — re-saving deletes/recreates targets and would republish
-  // duplicates. Retrying a failed channel is handled by the dashboard Retry.
+  // duplicates. Retrying a failed channel is handled by the queue Retry.
   const { data: current } = await supabase
     .from("posts")
     .select("status, post_targets(status, platform_post_id)")
     .eq("id", postId)
     .eq("org_id", orgId)
     .maybeSingle();
-  if (!current) redirect("/dashboard"); // not ours / gone — bounce with feedback
+  if (!current) redirect("/queue"); // not ours / gone — bounce with feedback
   const anyDelivered = (
     (current.post_targets ?? []) as { status: string; platform_post_id: string | null }[]
   ).some((t) => t.status === "published" || t.platform_post_id);
   if (current.status === "published" || current.status === "publishing" || anyDelivered) {
-    redirect("/dashboard");
+    redirect("/queue");
   }
 
   const segments = parseThread(formData);
@@ -229,7 +229,7 @@ export async function updatePost(formData: FormData) {
     .eq("org_id", orgId)
     .select("id");
   if (error) throw new Error(error.message);
-  if (!updated || updated.length === 0) redirect("/dashboard");
+  if (!updated || updated.length === 0) redirect("/queue");
 
   // Validate channels belong to the org, then replace the targets.
   if (channelIds.length > 0) {
@@ -281,9 +281,9 @@ export async function updatePost(formData: FormData) {
       .insert(media.map((m) => ({ post_id: postId, storage_url: m.url, type: m.type })));
   }
 
-  revalidatePath("/dashboard");
+  revalidatePath("/queue");
   revalidatePath("/calendar");
-  redirect("/dashboard");
+  redirect("/queue");
 }
 
 /** Re-queue a failed channel target for another delivery attempt. */
@@ -309,7 +309,7 @@ export async function retryTarget(formData: FormData) {
     await supabase.from("posts").update({ status: "publishing" }).eq("id", updated[0].post_id);
   }
 
-  revalidatePath("/dashboard");
+  revalidatePath("/queue");
 }
 
 /** Cancel a scheduled post: return it to draft so the poller skips it. */
@@ -338,10 +338,10 @@ export async function cancelPost(formData: FormData) {
 
   await supabase.from("post_targets").update({ status: "draft" }).eq("post_id", postId);
 
-  revalidatePath("/dashboard");
+  revalidatePath("/queue");
 }
 
-export async function deleteDraft(formData: FormData) {
+export async function deletePost(formData: FormData) {
   const supabase = await createClient();
   const orgId = await getCurrentOrgId();
   if (!orgId) throw new Error("No workspace found for this user.");
@@ -349,15 +349,16 @@ export async function deleteDraft(formData: FormData) {
   const postId = String(formData.get("post_id") ?? "");
   if (!postId) throw new Error("Missing post id.");
 
-  // Only delete a post that is this org's AND still a draft — never a scheduled,
-  // publishing, or published post (those aren't discardable from here).
+  // Match Postiz: a post in any state can be deleted — this removes Postbase's
+  // record (and media) only; it does NOT un-publish from the channel. Guard
+  // `publishing` so we never delete a post mid-send and race the live poller.
   const { data: post } = await supabase
     .from("posts")
     .select("id, status")
     .eq("id", postId)
     .eq("org_id", orgId)
     .maybeSingle();
-  if (!post || post.status !== "draft") return;
+  if (!post || post.status === "publishing") return;
 
   // Remove any media files from the bucket (rows cascade with the post). Storage
   // deletes need the admin client — the bucket only allows authenticated uploads.
@@ -378,7 +379,7 @@ export async function deleteDraft(formData: FormData) {
   await supabase.from("posts").delete().eq("id", postId).eq("org_id", orgId);
 
   revalidatePath("/drafts");
-  revalidatePath("/dashboard");
+  revalidatePath("/queue");
   revalidatePath("/calendar");
 }
 

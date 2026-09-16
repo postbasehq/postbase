@@ -539,7 +539,7 @@ export function PostForm({
             >
               {isDraft ? "Save draft" : submitLabel}
             </SubmitButton>
-            <Link href="/dashboard" className="text-sm font-medium text-muted hover:text-ink">
+            <Link href="/queue" className="text-sm font-medium text-muted hover:text-ink">
               Cancel
             </Link>
           </div>

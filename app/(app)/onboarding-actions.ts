@@ -31,11 +31,11 @@ export async function completeOnboarding() {
     .update({ onboarded_at: new Date().toISOString() })
     .eq("id", orgId);
 
-  revalidatePath("/dashboard");
+  revalidatePath("/queue");
 }
 
 // Clear the flag so the welcome wizard shows again, then drop the user on the
-// dashboard where it renders. Triggered from Settings → "Replay setup".
+// calendar (home) where it renders over the page. Triggered from Settings → "Replay setup".
 export async function restartOnboarding() {
   const supabase = await createClient();
   const {
@@ -55,6 +55,6 @@ export async function restartOnboarding() {
 
   await createAdminClient().from("orgs").update({ onboarded_at: null }).eq("id", orgId);
 
-  revalidatePath("/dashboard");
-  redirect("/dashboard");
+  revalidatePath("/calendar");
+  redirect("/calendar");
 }

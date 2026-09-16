@@ -22,13 +22,13 @@ export default async function EditPostPage({
   if (!post) notFound();
   // Can't edit a post that has already published (fully or partially) or is
   // mid-publish — re-saving would republish duplicates to channels that already
-  // got it. (Retry a failed channel from the dashboard instead.)
+  // got it. (Retry a failed channel from the queue instead.)
   const anyDelivered = (post.post_targets ?? []).some(
     (t) => (t as { status?: string; platform_post_id?: string | null }).status === "published" ||
       (t as { platform_post_id?: string | null }).platform_post_id,
   );
   if (post.status === "published" || post.status === "publishing" || anyDelivered) {
-    redirect("/dashboard");
+    redirect("/queue");
   }
 
   const { data: channels } = await supabase

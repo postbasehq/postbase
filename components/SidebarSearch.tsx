@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 // Quick-nav destinations (mirrors the sidebar nav). Keywords widen matches.
 const PAGES: { label: string; href: string; keywords?: string }[] = [
   { label: "Calendar", href: "/calendar", keywords: "schedule posts week month" },
-  { label: "Dashboard", href: "/dashboard", keywords: "home overview" },
+  { label: "Queue", href: "/queue", keywords: "posts delivery status retry failed published" },
   { label: "Composer", href: "/composer", keywords: "new post write create" },
   { label: "Drafts", href: "/drafts", keywords: "unscheduled saved unpublished work in progress" },
   { label: "Channels", href: "/channels", keywords: "connect accounts social x instagram" },

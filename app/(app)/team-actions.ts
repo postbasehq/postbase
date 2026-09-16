@@ -126,7 +126,7 @@ export async function acceptInvite(formData: FormData) {
 
   const jar = await cookies();
   jar.set(ACTIVE_ORG_COOKIE, invite.org_id, COOKIE);
-  redirect("/dashboard");
+  redirect("/queue");
 }
 
 /** Switch the active workspace (for users in more than one org). */
@@ -137,5 +137,5 @@ export async function setActiveOrg(formData: FormData) {
   const jar = await cookies();
   jar.set(ACTIVE_ORG_COOKIE, orgId, COOKIE);
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  redirect("/queue");
 }

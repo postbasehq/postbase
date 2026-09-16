@@ -12,7 +12,7 @@ const SECTIONS: Section[] = [
     label: null,
     items: [
       { label: "Calendar", href: "/calendar", icon: CalendarIcon },
-      { label: "Dashboard", href: "/dashboard", icon: DashboardIcon },
+      { label: "Queue", href: "/queue", icon: QueueIcon },
       { label: "Composer", href: "/composer", icon: ComposerIcon },
       { label: "Drafts", href: "/drafts", icon: DraftsIcon },
     ],
@@ -158,13 +158,11 @@ function CalendarIcon() {
     </>,
   );
 }
-function DashboardIcon() {
+function QueueIcon() {
   return base(
     <>
-      <rect x="3" y="3" width="7" height="9" rx="1" />
-      <rect x="14" y="3" width="7" height="5" rx="1" />
-      <rect x="14" y="12" width="7" height="9" rx="1" />
-      <rect x="3" y="16" width="7" height="5" rx="1" />
+      <path d="M8 6h13M8 12h13M8 18h13" />
+      <path d="M3 6h.01M3 12h.01M3 18h.01" />
     </>,
   );
 }

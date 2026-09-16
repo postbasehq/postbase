@@ -77,7 +77,7 @@ export function NotificationBell({ items }: { items: Notice[] }) {
               {items.map((n, i) => (
                 <Link
                   key={n.id}
-                  href="/dashboard"
+                  href="/queue"
                   onClick={() => setOpen(false)}
                   className={`block px-4 py-3 hover:bg-surface-2 ${i < items.length - 1 ? "border-b border-line" : ""}`}
                 >
@@ -94,11 +94,11 @@ export function NotificationBell({ items }: { items: Notice[] }) {
                 </Link>
               ))}
               <Link
-                href="/dashboard"
+                href="/queue"
                 onClick={() => setOpen(false)}
                 className="block border-t border-line px-4 py-2.5 text-center text-xs font-medium text-blue-ink hover:bg-surface-2"
               >
-                Go to dashboard to retry
+                Go to queue to retry
               </Link>
             </div>
           )}

@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
 /**
- * Refreshes the Supabase auth session on every request and guards /dashboard.
+ * Refreshes the Supabase auth session on every request and guards /queue.
  * If Supabase env vars are not set yet, it no-ops so the marketing site still runs.
  */
 export async function updateSession(request: NextRequest) {
@@ -35,7 +35,7 @@ export async function updateSession(request: NextRequest) {
 
   // Defense-in-depth: the (app) layout also guards these, but block unauthenticated
   // access to every app route at the edge too.
-  const protectedPrefixes = ["/dashboard", "/composer", "/channels", "/api-keys", "/calendar"];
+  const protectedPrefixes = ["/queue", "/composer", "/channels", "/api-keys", "/calendar"];
   const path = request.nextUrl.pathname;
   if (!user && protectedPrefixes.some((p) => path === p || path.startsWith(`${p}/`))) {
     const redirectUrl = request.nextUrl.clone();
