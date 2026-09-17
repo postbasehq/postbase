@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Reorder, useDragControls } from "framer-motion";
+import { Reorder, motion, useDragControls } from "framer-motion";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -754,6 +754,7 @@ function ThreadItem({
   onMove: (dir: -1 | 1) => void;
 }) {
   const controls = useDragControls();
+  const [dragging, setDragging] = useState(false);
   const t = tweet.text;
   const len = t.length;
   const nearLimit = charLimit != null && len >= charLimit * 0.9;
@@ -768,16 +769,19 @@ function ThreadItem({
       layout="position"
       dragListener={false}
       dragControls={controls}
-      whileDrag={{
-        scale: 1.03,
-        rotate: -1.5,
-        boxShadow: "0 22px 45px -14px rgba(0,0,0,0.55)",
-        zIndex: 30,
-        cursor: "grabbing",
-      }}
+      onDragStart={() => setDragging(true)}
+      onDragEnd={() => setDragging(false)}
       transition={{ type: "spring", stiffness: 600, damping: 40 }}
-      className={`relative ${isFirst ? "" : "pl-6"}`}
+      style={{ position: "relative", zIndex: dragging ? 30 : 1 }}
     >
+      {/* The lift/tilt lives on an inner element so it's independent of the
+          Reorder.Item's drag/layout transform — it always animates back to 0. */}
+      <motion.div
+        animate={{ scale: dragging ? 1.03 : 1, rotate: dragging ? -1.5 : 0 }}
+        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        style={{ transformOrigin: "center" }}
+        className={`relative ${isFirst ? "" : "pl-6"}`}
+      >
       {!isFirst ? (
         <>
           <span
@@ -790,7 +794,11 @@ function ThreadItem({
           />
         </>
       ) : null}
-      <div className="rounded-xl border border-line bg-ground p-3.5 transition-colors focus-within:border-blue">
+      <div
+        className={`rounded-xl border border-line bg-ground p-3.5 transition-shadow focus-within:border-blue ${
+          dragging ? "shadow-[0_22px_45px_-14px_rgba(0,0,0,0.55)]" : ""
+        }`}
+      >
         {isThread ? (
           <div className="mb-1.5 flex items-center gap-2">
             <span
@@ -875,6 +883,7 @@ function ThreadItem({
           ) : null}
         </div>
       </div>
+      </motion.div>
     </Reorder.Item>
   );
 }
