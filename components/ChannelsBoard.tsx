@@ -56,13 +56,10 @@ const GLOW: Record<string, string> = {
   mastodon: "#6364FF",
 };
 
-// Subtle radial wash from the top-left corner, tinted by the brand.
+// Feed the brand accent to the card's glow (drawn/animated in CSS).
 function cardGlow(platform: string): React.CSSProperties {
   const c = GLOW[platform];
-  if (!c) return {};
-  return {
-    backgroundImage: `radial-gradient(120% 120% at 0% 0%, ${c}24, ${c}00 42%)`,
-  };
+  return c ? ({ "--glow": c } as React.CSSProperties) : {};
 }
 
 function StatusPill({ status }: { status: string }) {
@@ -126,7 +123,7 @@ export function ChannelsBoard({
       <div
         key={p.id}
         style={cardGlow(p.id)}
-        className="flex flex-col rounded-2xl border border-line bg-surface p-5 shadow-sm"
+        className="channel-card flex flex-col rounded-2xl border border-line bg-surface p-5 shadow-sm"
       >
         <div className="flex items-start gap-3.5">
           <BrandTile platform={p.id} size={44} radius={11} />

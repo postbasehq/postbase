@@ -89,6 +89,27 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Channel cards: a brand-tinted glow from the top-left corner (via --glow),
+   slightly stronger on hover. Drawn on a pseudo-element so it can fade. */
+.channel-card {
+  position: relative;
+  isolation: isolate;
+}
+.channel-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-image: radial-gradient(120% 120% at 0% 0%, var(--glow, transparent), transparent 46%);
+  opacity: 0.2;
+  transition: opacity 220ms ease;
+  pointer-events: none;
+}
+.channel-card:hover::before {
+  opacity: 0.38;
+}
+
 /* Thin, unobtrusive scrollbars across the app (elements that opt out with
    scrollbar-width:none — e.g. the sidebar nav — keep their own treatment). */
 * {
