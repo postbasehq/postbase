@@ -784,9 +784,14 @@ function ThreadItem({
       >
       {!isFirst ? (
         <>
+          {/* Vertical rail up to the box above. The last reply stops at its own
+              elbow (h-10) so the line doesn't dangle past it; middle replies run
+              full height to reach the next reply. */}
           <span
             aria-hidden
-            className="pointer-events-none absolute -top-4 bottom-0 left-2 w-px bg-line"
+            className={`pointer-events-none absolute -top-4 left-2 w-px bg-line ${
+              isLast ? "h-10" : "bottom-0"
+            }`}
           />
           <span
             aria-hidden
