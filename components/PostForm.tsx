@@ -67,8 +67,8 @@ const PREVIEW_PALETTES: Record<string, { light: Record<string, string>; dark: Re
     dark: { "--ground": "#000000", "--surface": "#1b1f23", "--surface-2": "#2c333a", "--ink": "#f5f2ef", "--muted": "#a6abb0", "--line": "#2f363d" },
   },
   instagram: {
-    light: { "--ground": "#ffffff", "--surface": "#ffffff", "--surface-2": "#fafafa", "--ink": "#262626", "--muted": "#8e8e8e", "--line": "#dbdbdb" },
-    dark: { "--ground": "#000000", "--surface": "#000000", "--surface-2": "#121212", "--ink": "#f5f5f5", "--muted": "#a8a8a8", "--line": "#262626" },
+    light: { "--ground": "#ffffff", "--surface": "#ffffff", "--surface-2": "#fafafa", "--ink": "#262626", "--muted": "#8e8e8e", "--line": "#dbdbdb", "--ig-link": "#00376b" },
+    dark: { "--ground": "#000000", "--surface": "#000000", "--surface-2": "#121212", "--ink": "#f5f5f5", "--muted": "#a8a8a8", "--line": "#262626", "--ig-link": "#e0f1ff" },
   },
 };
 function previewVars(platform: string, mode: "light" | "dark"): React.CSSProperties {

@@ -721,7 +721,7 @@ function InstagramPost({
       {text.trim() ? (
         <div className="px-3 pt-1 text-[13px] leading-snug text-ink">
           <span className="line-clamp-2 whitespace-pre-wrap">
-            <span className="font-semibold">{handle}</span> {text}
+            <span className="font-semibold">{handle}</span> <IgText text={text} />
           </span>
         </div>
       ) : null}
@@ -731,6 +731,25 @@ function InstagramPost({
         {date ?? "just now"}
       </div>
     </div>
+  );
+}
+
+// Instagram colours #hashtags and @mentions in its link blue (theme-aware via
+// the --ig-link palette variable).
+function IgText({ text }: { text: string }) {
+  const parts = text.split(/(\s+)/);
+  return (
+    <>
+      {parts.map((part, i) =>
+        /^[@#][\w.]/.test(part) ? (
+          <span key={i} style={{ color: "var(--ig-link)" }}>
+            {part}
+          </span>
+        ) : (
+          <span key={i}>{part}</span>
+        ),
+      )}
+    </>
   );
 }
 
