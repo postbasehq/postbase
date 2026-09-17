@@ -42,6 +42,29 @@ const PLATFORMS: { id: string; kind: Kind; desc: string; note?: string }[] = [
 
 const TITLE_ID = "channel-connect-title";
 
+// A representative accent per platform for the card's corner glow. X has no
+// brand colour, so it gets a soft neutral; the rest use a colour that reads on
+// both light and dark surfaces.
+const GLOW: Record<string, string> = {
+  x: "#8a9099",
+  facebook: "#1877F2",
+  linkedin: "#0A66C2",
+  instagram: "#E1306C",
+  tiktok: "#FE2C55",
+  youtube: "#FF0000",
+  bluesky: "#0085FF",
+  mastodon: "#6364FF",
+};
+
+// Subtle radial wash from the top-left corner, tinted by the brand.
+function cardGlow(platform: string): React.CSSProperties {
+  const c = GLOW[platform];
+  if (!c) return {};
+  return {
+    backgroundImage: `radial-gradient(120% 120% at 0% 0%, ${c}24, ${c}00 42%)`,
+  };
+}
+
 function StatusPill({ status }: { status: string }) {
   const label =
     status === "active" ? "Connected" : status === "stub" ? "Stub" : status;
@@ -102,6 +125,7 @@ export function ChannelsBoard({
     return (
       <div
         key={p.id}
+        style={cardGlow(p.id)}
         className="flex flex-col rounded-2xl border border-line bg-surface p-5 shadow-sm"
       >
         <div className="flex items-start gap-3.5">
