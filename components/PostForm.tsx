@@ -197,6 +197,15 @@ export function PostForm({
   const addTweet = () => setTweets((t) => (t.length < MAX_TWEETS ? [...t, ""] : t));
   const removeTweet = (i: number) =>
     setTweets((t) => (t.length > 1 ? t.filter((_, idx) => idx !== i) : t));
+  // Swap a post one place earlier/later in the thread (position sets the order).
+  const moveTweet = (i: number, dir: -1 | 1) =>
+    setTweets((t) => {
+      const j = i + dir;
+      if (j < 0 || j >= t.length) return t;
+      const next = [...t];
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
 
   const toggleChannel = (id: string) =>
     setSelected((s) => {
@@ -326,8 +335,37 @@ export function PostForm({
               const box = (
                 <div className="rounded-xl border border-line bg-ground p-3.5 transition-colors focus-within:border-blue">
                   {isThread ? (
-                    <div className="mb-1.5 text-xs font-semibold text-muted">
-                      {i === 0 ? "Post" : `Comment / post ${i}`}
+                    <div className="mb-1.5 flex items-center gap-2">
+                      <span className="text-xs font-semibold text-muted">
+                        {i === 0 ? "Post" : `Comment / post ${i}`}
+                      </span>
+                      <div className="ml-auto flex items-center rounded-lg border border-line bg-surface/60">
+                        <button
+                          type="button"
+                          onClick={() => moveTweet(i, -1)}
+                          disabled={i === 0}
+                          aria-label="Move earlier"
+                          title="Move earlier"
+                          className="flex size-6 items-center justify-center rounded-l-lg text-muted transition hover:bg-surface-2 hover:text-ink disabled:pointer-events-none disabled:opacity-30"
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <path d="m18 15-6-6-6 6" />
+                          </svg>
+                        </button>
+                        <span className="h-4 w-px bg-line" aria-hidden />
+                        <button
+                          type="button"
+                          onClick={() => moveTweet(i, 1)}
+                          disabled={i === tweets.length - 1}
+                          aria-label="Move later"
+                          title="Move later"
+                          className="flex size-6 items-center justify-center rounded-r-lg text-muted transition hover:bg-surface-2 hover:text-ink disabled:pointer-events-none disabled:opacity-30"
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <path d="m6 9 6 6 6-6" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   ) : null}
                   <textarea
