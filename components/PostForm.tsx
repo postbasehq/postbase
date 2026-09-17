@@ -78,6 +78,18 @@ const PREVIEW_PALETTES: Record<string, { light: Record<string, string>; dark: Re
     light: { "--ground": "#ffffff", "--surface": "#ffffff", "--surface-2": "#f2f2f2", "--ink": "#0f0f0f", "--muted": "#606060", "--line": "#e5e5e5" },
     dark: { "--ground": "#0f0f0f", "--surface": "#0f0f0f", "--surface-2": "#272727", "--ink": "#f1f1f1", "--muted": "#aaaaaa", "--line": "#303030" },
   },
+  bluesky: {
+    light: { "--ground": "#ffffff", "--surface": "#ffffff", "--surface-2": "#f0f3f5", "--ink": "#0b0f14", "--muted": "#566a7e", "--line": "#e2e8ed" },
+    dark: { "--ground": "#000000", "--surface": "#161e27", "--surface-2": "#1e2a38", "--ink": "#f1f3f5", "--muted": "#8b98a5", "--line": "#2b3b4e" },
+  },
+  mastodon: {
+    light: { "--ground": "#ffffff", "--surface": "#ffffff", "--surface-2": "#f2f3f8", "--ink": "#191b22", "--muted": "#606984", "--line": "#e6e7f0" },
+    dark: { "--ground": "#191b22", "--surface": "#282c37", "--surface-2": "#313543", "--ink": "#ffffff", "--muted": "#9baec8", "--line": "#393f4f" },
+  },
+  facebook: {
+    light: { "--ground": "#f0f2f5", "--surface": "#ffffff", "--surface-2": "#f0f2f5", "--ink": "#050505", "--muted": "#65676b", "--line": "#ced0d4" },
+    dark: { "--ground": "#18191a", "--surface": "#242526", "--surface-2": "#3a3b3c", "--ink": "#e4e6eb", "--muted": "#b0b3b8", "--line": "#3e4042" },
+  },
 };
 function previewVars(platform: string, mode: "light" | "dark"): React.CSSProperties {
   return (PREVIEW_PALETTES[platform] ?? PREVIEW_PALETTES.default)[mode] as React.CSSProperties;

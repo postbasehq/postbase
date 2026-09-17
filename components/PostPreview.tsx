@@ -234,7 +234,39 @@ export function PostPreview({
     );
   }
 
-  // feed (facebook / bluesky / mastodon)
+  if (platform === "bluesky" || platform === "mastodon") {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
+        <AvatarPost
+          platform={platform}
+          handle={h}
+          displayName={displayName?.trim() || h}
+          avatarUrl={avatarUrl ?? null}
+          text={text}
+          media={media}
+          metrics={metrics}
+          date={date}
+        />
+      </div>
+    );
+  }
+
+  if (platform === "facebook") {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
+        <FacebookPost
+          handle={h}
+          displayName={displayName?.trim() || h}
+          avatarUrl={avatarUrl ?? null}
+          text={text}
+          media={media}
+          date={date}
+        />
+      </div>
+    );
+  }
+
+  // feed fallback (any platform without a bespoke card)
   const clamp = platform === "linkedin";
   return (
     <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
@@ -853,6 +885,241 @@ function YtIcon({ children }: { children: React.ReactNode }) {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       {children}
     </svg>
+  );
+}
+
+// Bluesky / Mastodon: X-shaped (avatar left, content right) with each platform's
+// own action bar and accent colour.
+const ACCENT: Record<string, string> = { bluesky: "#0085ff", mastodon: "#6364ff" };
+function AvatarPost({
+  platform,
+  handle,
+  displayName,
+  avatarUrl,
+  text,
+  media,
+  metrics,
+  date,
+}: {
+  platform: string;
+  handle: string;
+  displayName: string;
+  avatarUrl: string | null;
+  text: string;
+  media: Media[];
+  metrics: Record<string, number> | null;
+  date: string | null;
+}) {
+  const masto = platform === "mastodon";
+  const shape = masto ? "rounded-lg" : "rounded-full";
+  const accent = ACCENT[platform] ?? "#0085ff";
+  return (
+    <div className="bg-surface px-4 py-3">
+      <div className="flex gap-3">
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={avatarUrl} alt="" className={`size-10 shrink-0 object-cover ${shape}`} />
+        ) : (
+          <span
+            className={`flex size-10 shrink-0 items-center justify-center text-[15px] font-semibold text-white ${shape}`}
+            style={{ background: BRANDS[platform]?.bg ?? accent }}
+            aria-hidden
+          >
+            {handle.charAt(0).toUpperCase() || "•"}
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1 text-[15px] leading-tight">
+            <span className="truncate font-bold text-ink">{displayName}</span>
+            <span className="truncate text-muted">@{handle}</span>
+            {date ? (
+              <>
+                <span className="text-muted">·</span>
+                <span className="whitespace-nowrap text-muted">{date}</span>
+              </>
+            ) : null}
+            <span className="ml-auto shrink-0 text-muted" aria-hidden>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="5" cy="12" r="1.6" />
+                <circle cx="12" cy="12" r="1.6" />
+                <circle cx="19" cy="12" r="1.6" />
+              </svg>
+            </span>
+          </div>
+
+          <div className="mt-0.5 whitespace-pre-wrap text-[15px] leading-[1.35] text-ink">
+            {text.trim() ? <RichText text={text} color={accent} /> : <span className="text-muted">(empty)</span>}
+          </div>
+
+          <XMedia media={media} />
+
+          <div className="mt-2.5 flex max-w-[380px] items-center justify-between text-muted">
+            <AvAct value={metrics?.comments}>
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </AvAct>
+            {masto ? (
+              <AvAct value={metrics?.shares}>
+                <path d="m17 2 4 4-4 4" />
+                <path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4" />
+                <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+              </AvAct>
+            ) : (
+              <AvAct value={metrics?.shares}>
+                <path d="m17 1 4 4-4 4" />
+                <path d="M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4" />
+                <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+              </AvAct>
+            )}
+            {masto ? (
+              <AvAct value={metrics?.likes}>
+                <path d="m12 3 2.5 5.6 6.1.6-4.6 4 1.4 6-5.4-3.2L6.6 19l1.4-6-4.6-4 6.1-.6z" />
+              </AvAct>
+            ) : (
+              <AvAct value={metrics?.likes}>
+                <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z" />
+              </AvAct>
+            )}
+            {masto ? (
+              <AvAct value={undefined}>
+                <path d="M5 3h14a1 1 0 0 1 1 1v17l-8-4-8 4V4a1 1 0 0 1 1-1z" />
+              </AvAct>
+            ) : null}
+            <AvAct value={undefined}>
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4" />
+            </AvAct>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AvAct({ value, children }: { value?: number; children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[13px] tabular-nums">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        {children}
+      </svg>
+      {value && value > 0 ? fmt(value) : null}
+    </span>
+  );
+}
+
+// Facebook feed post: avatar + name + time · globe, body, edge-to-edge media,
+// and the Like / Comment / Share bar.
+function FacebookPost({
+  handle,
+  displayName,
+  avatarUrl,
+  text,
+  media,
+  date,
+}: {
+  handle: string;
+  displayName: string;
+  avatarUrl: string | null;
+  text: string;
+  media: Media[];
+  date: string | null;
+}) {
+  return (
+    <div className="bg-surface pt-3 text-[14px]">
+      <div className="flex items-center gap-2 px-3">
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={avatarUrl} alt="" className="size-10 shrink-0 rounded-full object-cover" />
+        ) : (
+          <span
+            className="flex size-10 shrink-0 items-center justify-center rounded-full text-[15px] font-semibold text-white"
+            style={{ background: BRANDS.facebook?.bg ?? "#1877f2" }}
+            aria-hidden
+          >
+            {handle.charAt(0).toUpperCase() || "•"}
+          </span>
+        )}
+        <div className="min-w-0 flex-1 leading-tight">
+          <div className="truncate text-[14px] font-semibold text-ink">{displayName}</div>
+          <div className="flex items-center gap-1 text-[12px] text-muted">
+            <span>{date ?? "Just now"}</span>
+            <span aria-hidden>·</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+              <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.9 6h-2.5a12.7 12.7 0 0 0-1-2.6A8 8 0 0 1 18.9 8zM12 4c.6.9 1.2 2.1 1.5 4h-3c.3-1.9.9-3.1 1.5-4zM4.3 14a7.9 7.9 0 0 1 0-4h2.9a16.7 16.7 0 0 0 0 4H4.3zm.8 2h2.5c.3 1 .6 1.8 1 2.6A8 8 0 0 1 5.1 16zm2.5-8H5.1a8 8 0 0 1 3.5-2.6c-.4.8-.7 1.6-1 2.6zM12 20c-.6-.9-1.2-2.1-1.5-4h3c-.3 1.9-.9 3.1-1.5 4zm1.8-6h-3.6a14.3 14.3 0 0 1 0-4h3.6a14.3 14.3 0 0 1 0 4zm.3 4.6c.4-.8.7-1.6 1-2.6h2.5a8 8 0 0 1-3.5 2.6zm2.4-4.6a16.7 16.7 0 0 0 0-4h2.9a7.9 7.9 0 0 1 0 4h-2.9z" />
+            </svg>
+          </div>
+        </div>
+        <span className="-mr-1 shrink-0 text-muted" aria-hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="5" cy="12" r="1.7" />
+            <circle cx="12" cy="12" r="1.7" />
+            <circle cx="19" cy="12" r="1.7" />
+          </svg>
+        </span>
+      </div>
+
+      <div className="px-3 pt-2.5 text-[14px] leading-[1.4] text-ink">
+        <span className="whitespace-pre-wrap">
+          {text.trim() ? <RichText text={text} color="#216fdb" /> : <span className="text-muted">(empty)</span>}
+        </span>
+      </div>
+
+      {media.length > 0 ? (
+        <div className="mt-3">
+          {media[0].type?.startsWith("video") ? (
+            <VideoPreview src={media[0].url} />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={media[0].url} alt="" className="max-h-[320px] w-full object-cover" />
+          )}
+        </div>
+      ) : (
+        <div className="h-3" />
+      )}
+
+      <div className="mx-3 grid grid-cols-3 border-t border-line py-1 text-muted">
+        <FbAction label="Like">
+          <path d="M7 10v11M2 14v5a2 2 0 0 0 2 2h13.5a2 2 0 0 0 2-1.6l1.4-7A2 2 0 0 0 18 11h-5l1-4.5a2.5 2.5 0 0 0-4.7-1.4L7 10" />
+        </FbAction>
+        <FbAction label="Comment">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </FbAction>
+        <FbAction label="Share">
+          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+          <path d="M16 6l-4-4-4 4M12 2v13" />
+        </FbAction>
+      </div>
+    </div>
+  );
+}
+
+function FbAction({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <span className="flex items-center justify-center gap-2 rounded-md py-2 text-[13px] font-semibold">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        {children}
+      </svg>
+      {label}
+    </span>
+  );
+}
+
+// Colour @mentions, #hashtags and links in a given accent.
+function RichText({ text, color }: { text: string; color: string }) {
+  const parts = text.split(/(\s+)/);
+  return (
+    <>
+      {parts.map((part, i) =>
+        /^[@#][\w.]/.test(part) || /^https?:\/\//.test(part) ? (
+          <span key={i} style={{ color }}>
+            {part}
+          </span>
+        ) : (
+          <span key={i}>{part}</span>
+        ),
+      )}
+    </>
   );
 }
 
