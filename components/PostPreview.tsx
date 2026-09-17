@@ -153,6 +153,22 @@ export function PostPreview({
     </div>
   );
 
+  if (platform === "instagram") {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
+        <InstagramPost
+          handle={h}
+          avatarUrl={avatarUrl ?? null}
+          verified={!!verified}
+          text={text}
+          media={media}
+          metrics={metrics}
+          date={date}
+        />
+      </div>
+    );
+  }
+
   if (family === "media") {
     return (
       <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
@@ -599,6 +615,141 @@ function LiVerified() {
     <svg width="15" height="15" viewBox="0 0 24 24" className="shrink-0" aria-label="Verified">
       <circle cx="12" cy="12" r="10" fill="#0A66C2" />
       <path d="M9.5 12.5l1.8 1.8 3.5-3.8" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// Instagram feed post: compact header, dominant square media, the
+// heart/comment/share + save action row, likes, `username caption`, timestamp.
+function InstagramPost({
+  handle,
+  avatarUrl,
+  verified,
+  text,
+  media,
+  metrics,
+  date,
+}: {
+  handle: string;
+  avatarUrl: string | null;
+  verified: boolean;
+  text: string;
+  media: Media[];
+  metrics: Record<string, number> | null;
+  date: string | null;
+}) {
+  const likes = metrics?.likes ?? 0;
+  const first = media[0];
+  return (
+    <div className="bg-surface">
+      {/* header */}
+      <div className="flex items-center gap-2.5 px-3 py-2.5">
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={avatarUrl} alt="" className="size-8 shrink-0 rounded-full object-cover" />
+        ) : (
+          <span
+            className="flex size-8 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold text-white"
+            style={{ background: BRANDS.instagram?.bg ?? "#c13584" }}
+            aria-hidden
+          >
+            {handle.charAt(0).toUpperCase() || "•"}
+          </span>
+        )}
+        <span className="flex min-w-0 flex-1 items-center gap-1">
+          <span className="truncate text-[13px] font-semibold text-ink">{handle}</span>
+          {verified ? <IgVerified /> : null}
+        </span>
+        <span className="shrink-0 text-ink" aria-hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="5" cy="12" r="1.6" />
+            <circle cx="12" cy="12" r="1.6" />
+            <circle cx="19" cy="12" r="1.6" />
+          </svg>
+        </span>
+      </div>
+
+      {/* media */}
+      {first ? (
+        <div className="relative aspect-square w-full bg-surface-2">
+          {first.type?.startsWith("video") ? (
+            <VideoPreview src={first.url} />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={first.url} alt="" className="size-full object-cover" />
+          )}
+          {media.length > 1 ? (
+            <span className="absolute right-2.5 top-2.5 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-semibold text-white">
+              1/{media.length}
+            </span>
+          ) : null}
+        </div>
+      ) : (
+        <div className="flex aspect-square w-full flex-col items-center justify-center gap-2 bg-surface-2 text-muted">
+          <BrandTile platform="instagram" size={30} radius={8} />
+          <span className="text-xs">Add a photo or video</span>
+        </div>
+      )}
+
+      {/* action row */}
+      <div className="flex items-center gap-4 px-3 pt-2.5 text-ink">
+        <IgIcon>
+          <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z" />
+        </IgIcon>
+        <IgIcon>
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+        </IgIcon>
+        <IgIcon>
+          <path d="m22 2-7 20-4-9-9-4Z" />
+          <path d="M22 2 11 13" />
+        </IgIcon>
+        <span className="ml-auto">
+          <IgIcon>
+            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+          </IgIcon>
+        </span>
+      </div>
+
+      {/* likes */}
+      {likes > 0 ? (
+        <div className="px-3 pt-2 text-[13px] font-semibold text-ink">{fmt(likes)} likes</div>
+      ) : (
+        <div className="px-3 pt-2 text-[13px] font-semibold text-ink">Be the first to like this</div>
+      )}
+
+      {/* caption */}
+      {text.trim() ? (
+        <div className="px-3 pt-1 text-[13px] leading-snug text-ink">
+          <span className="line-clamp-2 whitespace-pre-wrap">
+            <span className="font-semibold">{handle}</span> {text}
+          </span>
+        </div>
+      ) : null}
+
+      {/* timestamp */}
+      <div className="px-3 pb-3 pt-1.5 text-[10px] uppercase tracking-wide text-muted">
+        {date ?? "just now"}
+      </div>
+    </div>
+  );
+}
+
+function IgIcon({ children }: { children: React.ReactNode }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      {children}
+    </svg>
+  );
+}
+
+function IgVerified() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" className="shrink-0" aria-label="Verified">
+      <path
+        fill="#3897f0"
+        d="M12 1l2.6 2 3.3-.3 1 3.1 2.8 1.7-1 3.1 1 3.1-2.8 1.7-1 3.1-3.3-.3L12 23l-2.6-2-3.3.3-1-3.1L2.3 14.7l1-3.1-1-3.1 2.8-1.7 1-3.1 3.3.3z"
+      />
+      <path d="M9.3 12.3l1.8 1.8 3.6-3.9" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

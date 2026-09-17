@@ -66,6 +66,10 @@ const PREVIEW_PALETTES: Record<string, { light: Record<string, string>; dark: Re
     light: { "--ground": "#f4f2ee", "--surface": "#ffffff", "--surface-2": "#edece8", "--ink": "#1b1f23", "--muted": "#5e5e5e", "--line": "#e8e6e1" },
     dark: { "--ground": "#000000", "--surface": "#1b1f23", "--surface-2": "#2c333a", "--ink": "#f5f2ef", "--muted": "#a6abb0", "--line": "#2f363d" },
   },
+  instagram: {
+    light: { "--ground": "#ffffff", "--surface": "#ffffff", "--surface-2": "#fafafa", "--ink": "#262626", "--muted": "#8e8e8e", "--line": "#dbdbdb" },
+    dark: { "--ground": "#000000", "--surface": "#000000", "--surface-2": "#121212", "--ink": "#f5f5f5", "--muted": "#a8a8a8", "--line": "#262626" },
+  },
 };
 function previewVars(platform: string, mode: "light" | "dark"): React.CSSProperties {
   return (PREVIEW_PALETTES[platform] ?? PREVIEW_PALETTES.default)[mode] as React.CSSProperties;
