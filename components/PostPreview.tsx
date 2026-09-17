@@ -1,6 +1,74 @@
 "use client";
 
+import { useRef, useState } from "react";
 import { BrandTile, BRANDS } from "@/components/BrandTile";
+
+/**
+ * Minimal video preview: no native browser chrome (or its dark gradient). It
+ * plays once (muted) when it appears, then exposes a small play/pause +
+ * fullscreen cluster on a floating pill.
+ */
+function VideoPreview({ src }: { src: string }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
+
+  const toggle = () => {
+    const v = ref.current;
+    if (!v) return;
+    if (v.paused) v.play().catch(() => {});
+    else v.pause();
+  };
+  const fullscreen = () => {
+    ref.current?.requestFullscreen?.().catch(() => {});
+  };
+
+  return (
+    <div className="relative border-y border-line bg-black">
+      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+      <video
+        ref={ref}
+        src={src}
+        muted
+        autoPlay
+        playsInline
+        preload="metadata"
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => setPlaying(false)}
+        className="max-h-80 w-full object-contain"
+      />
+      <div className="absolute bottom-2 left-2 flex items-center gap-0.5 rounded-full bg-black/55 p-1 backdrop-blur-sm">
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={playing ? "Pause" : "Play"}
+          className="flex size-7 items-center justify-center rounded-full text-white transition hover:bg-white/20"
+        >
+          {playing ? (
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+              <rect x="6" y="5" width="4" height="14" rx="1" />
+              <rect x="14" y="5" width="4" height="14" rx="1" />
+            </svg>
+          ) : (
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={fullscreen}
+          aria-label="Fullscreen"
+          className="flex size-7 items-center justify-center rounded-full text-white transition hover:bg-white/20"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
 
 type Family = "x" | "media" | "feed";
 const FAMILY: Record<string, Family> = {
@@ -184,14 +252,7 @@ function MediaBlock({
     <div className={`grid gap-0.5 ${single ? "grid-cols-1" : "grid-cols-2"} ${className}`}>
       {media.slice(0, 4).map((mm, i) =>
         mm.type?.startsWith("video") ? (
-          // eslint-disable-next-line jsx-a11y/media-has-caption
-          <video
-            key={i}
-            src={mm.url}
-            controls
-            preload="metadata"
-            className="max-h-80 w-full border-y border-line bg-black object-cover"
-          />
+          <VideoPreview key={i} src={mm.url} />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
           <img
