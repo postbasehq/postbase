@@ -161,6 +161,14 @@ export function PostPreview({
     );
   }
 
+  if (platform === "youtube") {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
+        <YouTubePost handle={h} text={text} media={media} metrics={metrics} />
+      </div>
+    );
+  }
+
   if (platform === "instagram") {
     return (
       <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
@@ -739,6 +747,112 @@ function InstagramPost({
         {date ?? "just now"}
       </div>
     </div>
+  );
+}
+
+// YouTube watch card: 16:9 player, title, views · time, channel row with a
+// Subscribe button, and the Like/Dislike · Share · Save action bar.
+function YouTubePost({
+  handle,
+  text,
+  media,
+  metrics,
+}: {
+  handle: string;
+  text: string;
+  media: Media[];
+  metrics: Record<string, number> | null;
+}) {
+  const first = media[0];
+  const views = metrics?.comments ?? 0; // no dedicated views metric; keep honest
+  return (
+    <div className="bg-surface">
+      {/* player */}
+      <div className="relative aspect-video w-full bg-black">
+        {first ? (
+          first.type?.startsWith("video") ? (
+            // eslint-disable-next-line jsx-a11y/media-has-caption
+            <video src={first.url} muted autoPlay loop playsInline className="size-full object-cover" />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={first.url} alt="" className="size-full object-cover" />
+          )
+        ) : (
+          <div className="flex size-full flex-col items-center justify-center gap-2 bg-[#0f0f0f] text-white/70">
+            <span className="flex h-9 w-12 items-center justify-center rounded-lg bg-[#ff0000]">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" aria-hidden>
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </span>
+            <span className="text-xs">Add a video</span>
+          </div>
+        )}
+      </div>
+
+      {/* title */}
+      <div className="px-3 pt-3 text-[15px] font-semibold leading-snug text-ink">
+        <span className="line-clamp-2">{text.trim() || <span className="text-muted">Video title</span>}</span>
+      </div>
+      <div className="px-3 pt-1 text-[12px] text-muted">
+        {views > 0 ? `${fmt(views)} views · ` : "No views · "}just now
+      </div>
+
+      {/* channel row */}
+      <div className="flex items-center gap-2.5 px-3 py-3">
+        <span
+          className="flex size-9 shrink-0 items-center justify-center rounded-full text-[14px] font-semibold text-white"
+          style={{ background: "#ff0000" }}
+          aria-hidden
+        >
+          {handle.charAt(0).toUpperCase() || "•"}
+        </span>
+        <div className="min-w-0 flex-1 leading-tight">
+          <div className="truncate text-[13px] font-semibold text-ink">{handle}</div>
+          <div className="text-[11px] text-muted">0 subscribers</div>
+        </div>
+        <span className="shrink-0 rounded-full bg-ink px-3.5 py-1.5 text-[13px] font-semibold text-surface">
+          Subscribe
+        </span>
+      </div>
+
+      {/* action bar */}
+      <div className="flex items-center gap-2 overflow-x-auto px-3 pb-3">
+        <span className="flex shrink-0 items-center rounded-full bg-surface-2 text-[13px] font-semibold text-ink">
+          <span className="flex items-center gap-1.5 border-r border-line py-1.5 pl-3 pr-2.5">
+            <YtIcon>
+              <path d="M7 10v11M2 12v7a2 2 0 0 0 2 2h13a2 2 0 0 0 2-1.6l1.4-7A2 2 0 0 0 17.5 11H13l.7-3.4a2.3 2.3 0 0 0-4.4-1.3L7 10" />
+            </YtIcon>
+            {metrics?.likes && metrics.likes > 0 ? fmt(metrics.likes) : "Like"}
+          </span>
+          <span className="py-1.5 pl-2.5 pr-3">
+            <YtIcon>
+              <path d="M17 14V3M22 12v-7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 1.6L3.6 12A2 2 0 0 0 5.5 14H11l-.7 3.4a2.3 2.3 0 0 0 4.4 1.3L17 14" />
+            </YtIcon>
+          </span>
+        </span>
+        <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1.5 text-[13px] font-semibold text-ink">
+          <YtIcon>
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+            <path d="M16 6l-4-4-4 4M12 2v13" />
+          </YtIcon>
+          Share
+        </span>
+        <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1.5 text-[13px] font-semibold text-ink">
+          <YtIcon>
+            <path d="M4 21V8a2 2 0 0 1 2-2h9M11 3H6a2 2 0 0 0-2 2M18 8v6M15 11h6" />
+          </YtIcon>
+          Save
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function YtIcon({ children }: { children: React.ReactNode }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      {children}
+    </svg>
   );
 }
 
