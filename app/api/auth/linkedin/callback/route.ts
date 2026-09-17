@@ -55,6 +55,8 @@ export async function GET(request: Request) {
       encrypted_tokens: encryptJson(tokens),
       token_expiry: tokenExpiry,
       status: "active",
+      display_name: me.name ?? null,
+      avatar_url: me.picture ?? null,
     };
 
     // Reconnecting the same member updates the existing channel instead of duplicating it.

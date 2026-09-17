@@ -87,13 +87,20 @@ export function refreshTokens(refreshToken: string): Promise<XTokens> {
   );
 }
 
-export async function getMe(accessToken: string): Promise<{ id: string; username: string; name: string }> {
-  const res = await fetch(`${API}/users/me`, {
+export async function getMe(
+  accessToken: string,
+): Promise<{ id: string; username: string; name: string; avatar_url?: string; verified?: boolean }> {
+  const res = await fetch(`${API}/users/me?user.fields=profile_image_url,verified`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  const json = (await res.json()) as { data?: { id: string; username: string; name: string }; detail?: string };
+  const json = (await res.json()) as {
+    data?: { id: string; username: string; name: string; profile_image_url?: string; verified?: boolean };
+    detail?: string;
+  };
   if (!res.ok || !json.data) throw new Error(json.detail ?? `X users/me error ${res.status}`);
-  return json.data;
+  // X returns a small "_normal" avatar; request the 400x400 variant instead.
+  const avatar_url = json.data.profile_image_url?.replace("_normal.", "_400x400.");
+  return { id: json.data.id, username: json.data.username, name: json.data.name, avatar_url, verified: json.data.verified };
 }
 
 /** Upload media (image/video bytes) via the v2 endpoint. Returns a media id. Needs the media.write scope. */

@@ -66,9 +66,9 @@ const OAUTH_SCOPES = "read write";
 export async function verifyAccount(
   instanceUrl: string,
   token: string,
-): Promise<{ instance: string; account_id: string; handle: string }> {
+): Promise<{ instance: string; account_id: string; handle: string; display_name?: string; avatar_url?: string }> {
   const instance = normalizeInstance(instanceUrl);
-  const account = await api<{ id: string; username: string }>(
+  const account = await api<{ id: string; username: string; display_name?: string; avatar?: string }>(
     instance,
     "/api/v1/accounts/verify_credentials",
     { token: token.trim() },
@@ -77,6 +77,8 @@ export async function verifyAccount(
     instance,
     account_id: account.id,
     handle: `@${account.username}@${new URL(instance).host}`,
+    display_name: account.display_name,
+    avatar_url: account.avatar,
   };
 }
 

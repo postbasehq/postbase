@@ -57,6 +57,8 @@ export async function GET(request: Request) {
       encrypted_tokens: encryptJson(tokens),
       token_expiry: tokenExpiry,
       status: "active",
+      display_name: me.display_name ?? null,
+      avatar_url: me.avatar_url ?? null,
     };
 
     const { data: existing } = await supabase

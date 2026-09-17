@@ -54,6 +54,8 @@ export async function GET(request: Request) {
       encrypted_tokens: encryptJson(tokens),
       token_expiry: tokenExpiry,
       status: "active",
+      display_name: channel.title ?? null,
+      avatar_url: channel.avatar_url ?? null,
     };
 
     const { data: existing } = await supabase

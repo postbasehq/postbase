@@ -69,14 +69,28 @@ export async function connectBluesky(
   handle: string,
   appPassword: string,
   service = DEFAULT_SERVICE,
-): Promise<BlueskyTokens> {
+): Promise<BlueskyTokens & { profile?: { displayName?: string; avatarUrl?: string } }> {
   // Accept just a username ("alice") and default the domain; a value that already
   // contains a dot is treated as a full handle (custom domains like alice.com).
   const raw = handle.trim().replace(/^@/, "").toLowerCase();
   const id = raw.includes(".") ? raw : `${raw}.bsky.social`;
   const password = appPassword.trim();
   const session = await createSession(service, id, password);
-  return { service, identifier: id, app_password: password, did: session.did, handle: session.handle };
+
+  // Best-effort profile (display name + avatar) for previews.
+  let profile: { displayName?: string; avatarUrl?: string } | undefined;
+  try {
+    const p = await xrpc<{ displayName?: string; avatar?: string }>(
+      service,
+      `app.bsky.actor.getProfile?actor=${encodeURIComponent(session.did)}`,
+      { auth: session.accessJwt },
+    );
+    profile = { displayName: p.displayName, avatarUrl: p.avatar };
+  } catch {
+    // profile is optional
+  }
+
+  return { service, identifier: id, app_password: password, did: session.did, handle: session.handle, profile };
 }
 
 // Link facets make URLs clickable. Bluesky indexes text by UTF-8 byte offsets.

@@ -58,6 +58,8 @@ export async function GET(request: Request) {
       encrypted_tokens: encryptJson(tokens),
       token_expiry: tokenExpiry,
       status: "active",
+      display_name: ig.name ?? null,
+      avatar_url: ig.avatarUrl ?? null,
     };
 
     // Reconnecting the same account updates the existing channel instead of duplicating it.

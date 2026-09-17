@@ -157,13 +157,13 @@ async function tiktokJson<T>(url: string, init: RequestInit): Promise<T> {
 
 export async function getUser(
   accessToken: string,
-): Promise<{ open_id: string; display_name?: string }> {
-  const data = await tiktokJson<{ user?: { open_id: string; display_name?: string } }>(
-    `${API}/user/info/?fields=open_id,display_name`,
+): Promise<{ open_id: string; display_name?: string; avatar_url?: string }> {
+  const data = await tiktokJson<{ user?: { open_id: string; display_name?: string; avatar_url?: string } }>(
+    `${API}/user/info/?fields=open_id,display_name,avatar_url`,
     { method: "GET", headers: authHeaders(accessToken) },
   );
   if (!data.user) throw new Error("TikTok user info returned no user.");
-  return { open_id: data.user.open_id, display_name: data.user.display_name };
+  return { open_id: data.user.open_id, display_name: data.user.display_name, avatar_url: data.user.avatar_url };
 }
 
 /** Required before Direct Post — returns the privacy levels the creator can use. */

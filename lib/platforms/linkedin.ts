@@ -89,13 +89,15 @@ export function refreshTokens(refreshToken: string): Promise<TokenResponse> {
 }
 
 /** OpenID Connect userinfo — the `sub` is the member id used to build the author URN. */
-export async function getMe(accessToken: string): Promise<{ sub: string; name?: string }> {
+export async function getMe(
+  accessToken: string,
+): Promise<{ sub: string; name?: string; picture?: string }> {
   const res = await fetch(`${API}/v2/userinfo`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  const json = (await res.json()) as { sub?: string; name?: string; message?: string };
+  const json = (await res.json()) as { sub?: string; name?: string; picture?: string; message?: string };
   if (!res.ok || !json.sub) throw new Error(json.message ?? `LinkedIn userinfo error ${res.status}`);
-  return { sub: json.sub, name: json.name };
+  return { sub: json.sub, name: json.name, picture: json.picture };
 }
 
 function restHeaders(token: string): HeadersInit {

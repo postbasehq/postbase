@@ -439,17 +439,23 @@ export async function connectBlueskyChannel(
   const appPassword = String(formData.get("app_password") ?? "").trim();
   if (!handle || !appPassword) return { error: "Enter your handle and an app password." };
 
-  let tokens;
+  let connected;
   try {
-    tokens = await connectBluesky(handle, appPassword);
+    connected = await connectBluesky(handle, appPassword);
   } catch (e) {
     return {
       error: `Couldn't connect: ${e instanceof Error ? e.message : "check your handle and app password"}`,
     };
   }
 
+  const { profile, ...tokens } = connected;
   const chHandle = `@${tokens.handle}`;
-  const fields = { encrypted_tokens: encryptJson(tokens), status: "active" };
+  const fields = {
+    encrypted_tokens: encryptJson(tokens),
+    status: "active",
+    display_name: profile?.displayName ?? null,
+    avatar_url: profile?.avatarUrl ?? null,
+  };
   const { data: existing } = await supabase
     .from("channels")
     .select("id")

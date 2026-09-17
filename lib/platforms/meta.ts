@@ -114,18 +114,20 @@ export async function longLivedToken(
 export async function resolveInstagram(userToken: string): Promise<{
   igUserId: string;
   username: string;
+  name?: string;
+  avatarUrl?: string;
   pageId: string;
   pageAccessToken: string;
 }> {
   const p = new URLSearchParams({
-    fields: "id,name,access_token,instagram_business_account{id,username}",
+    fields: "id,name,access_token,instagram_business_account{id,username,name,profile_picture_url}",
     access_token: userToken,
   });
   const json = await graphJson<{
     data?: {
       id: string;
       access_token: string;
-      instagram_business_account?: { id: string; username?: string };
+      instagram_business_account?: { id: string; username?: string; name?: string; profile_picture_url?: string };
     }[];
   }>(`${graph()}/me/accounts?${p}`);
 
@@ -138,6 +140,8 @@ export async function resolveInstagram(userToken: string): Promise<{
   return {
     igUserId: page.instagram_business_account.id,
     username: page.instagram_business_account.username ?? "",
+    name: page.instagram_business_account.name,
+    avatarUrl: page.instagram_business_account.profile_picture_url,
     pageId: page.id,
     pageAccessToken: page.access_token,
   };

@@ -104,7 +104,13 @@ const freshTweet = (text = ""): Tweet => {
   return { id, text };
 };
 
-type Channel = { id: string; platform: string; handle: string | null };
+type Channel = {
+  id: string;
+  platform: string;
+  handle: string | null;
+  display_name?: string | null;
+  avatar_url?: string | null;
+};
 type Media = { url: string; type: string };
 type LibraryItem = { id: string; url: string; name: string; type: string; size_bytes: number };
 type Note = { level: "error" | "info"; text: string };
@@ -611,6 +617,8 @@ export function PostForm({
               <PostPreview
                 platform={previewChannel.platform}
                 handle={previewChannel.handle}
+                displayName={previewChannel.display_name}
+                avatarUrl={previewChannel.avatar_url}
                 thread={
                   variants[previewChannel.id]?.trim()
                     ? [variants[previewChannel.id]]

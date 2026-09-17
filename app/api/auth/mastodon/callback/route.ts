@@ -56,10 +56,18 @@ export async function GET(request: Request) {
       redirectUri,
       code,
     );
-    const { instance, account_id, handle } = await verifyAccount(pending.instance, accessToken);
+    const { instance, account_id, handle, display_name, avatar_url } = await verifyAccount(
+      pending.instance,
+      accessToken,
+    );
 
     const tokens: MastodonTokens = { instance, access_token: accessToken, account_id, handle };
-    const fields = { encrypted_tokens: encryptJson(tokens), status: "active" };
+    const fields = {
+      encrypted_tokens: encryptJson(tokens),
+      status: "active",
+      display_name: display_name || null,
+      avatar_url: avatar_url ?? null,
+    };
 
     const { data: existing } = await supabase
       .from("channels")

@@ -98,17 +98,21 @@ export function refreshTokens(refreshToken: string): Promise<TokenResponse> {
 /** The authorized user's primary YouTube channel. */
 export async function getChannel(
   accessToken: string,
-): Promise<{ id: string; title: string }> {
+): Promise<{ id: string; title: string; avatar_url?: string }> {
   const res = await fetch(`${API}/channels?part=snippet&mine=true`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   const json = (await res.json()) as {
-    items?: { id: string; snippet?: { title?: string } }[];
+    items?: {
+      id: string;
+      snippet?: { title?: string; thumbnails?: { default?: { url?: string }; medium?: { url?: string } } };
+    }[];
     error?: { message?: string };
   };
   const ch = json.items?.[0];
   if (!res.ok || !ch) throw new Error(json.error?.message ?? "No YouTube channel found on this account.");
-  return { id: ch.id, title: ch.snippet?.title ?? "YouTube" };
+  const avatar_url = ch.snippet?.thumbnails?.medium?.url ?? ch.snippet?.thumbnails?.default?.url;
+  return { id: ch.id, title: ch.snippet?.title ?? "YouTube", avatar_url };
 }
 
 /** Upload a video (resumable, single PUT). Returns the video id. */

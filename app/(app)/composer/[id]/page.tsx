@@ -33,7 +33,7 @@ export default async function EditPostPage({
 
   const { data: channels } = await supabase
     .from("channels")
-    .select("id, platform, handle")
+    .select("id, platform, handle, display_name, avatar_url")
     .order("created_at", { ascending: true });
 
   const { data: mediaRows } = await supabase
