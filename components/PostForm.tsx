@@ -49,10 +49,17 @@ const TIKTOK_PRIVACY = [
 const MAX_TWEETS = 25;
 
 // Each post in a thread carries a stable id so drag/reorder animations can
-// track it across position changes.
+// track it across position changes. Ids must be collision-proof even across a
+// dev HMR reload (which would otherwise reset a plain counter).
 type Tweet = { id: string; text: string };
 let tweetSeq = 0;
-const freshTweet = (text = ""): Tweet => ({ id: `tw_${tweetSeq++}`, text });
+const freshTweet = (text = ""): Tweet => {
+  const id =
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `tw_${Date.now().toString(36)}_${tweetSeq++}`;
+  return { id, text };
+};
 
 type Channel = { id: string; platform: string; handle: string | null };
 type Media = { url: string; type: string };
@@ -204,7 +211,12 @@ export function PostForm({
   /* actions */
   const updateTweet = (i: number, v: string) =>
     setTweets((t) => t.map((x, idx) => (idx === i ? { ...x, text: v } : x)));
-  const addTweet = () => setTweets((t) => (t.length < MAX_TWEETS ? [...t, freshTweet()] : t));
+  const addTweet = () => {
+    // Build the new post outside the updater so the id is stable even if React
+    // (StrictMode) invokes the updater twice.
+    const nt = freshTweet();
+    setTweets((t) => (t.length < MAX_TWEETS ? [...t, nt] : t));
+  };
   const removeTweet = (i: number) =>
     setTweets((t) => (t.length > 1 ? t.filter((_, idx) => idx !== i) : t));
   // Swap a post one place earlier/later in the thread (position sets the order).
