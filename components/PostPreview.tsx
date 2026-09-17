@@ -153,6 +153,14 @@ export function PostPreview({
     </div>
   );
 
+  if (platform === "tiktok") {
+    return (
+      <div className="rounded-2xl border border-line bg-ground p-3 shadow-sm">
+        <TikTokPost handle={h} text={text} media={media} metrics={metrics} />
+      </div>
+    );
+  }
+
   if (platform === "instagram") {
     return (
       <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
@@ -731,6 +739,126 @@ function InstagramPost({
         {date ?? "just now"}
       </div>
     </div>
+  );
+}
+
+// TikTok: a vertical video with the action rail on the right and the
+// @username + caption + sound overlaid bottom-left. Always dark (it's a video).
+function TikTokPost({
+  handle,
+  text,
+  media,
+  metrics,
+}: {
+  handle: string;
+  text: string;
+  media: Media[];
+  metrics: Record<string, number> | null;
+}) {
+  const first = media[0];
+  const m = metrics;
+  return (
+    <div className="relative mx-auto aspect-[9/16] w-full max-w-[260px] overflow-hidden rounded-xl bg-black">
+      {first ? (
+        first.type?.startsWith("video") ? (
+          // eslint-disable-next-line jsx-a11y/media-has-caption
+          <video src={first.url} muted autoPlay loop playsInline className="size-full object-cover" />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={first.url} alt="" className="size-full object-cover" />
+        )
+      ) : (
+        <div className="flex size-full flex-col items-center justify-center gap-2 bg-[#161823] text-white/70">
+          <BrandTile platform="tiktok" size={30} radius={8} />
+          <span className="text-xs">Add a video</span>
+        </div>
+      )}
+
+      {/* scrim for legibility */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/70 to-transparent" />
+
+      {/* right action rail */}
+      <div className="absolute bottom-3 right-1.5 flex flex-col items-center gap-3.5 text-white">
+        <span className="relative mb-1">
+          <span
+            className="flex size-9 items-center justify-center rounded-full text-[13px] font-semibold text-white ring-2 ring-white/90"
+            style={{ background: "#161823" }}
+            aria-hidden
+          >
+            {handle.charAt(0).toUpperCase() || "•"}
+          </span>
+          <span className="absolute -bottom-1.5 left-1/2 flex size-4 -translate-x-1/2 items-center justify-center rounded-full bg-[#fe2c55] text-[10px] font-bold leading-none text-white">
+            +
+          </span>
+        </span>
+        <TkRail value={m?.likes}>
+          <path d="M12 21s-7.5-4.6-10-9.3C.6 8.9 1.8 5.6 4.8 5c2-.4 3.6.7 4.4 2 .8-1.3 2.4-2.4 4.4-2 3 .6 4.2 3.9 2.8 6.7C19.5 16.4 12 21 12 21z" />
+        </TkRail>
+        <TkRail value={m?.comments}>
+          <path d="M4 4h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H9l-5 4V5a1 1 0 0 1 1-1z" />
+        </TkRail>
+        <TkRail value={undefined}>
+          <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
+        </TkRail>
+        <TkRail value={m?.shares}>
+          <path d="M21 12 3 3l4 9-4 9 18-9z" />
+        </TkRail>
+        <span className="mt-1 flex size-9 items-center justify-center rounded-full bg-gradient-to-br from-[#333] to-black ring-1 ring-white/20">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-white/90" aria-hidden>
+            <path d="M9 18V5l12-2v13" />
+            <circle cx="6" cy="18" r="3" />
+            <circle cx="18" cy="16" r="3" />
+          </svg>
+        </span>
+      </div>
+
+      {/* bottom-left caption */}
+      <div className="absolute inset-x-3 bottom-3 right-12 text-white">
+        <div className="text-[14px] font-semibold drop-shadow">@{handle}</div>
+        {text.trim() ? (
+          <div className="mt-1 line-clamp-3 whitespace-pre-wrap text-[13px] leading-snug drop-shadow">
+            <TkText text={text} />
+          </div>
+        ) : null}
+        <div className="mt-1.5 flex items-center gap-1.5 text-[12px] drop-shadow">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <path d="M9 18V5l12-2v13" />
+            <circle cx="6" cy="18" r="3" />
+            <circle cx="18" cy="16" r="3" />
+          </svg>
+          <span className="truncate">original sound - {handle}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TkRail({ value, children }: { value?: number; children: React.ReactNode }) {
+  return (
+    <span className="flex flex-col items-center gap-1">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor" aria-hidden className="drop-shadow">
+        {children}
+      </svg>
+      <span className="text-[11px] font-semibold tabular-nums drop-shadow">{value && value > 0 ? fmt(value) : ""}</span>
+    </span>
+  );
+}
+
+// TikTok highlights #hashtags and @mentions in white-bold (they read as links).
+function TkText({ text }: { text: string }) {
+  const parts = text.split(/(\s+)/);
+  return (
+    <>
+      {parts.map((part, i) =>
+        /^[@#][\w.]/.test(part) ? (
+          <span key={i} className="font-semibold">
+            {part}
+          </span>
+        ) : (
+          <span key={i}>{part}</span>
+        ),
+      )}
+    </>
   );
 }
 
