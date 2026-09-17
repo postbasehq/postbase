@@ -10,7 +10,7 @@ import { resolveInstagram, type MetaTokens } from "@/lib/platforms/meta";
 import { verifyAccount, type MastodonTokens } from "@/lib/platforms/mastodon";
 import { connectBluesky, type BlueskyTokens } from "@/lib/platforms/bluesky";
 
-type Profile = { display_name?: string | null; avatar_url?: string | null };
+type Profile = { display_name?: string | null; avatar_url?: string | null; verified?: boolean };
 
 /**
  * Best-effort backfill of display_name + avatar_url for the current org's
@@ -28,7 +28,7 @@ export async function POST() {
 
   const { data: channels } = await supabase
     .from("channels")
-    .select("id, platform, encrypted_tokens, display_name, avatar_url")
+    .select("id, platform, encrypted_tokens, display_name, avatar_url, verified")
     .eq("org_id", orgId);
 
   let updated = 0;
@@ -45,6 +45,7 @@ export async function POST() {
           .update({
             display_name: c.display_name ?? profile.display_name ?? null,
             avatar_url: c.avatar_url ?? profile.avatar_url ?? null,
+            ...(profile.verified != null ? { verified: profile.verified } : {}),
           })
           .eq("id", c.id);
         updated += 1;
@@ -65,7 +66,7 @@ async function fetchProfile(platform: string, encrypted: string): Promise<Profil
     case "x": {
       const t = decryptJson<XTokens>(encrypted);
       const me = await xGetMe(t.access_token);
-      return { display_name: me.name, avatar_url: me.avatar_url };
+      return { display_name: me.name, avatar_url: me.avatar_url, verified: me.verified };
     }
     case "linkedin": {
       const t = decryptJson<LinkedInTokens>(encrypted);

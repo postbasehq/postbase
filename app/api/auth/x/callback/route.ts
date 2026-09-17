@@ -47,6 +47,7 @@ export async function GET(request: Request) {
       status: "active",
       display_name: me.name ?? null,
       avatar_url: me.avatar_url ?? null,
+      verified: me.verified ?? false,
     };
 
     // Reconnecting the same account updates the existing channel instead of duplicating it.

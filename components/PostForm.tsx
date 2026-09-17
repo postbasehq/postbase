@@ -110,6 +110,7 @@ type Channel = {
   handle: string | null;
   display_name?: string | null;
   avatar_url?: string | null;
+  verified?: boolean | null;
 };
 type Media = { url: string; type: string };
 type LibraryItem = { id: string; url: string; name: string; type: string; size_bytes: number };
@@ -619,6 +620,7 @@ export function PostForm({
                 handle={previewChannel.handle}
                 displayName={previewChannel.display_name}
                 avatarUrl={previewChannel.avatar_url}
+                verified={!!previewChannel.verified}
                 thread={
                   variants[previewChannel.id]?.trim()
                     ? [variants[previewChannel.id]]

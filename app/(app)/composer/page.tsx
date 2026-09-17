@@ -14,7 +14,7 @@ export default async function ComposerPage({
   const supabase = await createClient();
   const { data: channels } = await supabase
     .from("channels")
-    .select("id, platform, handle, display_name, avatar_url")
+    .select("id, platform, handle, display_name, avatar_url, verified")
     .order("created_at", { ascending: true });
 
   const { data: library } = await supabase
