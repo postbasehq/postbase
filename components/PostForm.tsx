@@ -349,7 +349,7 @@ export function PostForm({
               axis="y"
               values={tweets}
               onReorder={setTweets}
-              className="flex flex-col gap-4"
+              className="flex flex-col gap-4 select-none"
             >
               {tweets.map((tw, i) => (
                 <ThreadItem
@@ -875,7 +875,7 @@ function ThreadItem({
           rows={isFirst ? 6 : 3}
           maxLength={charLimit ?? undefined}
           placeholder={isFirst ? "What do you want to say?" : "Add a comment or next post…"}
-          className="w-full resize-none bg-transparent text-[15px] leading-relaxed outline-none placeholder:text-muted/70"
+          className="w-full resize-none select-text bg-transparent text-[15px] leading-relaxed outline-none placeholder:text-muted/70"
         />
         <div className="mt-1 flex items-center gap-3 text-xs">
           <span
