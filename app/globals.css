@@ -110,6 +110,17 @@ body {
   opacity: 0.38;
 }
 
+/* Native date/time picker icon is black by default; lighten it in dark mode so
+   it doesn't disappear against dark inputs. */
+:root[data-theme="dark"] input::-webkit-calendar-picker-indicator {
+  filter: invert(0.78);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) input::-webkit-calendar-picker-indicator {
+    filter: invert(0.78);
+  }
+}
+
 /* Thin, unobtrusive scrollbars across the app (elements that opt out with
    scrollbar-width:none — e.g. the sidebar nav — keep their own treatment). */
 * {
