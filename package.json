@@ -17,6 +17,7 @@
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.45.4",
     "@vercel/analytics": "^2.0.1",
+    "framer-motion": "^13.4.0",
     "marked": "^14.1.2",
     "next": "^15.1.0",
     "react": "^19.0.0",

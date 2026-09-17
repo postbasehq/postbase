@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Reorder, useDragControls } from "framer-motion";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -47,6 +48,12 @@ const TIKTOK_PRIVACY = [
 
 const MAX_TWEETS = 25;
 
+// Each post in a thread carries a stable id so drag/reorder animations can
+// track it across position changes.
+type Tweet = { id: string; text: string };
+let tweetSeq = 0;
+const freshTweet = (text = ""): Tweet => ({ id: `tw_${tweetSeq++}`, text });
+
 type Channel = { id: string; platform: string; handle: string | null };
 type Media = { url: string; type: string };
 type LibraryItem = { id: string; url: string; name: string; type: string; size_bytes: number };
@@ -88,8 +95,11 @@ export function PostForm({
   libraryItems = [],
   initial,
 }: PostFormProps) {
-  const [tweets, setTweets] = useState<string[]>(
-    initial?.thread?.length ? initial.thread : [""],
+  const [tweets, setTweets] = useState<Tweet[]>(() =>
+    (initial?.thread?.length ? initial.thread : [""]).map((text, i) => ({
+      id: `init_${i}`,
+      text,
+    })),
   );
   const [media, setMedia] = useState<Media[]>(initial?.media ?? []);
   const [selected, setSelected] = useState<Set<string>>(new Set(initial?.channelIds ?? []));
@@ -119,7 +129,7 @@ export function PostForm({
   const fileRef = useRef<HTMLInputElement>(null);
 
   /* derived */
-  const cleanTweets = tweets.map((t) => t.trim()).filter(Boolean);
+  const cleanTweets = tweets.map((t) => t.text.trim()).filter(Boolean);
   const caption = cleanTweets.join("\n\n");
   const isThread = tweets.length > 1;
   const hasMedia = media.length > 0;
@@ -157,7 +167,7 @@ export function PostForm({
     if (meta.thread) {
       // Thread-native (X, Bluesky, Mastodon): each block is its own post/reply.
       tweets.forEach((t, i) => {
-        const over = t.trim().length - meta.limit;
+        const over = t.text.trim().length - meta.limit;
         if (over > 0)
           notes.push({ level: "error", text: `Post ${i + 1} is ${over} over ${meta.limit}` });
       });
@@ -193,8 +203,8 @@ export function PostForm({
 
   /* actions */
   const updateTweet = (i: number, v: string) =>
-    setTweets((t) => t.map((x, idx) => (idx === i ? v : x)));
-  const addTweet = () => setTweets((t) => (t.length < MAX_TWEETS ? [...t, ""] : t));
+    setTweets((t) => t.map((x, idx) => (idx === i ? { ...x, text: v } : x)));
+  const addTweet = () => setTweets((t) => (t.length < MAX_TWEETS ? [...t, freshTweet()] : t));
   const removeTweet = (i: number) =>
     setTweets((t) => (t.length > 1 ? t.filter((_, idx) => idx !== i) : t));
   // Swap a post one place earlier/later in the thread (position sets the order).
@@ -206,58 +216,6 @@ export function PostForm({
       [next[i], next[j]] = [next[j], next[i]];
       return next;
     });
-  // Drag-to-reorder: pull a post out of `from` and drop it at `to`.
-  const reorderTweet = (from: number, to: number) =>
-    setTweets((t) => {
-      if (from === to || from < 0 || to < 0 || from >= t.length || to >= t.length) return t;
-      const next = [...t];
-      const [moved] = next.splice(from, 1);
-      next.splice(to, 0, moved);
-      return next;
-    });
-  // Pointer-driven drag-to-reorder from the grip handle. Refs hold the live
-  // drag state (so the pointer handlers never read stale values); the matching
-  // state just drives the visuals. Works with mouse and touch.
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [overIndex, setOverIndex] = useState<number | null>(null);
-  const boxRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const dragIndexRef = useRef<number | null>(null);
-  const overIndexRef = useRef<number | null>(null);
-
-  const targetFromY = (clientY: number): number => {
-    let target = dragIndexRef.current ?? 0;
-    boxRefs.current.forEach((el, idx) => {
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      if (clientY >= r.top && clientY <= r.bottom) target = idx;
-    });
-    return target;
-  };
-  const startDrag = (i: number) => (e: React.PointerEvent) => {
-    e.preventDefault();
-    dragIndexRef.current = i;
-    overIndexRef.current = i;
-    setDragIndex(i);
-    setOverIndex(i);
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
-  const moveDrag = (e: React.PointerEvent) => {
-    if (dragIndexRef.current === null) return;
-    const target = targetFromY(e.clientY);
-    if (target !== overIndexRef.current) {
-      overIndexRef.current = target;
-      setOverIndex(target);
-    }
-  };
-  const dropDrag = () => {
-    const from = dragIndexRef.current;
-    const to = overIndexRef.current;
-    if (from !== null && to !== null) reorderTweet(from, to);
-    dragIndexRef.current = null;
-    overIndexRef.current = null;
-    setDragIndex(null);
-    setOverIndex(null);
-  };
 
   const toggleChannel = (id: string) =>
     setSelected((s) => {
@@ -374,137 +332,27 @@ export function PostForm({
 
           {/* editor */}
           <div className="flex flex-col gap-4">
-            {tweets.map((t, i) => {
-              const len = t.length;
-              const nearLimit = charLimit != null && len >= charLimit * 0.9;
-              const atLimit = charLimit != null && len >= charLimit;
-              const isOver = overIndex === i && dragIndex !== null && dragIndex !== i;
-              const box = (
-                <div
-                  ref={(el) => {
-                    boxRefs.current[i] = el;
-                  }}
-                  className={`rounded-xl border bg-ground p-3.5 transition-colors ${
-                    isOver ? "border-blue ring-2 ring-blue/40" : "border-line focus-within:border-blue"
-                  }`}
-                >
-                  {isThread ? (
-                    <div className="mb-1.5 flex items-center gap-2">
-                      <span
-                        role="button"
-                        aria-label="Drag to reorder"
-                        title="Drag to reorder"
-                        onPointerDown={startDrag(i)}
-                        onPointerMove={moveDrag}
-                        onPointerUp={dropDrag}
-                        onPointerCancel={dropDrag}
-                        className="-ml-1 cursor-grab touch-none text-muted/50 transition hover:text-muted active:cursor-grabbing"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                          <circle cx="9" cy="5" r="1.7" />
-                          <circle cx="15" cy="5" r="1.7" />
-                          <circle cx="9" cy="12" r="1.7" />
-                          <circle cx="15" cy="12" r="1.7" />
-                          <circle cx="9" cy="19" r="1.7" />
-                          <circle cx="15" cy="19" r="1.7" />
-                        </svg>
-                      </span>
-                      <span className="text-xs font-semibold text-muted">
-                        {i === 0 ? "Post" : `Comment / post ${i}`}
-                      </span>
-                      <div className="ml-auto flex items-center rounded-lg border border-line bg-surface/60">
-                        <button
-                          type="button"
-                          onClick={() => moveTweet(i, -1)}
-                          disabled={i === 0}
-                          aria-label="Move earlier"
-                          title="Move earlier"
-                          className="flex size-6 items-center justify-center rounded-l-lg text-muted transition hover:bg-surface-2 hover:text-ink disabled:pointer-events-none disabled:opacity-30"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                            <path d="m18 15-6-6-6 6" />
-                          </svg>
-                        </button>
-                        <span className="h-4 w-px bg-line" aria-hidden />
-                        <button
-                          type="button"
-                          onClick={() => moveTweet(i, 1)}
-                          disabled={i === tweets.length - 1}
-                          aria-label="Move later"
-                          title="Move later"
-                          className="flex size-6 items-center justify-center rounded-r-lg text-muted transition hover:bg-surface-2 hover:text-ink disabled:pointer-events-none disabled:opacity-30"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                            <path d="m6 9 6 6 6-6" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  ) : null}
-                  <textarea
-                    value={t}
-                    onChange={(e) => updateTweet(i, e.target.value)}
-                    rows={i === 0 ? 6 : 3}
-                    maxLength={charLimit ?? undefined}
-                    placeholder={i === 0 ? "What do you want to say?" : "Add a comment or next post…"}
-                    className="w-full resize-none bg-transparent text-[15px] leading-relaxed outline-none placeholder:text-muted/70"
-                  />
-                  <div className="mt-1 flex items-center gap-3 text-xs">
-                    <span
-                      className={
-                        atLimit ? "font-medium text-terra" : nearLimit ? "font-medium text-amber" : "text-muted"
-                      }
-                    >
-                      {len.toLocaleString()}
-                      {charLimit != null ? ` / ${charLimit.toLocaleString()}` : " characters"}
-                    </span>
-                    {tweets.length > 1 ? (
-                      <button
-                        type="button"
-                        onClick={() => removeTweet(i)}
-                        className="inline-flex items-center gap-1 text-muted hover:text-terra"
-                      >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                          <path d="M3 6h18" />
-                          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                          <path d="M10 11v6M14 11v6" />
-                        </svg>
-                        Remove
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-              );
-
-              const dragging = dragIndex === i ? "opacity-40" : "";
-
-              // Primary post: full width.
-              if (i === 0)
-                return (
-                  <div key={i} className={dragging}>
-                    {box}
-                  </div>
-                );
-
-              // Replies hang off one continuous rail: a vertical line down the
-              // left gutter (bridging up through the gap to the box above) plus a
-              // short horizontal tick into each box. Straight lines only, so the
-              // rail never crosses a rounded box border.
-              return (
-                <div key={i} className={`relative pl-6 ${dragging}`}>
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute -top-4 bottom-0 left-2 w-px bg-line"
-                  />
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute left-2 top-6 h-px w-4 bg-line"
-                  />
-                  {box}
-                </div>
-              );
-            })}
+            <Reorder.Group
+              as="div"
+              axis="y"
+              values={tweets}
+              onReorder={setTweets}
+              className="flex flex-col gap-4"
+            >
+              {tweets.map((tw, i) => (
+                <ThreadItem
+                  key={tw.id}
+                  tweet={tw}
+                  index={i}
+                  total={tweets.length}
+                  isThread={isThread}
+                  charLimit={charLimit}
+                  onChange={(v) => updateTweet(i, v)}
+                  onRemove={() => removeTweet(i)}
+                  onMove={(dir) => moveTweet(i, dir)}
+                />
+              ))}
+            </Reorder.Group>
 
             {/* media thumbnails */}
             {media.length > 0 ? (
@@ -673,7 +521,9 @@ export function PostForm({
               platform={previewChannel.platform}
               handle={previewChannel.handle}
               thread={
-                variants[previewChannel.id]?.trim() ? [variants[previewChannel.id]] : tweets
+                variants[previewChannel.id]?.trim()
+                  ? [variants[previewChannel.id]]
+                  : tweets.map((t) => t.text)
               }
               media={media.map((m) => ({ url: m.url, type: m.type }))}
               metrics={null}
@@ -878,5 +728,151 @@ export function PostForm({
       <input type="hidden" name="scheduled_at" value={utc} />
       <input type="hidden" name="repeat_every" value={isDraft ? "" : repeatEvery} />
     </form>
+  );
+}
+
+// One post in the composer thread — a Reorder.Item that lifts and tilts while
+// dragging (from the grip handle only), with its siblings springing out of the
+// way. Up/down controls remain as the keyboard-accessible path.
+function ThreadItem({
+  tweet,
+  index,
+  total,
+  isThread,
+  charLimit,
+  onChange,
+  onRemove,
+  onMove,
+}: {
+  tweet: Tweet;
+  index: number;
+  total: number;
+  isThread: boolean;
+  charLimit: number | null;
+  onChange: (v: string) => void;
+  onRemove: () => void;
+  onMove: (dir: -1 | 1) => void;
+}) {
+  const controls = useDragControls();
+  const t = tweet.text;
+  const len = t.length;
+  const nearLimit = charLimit != null && len >= charLimit * 0.9;
+  const atLimit = charLimit != null && len >= charLimit;
+  const isFirst = index === 0;
+  const isLast = index === total - 1;
+
+  return (
+    <Reorder.Item
+      as="div"
+      value={tweet}
+      dragListener={false}
+      dragControls={controls}
+      whileDrag={{
+        scale: 1.03,
+        rotate: -1.5,
+        boxShadow: "0 22px 45px -14px rgba(0,0,0,0.55)",
+        zIndex: 30,
+        cursor: "grabbing",
+      }}
+      className={`relative ${isFirst ? "" : "pl-6"}`}
+    >
+      {!isFirst ? (
+        <>
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -top-4 bottom-0 left-2 w-px bg-line"
+          />
+          <span
+            aria-hidden
+            className="pointer-events-none absolute left-2 top-6 h-px w-4 bg-line"
+          />
+        </>
+      ) : null}
+      <div className="rounded-xl border border-line bg-ground p-3.5 transition-colors focus-within:border-blue">
+        {isThread ? (
+          <div className="mb-1.5 flex items-center gap-2">
+            <span
+              role="button"
+              aria-label="Drag to reorder"
+              title="Drag to reorder"
+              onPointerDown={(e) => controls.start(e)}
+              className="-ml-1 cursor-grab touch-none text-muted/50 transition hover:text-muted active:cursor-grabbing"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <circle cx="9" cy="5" r="1.7" />
+                <circle cx="15" cy="5" r="1.7" />
+                <circle cx="9" cy="12" r="1.7" />
+                <circle cx="15" cy="12" r="1.7" />
+                <circle cx="9" cy="19" r="1.7" />
+                <circle cx="15" cy="19" r="1.7" />
+              </svg>
+            </span>
+            <span className="text-xs font-semibold text-muted">
+              {isFirst ? "Post" : `Comment / post ${index}`}
+            </span>
+            <div className="ml-auto flex items-center rounded-lg border border-line bg-surface/60">
+              <button
+                type="button"
+                onClick={() => onMove(-1)}
+                disabled={isFirst}
+                aria-label="Move earlier"
+                title="Move earlier"
+                className="flex size-6 items-center justify-center rounded-l-lg text-muted transition hover:bg-surface-2 hover:text-ink disabled:pointer-events-none disabled:opacity-30"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="m18 15-6-6-6 6" />
+                </svg>
+              </button>
+              <span className="h-4 w-px bg-line" aria-hidden />
+              <button
+                type="button"
+                onClick={() => onMove(1)}
+                disabled={isLast}
+                aria-label="Move later"
+                title="Move later"
+                className="flex size-6 items-center justify-center rounded-r-lg text-muted transition hover:bg-surface-2 hover:text-ink disabled:pointer-events-none disabled:opacity-30"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        ) : null}
+        <textarea
+          value={t}
+          onChange={(e) => onChange(e.target.value)}
+          rows={isFirst ? 6 : 3}
+          maxLength={charLimit ?? undefined}
+          placeholder={isFirst ? "What do you want to say?" : "Add a comment or next post…"}
+          className="w-full resize-none bg-transparent text-[15px] leading-relaxed outline-none placeholder:text-muted/70"
+        />
+        <div className="mt-1 flex items-center gap-3 text-xs">
+          <span
+            className={
+              atLimit ? "font-medium text-terra" : nearLimit ? "font-medium text-amber" : "text-muted"
+            }
+          >
+            {len.toLocaleString()}
+            {charLimit != null ? ` / ${charLimit.toLocaleString()}` : " characters"}
+          </span>
+          {total > 1 ? (
+            <button
+              type="button"
+              onClick={onRemove}
+              className="inline-flex items-center gap-1 text-muted hover:text-terra"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M3 6h18" />
+                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                <path d="M10 11v6M14 11v6" />
+              </svg>
+              Remove
+            </button>
+          ) : null}
+        </div>
+      </div>
+    </Reorder.Item>
   );
 }
