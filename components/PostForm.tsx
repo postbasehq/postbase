@@ -368,12 +368,6 @@ export function PostForm({
                     </button>
                   );
                 })}
-                <Link
-                  href="/channels"
-                  className="ml-auto text-xs font-medium text-blue-ink hover:underline"
-                >
-                  Manage
-                </Link>
               </>
             )}
           </div>
