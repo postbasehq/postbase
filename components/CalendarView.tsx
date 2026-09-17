@@ -1,6 +1,10 @@
 "use client";
 
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+
+// Layout effect on the client (avoids the SSR warning for a client component).
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 import Link from "next/link";
 import { BrandTile } from "@/components/BrandTile";
 import { CalendarChannelsBar } from "@/components/CalendarChannelsBar";
@@ -250,6 +254,23 @@ function TimeGrid({
   nowHour: number;
 }) {
   const cols = `64px repeat(${days.length}, minmax(0, 1fr))`;
+
+  // On load, scroll so the last scheduled post sits near the bottom of the grid
+  // (rather than starting at the earliest hour). If there are no posts, stay put.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useIsoLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    let latest = -1;
+    byDayHour.forEach((list) => {
+      for (const p of list) latest = Math.max(latest, p.hour * 60 + p.minute);
+    });
+    if (latest < 0) return;
+    const top = (latest / 60) * ROW; // px offset of the latest post
+    // Leave ~120px below the post so it reads as "near the bottom", not clipped.
+    el.scrollTop = Math.max(0, top - (el.clientHeight - 120));
+  }, [byDayHour]);
+
   // A slot is past only once it has fully elapsed: an earlier day, or today and
   // strictly before the current hour (the in-progress hour stays schedulable).
   const pastHours = (key: string) =>
@@ -275,7 +296,7 @@ function TimeGrid({
       </div>
 
       {/* scrollable hour grid */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
         <div className="grid" style={{ gridTemplateColumns: cols }}>
           {/* hour gutter */}
           <div className="border-r border-line">
