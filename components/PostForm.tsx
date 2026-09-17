@@ -326,7 +326,7 @@ export function PostForm({
               return (
                 <div
                   key={i}
-                  className="rounded-xl border border-line p-3.5 transition-colors focus-within:border-blue"
+                  className="rounded-xl border border-line bg-ground p-3.5 transition-colors focus-within:border-blue"
                 >
                   {isThread ? (
                     <div className="mb-1.5 text-xs font-semibold text-muted">
