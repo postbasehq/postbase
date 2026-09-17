@@ -206,6 +206,58 @@ export function PostForm({
       [next[i], next[j]] = [next[j], next[i]];
       return next;
     });
+  // Drag-to-reorder: pull a post out of `from` and drop it at `to`.
+  const reorderTweet = (from: number, to: number) =>
+    setTweets((t) => {
+      if (from === to || from < 0 || to < 0 || from >= t.length || to >= t.length) return t;
+      const next = [...t];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+  // Pointer-driven drag-to-reorder from the grip handle. Refs hold the live
+  // drag state (so the pointer handlers never read stale values); the matching
+  // state just drives the visuals. Works with mouse and touch.
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+  const boxRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const dragIndexRef = useRef<number | null>(null);
+  const overIndexRef = useRef<number | null>(null);
+
+  const targetFromY = (clientY: number): number => {
+    let target = dragIndexRef.current ?? 0;
+    boxRefs.current.forEach((el, idx) => {
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      if (clientY >= r.top && clientY <= r.bottom) target = idx;
+    });
+    return target;
+  };
+  const startDrag = (i: number) => (e: React.PointerEvent) => {
+    e.preventDefault();
+    dragIndexRef.current = i;
+    overIndexRef.current = i;
+    setDragIndex(i);
+    setOverIndex(i);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const moveDrag = (e: React.PointerEvent) => {
+    if (dragIndexRef.current === null) return;
+    const target = targetFromY(e.clientY);
+    if (target !== overIndexRef.current) {
+      overIndexRef.current = target;
+      setOverIndex(target);
+    }
+  };
+  const dropDrag = () => {
+    const from = dragIndexRef.current;
+    const to = overIndexRef.current;
+    if (from !== null && to !== null) reorderTweet(from, to);
+    dragIndexRef.current = null;
+    overIndexRef.current = null;
+    setDragIndex(null);
+    setOverIndex(null);
+  };
 
   const toggleChannel = (id: string) =>
     setSelected((s) => {
@@ -332,10 +384,37 @@ export function PostForm({
               const len = t.length;
               const nearLimit = charLimit != null && len >= charLimit * 0.9;
               const atLimit = charLimit != null && len >= charLimit;
+              const isOver = overIndex === i && dragIndex !== null && dragIndex !== i;
               const box = (
-                <div className="rounded-xl border border-line bg-ground p-3.5 transition-colors focus-within:border-blue">
+                <div
+                  ref={(el) => {
+                    boxRefs.current[i] = el;
+                  }}
+                  className={`rounded-xl border bg-ground p-3.5 transition-colors ${
+                    isOver ? "border-blue ring-2 ring-blue/40" : "border-line focus-within:border-blue"
+                  }`}
+                >
                   {isThread ? (
                     <div className="mb-1.5 flex items-center gap-2">
+                      <span
+                        role="button"
+                        aria-label="Drag to reorder"
+                        title="Drag to reorder"
+                        onPointerDown={startDrag(i)}
+                        onPointerMove={moveDrag}
+                        onPointerUp={dropDrag}
+                        onPointerCancel={dropDrag}
+                        className="-ml-1 cursor-grab touch-none text-muted/50 transition hover:text-muted active:cursor-grabbing"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                          <circle cx="9" cy="5" r="1.7" />
+                          <circle cx="15" cy="5" r="1.7" />
+                          <circle cx="9" cy="12" r="1.7" />
+                          <circle cx="15" cy="12" r="1.7" />
+                          <circle cx="9" cy="19" r="1.7" />
+                          <circle cx="15" cy="19" r="1.7" />
+                        </svg>
+                      </span>
                       <span className="text-xs font-semibold text-muted">
                         {i === 0 ? "Post" : `Comment / post ${i}`}
                       </span>
@@ -404,15 +483,22 @@ export function PostForm({
                 </div>
               );
 
+              const dragging = dragIndex === i ? "opacity-40" : "";
+
               // Primary post: full width.
-              if (i === 0) return <div key={i}>{box}</div>;
+              if (i === 0)
+                return (
+                  <div key={i} className={dragging}>
+                    {box}
+                  </div>
+                );
 
               // Replies hang off one continuous rail: a vertical line down the
               // left gutter (bridging up through the gap to the box above) plus a
               // short horizontal tick into each box. Straight lines only, so the
               // rail never crosses a rounded box border.
               return (
-                <div key={i} className="relative pl-6">
+                <div key={i} className={`relative pl-6 ${dragging}`}>
                   <span
                     aria-hidden
                     className="pointer-events-none absolute -top-4 bottom-0 left-2 w-px bg-line"
