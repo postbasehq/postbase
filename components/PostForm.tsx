@@ -765,6 +765,7 @@ function ThreadItem({
     <Reorder.Item
       as="div"
       value={tweet}
+      layout="position"
       dragListener={false}
       dragControls={controls}
       whileDrag={{
@@ -774,6 +775,7 @@ function ThreadItem({
         zIndex: 30,
         cursor: "grabbing",
       }}
+      transition={{ type: "spring", stiffness: 600, damping: 40 }}
       className={`relative ${isFirst ? "" : "pl-6"}`}
     >
       {!isFirst ? (
