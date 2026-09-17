@@ -53,27 +53,23 @@ const MAX_TWEETS = 25;
 // track it across position changes. Ids must be collision-proof even across a
 // dev HMR reload (which would otherwise reset a plain counter).
 type Tweet = { id: string; text: string };
-// Local theme palettes for the preview pane — overriding the design-token CSS
-// variables inside the wrapper flips the whole preview (which uses those tokens)
-// between a light and dark surface, independent of the app's own theme.
-const PREVIEW_THEMES = {
-  light: {
-    "--ground": "#ffffff",
-    "--surface": "#ffffff",
-    "--surface-2": "#f0f3f4",
-    "--ink": "#0f1419",
-    "--muted": "#536471",
-    "--line": "#e1e8ed",
+// Per-platform theme palettes for the preview pane — overriding the design-token
+// CSS variables inside the wrapper flips the whole preview (which uses those
+// tokens) to that platform's real light/dark surface, independent of the app.
+const PREVIEW_PALETTES: Record<string, { light: Record<string, string>; dark: Record<string, string> }> = {
+  // X (and the default for platforms not yet given a bespoke palette).
+  default: {
+    light: { "--ground": "#ffffff", "--surface": "#ffffff", "--surface-2": "#f0f3f4", "--ink": "#0f1419", "--muted": "#536471", "--line": "#e1e8ed" },
+    dark: { "--ground": "#000000", "--surface": "#000000", "--surface-2": "#16181c", "--ink": "#e7e9ea", "--muted": "#71767b", "--line": "#2f3336" },
   },
-  dark: {
-    "--ground": "#000000",
-    "--surface": "#000000",
-    "--surface-2": "#16181c",
-    "--ink": "#e7e9ea",
-    "--muted": "#71767b",
-    "--line": "#2f3336",
+  linkedin: {
+    light: { "--ground": "#f4f2ee", "--surface": "#ffffff", "--surface-2": "#edece8", "--ink": "#1b1f23", "--muted": "#5e5e5e", "--line": "#e8e6e1" },
+    dark: { "--ground": "#000000", "--surface": "#1b1f23", "--surface-2": "#2c333a", "--ink": "#f5f2ef", "--muted": "#a6abb0", "--line": "#2f363d" },
   },
-} as const;
+};
+function previewVars(platform: string, mode: "light" | "dark"): React.CSSProperties {
+  return (PREVIEW_PALETTES[platform] ?? PREVIEW_PALETTES.default)[mode] as React.CSSProperties;
+}
 
 let tweetSeq = 0;
 const freshTweet = (text = ""): Tweet => {
@@ -586,7 +582,7 @@ export function PostForm({
           </div>
           {previewChannel ? (
             <div
-              style={PREVIEW_THEMES[previewTheme] as React.CSSProperties}
+              style={previewVars(previewChannel.platform, previewTheme)}
               className="rounded-2xl border border-line bg-ground p-3"
             >
               <PostPreview

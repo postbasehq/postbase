@@ -186,7 +186,23 @@ export function PostPreview({
     );
   }
 
-  // feed (linkedin / facebook / bluesky / mastodon)
+  if (platform === "linkedin") {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
+        <LinkedInPost
+          handle={h}
+          displayName={displayName?.trim() || h}
+          avatarUrl={avatarUrl ?? null}
+          verified={!!verified}
+          text={text}
+          media={media}
+          date={date}
+        />
+      </div>
+    );
+  }
+
+  // feed (facebook / bluesky / mastodon)
   const clamp = platform === "linkedin";
   return (
     <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
@@ -459,5 +475,130 @@ function XAct({ value, children }: { value?: number; children: React.ReactNode }
       </svg>
       {value && value > 0 ? fmt(value) : null}
     </span>
+  );
+}
+
+// LinkedIn feed card: 48px avatar, name · connection degree, headline/handle,
+// "time · 🌐", body with a "…more" fold, edge-to-edge media, and the
+// Like / Comment / Repost / Send action bar.
+function LinkedInPost({
+  handle,
+  displayName,
+  avatarUrl,
+  verified,
+  text,
+  media,
+  date,
+}: {
+  handle: string;
+  displayName: string;
+  avatarUrl: string | null;
+  verified: boolean;
+  text: string;
+  media: Media[];
+  date: string | null;
+}) {
+  const long = text.length > 200;
+  return (
+    <div className="bg-surface pt-3 text-[14px]">
+      {/* header */}
+      <div className="flex gap-2 px-4">
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={avatarUrl} alt="" className="size-12 shrink-0 rounded-full object-cover" />
+        ) : (
+          <span
+            className="flex size-12 shrink-0 items-center justify-center rounded-full font-display text-lg font-semibold text-white"
+            style={{ background: BRANDS.linkedin?.bg ?? "#0A66C2" }}
+            aria-hidden
+          >
+            {handle.charAt(0).toUpperCase() || "•"}
+          </span>
+        )}
+        <div className="min-w-0 flex-1 leading-tight">
+          <div className="flex items-center gap-1">
+            <span className="truncate text-[14px] font-semibold text-ink">{displayName}</span>
+            {verified ? <LiVerified /> : null}
+            <span className="shrink-0 text-[13px] text-muted">· 1st</span>
+          </div>
+          <div className="truncate text-[12px] text-muted">@{handle}</div>
+          <div className="mt-0.5 flex items-center gap-1 text-[12px] text-muted">
+            <span>{date ?? "now"}</span>
+            <span aria-hidden>·</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+              <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.9 6h-2.5a12.7 12.7 0 0 0-1-2.6A8 8 0 0 1 18.9 8zM12 4c.6.9 1.2 2.1 1.5 4h-3c.3-1.9.9-3.1 1.5-4zM4.3 14a7.9 7.9 0 0 1 0-4h2.9a16.7 16.7 0 0 0 0 4H4.3zm.8 2h2.5c.3 1 .6 1.8 1 2.6A8 8 0 0 1 5.1 16zm2.5-8H5.1a8 8 0 0 1 3.5-2.6c-.4.8-.7 1.6-1 2.6zM12 20c-.6-.9-1.2-2.1-1.5-4h3c-.3 1.9-.9 3.1-1.5 4zm1.8-6h-3.6a14.3 14.3 0 0 1 0-4h3.6a14.3 14.3 0 0 1 0 4zm.3 4.6c.4-.8.7-1.6 1-2.6h2.5a8 8 0 0 1-3.5 2.6zm2.4-4.6a16.7 16.7 0 0 0 0-4h2.9a7.9 7.9 0 0 1 0 4h-2.9z" />
+            </svg>
+          </div>
+        </div>
+        <span className="-mr-1 shrink-0 text-muted" aria-hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="5" cy="12" r="1.7" />
+            <circle cx="12" cy="12" r="1.7" />
+            <circle cx="19" cy="12" r="1.7" />
+          </svg>
+        </span>
+      </div>
+
+      {/* body */}
+      <div className="px-4 pt-2.5 text-[14px] leading-[1.45] text-ink">
+        <span className={long ? "line-clamp-3 whitespace-pre-wrap" : "whitespace-pre-wrap"}>
+          {text.trim() || <span className="text-muted">(empty)</span>}
+        </span>
+        {long ? <span className="text-[13px] text-muted">…more</span> : null}
+      </div>
+
+      {/* media — edge to edge */}
+      {media.length > 0 ? (
+        <div className="mt-3">
+          {media[0].type?.startsWith("video") ? (
+            <VideoPreview src={media[0].url} />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={media[0].url} alt="" className="max-h-[320px] w-full object-cover" />
+          )}
+        </div>
+      ) : (
+        <div className="h-3" />
+      )}
+
+      {/* actions */}
+      <div className="mt-1 grid grid-cols-4 border-t border-line px-1 py-1 text-muted">
+        <LiAction label="Like">
+          <path d="M7 10v11M2 14v5a2 2 0 0 0 2 2h13.5a2 2 0 0 0 2-1.6l1.4-7A2 2 0 0 0 18 11h-5l1-4.5a2.5 2.5 0 0 0-4.7-1.4L7 10" />
+        </LiAction>
+        <LiAction label="Comment">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </LiAction>
+        <LiAction label="Repost">
+          <path d="m17 2 4 4-4 4" />
+          <path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4" />
+          <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+        </LiAction>
+        <LiAction label="Send">
+          <path d="m22 2-7 20-4-9-9-4Z" />
+          <path d="M22 2 11 13" />
+        </LiAction>
+      </div>
+    </div>
+  );
+}
+
+function LiAction({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <span className="flex items-center justify-center gap-1.5 rounded-md py-2 text-[13px] font-semibold">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        {children}
+      </svg>
+      {label}
+    </span>
+  );
+}
+
+function LiVerified() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" className="shrink-0" aria-label="Verified">
+      <circle cx="12" cy="12" r="10" fill="#0A66C2" />
+      <path d="M9.5 12.5l1.8 1.8 3.5-3.8" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
