@@ -325,11 +325,11 @@ export function PostForm({
               const atLimit = charLimit != null && len >= charLimit;
               return (
                 <div key={i} className={i > 0 ? "relative pl-6" : undefined}>
-                  {/* thread connector — an indented curved elbow into the box */}
+                  {/* thread connector — a rail from the box above, elbowing in */}
                   {i > 0 ? (
                     <span
                       aria-hidden
-                      className="pointer-events-none absolute -top-4 left-2 h-10 w-3.5 rounded-bl-[10px] border-b border-l border-line"
+                      className="pointer-events-none absolute -top-8 left-2 h-[3.25rem] w-3.5 rounded-bl-[10px] border-b border-l border-line"
                     />
                   ) : null}
                   <div className="rounded-xl border border-line bg-ground p-3.5 transition-colors focus-within:border-blue">
