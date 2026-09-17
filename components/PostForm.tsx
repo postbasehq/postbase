@@ -53,6 +53,28 @@ const MAX_TWEETS = 25;
 // track it across position changes. Ids must be collision-proof even across a
 // dev HMR reload (which would otherwise reset a plain counter).
 type Tweet = { id: string; text: string };
+// Local theme palettes for the preview pane — overriding the design-token CSS
+// variables inside the wrapper flips the whole preview (which uses those tokens)
+// between a light and dark surface, independent of the app's own theme.
+const PREVIEW_THEMES = {
+  light: {
+    "--ground": "#ffffff",
+    "--surface": "#ffffff",
+    "--surface-2": "#f0f3f4",
+    "--ink": "#0f1419",
+    "--muted": "#536471",
+    "--line": "#e1e8ed",
+  },
+  dark: {
+    "--ground": "#000000",
+    "--surface": "#000000",
+    "--surface-2": "#16181c",
+    "--ink": "#e7e9ea",
+    "--muted": "#71767b",
+    "--line": "#2f3336",
+  },
+} as const;
+
 let tweetSeq = 0;
 const freshTweet = (text = ""): Tweet => {
   const id =
@@ -147,6 +169,7 @@ export function PostForm({
 
   // Live preview: which selected channel is being previewed.
   const [previewIdx, setPreviewIdx] = useState(0);
+  const [previewTheme, setPreviewTheme] = useState<"light" | "dark">("dark");
   const previewClamped = Math.min(previewIdx, Math.max(0, selectedChannels.length - 1));
   const previewChannel = selectedChannels[previewClamped];
 
@@ -511,38 +534,74 @@ export function PostForm({
         <div className="flex flex-col gap-3 lg:sticky lg:top-6 lg:self-start">
           <div className="flex items-center gap-2 px-1">
             <span className="text-xs font-semibold uppercase tracking-wide text-muted">Preview</span>
-            {selectedChannels.length > 1 ? (
-              <div className="ml-auto flex items-center gap-1">
-                {selectedChannels.map((c, i) => (
+            <div className="ml-auto flex items-center gap-1.5">
+              {selectedChannels.length > 1
+                ? selectedChannels.map((c, i) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setPreviewIdx(i)}
+                      aria-label={`Preview ${label(c.platform)}`}
+                      title={label(c.platform)}
+                      className={`flex size-7 items-center justify-center rounded-lg transition ${
+                        i === previewClamped ? "bg-blue-soft" : "opacity-50 hover:bg-surface-2 hover:opacity-100"
+                      }`}
+                    >
+                      <BrandTile platform={c.platform} size={16} radius={4} />
+                    </button>
+                  ))
+                : null}
+              {previewChannel ? (
+                <div className="flex items-center rounded-lg border border-line p-0.5">
                   <button
-                    key={c.id}
                     type="button"
-                    onClick={() => setPreviewIdx(i)}
-                    aria-label={`Preview ${label(c.platform)}`}
-                    title={label(c.platform)}
-                    className={`flex size-7 items-center justify-center rounded-lg transition ${
-                      i === previewClamped ? "bg-blue-soft" : "opacity-50 hover:bg-surface-2 hover:opacity-100"
+                    onClick={() => setPreviewTheme("light")}
+                    aria-label="Light preview"
+                    aria-pressed={previewTheme === "light"}
+                    className={`flex size-6 items-center justify-center rounded-md transition ${
+                      previewTheme === "light" ? "bg-surface-2 text-ink" : "text-muted hover:text-ink"
                     }`}
                   >
-                    <BrandTile platform={c.platform} size={16} radius={4} />
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <circle cx="12" cy="12" r="4" />
+                      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+                    </svg>
                   </button>
-                ))}
-              </div>
-            ) : null}
+                  <button
+                    type="button"
+                    onClick={() => setPreviewTheme("dark")}
+                    aria-label="Dark preview"
+                    aria-pressed={previewTheme === "dark"}
+                    className={`flex size-6 items-center justify-center rounded-md transition ${
+                      previewTheme === "dark" ? "bg-surface-2 text-ink" : "text-muted hover:text-ink"
+                    }`}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+                    </svg>
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
           {previewChannel ? (
-            <PostPreview
-              platform={previewChannel.platform}
-              handle={previewChannel.handle}
-              thread={
-                variants[previewChannel.id]?.trim()
-                  ? [variants[previewChannel.id]]
-                  : tweets.map((t) => t.text)
-              }
-              media={media.map((m) => ({ url: m.url, type: m.type }))}
-              metrics={null}
-              publishedAt={utc || null}
-            />
+            <div
+              style={PREVIEW_THEMES[previewTheme] as React.CSSProperties}
+              className="rounded-2xl border border-line bg-ground p-3"
+            >
+              <PostPreview
+                platform={previewChannel.platform}
+                handle={previewChannel.handle}
+                thread={
+                  variants[previewChannel.id]?.trim()
+                    ? [variants[previewChannel.id]]
+                    : tweets.map((t) => t.text)
+                }
+                media={media.map((m) => ({ url: m.url, type: m.type }))}
+                metrics={null}
+                publishedAt={utc || null}
+              />
+            </div>
           ) : (
             <div className="flex flex-col items-center gap-1.5 rounded-2xl border border-dashed border-line py-16 text-center">
               <p className="text-sm font-medium text-ink">Nothing to preview yet</p>
