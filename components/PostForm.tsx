@@ -323,21 +323,13 @@ export function PostForm({
               const len = t.length;
               const nearLimit = charLimit != null && len >= charLimit * 0.9;
               const atLimit = charLimit != null && len >= charLimit;
-              return (
-                <div key={i} className={i > 0 ? "relative pl-6" : undefined}>
-                  {/* thread connector — a rail from the box above, elbowing in */}
-                  {i > 0 ? (
-                    <span
-                      aria-hidden
-                      className="pointer-events-none absolute -top-8 left-2 h-[3.25rem] w-3.5 rounded-bl-[10px] border-b border-l border-line"
-                    />
+              const box = (
+                <div className="rounded-xl border border-line bg-ground p-3.5 transition-colors focus-within:border-blue">
+                  {isThread ? (
+                    <div className="mb-1.5 text-xs font-semibold text-muted">
+                      {i === 0 ? "Post" : `Comment / post ${i}`}
+                    </div>
                   ) : null}
-                  <div className="rounded-xl border border-line bg-ground p-3.5 transition-colors focus-within:border-blue">
-                    {isThread ? (
-                      <div className="mb-1.5 text-xs font-semibold text-muted">
-                        {i === 0 ? "Post" : `Comment / post ${i}`}
-                      </div>
-                    ) : null}
                   <textarea
                     value={t}
                     onChange={(e) => updateTweet(i, e.target.value)}
@@ -370,8 +362,28 @@ export function PostForm({
                         Remove
                       </button>
                     ) : null}
-                    </div>
                   </div>
+                </div>
+              );
+
+              // Primary post: full width.
+              if (i === 0) return <div key={i}>{box}</div>;
+
+              // Replies hang off one continuous rail: a vertical line down the
+              // left gutter (bridging up through the gap to the box above) plus a
+              // short horizontal tick into each box. Straight lines only, so the
+              // rail never crosses a rounded box border.
+              return (
+                <div key={i} className="relative pl-6">
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute -top-4 bottom-0 left-2 w-px bg-line"
+                  />
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute left-2 top-6 h-px w-4 bg-line"
+                  />
+                  {box}
                 </div>
               );
             })}
