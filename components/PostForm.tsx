@@ -471,18 +471,30 @@ export function PostForm({
               <div className="flex flex-col gap-1.5 pt-1">
                 {checks
                   .filter((c) => c.notes.length > 0)
-                  .map(({ platform, notes }) => (
-                    <div key={platform} className="flex items-start gap-2 text-xs">
-                      <span className="shrink-0 font-medium">{label(platform)}</span>
-                      <span className="flex flex-col">
-                        {notes.map((n, i) => (
-                          <span key={i} className={n.level === "error" ? "text-terra" : "text-muted"}>
-                            {n.text}
-                          </span>
-                        ))}
-                      </span>
-                    </div>
-                  ))}
+                  .map(({ platform, notes }) => {
+                    const hasError = notes.some((n) => n.level === "error");
+                    return (
+                      <div
+                        key={platform}
+                        className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs ${
+                          hasError ? "bg-terra/10" : "bg-surface-2/60"
+                        }`}
+                      >
+                        <span className="shrink-0">
+                          <BrandTile platform={platform} size={18} radius={5} />
+                        </span>
+                        <span className="font-medium text-ink">{label(platform)}</span>
+                        <span className="h-3 w-px shrink-0 bg-line" aria-hidden />
+                        <span className="flex flex-col">
+                          {notes.map((n, i) => (
+                            <span key={i} className={n.level === "error" ? "text-terra" : "text-muted"}>
+                              {n.text}
+                            </span>
+                          ))}
+                        </span>
+                      </div>
+                    );
+                  })}
               </div>
             ) : null}
 
