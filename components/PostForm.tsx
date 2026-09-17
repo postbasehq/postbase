@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/SubmitButton";
 import { Modal } from "@/components/Modal";
 import { BrandTile } from "@/components/BrandTile";
+import { DateTimePicker } from "@/components/DateTimePicker";
 import { REPEAT_OPTIONS } from "@/lib/publish/repeat";
 import { PostPreview } from "@/components/PostPreview";
 
@@ -554,18 +555,7 @@ export function PostForm({
       {/* ── Action bar (fixed footer, spans the whole panel) ──── */}
       <div className="fixed bottom-3 left-0 right-3 z-30 rounded-b-2xl border border-line bg-surface shadow-[0_-4px_14px_-10px_rgba(16,24,40,0.22)] md:left-60">
         <div className="mx-auto flex w-full max-w-[1248px] flex-wrap items-center gap-x-4 gap-y-3 px-6 py-3.5">
-        <label className="flex items-center gap-2 rounded-lg border border-line bg-ground px-2.5 focus-within:border-blue">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted" aria-hidden>
-            <rect x="3" y="4" width="18" height="18" rx="2" />
-            <path d="M16 2v4M8 2v4M3 10h18" />
-          </svg>
-          <input
-            type="datetime-local"
-            value={scheduleLocal}
-            onChange={(e) => setScheduleLocal(e.target.value)}
-            className="bg-transparent py-2 text-sm outline-none"
-          />
-        </label>
+        <DateTimePicker value={scheduleLocal} onChange={setScheduleLocal} />
 
         {!isDraft ? (
           <label
