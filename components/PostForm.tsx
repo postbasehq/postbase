@@ -528,9 +528,8 @@ export function PostForm({
 
         {/* ── Preview ──────────────────────────────────────────── */}
         <div className="flex flex-col gap-3 lg:sticky lg:top-6 lg:self-start">
-          <div className="flex items-center gap-2 px-1">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted">Preview</span>
-            <div className="ml-auto flex items-center gap-1.5">
+          {previewChannel ? (
+            <div className="flex items-center justify-end gap-1.5 px-1">
               {selectedChannels.length > 1
                 ? selectedChannels.map((c, i) => (
                     <button
@@ -579,7 +578,7 @@ export function PostForm({
                 </div>
               ) : null}
             </div>
-          </div>
+          ) : null}
           {previewChannel ? (
             <div
               style={previewVars(previewChannel.platform, previewTheme)}
