@@ -359,6 +359,7 @@ export function PostForm({
                   total={tweets.length}
                   isThread={isThread}
                   charLimit={charLimit}
+                  emptyWarning={i === 0 && bodyEmpty && !hasMedia}
                   onChange={(v) => updateTweet(i, v)}
                   onRemove={() => removeTweet(i)}
                   onMove={(dir) => moveTweet(i, dir)}
@@ -752,6 +753,7 @@ function ThreadItem({
   total,
   isThread,
   charLimit,
+  emptyWarning,
   onChange,
   onRemove,
   onMove,
@@ -761,6 +763,7 @@ function ThreadItem({
   total: number;
   isThread: boolean;
   charLimit: number | null;
+  emptyWarning: boolean;
   onChange: (v: string) => void;
   onRemove: () => void;
   onMove: (dir: -1 | 1) => void;
@@ -883,6 +886,15 @@ function ThreadItem({
             {len.toLocaleString()}
             {charLimit != null ? ` / ${charLimit.toLocaleString()}` : " characters"}
           </span>
+          {emptyWarning ? (
+            <span className="inline-flex items-center gap-1 font-medium text-amber">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+                <path d="M12 9v4M12 17h.01" />
+              </svg>
+              Please enter a character or upload media to post
+            </span>
+          ) : null}
           {total > 1 ? (
             <button
               type="button"
