@@ -324,15 +324,20 @@ export function PostForm({
               const nearLimit = charLimit != null && len >= charLimit * 0.9;
               const atLimit = charLimit != null && len >= charLimit;
               return (
-                <div
-                  key={i}
-                  className="rounded-xl border border-line bg-ground p-3.5 transition-colors focus-within:border-blue"
-                >
-                  {isThread ? (
-                    <div className="mb-1.5 text-xs font-semibold text-muted">
-                      {i === 0 ? "Post" : `Comment / post ${i}`}
-                    </div>
+                <div key={i} className={i > 0 ? "relative pl-6" : undefined}>
+                  {/* thread connector — an indented curved elbow into the box */}
+                  {i > 0 ? (
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute -top-4 left-2 h-10 w-3.5 rounded-bl-[10px] border-b border-l border-line"
+                    />
                   ) : null}
+                  <div className="rounded-xl border border-line bg-ground p-3.5 transition-colors focus-within:border-blue">
+                    {isThread ? (
+                      <div className="mb-1.5 text-xs font-semibold text-muted">
+                        {i === 0 ? "Post" : `Comment / post ${i}`}
+                      </div>
+                    ) : null}
                   <textarea
                     value={t}
                     onChange={(e) => updateTweet(i, e.target.value)}
@@ -365,6 +370,7 @@ export function PostForm({
                         Remove
                       </button>
                     ) : null}
+                    </div>
                   </div>
                 </div>
               );
