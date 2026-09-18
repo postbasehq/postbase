@@ -378,37 +378,40 @@ export function DeveloperClient({
         labelledBy="revoke-title"
         size="md"
       >
-        <div className="flex items-start gap-3.5">
-          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-terra/12 text-terra" aria-hidden>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18.36 6.64A9 9 0 1 1 5.64 6.64M12 2v10" />
+        <div className="text-center">
+          <span
+            className="mx-auto grid size-12 place-items-center rounded-full"
+            style={{ backgroundColor: "#d14a3e1f", color: "#d14a3e" }}
+            aria-hidden
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="m4.9 4.9 14.2 14.2" />
             </svg>
           </span>
-          <div className="min-w-0">
-            <h3 id="revoke-title" className="font-display text-lg font-semibold tracking-[-0.01em]">
-              Revoke {revokeTarget?.appName ?? "this app"}?
-            </h3>
-            <p className="mt-1.5 text-[13px] leading-relaxed text-muted">
-              {revokeTarget?.appName ?? "This app"} will immediately lose access to the{" "}
-              <b className="text-ink">{revokeTarget?.orgName}</b> workspace. Any agent using this
-              connection stops working until it's reconnected.
-            </p>
-          </div>
+          <h3 id="revoke-title" className="mt-4 font-display text-lg font-semibold tracking-[-0.01em]">
+            Revoke {revokeTarget?.appName ?? "this app"}?
+          </h3>
+          <p className="mx-auto mt-2 max-w-sm text-[13px] leading-relaxed text-muted">
+            {revokeTarget?.appName ?? "This app"} will immediately lose access to the{" "}
+            <b className="text-ink">{revokeTarget?.orgName}</b> workspace. Any agent using this
+            connection stops working until it's reconnected.
+          </p>
         </div>
 
-        <div className="mt-6 flex justify-end gap-2.5">
+        <div className="mt-6 flex gap-2.5">
           <button
             type="button"
             onClick={() => setRevokeTarget(null)}
-            className="rounded-full border border-line px-4 py-2 text-sm font-medium text-muted transition hover:bg-surface-2 hover:text-ink"
+            className="flex-1 rounded-full border border-line px-4 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-2 hover:text-ink"
           >
             Cancel
           </button>
-          <form action={revokeConnectedApp} onSubmit={() => setRevokeTarget(null)}>
+          <form action={revokeConnectedApp} onSubmit={() => setRevokeTarget(null)} className="flex-1">
             <input type="hidden" name="id" value={revokeTarget?.id ?? ""} />
             <SubmitButton
               pendingLabel="Revoking…"
-              className="rounded-full bg-terra px-5 py-2 font-display text-sm font-semibold text-white shadow-sm transition-shadow hover:shadow-md disabled:opacity-60"
+              className="w-full rounded-full bg-[#d14a3e] px-5 py-2.5 font-display text-sm font-semibold text-white shadow-sm transition hover:bg-[#b83f34] hover:shadow-md disabled:opacity-60"
             >
               Revoke access
             </SubmitButton>
