@@ -9,6 +9,7 @@ import { encryptJson } from "@/lib/crypto";
 import { atChannelLimit } from "@/lib/billing-guard";
 import { connectBluesky } from "@/lib/platforms/bluesky";
 import { isRepeatEvery } from "@/lib/publish/repeat";
+import { generateSoulImage, higgsfieldConfigured, isAspectRatio } from "@/lib/higgsfield";
 
 const TIKTOK_PRIVACY = [
   "PUBLIC_TO_EVERYONE",
@@ -475,4 +476,42 @@ export async function connectBlueskyChannel(
 
   revalidatePath("/channels");
   return { ok: true };
+}
+
+/**
+ * Generate an image with Higgsfield (Soul) and persist it to durable storage,
+ * returning a media item the composer can attach. Off until HIGGSFIELD_* keys
+ * are set. Best-effort — a failure returns an error string, never throws.
+ */
+export async function generateAiImage(
+  prompt: string,
+  aspectRatio: string,
+): Promise<{ ok: true; url: string; type: string } | { ok: false; error: string }> {
+  if (!higgsfieldConfigured()) {
+    return { ok: false, error: "Image generation isn't set up yet — add HIGGSFIELD_API_KEY_ID and HIGGSFIELD_API_KEY_SECRET." };
+  }
+  const orgId = await getCurrentOrgId();
+  if (!orgId) return { ok: false, error: "No workspace found." };
+  const clean = (prompt ?? "").trim();
+  if (!clean) return { ok: false, error: "Enter a prompt to generate an image." };
+  const ratio = isAspectRatio(aspectRatio) ? aspectRatio : "1:1";
+
+  try {
+    const sourceUrl = await generateSoulImage(clean, ratio);
+    const bytes = await fetch(sourceUrl).then((r) => {
+      if (!r.ok) throw new Error(`Couldn't download the generated image (${r.status}).`);
+      return r.arrayBuffer();
+    });
+    // Persist to our post-media bucket so the URL outlives Higgsfield's ~7-day expiry.
+    const path = `ai/${orgId}/${crypto.randomUUID()}.jpg`;
+    const admin = createAdminClient();
+    const { error } = await admin.storage
+      .from("post-media")
+      .upload(path, Buffer.from(bytes), { contentType: "image/jpeg", upsert: false });
+    if (error) return { ok: false, error: "Generated the image but couldn't save it." };
+    const url = admin.storage.from("post-media").getPublicUrl(path).data.publicUrl;
+    return { ok: true, url, type: "image/jpeg" };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Image generation failed." };
+  }
 }

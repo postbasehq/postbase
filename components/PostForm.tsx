@@ -10,6 +10,8 @@ import { Modal } from "@/components/Modal";
 import { BrandTile } from "@/components/BrandTile";
 import { DateTimePicker } from "@/components/DateTimePicker";
 import { REPEAT_OPTIONS } from "@/lib/publish/repeat";
+import { ASPECT_RATIOS, type AspectRatio } from "@/lib/higgsfield";
+import { generateAiImage } from "@/app/(app)/actions";
 import { PostPreview } from "@/components/PostPreview";
 
 /* ── Platform rules ─────────────────────────────────────────────────────────
@@ -184,6 +186,12 @@ export function PostForm({
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
+  // AI image generation (Higgsfield).
+  const [genOpen, setGenOpen] = useState(false);
+  const [genPrompt, setGenPrompt] = useState("");
+  const [genAspect, setGenAspect] = useState<AspectRatio>("1:1");
+  const [genBusy, setGenBusy] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
 
   /* derived */
   const cleanTweets = tweets.map((t) => t.text.trim()).filter(Boolean);
@@ -314,6 +322,26 @@ export function PostForm({
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function runGenerate() {
+    if (!genPrompt.trim() || genBusy) return;
+    setGenBusy(true);
+    setGenError(null);
+    try {
+      const res = await generateAiImage(genPrompt, genAspect);
+      if (res.ok) {
+        setMedia((m) => [...m, { url: res.url, type: res.type }]);
+        setGenOpen(false);
+        setGenPrompt("");
+      } else {
+        setGenError(res.error);
+      }
+    } catch {
+      setGenError("Something went wrong generating the image.");
+    } finally {
+      setGenBusy(false);
     }
   }
 
@@ -473,6 +501,27 @@ export function PostForm({
                   <rect x="3" y="14" width="7" height="7" rx="1" />
                 </svg>
                 Library
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setGenError(null);
+                  // Suggest an aspect ratio that suits the selected channels.
+                  setGenAspect(
+                    selectedPlatforms.some((p) => p === "tiktok" || p === "youtube")
+                      ? "9:16"
+                      : selectedPlatforms.includes("instagram")
+                        ? "4:5"
+                        : "1:1",
+                  );
+                  setGenOpen(true);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-blue-ink transition-colors hover:bg-blue-soft"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />
+                </svg>
+                Generate
               </button>
               <button
                 type="button"
@@ -714,6 +763,76 @@ export function PostForm({
       </div>
 
       {/* Pick from library */}
+      {/* Generate an image with AI */}
+      <Modal open={genOpen} onClose={() => setGenOpen(false)} labelledBy="gen-title">
+        <div className="flex items-center gap-2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-ink" aria-hidden>
+            <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />
+          </svg>
+          <h3 id="gen-title" className="font-display text-lg font-semibold tracking-[-0.01em]">
+            Generate an image
+          </h3>
+        </div>
+        <p className="mt-1 text-sm text-muted">Describe what you want — we&apos;ll create it and add it to your post.</p>
+
+        <textarea
+          value={genPrompt}
+          onChange={(e) => setGenPrompt(e.target.value)}
+          rows={3}
+          placeholder="e.g. a minimalist product shot of a phone on a pastel gradient, soft studio light"
+          className="mt-4 w-full resize-none rounded-xl border border-line bg-ground p-3 text-sm outline-none focus:border-blue"
+        />
+
+        <div className="mt-3">
+          <span className="text-xs font-medium text-muted">Aspect ratio</span>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {ASPECT_RATIOS.map((a) => (
+              <button
+                key={a.value}
+                type="button"
+                onClick={() => setGenAspect(a.value)}
+                className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition ${
+                  genAspect === a.value
+                    ? "border-blue bg-blue-soft text-blue-ink"
+                    : "border-line text-muted hover:bg-surface-2 hover:text-ink"
+                }`}
+              >
+                {a.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {genError ? <p className="mt-3 text-xs text-terra">{genError}</p> : null}
+
+        <div className="mt-5 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            onClick={() => setGenOpen(false)}
+            className="text-sm font-medium text-muted hover:text-ink"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={runGenerate}
+            disabled={!genPrompt.trim() || genBusy}
+            className="inline-flex items-center gap-2 rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {genBusy ? (
+              <>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="animate-spin" aria-hidden>
+                  <path d="M21 12a9 9 0 1 1-6.2-8.5" />
+                </svg>
+                Generating…
+              </>
+            ) : (
+              "Generate"
+            )}
+          </button>
+        </div>
+      </Modal>
+
       <Modal open={libraryOpen} onClose={closeLibrary} labelledBy="lib-picker-title">
         <div className="flex items-center gap-2">
           <h3
