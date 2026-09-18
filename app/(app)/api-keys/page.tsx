@@ -17,7 +17,7 @@ export default async function DevelopersPage() {
       </p>
 
       <div className="mt-6">
-        <DeveloperClient keys={keys ?? []} />
+        <DeveloperClient keys={keys ?? []} brandfetchId={process.env.BRANDFETCH_API_KEY} />
       </div>
     </div>
   );

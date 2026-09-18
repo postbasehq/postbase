@@ -68,7 +68,13 @@ function RevealedKey({ value }: { value: string }) {
   );
 }
 
-export function DeveloperClient({ keys }: { keys: KeyRow[] }) {
+export function DeveloperClient({
+  keys,
+  brandfetchId,
+}: {
+  keys: KeyRow[];
+  brandfetchId?: string;
+}) {
   const [createState, createAction, creating] = useActionState<CreateKeyState, FormData>(
     createApiKey,
     {},
@@ -199,7 +205,7 @@ export function DeveloperClient({ keys }: { keys: KeyRow[] }) {
       </section>
 
       {/* ── MCP client configuration ─────────────────────────── */}
-      <McpClientConfig apiKey={revealed} />
+      <McpClientConfig apiKey={revealed} brandfetchId={brandfetchId} />
 
       {/* ── Tools reference ──────────────────────────────────── */}
       <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
