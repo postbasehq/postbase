@@ -49,7 +49,8 @@ const SECTIONS: Section[] = [
     label: "Support",
     items: [
       { label: "Postbase on X", href: "https://x.com/postbasehq", icon: XIcon, external: true },
-      { label: "Feedback", href: "/feedback", icon: FeedbackIcon },
+      // TODO: wire Feedback (swap href for a form/route, or convert to a modal trigger).
+      { label: "Feedback", href: "#", icon: FeedbackIcon },
     ],
   },
 ];
