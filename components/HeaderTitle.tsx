@@ -16,6 +16,7 @@ const TITLES: { prefix: string; title: string }[] = [
   { prefix: "/team", title: "Team" },
   { prefix: "/billing", title: "Billing" },
   { prefix: "/settings", title: "Settings" },
+  { prefix: "/feedback", title: "Feedback" },
 ];
 
 export function HeaderTitle() {
