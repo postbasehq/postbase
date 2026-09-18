@@ -22,11 +22,13 @@ export const isAspectRatio = (v: unknown): v is AspectRatio =>
   ASPECT_RATIOS.some((a) => a.value === v);
 
 export function higgsfieldConfigured(): boolean {
-  return Boolean(process.env.HIGGSFIELD_API_KEY_ID && process.env.HIGGSFIELD_API_KEY_SECRET);
+  return Boolean(process.env.HIGGSFIELD_API_KEY);
 }
 
+// Higgsfield issues a single key already in "<id>:<secret>" form, which is
+// exactly what the "Key …" auth header expects.
 function authHeader(): string {
-  return `Key ${process.env.HIGGSFIELD_API_KEY_ID}:${process.env.HIGGSFIELD_API_KEY_SECRET}`;
+  return `Key ${process.env.HIGGSFIELD_API_KEY}`;
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

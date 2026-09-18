@@ -495,7 +495,7 @@ export async function generateAiImage(
   aspectRatio: string,
 ): Promise<{ ok: true; url: string; type: string } | { ok: false; error: string }> {
   if (!higgsfieldConfigured()) {
-    return { ok: false, error: "Image generation isn't set up yet — add HIGGSFIELD_API_KEY_ID and HIGGSFIELD_API_KEY_SECRET." };
+    return { ok: false, error: "Image generation isn't set up yet — add HIGGSFIELD_API_KEY." };
   }
   const orgId = await getCurrentOrgId();
   if (!orgId) return { ok: false, error: "No workspace found." };
@@ -534,7 +534,7 @@ export async function startAiVideo(
   imageUrl?: string,
 ): Promise<{ ok: true; statusUrl: string } | { ok: false; error: string }> {
   if (!higgsfieldConfigured()) {
-    return { ok: false, error: "Video generation isn't set up yet — add HIGGSFIELD_API_KEY_ID and HIGGSFIELD_API_KEY_SECRET." };
+    return { ok: false, error: "Video generation isn't set up yet — add HIGGSFIELD_API_KEY." };
   }
   const orgId = await getCurrentOrgId();
   if (!orgId) return { ok: false, error: "No workspace found." };
