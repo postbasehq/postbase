@@ -17,6 +17,69 @@ type KeyRow = {
   last_used_at: string | null;
 };
 
+// In-page sections, in document order — drive both the anchors and the side menu.
+const SECTIONS = [
+  { id: "api-keys", label: "API keys" },
+  { id: "mcp", label: "MCP client" },
+  { id: "tools", label: "Tools" },
+] as const;
+
+/** Sticky in-page menu with scrollspy: highlights the section in view and
+ *  smooth-scrolls within the app's scrollable <main> on click. */
+function SideMenu() {
+  const [active, setActive] = useState<string>(SECTIONS[0].id);
+
+  useEffect(() => {
+    const els = SECTIONS.map((s) => document.getElementById(s.id)).filter(
+      (el): el is HTMLElement => el != null,
+    );
+    if (els.length === 0) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]) setActive(visible[0].target.id);
+      },
+      { rootMargin: "-72px 0px -55% 0px", threshold: 0 },
+    );
+    els.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <nav className="hidden lg:block">
+      <div className="sticky top-0">
+        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wide text-muted">
+          On this page
+        </p>
+        <ul className="flex flex-col gap-0.5">
+          {SECTIONS.map((s) => {
+            const on = active === s.id;
+            return (
+              <li key={s.id}>
+                <a
+                  href={`#${s.id}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    setActive(s.id);
+                  }}
+                  className={`block rounded-lg px-3 py-1.5 text-[13px] font-medium transition ${
+                    on ? "bg-surface-2 text-ink" : "text-muted hover:bg-surface-2/60 hover:text-ink"
+                  }`}
+                >
+                  {s.label}
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </nav>
+  );
+}
+
 const MCP_TOOLS = [
   { name: "list_channels", desc: "See connected accounts and their platforms." },
   { name: "create_post", desc: "Draft or schedule a post/thread to any channels." },
@@ -98,9 +161,12 @@ export function DeveloperClient({
   const error = createState.error ?? rotateState.error;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="grid gap-8 lg:grid-cols-[160px_minmax(0,1fr)]">
+      <SideMenu />
+
+      <div className="flex min-w-0 flex-col gap-6">
       {/* ── API Key card ─────────────────────────────────────── */}
-      <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
+      <section id="api-keys" className="scroll-mt-4 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
         <div className="flex flex-wrap items-start gap-3 border-b border-line px-5 py-4">
           <div className="min-w-0">
             <h2 className="font-display text-[15px] font-semibold tracking-[-0.01em]">API keys</h2>
@@ -207,10 +273,12 @@ export function DeveloperClient({
       </section>
 
       {/* ── MCP client configuration ─────────────────────────── */}
-      <McpClientConfig apiKey={revealed} brandfetchId={brandfetchId} mcpUrl={mcpUrl} />
+      <div id="mcp" className="scroll-mt-4">
+        <McpClientConfig apiKey={revealed} brandfetchId={brandfetchId} mcpUrl={mcpUrl} />
+      </div>
 
       {/* ── Tools reference ──────────────────────────────────── */}
-      <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
+      <section id="tools" className="scroll-mt-4 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
         <div className="border-b border-line px-5 py-4">
           <h2 className="font-display text-[15px] font-semibold tracking-[-0.01em]">
             What your agent can do
@@ -231,6 +299,7 @@ export function DeveloperClient({
           ))}
         </div>
       </section>
+      </div>
     </div>
   );
 }
