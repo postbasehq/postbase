@@ -42,3 +42,26 @@ export async function deleteMediaAsset(formData: FormData) {
   await supabase.from("media_library").delete().eq("id", row.id).eq("org_id", orgId);
   revalidatePath("/media");
 }
+
+/** Rename a library asset's display label. Scoped to the caller's active org. */
+export async function renameMediaAsset(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  if (!id || !name) return;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not signed in.");
+
+  const orgId = await getCurrentOrgId();
+  if (!orgId) throw new Error("No workspace found.");
+
+  await supabase
+    .from("media_library")
+    .update({ name: name.slice(0, 200) })
+    .eq("id", id)
+    .eq("org_id", orgId);
+  revalidatePath("/media");
+}

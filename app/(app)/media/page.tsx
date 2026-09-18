@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { deleteMediaAsset } from "../media-actions";
+import { deleteMediaAsset, renameMediaAsset } from "../media-actions";
 import { MediaLibrary, type MediaItem } from "@/components/MediaLibrary";
 
 export default async function MediaPage() {
@@ -33,7 +33,11 @@ export default async function MediaPage() {
       </header>
 
       <div className="mt-6">
-        <MediaLibrary initialItems={items} deleteAction={deleteMediaAsset} />
+        <MediaLibrary
+          initialItems={items}
+          deleteAction={deleteMediaAsset}
+          renameAction={renameMediaAsset}
+        />
       </div>
     </div>
   );

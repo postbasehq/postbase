@@ -165,6 +165,8 @@ type PostFormProps = {
   drafts?: DraftItem[];
   /** Draft currently open in the editor, hidden from the "Load draft" list. */
   currentDraftId?: string;
+  /** Media to pre-attach on a fresh post (e.g. "Use in a new post" from /media). */
+  prefillMedia?: Media[];
   /** Show the AI "Generate" control (Higgsfield keys configured server-side). */
   aiEnabled?: boolean;
   /** Remaining AI generations this month (per plan quota). */
@@ -197,6 +199,7 @@ export function PostForm({
   libraryItems = [],
   drafts = [],
   currentDraftId,
+  prefillMedia,
   initial,
   aiEnabled = false,
   aiRemaining,
@@ -210,7 +213,7 @@ export function PostForm({
   // While any post is being dragged, the thread connectors are hidden — they'd
   // otherwise point at stale positions until the drop settles.
   const [reordering, setReordering] = useState(false);
-  const [media, setMedia] = useState<Media[]>(initial?.media ?? []);
+  const [media, setMedia] = useState<Media[]>(prefillMedia ?? initial?.media ?? []);
   const [selected, setSelected] = useState<Set<string>>(new Set(initial?.channelIds ?? []));
 
   // When arriving via a "+"/manage-channels link (?focus=channels), scroll to

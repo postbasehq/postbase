@@ -8,13 +8,24 @@ import { createPost } from "../actions";
 export default async function ComposerPage({
   searchParams,
 }: {
-  searchParams: Promise<{ at?: string }>;
+  searchParams: Promise<{ at?: string; media?: string }>;
 }) {
-  const { at } = await searchParams;
+  const { at, media: mediaId } = await searchParams;
   // Accept a local wall-clock prefill from the calendar (YYYY-MM-DDTHH:MM).
   const defaultScheduleLocal = at && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(at) ? at : undefined;
 
   const supabase = await createClient();
+
+  // "Use in a new post" from the media library pre-attaches one asset.
+  let prefillMedia: { url: string; type: string }[] | undefined;
+  if (mediaId) {
+    const { data: m } = await supabase
+      .from("media_library")
+      .select("url, type")
+      .eq("id", mediaId)
+      .maybeSingle();
+    if (m) prefillMedia = [{ url: m.url, type: m.type }];
+  }
   const { data: channels } = await supabase
     .from("channels")
     .select("id, platform, handle, display_name, avatar_url, verified")
@@ -63,6 +74,7 @@ export default async function ComposerPage({
         defaultScheduleLocal={defaultScheduleLocal}
         libraryItems={library ?? []}
         drafts={drafts}
+        prefillMedia={prefillMedia}
         aiEnabled={aiEnabled}
         aiRemaining={aiRemaining}
       />
