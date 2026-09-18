@@ -1003,13 +1003,31 @@ export function PostForm({
         </div>
 
         {libraryItems.length === 0 ? (
-          <p className="mt-4 text-sm text-muted">
-            Your library is empty.{" "}
-            <Link href="/media" className="font-medium text-blue-ink underline">
+          <div className="mt-5 flex flex-col items-center rounded-2xl border border-dashed border-line bg-surface-2/40 px-6 py-10 text-center">
+            <span className="relative flex size-14 items-center justify-center">
+              <span className="absolute size-14 rounded-2xl bg-blue-soft/70" />
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2b59d9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="relative" aria-hidden>
+                <rect x="3" y="3" width="18" height="18" rx="3" />
+                <circle cx="8.5" cy="8.5" r="1.6" />
+                <path d="m21 15-4-4a2 2 0 0 0-2.8 0L4 21" />
+              </svg>
+            </span>
+            <h4 className="mt-4 font-display text-[15px] font-semibold tracking-[-0.01em] text-ink">
+              Nothing saved yet
+            </h4>
+            <p className="mt-1 max-w-[17rem] text-[13px] leading-relaxed text-muted">
+              Upload a photo or video once and it’ll live here — ready to reuse across any post.
+            </p>
+            <Link
+              href="/media"
+              className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-blue px-4 py-2 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M12 19V5M5 12l7-7 7 7" />
+              </svg>
               Upload media
-            </Link>{" "}
-            to reuse it here.
-          </p>
+            </Link>
+          </div>
         ) : (
           <div className="mt-4 grid max-h-[52vh] grid-cols-3 gap-2.5 overflow-y-auto sm:grid-cols-4">
             {libraryItems.map((item) => {
