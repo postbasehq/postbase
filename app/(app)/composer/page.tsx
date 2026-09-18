@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { PostForm } from "@/components/PostForm";
 import { higgsfieldConfigured } from "@/lib/higgsfield";
+import { getCurrentOrgId } from "@/lib/org";
+import { aiUsage } from "@/lib/billing-guard";
 import { createPost } from "../actions";
 
 export default async function ComposerPage({
@@ -23,6 +25,16 @@ export default async function ComposerPage({
     .select("id, url, name, type, size_bytes")
     .order("created_at", { ascending: false });
 
+  const aiEnabled = higgsfieldConfigured();
+  let aiRemaining: { image: number; video: number } | undefined;
+  if (aiEnabled) {
+    const orgId = await getCurrentOrgId();
+    if (orgId) {
+      const u = await aiUsage(supabase, orgId);
+      aiRemaining = { image: u.image.remaining, video: u.video.remaining };
+    }
+  }
+
   return (
     <div>
       <p className="text-sm text-muted">
@@ -34,7 +46,8 @@ export default async function ComposerPage({
         submitLabel="Schedule post"
         defaultScheduleLocal={defaultScheduleLocal}
         libraryItems={library ?? []}
-        aiEnabled={higgsfieldConfigured()}
+        aiEnabled={aiEnabled}
+        aiRemaining={aiRemaining}
       />
     </div>
   );

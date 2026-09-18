@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentOrgId } from "@/lib/org";
 import { encryptJson } from "@/lib/crypto";
-import { atChannelLimit } from "@/lib/billing-guard";
+import { atChannelLimit, atAiLimit } from "@/lib/billing-guard";
 import { connectBluesky } from "@/lib/platforms/bluesky";
 import { isRepeatEvery } from "@/lib/publish/repeat";
 import {
@@ -497,11 +497,16 @@ export async function generateAiImage(
   if (!higgsfieldConfigured()) {
     return { ok: false, error: "Image generation isn't set up yet — add HIGGSFIELD_API_KEY." };
   }
+  const supabase = await createClient();
   const orgId = await getCurrentOrgId();
   if (!orgId) return { ok: false, error: "No workspace found." };
   const clean = (prompt ?? "").trim();
   if (!clean) return { ok: false, error: "Enter a prompt to generate an image." };
   const ratio = isAspectRatio(aspectRatio) ? aspectRatio : "1:1";
+
+  if (await atAiLimit(supabase, orgId, "image")) {
+    return { ok: false, error: "You've used all your AI images for this month. Upgrade your plan for more." };
+  }
 
   try {
     const sourceUrl = await generateSoulImage(clean, ratio);
@@ -516,6 +521,8 @@ export async function generateAiImage(
       .from("post-media")
       .upload(path, Buffer.from(bytes), { contentType: "image/jpeg", upsert: false });
     if (error) return { ok: false, error: "Generated the image but couldn't save it." };
+    // Record usage (service role — can't be tampered with client-side).
+    await admin.from("ai_generations").insert({ org_id: orgId, kind: "image" });
     const url = admin.storage.from("post-media").getPublicUrl(path).data.publicUrl;
     return { ok: true, url, type: "image/jpeg" };
   } catch (e) {
@@ -536,13 +543,21 @@ export async function startAiVideo(
   if (!higgsfieldConfigured()) {
     return { ok: false, error: "Video generation isn't set up yet — add HIGGSFIELD_API_KEY." };
   }
+  const supabase = await createClient();
   const orgId = await getCurrentOrgId();
   if (!orgId) return { ok: false, error: "No workspace found." };
   const clean = (prompt ?? "").trim();
   if (!clean && !imageUrl) return { ok: false, error: "Enter a prompt (or pick an image to animate)." };
   const ratio = isAspectRatio(aspectRatio) ? aspectRatio : "9:16";
+
+  if (await atAiLimit(supabase, orgId, "video")) {
+    return { ok: false, error: "You've used all your AI videos for this month. Upgrade your plan for more." };
+  }
+
   try {
     const { statusUrl } = await startVideo({ prompt: clean, aspectRatio: ratio, imageUrl });
+    // Video is billed on submission, so record usage now (service role).
+    await createAdminClient().from("ai_generations").insert({ org_id: orgId, kind: "video" });
     return { ok: true, statusUrl };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Couldn't start the video." };

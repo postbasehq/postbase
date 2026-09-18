@@ -65,6 +65,20 @@ export const CHANNEL_LIMIT: Record<PlanId, number> = {
   growth: 50,
 };
 
+// Monthly AI generation quota by plan (composer image/video generation).
+export const AI_IMAGE_LIMIT: Record<PlanId, number> = {
+  trial: 10,
+  creator: 50,
+  team: 200,
+  growth: 500,
+};
+export const AI_VIDEO_LIMIT: Record<PlanId, number> = {
+  trial: 2,
+  creator: 10,
+  team: 30,
+  growth: 100,
+};
+
 // Seats (org members, incl. pending invites) by plan.
 export const SEAT_LIMIT: Record<PlanId, number> = {
   trial: 1,

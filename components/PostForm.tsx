@@ -128,6 +128,8 @@ type PostFormProps = {
   libraryItems?: LibraryItem[];
   /** Show the AI "Generate" control (Higgsfield keys configured server-side). */
   aiEnabled?: boolean;
+  /** Remaining AI generations this month (per plan quota). */
+  aiRemaining?: { image: number; video: number };
   initial?: {
     id: string;
     thread: string[];
@@ -156,6 +158,7 @@ export function PostForm({
   libraryItems = [],
   initial,
   aiEnabled = false,
+  aiRemaining,
 }: PostFormProps) {
   const [tweets, setTweets] = useState<Tweet[]>(() =>
     (initial?.thread?.length ? initial.thread : [""]).map((text, i) => ({
@@ -198,6 +201,7 @@ export function PostForm({
   const [genBusy, setGenBusy] = useState(false);
   const [genStage, setGenStage] = useState<string | null>(null);
   const [genError, setGenError] = useState<string | null>(null);
+  const [aiLeft, setAiLeft] = useState(aiRemaining);
   const genCancelled = useRef(false);
 
   /* derived */
@@ -353,6 +357,7 @@ export function PostForm({
         const res = await generateAiImage(genPrompt, genAspect);
         if (res.ok) {
           setMedia((m) => [...m, { url: res.url, type: res.type }]);
+          setAiLeft((l) => (l ? { ...l, image: Math.max(0, l.image - 1) } : l));
           closeGen();
         } else setGenError(res.error);
       } catch {
@@ -377,6 +382,7 @@ export function PostForm({
         setGenError(started.error);
         return;
       }
+      setAiLeft((l) => (l ? { ...l, video: Math.max(0, l.video - 1) } : l));
       setGenStage("Generating video… this can take a minute");
       const deadline = Date.now() + 5 * 60 * 1000;
       while (Date.now() < deadline) {
@@ -860,6 +866,16 @@ export function PostForm({
             : "Describe what you want — we’ll create it and add it to your post."}
         </p>
 
+        {aiLeft ? (
+          <p
+            className={`mt-1 text-xs ${aiLeft[genMode] <= 0 ? "font-medium text-terra" : "text-muted"}`}
+          >
+            {aiLeft[genMode] <= 0
+              ? `No AI ${genMode}s left this month — upgrade your plan for more.`
+              : `${aiLeft[genMode]} ${genMode}${aiLeft[genMode] === 1 ? "" : "s"} left this month`}
+          </p>
+        ) : null}
+
         {genMode === "video" && firstImage ? (
           <label className="mt-3 flex items-center gap-2 text-sm">
             <input
@@ -920,6 +936,7 @@ export function PostForm({
             onClick={runGenerate}
             disabled={
               genBusy ||
+              (aiLeft ? aiLeft[genMode] <= 0 : false) ||
               (genMode === "image"
                 ? !genPrompt.trim()
                 : !genPrompt.trim() && !(genUseImage && firstImage))

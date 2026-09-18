@@ -2,6 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PostForm } from "@/components/PostForm";
 import { higgsfieldConfigured } from "@/lib/higgsfield";
+import { getCurrentOrgId } from "@/lib/org";
+import { aiUsage } from "@/lib/billing-guard";
 import { updatePost } from "../../actions";
 
 export default async function EditPostPage({
@@ -56,6 +58,16 @@ export default async function EditPostPage({
   const variants: Record<string, string> = {};
   for (const t of targets) if (t.variant_body) variants[t.channel_id] = t.variant_body;
 
+  const aiEnabled = higgsfieldConfigured();
+  let aiRemaining: { image: number; video: number } | undefined;
+  if (aiEnabled) {
+    const orgId = await getCurrentOrgId();
+    if (orgId) {
+      const u = await aiUsage(supabase, orgId);
+      aiRemaining = { image: u.image.remaining, video: u.video.remaining };
+    }
+  }
+
   return (
     <div>
       <p className="text-sm text-muted">
@@ -66,7 +78,8 @@ export default async function EditPostPage({
         action={updatePost}
         submitLabel="Save changes"
         libraryItems={library ?? []}
-        aiEnabled={higgsfieldConfigured()}
+        aiEnabled={aiEnabled}
+        aiRemaining={aiRemaining}
         initial={{
           id: post.id,
           thread: [post.body, ...((post.thread_tail as string[] | null) ?? [])],
