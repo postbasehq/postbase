@@ -45,6 +45,60 @@ function extractUrl(j: Record<string, unknown>): string | undefined {
   );
 }
 
+// Video model endpoint. The exact text-to-video / image-to-video model path is
+// discovered per-account in Higgsfield's console, so it's env-overridable
+// (HIGGSFIELD_VIDEO_ENDPOINT) with an assumed default. Same async shape as image.
+function videoEndpoint(): string {
+  return process.env.HIGGSFIELD_VIDEO_ENDPOINT || `${API}/higgsfield-ai/kling/2.5/standard`;
+}
+
+const HF_HOST = "api.higgsfield.ai";
+/** Guard against SSRF / auth-header leakage when polling a client-supplied URL. */
+export function isHiggsfieldUrl(url: string): boolean {
+  try {
+    return new URL(url).host === HF_HOST;
+  } catch {
+    return false;
+  }
+}
+
+/** Submit a video generation (text-to-video, or image-to-video when imageUrl is
+ * given) and return the status URL to poll. */
+export async function startVideo(opts: {
+  prompt: string;
+  aspectRatio: AspectRatio;
+  imageUrl?: string;
+}): Promise<{ statusUrl: string; requestId?: string }> {
+  const body: Record<string, unknown> = { prompt: opts.prompt, aspect_ratio: opts.aspectRatio };
+  // NOTE: `input_image` field name assumed — confirm for the chosen video model.
+  if (opts.imageUrl) body.input_image = opts.imageUrl;
+  const res = await fetch(videoEndpoint(), {
+    method: "POST",
+    headers: { Authorization: authHeader(), "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const json = (await res.json().catch(() => ({}))) as Record<string, any>;
+  if (!res.ok) throw new Error(json?.detail || json?.error || `Higgsfield error ${res.status}`);
+  const statusUrl: string | undefined = json.status_url;
+  if (!statusUrl) throw new Error("Higgsfield returned no status_url to poll.");
+  return { statusUrl, requestId: json.request_id };
+}
+
+/** One poll of a generation status URL. */
+export async function pollStatus(statusUrl: string): Promise<{ done: boolean; url?: string; error?: string }> {
+  const s = await fetch(statusUrl, { headers: { Authorization: authHeader() } });
+  const sj = (await s.json().catch(() => ({}))) as Record<string, any>;
+  const status = String(sj.status ?? "").toLowerCase();
+  if (status === "completed" || status === "succeeded" || status === "success") {
+    const url = extractUrl(sj);
+    return url ? { done: true, url } : { done: true, error: "Finished but no result URL was found." };
+  }
+  if (status === "failed" || status === "canceled" || status === "cancelled" || status === "error") {
+    return { done: true, error: sj.error || `Generation ${status}.` };
+  }
+  return { done: false };
+}
+
 /**
  * Generate one Soul image and return its (temporary) result URL. Callers should
  * persist the bytes to durable storage — Higgsfield outputs expire after ~7 days.

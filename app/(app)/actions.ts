@@ -9,7 +9,14 @@ import { encryptJson } from "@/lib/crypto";
 import { atChannelLimit } from "@/lib/billing-guard";
 import { connectBluesky } from "@/lib/platforms/bluesky";
 import { isRepeatEvery } from "@/lib/publish/repeat";
-import { generateSoulImage, higgsfieldConfigured, isAspectRatio } from "@/lib/higgsfield";
+import {
+  generateSoulImage,
+  higgsfieldConfigured,
+  isAspectRatio,
+  isHiggsfieldUrl,
+  pollStatus,
+  startVideo,
+} from "@/lib/higgsfield";
 
 const TIKTOK_PRIVACY = [
   "PUBLIC_TO_EVERYONE",
@@ -513,5 +520,65 @@ export async function generateAiImage(
     return { ok: true, url, type: "image/jpeg" };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Image generation failed." };
+  }
+}
+
+/**
+ * Kick off an AI video generation (text-to-video, or image-to-video when an
+ * image URL is given). Returns a status URL the client polls via pollAiVideo.
+ * Video is slow, so we don't hold the request open — this just submits.
+ */
+export async function startAiVideo(
+  prompt: string,
+  aspectRatio: string,
+  imageUrl?: string,
+): Promise<{ ok: true; statusUrl: string } | { ok: false; error: string }> {
+  if (!higgsfieldConfigured()) {
+    return { ok: false, error: "Video generation isn't set up yet — add HIGGSFIELD_API_KEY_ID and HIGGSFIELD_API_KEY_SECRET." };
+  }
+  const orgId = await getCurrentOrgId();
+  if (!orgId) return { ok: false, error: "No workspace found." };
+  const clean = (prompt ?? "").trim();
+  if (!clean && !imageUrl) return { ok: false, error: "Enter a prompt (or pick an image to animate)." };
+  const ratio = isAspectRatio(aspectRatio) ? aspectRatio : "9:16";
+  try {
+    const { statusUrl } = await startVideo({ prompt: clean, aspectRatio: ratio, imageUrl });
+    return { ok: true, statusUrl };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Couldn't start the video." };
+  }
+}
+
+/**
+ * Poll a video job. While running, returns {status:"processing"}. On completion
+ * it downloads the video and persists it to our bucket (so the URL outlives
+ * Higgsfield's ~7-day expiry), returning a media item to attach.
+ */
+export async function pollAiVideo(
+  statusUrl: string,
+): Promise<{ status: "processing" } | { status: "done"; url: string; type: string } | { status: "error"; error: string }> {
+  if (!higgsfieldConfigured()) return { status: "error", error: "Not configured." };
+  const orgId = await getCurrentOrgId();
+  if (!orgId) return { status: "error", error: "No workspace found." };
+  // Only ever fetch Higgsfield's own status URLs with our auth header.
+  if (!statusUrl || !isHiggsfieldUrl(statusUrl)) return { status: "error", error: "Invalid status URL." };
+  try {
+    const r = await pollStatus(statusUrl);
+    if (!r.done) return { status: "processing" };
+    if (r.error || !r.url) return { status: "error", error: r.error || "No video was returned." };
+    const bytes = await fetch(r.url).then((res) => {
+      if (!res.ok) throw new Error(`Couldn't download the video (${res.status}).`);
+      return res.arrayBuffer();
+    });
+    const path = `ai/${orgId}/${crypto.randomUUID()}.mp4`;
+    const admin = createAdminClient();
+    const { error } = await admin.storage
+      .from("post-media")
+      .upload(path, Buffer.from(bytes), { contentType: "video/mp4", upsert: false });
+    if (error) return { status: "error", error: "Generated the video but couldn't save it." };
+    const url = admin.storage.from("post-media").getPublicUrl(path).data.publicUrl;
+    return { status: "done", url, type: "video/mp4" };
+  } catch (e) {
+    return { status: "error", error: e instanceof Error ? e.message : "Video generation failed." };
   }
 }

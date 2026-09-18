@@ -11,7 +11,7 @@ import { BrandTile } from "@/components/BrandTile";
 import { DateTimePicker } from "@/components/DateTimePicker";
 import { REPEAT_OPTIONS } from "@/lib/publish/repeat";
 import { ASPECT_RATIOS, type AspectRatio } from "@/lib/higgsfield";
-import { generateAiImage } from "@/app/(app)/actions";
+import { generateAiImage, startAiVideo, pollAiVideo } from "@/app/(app)/actions";
 import { PostPreview } from "@/components/PostPreview";
 
 /* ── Platform rules ─────────────────────────────────────────────────────────
@@ -191,10 +191,14 @@ export function PostForm({
   const fileRef = useRef<HTMLInputElement>(null);
   // AI image generation (Higgsfield).
   const [genOpen, setGenOpen] = useState(false);
+  const [genMode, setGenMode] = useState<"image" | "video">("image");
   const [genPrompt, setGenPrompt] = useState("");
   const [genAspect, setGenAspect] = useState<AspectRatio>("1:1");
+  const [genUseImage, setGenUseImage] = useState(false);
   const [genBusy, setGenBusy] = useState(false);
+  const [genStage, setGenStage] = useState<string | null>(null);
   const [genError, setGenError] = useState<string | null>(null);
+  const genCancelled = useRef(false);
 
   /* derived */
   const cleanTweets = tweets.map((t) => t.text.trim()).filter(Boolean);
@@ -328,23 +332,74 @@ export function PostForm({
     }
   }
 
+  const firstImage = media.find((m) => m.type.startsWith("image/"));
+
+  function closeGen() {
+    genCancelled.current = true;
+    setGenOpen(false);
+    setGenPrompt("");
+    setGenBusy(false);
+    setGenStage(null);
+  }
+
   async function runGenerate() {
-    if (!genPrompt.trim() || genBusy) return;
+    if (genBusy) return;
+    if (genMode === "image") {
+      if (!genPrompt.trim()) return;
+      setGenBusy(true);
+      setGenError(null);
+      setGenStage("Generating…");
+      try {
+        const res = await generateAiImage(genPrompt, genAspect);
+        if (res.ok) {
+          setMedia((m) => [...m, { url: res.url, type: res.type }]);
+          closeGen();
+        } else setGenError(res.error);
+      } catch {
+        setGenError("Something went wrong generating the image.");
+      } finally {
+        setGenBusy(false);
+        setGenStage(null);
+      }
+      return;
+    }
+
+    // Video: submit, then poll (it's slow — up to a few minutes).
+    const useImg = genUseImage && firstImage ? firstImage.url : undefined;
+    if (!genPrompt.trim() && !useImg) return;
     setGenBusy(true);
     setGenError(null);
+    setGenStage("Starting…");
+    genCancelled.current = false;
     try {
-      const res = await generateAiImage(genPrompt, genAspect);
-      if (res.ok) {
-        setMedia((m) => [...m, { url: res.url, type: res.type }]);
-        setGenOpen(false);
-        setGenPrompt("");
-      } else {
-        setGenError(res.error);
+      const started = await startAiVideo(genPrompt, genAspect, useImg);
+      if (!started.ok) {
+        setGenError(started.error);
+        return;
       }
+      setGenStage("Generating video… this can take a minute");
+      const deadline = Date.now() + 5 * 60 * 1000;
+      while (Date.now() < deadline) {
+        if (genCancelled.current) return;
+        await new Promise((r) => setTimeout(r, 3000));
+        if (genCancelled.current) return;
+        const p = await pollAiVideo(started.statusUrl);
+        if (p.status === "done") {
+          setMedia((m) => [...m, { url: p.url, type: p.type }]);
+          closeGen();
+          return;
+        }
+        if (p.status === "error") {
+          setGenError(p.error);
+          return;
+        }
+      }
+      setGenError("Video timed out — please try again.");
     } catch {
-      setGenError("Something went wrong generating the image.");
+      setGenError("Something went wrong generating the video.");
     } finally {
       setGenBusy(false);
+      setGenStage(null);
     }
   }
 
@@ -767,25 +822,69 @@ export function PostForm({
         </div>
       </div>
 
-      {/* Pick from library */}
-      {/* Generate an image with AI */}
-      <Modal open={genOpen} onClose={() => setGenOpen(false)} labelledBy="gen-title">
+      {/* Generate media with AI */}
+      <Modal open={genOpen} onClose={closeGen} labelledBy="gen-title">
         <div className="flex items-center gap-2">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-ink" aria-hidden>
             <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />
           </svg>
           <h3 id="gen-title" className="font-display text-lg font-semibold tracking-[-0.01em]">
-            Generate an image
+            Generate {genMode === "video" ? "a video" : "an image"}
           </h3>
         </div>
-        <p className="mt-1 text-sm text-muted">Describe what you want — we&apos;ll create it and add it to your post.</p>
+
+        {/* image / video mode */}
+        <div className="mt-3 inline-flex rounded-lg border border-line p-0.5 text-xs font-semibold">
+          {(["image", "video"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              disabled={genBusy}
+              onClick={() => {
+                setGenMode(m);
+                setGenError(null);
+                if (m === "video") setGenAspect("9:16");
+              }}
+              className={`rounded-md px-3 py-1.5 capitalize transition ${
+                genMode === m ? "bg-blue-soft text-blue-ink" : "text-muted hover:text-ink"
+              }`}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+
+        <p className="mt-2 text-sm text-muted">
+          {genMode === "video"
+            ? "Describe the clip — we’ll generate a short video and add it to your post."
+            : "Describe what you want — we’ll create it and add it to your post."}
+        </p>
+
+        {genMode === "video" && firstImage ? (
+          <label className="mt-3 flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={genUseImage}
+              disabled={genBusy}
+              onChange={(e) => setGenUseImage(e.target.checked)}
+              style={{ accentColor: "var(--blue)" }}
+              className="size-4"
+            />
+            <span className="text-ink">Animate my uploaded image</span>
+          </label>
+        ) : null}
 
         <textarea
           value={genPrompt}
           onChange={(e) => setGenPrompt(e.target.value)}
           rows={3}
-          placeholder="e.g. a minimalist product shot of a phone on a pastel gradient, soft studio light"
-          className="mt-4 w-full resize-none rounded-xl border border-line bg-ground p-3 text-sm outline-none focus:border-blue"
+          disabled={genBusy}
+          placeholder={
+            genMode === "video"
+              ? "e.g. slow push-in on a coffee cup, steam rising, warm morning light"
+              : "e.g. a minimalist product shot of a phone on a pastel gradient, soft studio light"
+          }
+          className="mt-4 w-full resize-none rounded-xl border border-line bg-ground p-3 text-sm outline-none focus:border-blue disabled:opacity-60"
         />
 
         <div className="mt-3">
@@ -795,8 +894,9 @@ export function PostForm({
               <button
                 key={a.value}
                 type="button"
+                disabled={genBusy}
                 onClick={() => setGenAspect(a.value)}
-                className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition ${
+                className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition disabled:opacity-60 ${
                   genAspect === a.value
                     ? "border-blue bg-blue-soft text-blue-ink"
                     : "border-line text-muted hover:bg-surface-2 hover:text-ink"
@@ -808,20 +908,22 @@ export function PostForm({
           </div>
         </div>
 
+        {genBusy && genStage ? <p className="mt-3 text-xs font-medium text-blue-ink">{genStage}</p> : null}
         {genError ? <p className="mt-3 text-xs text-terra">{genError}</p> : null}
 
         <div className="mt-5 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => setGenOpen(false)}
-            className="text-sm font-medium text-muted hover:text-ink"
-          >
-            Cancel
+          <button type="button" onClick={closeGen} className="text-sm font-medium text-muted hover:text-ink">
+            {genBusy ? "Stop" : "Cancel"}
           </button>
           <button
             type="button"
             onClick={runGenerate}
-            disabled={!genPrompt.trim() || genBusy}
+            disabled={
+              genBusy ||
+              (genMode === "image"
+                ? !genPrompt.trim()
+                : !genPrompt.trim() && !(genUseImage && firstImage))
+            }
             className="inline-flex items-center gap-2 rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
           >
             {genBusy ? (
@@ -831,8 +933,10 @@ export function PostForm({
                 </svg>
                 Generating…
               </>
+            ) : genMode === "video" ? (
+              "Generate video"
             ) : (
-              "Generate"
+              "Generate image"
             )}
           </button>
         </div>
