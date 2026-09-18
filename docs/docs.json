@@ -10,8 +10,8 @@
   },
   "favicon": "/favicon.svg",
   "logo": {
-    "light": "/logo/postbase.svg",
-    "dark": "/logo/postbase.svg"
+    "light": "/logo/postbase-light.svg",
+    "dark": "/logo/postbase-dark.svg"
   },
   "navigation": {
     "groups": [
