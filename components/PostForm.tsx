@@ -844,7 +844,7 @@ export function PostForm({
         }}
       >
         <div className="flex items-center gap-3">
-          <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#2b59d9] to-[#d14a3e] text-white shadow-sm">
+          <span className="flex size-9 items-center justify-center rounded-xl bg-[#2b59d9] text-white shadow-sm">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />
             </svg>
