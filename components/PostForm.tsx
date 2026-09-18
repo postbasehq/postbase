@@ -836,12 +836,15 @@ export function PostForm({
         size="lg"
         panelClassName="border border-white/15 bg-surface/75 p-6 shadow-[0_28px_80px_-24px_rgba(16,24,40,0.7)] backdrop-blur-2xl"
         panelStyle={{
-          backgroundImage:
-            "radial-gradient(130% 90% at 0% 0%, color-mix(in oklab, var(--blue) 22%, transparent), transparent 55%), radial-gradient(120% 85% at 100% 6%, color-mix(in oklab, var(--blue) 13%, transparent), transparent 55%)",
+          backgroundImage: [
+            "radial-gradient(120% 90% at 0% 0%, #2b59d93d, transparent 55%)", // brand blue
+            "radial-gradient(110% 80% at 100% 4%, #e3a72c2e, transparent 52%)", // amber
+            "radial-gradient(120% 85% at 100% 100%, #d14a3e29, transparent 55%)", // terracotta
+          ].join(","),
         }}
       >
         <div className="flex items-center gap-3">
-          <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue to-blue-ink text-on-blue shadow-sm">
+          <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#2b59d9] to-[#d14a3e] text-white shadow-sm">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />
             </svg>
