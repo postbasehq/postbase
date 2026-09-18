@@ -277,15 +277,29 @@ export function DeveloperClient({
         <McpClientConfig apiKey={revealed} brandfetchId={brandfetchId} mcpUrl={mcpUrl} />
       </div>
 
-      {/* ── Tools reference ──────────────────────────────────── */}
-      <section id="tools" className="scroll-mt-4 rounded-2xl border border-line bg-surface p-5 shadow-sm">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          <h2 className="font-display text-[15px] font-semibold tracking-[-0.01em]">Tools</h2>
-          <p className="text-[13px] text-muted">
-            What your agent can call — just ask it in plain language.
-          </p>
-        </div>
-        <div className="mt-3.5 grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
+      {/* ── Tools reference (collapsible) ────────────────────── */}
+      <details
+        id="tools"
+        className="group scroll-mt-4 rounded-2xl border border-line bg-surface px-5 shadow-sm [&_summary::-webkit-details-marker]:hidden"
+      >
+        <summary className="flex cursor-pointer list-none items-center gap-2 py-4 font-display text-[15px] font-semibold tracking-[-0.01em]">
+          What can my agent call?
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="ml-auto text-muted transition-transform group-open:rotate-180"
+            aria-hidden
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </summary>
+        <div className="grid gap-x-6 gap-y-2.5 border-t border-line pb-5 pt-4 sm:grid-cols-2">
           {MCP_TOOLS.map((t) => (
             <div key={t.name} className="flex items-baseline gap-2.5">
               <code className="shrink-0 rounded-md bg-surface-2 px-1.5 py-0.5 font-mono text-[12px] font-semibold text-blue-ink">
@@ -295,7 +309,7 @@ export function DeveloperClient({
             </div>
           ))}
         </div>
-      </section>
+      </details>
       </div>
     </div>
   );
