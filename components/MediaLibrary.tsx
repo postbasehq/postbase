@@ -345,19 +345,22 @@ export function MediaLibrary({
             e.target.value = "";
           }}
         />
-        <span
-          className={`grid size-14 place-items-center rounded-2xl text-white shadow-md transition-transform duration-200 ${
-            dragOver ? "-translate-y-0.5 scale-105" : ""
-          }`}
-          style={{ backgroundImage: "linear-gradient(140deg, #2b59d9, #d14a3e)" }}
+        <svg
+          width="34"
+          height="34"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`transition-all duration-200 ${dragOver ? "-translate-y-0.5 text-blue" : "text-blue-ink"}`}
           aria-hidden
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <path d="M17 8l-5-5-5 5" />
-            <path d="M12 3v12" />
-          </svg>
-        </span>
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <path d="M17 8l-5-5-5 5" />
+          <path d="M12 3v12" />
+        </svg>
         <div className="mt-4 font-display text-[15px] font-semibold tracking-[-0.01em]">
           {dragOver ? "Drop to upload" : "Drag & drop your media"}
         </div>
