@@ -50,6 +50,25 @@ export default async function EditPostPage({
     .select("id, url, name, type, size_bytes")
     .order("created_at", { ascending: false });
 
+  const { data: draftRows } = await supabase
+    .from("posts")
+    .select("id, body, thread_tail, updated_at, post_targets(channels(platform))")
+    .eq("status", "draft")
+    .order("updated_at", { ascending: false })
+    .limit(50);
+  const drafts = (draftRows ?? []).map((d) => {
+    const dt = (d.post_targets ?? []) as unknown as { channels: { platform: string } | null }[];
+    return {
+      id: d.id as string,
+      body: (d.body as string) ?? "",
+      thread_len: Array.isArray(d.thread_tail) ? d.thread_tail.length : 0,
+      updated_at: d.updated_at as string | null,
+      platforms: Array.from(
+        new Set(dt.map((t) => t.channels?.platform).filter(Boolean)),
+      ) as string[],
+    };
+  });
+
   const targets = (post.post_targets ?? []) as {
     channel_id: string;
     variant_body: string | null;
@@ -78,6 +97,8 @@ export default async function EditPostPage({
         action={updatePost}
         submitLabel="Save changes"
         libraryItems={library ?? []}
+        drafts={drafts}
+        currentDraftId={post.id}
         aiEnabled={aiEnabled}
         aiRemaining={aiRemaining}
         initial={{

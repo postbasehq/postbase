@@ -111,6 +111,20 @@ const BRAND_GLASS_PANEL: { panelClassName: string; panelStyle: React.CSSProperti
   },
 };
 
+// Compact relative time for the "Load draft" list (mirrors the drafts page).
+function draftTimeAgo(iso: string | null): string {
+  if (!iso) return "—";
+  const s = Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 1000));
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d ago`;
+  return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+}
+
 let tweetSeq = 0;
 const freshTweet = (text = ""): Tweet => {
   const id =
@@ -130,6 +144,13 @@ type Channel = {
 };
 type Media = { url: string; type: string };
 type LibraryItem = { id: string; url: string; name: string; type: string; size_bytes: number };
+type DraftItem = {
+  id: string;
+  body: string;
+  thread_len: number;
+  updated_at: string | null;
+  platforms: string[];
+};
 type Note = { level: "error" | "info"; text: string };
 
 type PostFormProps = {
@@ -140,6 +161,10 @@ type PostFormProps = {
   defaultScheduleLocal?: string;
   /** Reusable assets from the media library, for the "Pick from library" picker. */
   libraryItems?: LibraryItem[];
+  /** Existing drafts, for the "Load draft" picker (omit to hide the control). */
+  drafts?: DraftItem[];
+  /** Draft currently open in the editor, hidden from the "Load draft" list. */
+  currentDraftId?: string;
   /** Show the AI "Generate" control (Higgsfield keys configured server-side). */
   aiEnabled?: boolean;
   /** Remaining AI generations this month (per plan quota). */
@@ -170,6 +195,8 @@ export function PostForm({
   submitLabel,
   defaultScheduleLocal,
   libraryItems = [],
+  drafts = [],
+  currentDraftId,
   initial,
   aiEnabled = false,
   aiRemaining,
@@ -207,6 +234,12 @@ export function PostForm({
   const [busy, setBusy] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [draftsOpen, setDraftsOpen] = useState(false);
+  const [draftQuery, setDraftQuery] = useState("");
+  const otherDrafts = drafts.filter((d) => d.id !== currentDraftId);
+  const filteredDrafts = draftQuery.trim()
+    ? otherDrafts.filter((d) => d.body.toLowerCase().includes(draftQuery.trim().toLowerCase()))
+    : otherDrafts;
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
   // AI image generation (Higgsfield).
@@ -636,6 +669,22 @@ export function PostForm({
                 </svg>
                 Add comment / post
               </button>
+              {otherDrafts.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraftQuery("");
+                    setDraftsOpen(true);
+                  }}
+                  className="ml-auto inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-2 hover:text-ink"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <path d="M14 2v6h6M9 13h6M9 17h4" />
+                  </svg>
+                  Load draft
+                </button>
+              ) : null}
             </div>
 
             {/* TikTok privacy */}
@@ -1115,6 +1164,79 @@ export function PostForm({
             {picked.size > 0 ? `Add ${picked.size}` : "Add"}
           </button>
         </div>
+      </Modal>
+
+      <Modal open={draftsOpen} onClose={() => setDraftsOpen(false)} labelledBy="drafts-picker-title" size="lg" {...BRAND_GLASS_PANEL}>
+        <div className="flex items-center gap-2">
+          <h3 id="drafts-picker-title" className="font-display text-lg font-semibold tracking-[-0.01em]">
+            Load a draft
+          </h3>
+          <Link href="/drafts" className="ml-auto text-xs font-medium text-blue-ink hover:underline">
+            Manage drafts
+          </Link>
+        </div>
+
+        {otherDrafts.length > 6 ? (
+          <div className="mt-4 flex items-center gap-2 rounded-lg border border-line bg-surface/60 px-3 focus-within:border-blue">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted" aria-hidden>
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <input
+              type="text"
+              value={draftQuery}
+              onChange={(e) => setDraftQuery(e.target.value)}
+              placeholder="Search drafts…"
+              aria-label="Search drafts"
+              className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-none placeholder:text-muted"
+            />
+          </div>
+        ) : null}
+
+        {filteredDrafts.length === 0 ? (
+          <p className="mt-5 rounded-xl border border-dashed border-line bg-surface/40 px-4 py-10 text-center text-sm text-muted">
+            {draftQuery.trim() ? `No drafts match “${draftQuery.trim()}”.` : "No other drafts to load."}
+          </p>
+        ) : (
+          <div className="mt-4 overflow-hidden rounded-xl border border-line bg-surface/60">
+            <div className="grid grid-cols-[1fr_auto] gap-3 border-b border-line bg-surface-2/50 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted">
+              <span>Draft</span>
+              <span>Updated</span>
+            </div>
+            <div className="max-h-[52vh] divide-y divide-line/70 overflow-y-auto">
+              {filteredDrafts.map((d) => (
+                <Link
+                  key={d.id}
+                  href={`/composer/${d.id}`}
+                  className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-2/60"
+                >
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    {d.platforms.length > 0 ? (
+                      <span className="flex shrink-0 -space-x-1.5">
+                        {d.platforms.slice(0, 3).map((pl) => (
+                          <span key={pl} className="rounded-[6px] bg-surface p-[1.5px] shadow-sm ring-1 ring-line">
+                            <BrandTile platform={pl} size={18} radius={5} />
+                          </span>
+                        ))}
+                      </span>
+                    ) : null}
+                    <span className="min-w-0 truncate text-sm text-ink">
+                      {d.thread_len > 0 ? (
+                        <span className="mr-1.5 rounded bg-surface-2 px-1.5 py-0.5 text-[11px] font-medium text-muted">
+                          🧵 {d.thread_len + 1}
+                        </span>
+                      ) : null}
+                      {d.body || <span className="text-muted">(empty draft)</span>}
+                    </span>
+                  </span>
+                  <span className="whitespace-nowrap text-xs font-medium text-muted tabular-nums">
+                    {draftTimeAgo(d.updated_at)}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* hidden fields for the server action */}
