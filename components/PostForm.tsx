@@ -180,6 +180,9 @@ export function PostForm({
       text,
     })),
   );
+  // While any post is being dragged, the thread connectors are hidden — they'd
+  // otherwise point at stale positions until the drop settles.
+  const [reordering, setReordering] = useState(false);
   const [media, setMedia] = useState<Media[]>(initial?.media ?? []);
   const [selected, setSelected] = useState<Set<string>>(new Set(initial?.channelIds ?? []));
 
@@ -517,6 +520,8 @@ export function PostForm({
                   isThread={isThread}
                   charLimit={charLimit}
                   emptyWarning={i === 0 && bodyEmpty && !hasMedia}
+                  reordering={reordering}
+                  onDragChange={setReordering}
                   onChange={(v) => updateTweet(i, v)}
                   onRemove={() => removeTweet(i)}
                   onMove={(dir) => moveTweet(i, dir)}
@@ -1129,6 +1134,8 @@ function ThreadItem({
   isThread,
   charLimit,
   emptyWarning,
+  reordering,
+  onDragChange,
   onChange,
   onRemove,
   onMove,
@@ -1139,6 +1146,8 @@ function ThreadItem({
   isThread: boolean;
   charLimit: number | null;
   emptyWarning: boolean;
+  reordering: boolean;
+  onDragChange: (v: boolean) => void;
   onChange: (v: string) => void;
   onRemove: () => void;
   onMove: (dir: -1 | 1) => void;
@@ -1159,8 +1168,14 @@ function ThreadItem({
       layout="position"
       dragListener={false}
       dragControls={controls}
-      onDragStart={() => setDragging(true)}
-      onDragEnd={() => setDragging(false)}
+      onDragStart={() => {
+        setDragging(true);
+        onDragChange(true);
+      }}
+      onDragEnd={() => {
+        setDragging(false);
+        onDragChange(false);
+      }}
       transition={{ type: "spring", stiffness: 600, damping: 40 }}
       style={{ position: "relative", zIndex: dragging ? 30 : 1 }}
     >
@@ -1172,7 +1187,7 @@ function ThreadItem({
         style={{ transformOrigin: "center" }}
         className={`relative ${isFirst ? "" : "pl-6"}`}
       >
-      {!isFirst ? (
+      {!isFirst && !reordering ? (
         <>
           {/* Vertical rail up to the box above. The last reply stops at its own
               elbow (h-10) so the line doesn't dangle past it; middle replies run
