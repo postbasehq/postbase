@@ -311,9 +311,7 @@ export function ChannelsBoard({
           <div className="flex flex-col gap-7">
             {showConnected ? (
               <section>
-                <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
-                  Connected
-                </h3>
+                <h3 className="mb-3 text-sm font-semibold text-muted">Connected</h3>
                 <div className="grid grid-cols-1 items-start gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
                   {connectedPlatforms.map(renderCard)}
                 </div>
@@ -321,7 +319,7 @@ export function ChannelsBoard({
             ) : null}
             {showAvailable ? (
               <section>
-                <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
+                <h3 className="mb-3 text-sm font-semibold text-muted">
                   {connectedPlatforms.length > 0 ? "Available to connect" : "Connect a channel"}
                 </h3>
                 <div className="grid grid-cols-1 items-start gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
