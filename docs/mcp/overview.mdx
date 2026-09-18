@@ -1,0 +1,31 @@
+---
+title: MCP overview
+description: "Let an AI agent schedule and publish for you over the Model Context Protocol."
+---
+
+Postbase is **MCP-native**. Connect it to an MCP client — Claude, Cursor,
+Claude Code, VS Code, Windsurf, Gemini CLI, and more — and your agent can list
+channels, draft, schedule, and cancel posts in plain language.
+
+> "Schedule this thread for 9am to X and LinkedIn."
+
+## Two ways to connect
+
+<CardGroup cols={2}>
+  <Card title="Sign in with Postbase" icon="right-to-bracket" href="/mcp/connect">
+    A hosted connector — paste one URL and sign in through Postbase. No API key
+    to manage. Best for Claude and other clients that support remote MCP.
+  </Card>
+  <Card title="API key" icon="key" href="/mcp/connect">
+    Run the MCP server locally with `npx @postbasehq/mcp` and a Postbase API
+    key. Works everywhere, including offline-first clients.
+  </Card>
+</CardGroup>
+
+Both connect to the same tools and act on one workspace. Manage keys and
+connected apps under **Developers** in the app.
+
+<Card title="What your agent can call" icon="wrench" href="/mcp/tools">
+  See the available MCP tools: list_channels, create_post, list_scheduled,
+  cancel_post.
+</Card>

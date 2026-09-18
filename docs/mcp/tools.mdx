@@ -1,0 +1,39 @@
+---
+title: Tools
+description: "The MCP tools your agent can call."
+---
+
+Once connected, your agent can call these tools. Everything is scoped to the
+authorized workspace.
+
+## `list_channels`
+
+List the connected social accounts and their platforms. Use the returned
+channel ids with `create_post`.
+
+## `create_post`
+
+Draft or schedule a post or thread.
+
+| Argument | Type | Notes |
+| -------- | ---- | ----- |
+| `body` | string | The post text (single post). |
+| `thread` | string[] | Multiple posts to publish as a thread. |
+| `channel_ids` | string[] | Channels to publish to (from `list_channels`). |
+| `scheduled_at` | string | ISO 8601 time to publish. Omit for a draft. |
+
+Provide either `body` or `thread`. Omit `scheduled_at` to save a draft.
+
+## `list_scheduled`
+
+List scheduled/queued posts. Optionally filter by `status` (e.g. `scheduled`
+or `draft`).
+
+## `cancel_post`
+
+Cancel a scheduled post by `post_id` — it reverts to a draft.
+
+<Tip>
+  You rarely call these by name — just ask in plain language, e.g. "what's
+  queued for tomorrow?" or "cancel the LinkedIn post at 5pm."
+</Tip>

@@ -1,0 +1,33 @@
+---
+title: Authentication
+description: "Authenticate REST API requests with an API key."
+---
+
+The Postbase REST API is authenticated with an **API key**. Generate one under
+**Developers** in the app, then send it as a bearer token.
+
+## Base URL
+
+```
+https://www.postbase.so/api/v1
+```
+
+## Authorization header
+
+```bash
+curl https://www.postbase.so/api/v1/channels \
+  -H "Authorization: Bearer pb_live_…"
+```
+
+Every request must include `Authorization: Bearer <your key>`. Requests without
+a valid key return `401 Unauthorized`. A key is scoped to the workspace it was
+created in.
+
+<Warning>
+  Keys are shown once at creation. Store yours securely; rotate or revoke it
+  from **Developers** if it leaks.
+</Warning>
+
+<Card title="Endpoints" icon="code" href="/api/posts">
+  See the available endpoints for posts and channels.
+</Card>

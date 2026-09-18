@@ -1,0 +1,42 @@
+---
+title: Configuration
+description: "Environment variables and provider setup."
+---
+
+Postbase is configured with environment variables. Only the core Supabase keys
+are required; everything else enables an optional capability.
+
+## Core
+
+| Variable | Purpose |
+| -------- | ------- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (browser). |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service-role key for trusted server jobs. |
+| `NEXT_PUBLIC_APP_URL` | Your public origin — OAuth issuer + MCP connector base. |
+| `DATABASE_URL` | Postgres connection string (for migrations). |
+
+## Media storage (R2 / S3)
+
+Set your bucket credentials to enable the [media library](/using/media)
+(`R2_*` / S3-compatible keys) and configure the bucket's CORS to expose the
+`ETag` header for multipart uploads.
+
+## Platforms
+
+Each platform you publish to needs its own OAuth app and keys (X, LinkedIn,
+Instagram/Facebook, TikTok, YouTube). Add the keys and the channel's **Connect**
+button lights up. Channels stay hidden until their provider is configured.
+
+## Optional
+
+| Capability | How to enable |
+| ---------- | ------------- |
+| Billing | Stripe keys + price ids. |
+| AI generation | The image/video provider key — enables [Generate](/ai/generate). |
+| MCP over OAuth | Works out of the box once `NEXT_PUBLIC_APP_URL` is set. |
+
+<Note>
+  A capability that isn't configured is simply hidden in the UI — the app runs
+  fine with just the core Supabase setup.
+</Note>

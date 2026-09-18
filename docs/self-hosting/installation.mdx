@@ -1,0 +1,49 @@
+---
+title: Installation
+description: "Run your own Postbase."
+---
+
+Postbase is a Next.js app backed by Supabase (Postgres + Auth). You can host it
+anywhere that runs Next.js — Vercel is the smoothest path.
+
+## Prerequisites
+
+- Node.js 20+
+- A [Supabase](https://supabase.com) project (Postgres + Auth)
+- Object storage for media (Cloudflare R2 or any S3-compatible bucket)
+- OAuth apps for the platforms you want to publish to (X, LinkedIn, etc.)
+
+## Set up
+
+<Steps>
+  <Step title="Clone and install">
+    ```bash
+    git clone https://github.com/postbasehq/postbase.git
+    cd postbase
+    npm install
+    ```
+  </Step>
+  <Step title="Configure environment">
+    Copy the example env file and fill in your keys — see
+    [configuration](/self-hosting/configuration).
+    ```bash
+    cp .env.example .env.local
+    ```
+  </Step>
+  <Step title="Apply the database schema">
+    Run the SQL migrations in `supabase/migrations` against your Supabase
+    Postgres database (in order).
+  </Step>
+  <Step title="Run it">
+    ```bash
+    npm run dev
+    ```
+    Then open `http://localhost:3000`.
+  </Step>
+</Steps>
+
+<Note>
+  For production, deploy to Vercel (or a Node host) and set the same environment
+  variables there. Point `NEXT_PUBLIC_APP_URL` at your public origin — it's the
+  OAuth issuer and MCP connector base.
+</Note>

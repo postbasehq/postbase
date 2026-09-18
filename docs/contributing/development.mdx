@@ -1,0 +1,43 @@
+---
+title: Development
+description: "Contribute to Postbase."
+---
+
+Postbase is open source under the AGPL. Contributions are welcome.
+
+## Stack
+
+- **Next.js 15** (App Router, React 19, TypeScript)
+- **Tailwind CSS v4** with CSS-variable design tokens
+- **Supabase** (Postgres + Auth), with RLS
+- **MCP** server for AI-agent access
+
+## Local setup
+
+Follow [installation](/self-hosting/installation) to run the app locally, then:
+
+```bash
+# type-check
+npx tsc --noEmit
+```
+
+## Guidelines
+
+- Match the surrounding code — naming, comments, and idioms.
+- Keep the database org-scoped: every query filters by workspace.
+- New tables get a migration in `supabase/migrations` and, where they hold
+  sensitive data, RLS enabled.
+
+## Where things live
+
+| Area | Path |
+| ---- | ---- |
+| App routes | `app/(app)/…` |
+| Public API | `app/api/v1/…` |
+| MCP server | `app/api/mcp` + `lib/oauth.ts` |
+| Shared UI | `components/…` |
+| Core operations | `lib/api-core.ts` |
+
+<Card title="Open an issue or PR" icon="github" href="https://github.com/postbasehq/postbase">
+  Report a bug or propose a change on GitHub.
+</Card>

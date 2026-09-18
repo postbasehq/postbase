@@ -1,0 +1,77 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Postbase",
+  "description": "Open-source, MCP-native, multi-channel social scheduler.",
+  "colors": {
+    "primary": "#2b59d9",
+    "light": "#7aa0ff",
+    "dark": "#2b59d9"
+  },
+  "favicon": "/favicon.svg",
+  "logo": {
+    "light": "/logo/postbase.svg",
+    "dark": "/logo/postbase.svg"
+  },
+  "navigation": {
+    "groups": [
+      {
+        "group": "Get started",
+        "pages": ["general/introduction", "general/quickstart"]
+      },
+      {
+        "group": "Using Postbase",
+        "pages": [
+          "using/channels",
+          "using/composer",
+          "using/calendar",
+          "using/media",
+          "using/analytics"
+        ]
+      },
+      {
+        "group": "AI",
+        "pages": ["ai/generate"]
+      },
+      {
+        "group": "Postbase Cloud",
+        "pages": ["cloud/plans", "cloud/billing"]
+      },
+      {
+        "group": "MCP & agents",
+        "pages": ["mcp/overview", "mcp/connect", "mcp/tools"]
+      },
+      {
+        "group": "Public API",
+        "pages": ["api/authentication", "api/posts", "api/channels"]
+      },
+      {
+        "group": "Self-hosting",
+        "pages": ["self-hosting/installation", "self-hosting/configuration"]
+      },
+      {
+        "group": "Contributing",
+        "pages": ["contributing/development"]
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/postbasehq/postbase"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Open app",
+      "href": "https://www.postbase.so"
+    }
+  },
+  "footer": {
+    "socials": {
+      "x": "https://x.com/postbasehq",
+      "github": "https://github.com/postbasehq/postbase"
+    }
+  }
+}

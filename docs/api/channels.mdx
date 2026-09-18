@@ -1,0 +1,22 @@
+---
+title: Channels
+description: "List the connected accounts you can publish to."
+---
+
+## List channels
+
+```bash
+curl https://www.postbase.so/api/v1/channels \
+  -H "Authorization: Bearer pb_live_…"
+```
+
+`GET /channels` returns the connected accounts in your workspace. Use the `id`
+values as `channel_ids` when [creating a post](/api/posts).
+
+```json Response
+{
+  "channels": [
+    { "id": "…", "platform": "x", "handle": "@postbasehq", "status": "active" }
+  ]
+}
+```

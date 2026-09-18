@@ -1,0 +1,69 @@
+---
+title: Connect a client
+description: "Add the Postbase MCP connector to your AI tool."
+---
+
+You can connect over the **hosted connector** (sign in with Postbase, no API
+key) or run the **local server** with an API key. Both are set up from the
+**Developers** page in the app.
+
+## Sign in with Postbase (no API key)
+
+The hosted MCP server speaks Streamable HTTP with OAuth, so most clients just
+need a URL:
+
+```
+https://www.postbase.so/api/mcp
+```
+
+<Steps>
+  <Step title="Add a custom connector">
+    In Claude, open **Settings → Connectors → Add custom connector** and paste
+    the URL above.
+  </Step>
+  <Step title="Authorize">
+    Claude opens a Postbase sign-in page. Choose the **workspace** to authorize
+    and approve. No API key is stored.
+  </Step>
+  <Step title="Use it">
+    Ask your agent to list channels or schedule a post.
+  </Step>
+</Steps>
+
+<Note>
+  If you belong to more than one workspace, pick the right one on the consent
+  screen — the connector is scoped to that workspace. You can revoke a connected
+  app anytime under **Developers → Connected apps**.
+</Note>
+
+For Cursor and VS Code, the Developers page generates a one-click deep link or a
+`claude mcp add` / `code --add-mcp` command with the same URL.
+
+## API key (local server)
+
+Generate a key under **Developers**, then run the MCP server locally:
+
+<CodeGroup>
+
+```json Claude Desktop
+{
+  "mcpServers": {
+    "postbase": {
+      "command": "npx",
+      "args": ["@postbasehq/mcp"],
+      "env": { "POSTBASE_API_KEY": "pb_live_…" }
+    }
+  }
+}
+```
+
+```bash Claude Code
+claude mcp add postbase --env POSTBASE_API_KEY=pb_live_… -- npx @postbasehq/mcp
+```
+
+</CodeGroup>
+
+<Warning>
+  Your API key is shown once when created. Store it safely — you can **rotate**
+  or **revoke** it under Developers, but you can't view it again.
+</Warning>

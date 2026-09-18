@@ -1,0 +1,64 @@
+---
+title: Posts
+description: "Create, list, and cancel scheduled posts."
+---
+
+All requests require an [API key](/api/authentication).
+
+## List posts
+
+```bash
+curl "https://www.postbase.so/api/v1/posts?status=scheduled" \
+  -H "Authorization: Bearer pb_live_…"
+```
+
+`GET /posts` returns your posts. Optionally filter with `?status=` (for example
+`scheduled` or `draft`).
+
+```json Response
+{
+  "posts": [
+    {
+      "id": "…",
+      "body": "Launching today 🚀",
+      "scheduled_at": "2026-09-20T09:00:00.000Z",
+      "status": "scheduled",
+      "post_targets": [{ "channel_id": "…", "status": "scheduled" }]
+    }
+  ]
+}
+```
+
+## Create a post
+
+```bash
+curl -X POST https://www.postbase.so/api/v1/posts \
+  -H "Authorization: Bearer pb_live_…" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "body": "Launching today 🚀",
+    "channel_ids": ["<channel-id>"],
+    "scheduled_at": "2026-09-20T09:00:00Z"
+  }'
+```
+
+`POST /posts` creates a draft or scheduled post.
+
+| Field | Type | Notes |
+| ----- | ---- | ----- |
+| `body` | string | Post text (single post). |
+| `thread` | string[] | Posts to publish as a thread (takes precedence over `body`). |
+| `channel_ids` | string[] | Channels to publish to (from [Channels](/api/channels)). |
+| `scheduled_at` | string \| null | ISO 8601 time. Omit or `null` to save a draft. |
+
+Returns the created post with `201 Created`. Invalid channel ids or an empty
+body return `400`.
+
+## Cancel a post
+
+```bash
+curl -X POST https://www.postbase.so/api/v1/posts/<id>/cancel \
+  -H "Authorization: Bearer pb_live_…"
+```
+
+`POST /posts/{id}/cancel` reverts a scheduled post to a draft.
