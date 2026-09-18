@@ -285,7 +285,7 @@ export function DeveloperClient({
             </p>
           </div>
           <a
-            href="https://github.com/postbasehq/postbase"
+            href="https://docs.postbase.so/api/authentication"
             target="_blank"
             rel="noreferrer"
             className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line px-3.5 py-2 text-[13px] font-semibold text-blue-ink transition hover:bg-surface-2"
