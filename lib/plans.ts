@@ -19,6 +19,24 @@ export type Plan = {
   priceAnnual?: string;
 };
 
+// Monthly AI generation quota by plan (composer image/video generation).
+export const AI_IMAGE_LIMIT: Record<PlanId, number> = {
+  trial: 10,
+  creator: 50,
+  team: 200,
+  growth: 500,
+};
+export const AI_VIDEO_LIMIT: Record<PlanId, number> = {
+  trial: 2,
+  creator: 10,
+  team: 30,
+  growth: 100,
+};
+
+/** The AI-quota feature line for a plan, derived from the limits (single source). */
+export const aiFeature = (plan: PlanId): string =>
+  `${AI_IMAGE_LIMIT[plan]} AI images + ${AI_VIDEO_LIMIT[plan]} videos / mo`;
+
 export const PLANS: Record<Exclude<PlanId, "trial">, Plan> = {
   creator: {
     id: "creator",
@@ -27,7 +45,7 @@ export const PLANS: Record<Exclude<PlanId, "trial">, Plan> = {
     channels: 5,
     seats: 1,
     blurb: "For solo creators publishing everywhere.",
-    features: ["5 channels", "Unlimited posts", "All platforms", "50 AI images + 10 videos / mo", "MCP server", "Analytics", "Threads, media & calendar"],
+    features: ["5 channels", "Unlimited posts", "All platforms", aiFeature("creator"), "MCP server", "Analytics", "Threads, media & calendar"],
     priceMonthly: process.env.STRIPE_PRICE_CREATOR_MONTH,
     priceAnnual: process.env.STRIPE_PRICE_CREATOR_YEAR,
   },
@@ -38,7 +56,7 @@ export const PLANS: Record<Exclude<PlanId, "trial">, Plan> = {
     channels: 15,
     seats: "team",
     blurb: "For creators with a small team.",
-    features: ["15 channels", "Team seats", "Bulk & video scheduling", "200 AI images + 30 videos / mo", "Everything in Creator"],
+    features: ["15 channels", "Team seats", "Bulk & video scheduling", aiFeature("team"), "Everything in Creator"],
     priceMonthly: process.env.STRIPE_PRICE_TEAM_MONTH,
     priceAnnual: process.env.STRIPE_PRICE_TEAM_YEAR,
   },
@@ -49,7 +67,7 @@ export const PLANS: Record<Exclude<PlanId, "trial">, Plan> = {
     channels: 50,
     seats: "team",
     blurb: "For power users running many accounts.",
-    features: ["50 channels", "500 AI images + 100 videos / mo", "Priority publishing", "Priority support", "Everything in Team"],
+    features: ["50 channels", aiFeature("growth"), "Priority publishing", "Priority support", "Everything in Team"],
     priceMonthly: process.env.STRIPE_PRICE_GROWTH_MONTH,
     priceAnnual: process.env.STRIPE_PRICE_GROWTH_YEAR,
   },
@@ -63,20 +81,6 @@ export const CHANNEL_LIMIT: Record<PlanId, number> = {
   creator: 5,
   team: 15,
   growth: 50,
-};
-
-// Monthly AI generation quota by plan (composer image/video generation).
-export const AI_IMAGE_LIMIT: Record<PlanId, number> = {
-  trial: 10,
-  creator: 50,
-  team: 200,
-  growth: 500,
-};
-export const AI_VIDEO_LIMIT: Record<PlanId, number> = {
-  trial: 2,
-  creator: 10,
-  team: 30,
-  growth: 100,
 };
 
 // Seats (org members, incl. pending invites) by plan.
