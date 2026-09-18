@@ -377,6 +377,13 @@ export function DeveloperClient({
         onClose={() => setRevokeTarget(null)}
         labelledBy="revoke-title"
         size="md"
+        panelClassName="border border-line bg-surface p-6 shadow-lg"
+        panelStyle={{
+          backgroundImage: [
+            "radial-gradient(120% 100% at 0% 0%, #d14a3e33, transparent 60%)", // brand red, top-left
+            "radial-gradient(110% 90% at 100% 100%, #e3a72c2b, transparent 58%)", // brand amber, bottom-right
+          ].join(","),
+        }}
       >
         <div className="text-center">
           <span
