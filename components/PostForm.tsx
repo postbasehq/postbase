@@ -465,13 +465,30 @@ export function PostForm({
             }`}
           >
             {channels.length === 0 ? (
-              <span className="text-sm text-muted">
-                No channels yet.{" "}
-                <Link href="/channels" className="font-medium text-blue-ink underline">
-                  Connect one
-                </Link>
-                .
-              </span>
+              <Link
+                href="/channels"
+                className="group flex items-center gap-3 rounded-full border border-dashed border-line bg-surface-2/40 py-1.5 pl-2 pr-4 transition hover:border-blue/60 hover:bg-surface-2"
+              >
+                <span className="flex -space-x-2">
+                  {["x", "linkedin", "instagram", "tiktok"].map((p) => (
+                    <span
+                      key={p}
+                      className="rounded-full opacity-40 grayscale ring-2 ring-surface transition group-hover:opacity-80 group-hover:grayscale-0"
+                    >
+                      <BrandTile platform={p} size={30} radius={15} />
+                    </span>
+                  ))}
+                  <span className="flex size-[30px] items-center justify-center rounded-full border border-dashed border-line bg-surface text-muted ring-2 ring-surface transition group-hover:border-blue group-hover:text-blue">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                  </span>
+                </span>
+                <span className="text-sm">
+                  <span className="font-medium text-ink">Connect a channel</span>
+                  <span className="text-muted"> to start posting</span>
+                </span>
+              </Link>
             ) : (
               <>
                 {channels.map((c) => {

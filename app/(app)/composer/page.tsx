@@ -37,9 +37,6 @@ export default async function ComposerPage({
 
   return (
     <div>
-      <p className="text-sm text-muted">
-        Write your post, pick channels, and schedule it.
-      </p>
       <PostForm
         channels={channels ?? []}
         action={createPost}
