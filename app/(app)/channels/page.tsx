@@ -46,19 +46,29 @@ export default async function ChannelsPage({
   const supabase = await createClient();
   const { data: channels } = await supabase
     .from("channels")
-    .select("id, platform, handle, status")
+    .select("id, platform, handle, status, display_name, avatar_url, verified")
     .order("created_at", { ascending: true });
 
   // Group connected accounts by platform for the board.
   const accountsByPlatform: Record<
     string,
-    { id: string; handle: string | null; status: string }[]
+    {
+      id: string;
+      handle: string | null;
+      status: string;
+      displayName: string | null;
+      avatarUrl: string | null;
+      verified: boolean;
+    }[]
   > = {};
   for (const c of channels ?? []) {
     (accountsByPlatform[c.platform] ??= []).push({
       id: c.id,
       handle: c.handle,
       status: c.status,
+      displayName: c.display_name ?? null,
+      avatarUrl: c.avatar_url ?? null,
+      verified: Boolean(c.verified),
     });
   }
   const connectedCount = channels?.length ?? 0;

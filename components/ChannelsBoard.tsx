@@ -7,7 +7,14 @@ import { BlueskyForm } from "@/components/BlueskyForm";
 import { DisconnectButton } from "@/components/DisconnectButton";
 import { Modal } from "@/components/Modal";
 
-type Account = { id: string; handle: string | null; status: string };
+type Account = {
+  id: string;
+  handle: string | null;
+  status: string;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+  verified?: boolean;
+};
 type Kind = "oauth" | "bluesky" | "mastodon";
 
 /**
@@ -63,16 +70,29 @@ function cardGlow(platform: string): React.CSSProperties {
 }
 
 function StatusPill({ status }: { status: string }) {
-  const label =
-    status === "active" ? "Connected" : status === "stub" ? "Stub" : status;
-  const tone =
-    status === "active"
-      ? "bg-green/12 text-green"
-      : "border border-line text-muted";
+  // Connected reads as a quiet dot + label (not a loud filled badge); any other
+  // status keeps a bordered pill so it stands out as needing attention.
+  if (status === "active") {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-green">
+        <span className="size-1.5 rounded-full bg-green" />
+        Connected
+      </span>
+    );
+  }
   return (
-    <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${tone}`}>
-      {label}
+    <span className="rounded-full border border-line px-2.5 py-0.5 text-[11px] font-semibold text-muted">
+      {status === "stub" ? "Stub" : status}
     </span>
+  );
+}
+
+// Small verified check, matching the composer preview badge.
+function VerifiedTick() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="shrink-0 text-blue" aria-label="Verified">
+      <path d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-4.86 1.42 1.41-6.15 6.35z" />
+    </svg>
   );
 }
 
@@ -142,22 +162,48 @@ export function ChannelsBoard({
 
         {connected ? (
           <div className="mt-4 flex flex-col gap-2">
-            {accounts.map((a) => (
-              <div
-                key={a.id}
-                className="flex items-center gap-2.5 rounded-xl bg-surface-2 px-3 py-2"
-              >
-                <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
-                  {a.handle ?? "Connected account"}
-                </span>
-                {a.status !== "active" ? <StatusPill status={a.status} /> : null}
-                <DisconnectButton
-                  action={disconnectAction}
-                  channelId={a.id}
-                  label={`${brand?.label ?? p.id}${a.handle ? ` (${a.handle})` : ""}`}
-                />
-              </div>
-            ))}
+            {accounts.map((a) => {
+              const primary = a.displayName || a.handle || "Connected account";
+              const secondary = a.displayName && a.handle ? a.handle : null;
+              return (
+                <div
+                  key={a.id}
+                  className="flex items-center gap-3 rounded-xl border border-line/70 bg-surface-2/50 px-2.5 py-2"
+                >
+                  {a.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={a.avatarUrl}
+                      alt=""
+                      className="size-9 shrink-0 rounded-full object-cover ring-1 ring-line"
+                    />
+                  ) : (
+                    <span className="grid size-9 shrink-0 place-items-center rounded-full ring-1 ring-line">
+                      <BrandTile platform={p.id} size={24} radius={12} />
+                    </span>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1">
+                      <span className="truncate text-[13px] font-semibold text-ink">{primary}</span>
+                      {a.verified ? <VerifiedTick /> : null}
+                      {a.status !== "active" ? (
+                        <span className="ml-1">
+                          <StatusPill status={a.status} />
+                        </span>
+                      ) : null}
+                    </div>
+                    {secondary ? (
+                      <div className="truncate text-xs text-muted">{secondary}</div>
+                    ) : null}
+                  </div>
+                  <DisconnectButton
+                    action={disconnectAction}
+                    channelId={a.id}
+                    label={`${brand?.label ?? p.id}${a.handle ? ` (${a.handle})` : ""}`}
+                  />
+                </div>
+              );
+            })}
           </div>
         ) : null}
 
