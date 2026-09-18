@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { McpClientConfig } from "@/components/McpClientConfig";
+import { Modal } from "@/components/Modal";
 import {
   createApiKey,
   rotateApiKey,
@@ -167,6 +168,7 @@ export function DeveloperClient({
   }, [rotateState.key]);
 
   const error = createState.error ?? rotateState.error;
+  const [revokeTarget, setRevokeTarget] = useState<ConnectedApp | null>(null);
 
   const sections: Section[] = [
     { id: "api-keys", label: "API keys" },
@@ -321,12 +323,13 @@ export function DeveloperClient({
                     {a.orgName} · connected {fmt(a.createdAt)} · last used {fmt(a.lastUsedAt)}
                   </div>
                 </div>
-                <form action={revokeConnectedApp} className="ml-auto">
-                  <input type="hidden" name="id" value={a.id} />
-                  <SubmitButton className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted transition hover:bg-terra/10 hover:text-terra disabled:opacity-50">
-                    Revoke
-                  </SubmitButton>
-                </form>
+                <button
+                  type="button"
+                  onClick={() => setRevokeTarget(a)}
+                  className="ml-auto rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted transition hover:bg-terra/10 hover:text-terra"
+                >
+                  Revoke
+                </button>
               </div>
             ))}
           </div>
@@ -367,6 +370,51 @@ export function DeveloperClient({
         </div>
       </details>
       </div>
+
+      {/* Revoke confirmation */}
+      <Modal
+        open={revokeTarget !== null}
+        onClose={() => setRevokeTarget(null)}
+        labelledBy="revoke-title"
+        size="md"
+      >
+        <div className="flex items-start gap-3.5">
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-terra/12 text-terra" aria-hidden>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18.36 6.64A9 9 0 1 1 5.64 6.64M12 2v10" />
+            </svg>
+          </span>
+          <div className="min-w-0">
+            <h3 id="revoke-title" className="font-display text-lg font-semibold tracking-[-0.01em]">
+              Revoke {revokeTarget?.appName ?? "this app"}?
+            </h3>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-muted">
+              {revokeTarget?.appName ?? "This app"} will immediately lose access to the{" "}
+              <b className="text-ink">{revokeTarget?.orgName}</b> workspace. Any agent using this
+              connection stops working until it's reconnected.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end gap-2.5">
+          <button
+            type="button"
+            onClick={() => setRevokeTarget(null)}
+            className="rounded-full border border-line px-4 py-2 text-sm font-medium text-muted transition hover:bg-surface-2 hover:text-ink"
+          >
+            Cancel
+          </button>
+          <form action={revokeConnectedApp} onSubmit={() => setRevokeTarget(null)}>
+            <input type="hidden" name="id" value={revokeTarget?.id ?? ""} />
+            <SubmitButton
+              pendingLabel="Revoking…"
+              className="rounded-full bg-terra px-5 py-2 font-display text-sm font-semibold text-white shadow-sm transition-shadow hover:shadow-md disabled:opacity-60"
+            >
+              Revoke access
+            </SubmitButton>
+          </form>
+        </div>
+      </Modal>
     </div>
   );
 }
