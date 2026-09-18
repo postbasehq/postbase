@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
 import { generateApiKey, hashApiKey, maskApiKey } from "@/lib/apikey";
+import { revokeToken } from "@/lib/oauth";
 
 export type CreateKeyState = { key?: string; label?: string; error?: string };
 
@@ -61,6 +62,21 @@ export async function rotateApiKey(
 
   revalidatePath("/api-keys");
   return { key, label };
+}
+
+/** Revoke a connected app (OAuth token) the current user authorized. */
+export async function revokeConnectedApp(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not signed in.");
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("Missing token id.");
+
+  await revokeToken(id, user.id);
+  revalidatePath("/api-keys");
 }
 
 export async function revokeApiKey(formData: FormData) {

@@ -175,6 +175,43 @@ export async function refreshTokens(refreshToken: string, clientId: string) {
   });
 }
 
+/** Apps the given user has authorized (one row per live OAuth token). */
+export async function listConnectedApps(userId: string) {
+  const db = createAdminClient();
+  const { data: tokens } = await db
+    .from("oauth_tokens")
+    .select("id, client_id, org_id, created_at, last_used_at, expires_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  const rows = tokens ?? [];
+  if (rows.length === 0) return [];
+
+  // No FK constraints between these tables, so resolve names with two lookups.
+  const clientIds = [...new Set(rows.map((r) => r.client_id as string))];
+  const orgIds = [...new Set(rows.map((r) => r.org_id as string))];
+  const [{ data: clients }, { data: orgs }] = await Promise.all([
+    db.from("oauth_clients").select("client_id, client_name").in("client_id", clientIds),
+    db.from("orgs").select("id, name").in("id", orgIds),
+  ]);
+  const nameByClient = new Map((clients ?? []).map((c) => [c.client_id, c.client_name]));
+  const nameByOrg = new Map((orgs ?? []).map((o) => [o.id, o.name]));
+
+  return rows.map((r) => ({
+    id: r.id as string,
+    appName: (nameByClient.get(r.client_id as string) as string) || "Connected app",
+    orgName: (nameByOrg.get(r.org_id as string) as string) || "—",
+    createdAt: r.created_at as string,
+    lastUsedAt: (r.last_used_at as string | null) ?? null,
+    expiresAt: r.expires_at as string,
+  }));
+}
+
+/** Revoke a token by id, but only if it belongs to the given user. */
+export async function revokeToken(tokenId: string, userId: string): Promise<void> {
+  const db = createAdminClient();
+  await db.from("oauth_tokens").delete().eq("id", tokenId).eq("user_id", userId);
+}
+
 /** Resolve a bearer access token to its org, or null. Bumps last_used_at. */
 export async function resolveAccessToken(token: string): Promise<{ orgId: string } | null> {
   const db = createAdminClient();

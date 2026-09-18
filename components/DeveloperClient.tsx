@@ -6,8 +6,10 @@ import {
   createApiKey,
   rotateApiKey,
   revokeApiKey,
+  revokeConnectedApp,
   type CreateKeyState,
 } from "@/app/(app)/apikey-actions";
+import { SubmitButton } from "@/components/SubmitButton";
 
 type KeyRow = {
   id: string;
@@ -17,20 +19,24 @@ type KeyRow = {
   last_used_at: string | null;
 };
 
-// In-page sections, in document order — drive both the anchors and the side menu.
-const SECTIONS = [
-  { id: "api-keys", label: "API keys" },
-  { id: "mcp", label: "MCP client" },
-  { id: "tools", label: "Tools" },
-] as const;
+type ConnectedApp = {
+  id: string;
+  appName: string;
+  orgName: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+  expiresAt: string;
+};
+
+type Section = { id: string; label: string };
 
 /** Sticky in-page menu with scrollspy: highlights the section in view and
  *  smooth-scrolls within the app's scrollable <main> on click. */
-function SideMenu() {
-  const [active, setActive] = useState<string>(SECTIONS[0].id);
+function SideMenu({ sections }: { sections: Section[] }) {
+  const [active, setActive] = useState<string>(sections[0]?.id ?? "");
 
   useEffect(() => {
-    const els = SECTIONS.map((s) => document.getElementById(s.id)).filter(
+    const els = sections.map((s) => document.getElementById(s.id)).filter(
       (el): el is HTMLElement => el != null,
     );
     if (els.length === 0) return;
@@ -45,7 +51,7 @@ function SideMenu() {
     );
     els.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, []);
+  }, [sections]);
 
   return (
     <nav className="hidden lg:block">
@@ -54,7 +60,7 @@ function SideMenu() {
           On this page
         </p>
         <ul className="flex flex-col gap-0.5">
-          {SECTIONS.map((s) => {
+          {sections.map((s) => {
             const on = active === s.id;
             return (
               <li key={s.id}>
@@ -135,10 +141,12 @@ export function DeveloperClient({
   keys,
   brandfetchId,
   mcpUrl,
+  connectedApps = [],
 }: {
   keys: KeyRow[];
   brandfetchId?: string;
   mcpUrl: string;
+  connectedApps?: ConnectedApp[];
 }) {
   const [createState, createAction, creating] = useActionState<CreateKeyState, FormData>(
     createApiKey,
@@ -160,9 +168,16 @@ export function DeveloperClient({
 
   const error = createState.error ?? rotateState.error;
 
+  const sections: Section[] = [
+    { id: "api-keys", label: "API keys" },
+    { id: "mcp", label: "MCP client" },
+    ...(connectedApps.length > 0 ? [{ id: "apps", label: "Connected apps" }] : []),
+    { id: "tools", label: "Tools" },
+  ];
+
   return (
     <div className="grid gap-8 lg:grid-cols-[160px_minmax(0,1fr)]">
-      <SideMenu />
+      <SideMenu sections={sections} />
 
       <div className="flex min-w-0 flex-col gap-6 pb-8">
       {/* ── API Key card ─────────────────────────────────────── */}
@@ -276,6 +291,47 @@ export function DeveloperClient({
       <div id="mcp" className="scroll-mt-4">
         <McpClientConfig apiKey={revealed} brandfetchId={brandfetchId} mcpUrl={mcpUrl} />
       </div>
+
+      {/* ── Connected apps (OAuth tokens) ────────────────────── */}
+      {connectedApps.length > 0 ? (
+        <section id="apps" className="scroll-mt-4 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
+          <div className="border-b border-line px-5 py-4">
+            <h2 className="font-display text-[15px] font-semibold tracking-[-0.01em]">Connected apps</h2>
+            <p className="mt-0.5 text-[13px] text-muted">
+              Tools you've signed in to Postbase from. Revoking cuts off their access immediately.
+            </p>
+          </div>
+          <div>
+            {connectedApps.map((a, i) => (
+              <div
+                key={a.id}
+                className={`flex flex-wrap items-center gap-3 px-5 py-3.5 ${
+                  i < connectedApps.length - 1 ? "border-b border-line" : ""
+                }`}
+              >
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-2 text-muted" aria-hidden>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                </span>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold">{a.appName}</div>
+                  <div className="mt-0.5 truncate text-xs text-muted">
+                    {a.orgName} · connected {fmt(a.createdAt)} · last used {fmt(a.lastUsedAt)}
+                  </div>
+                </div>
+                <form action={revokeConnectedApp} className="ml-auto">
+                  <input type="hidden" name="id" value={a.id} />
+                  <SubmitButton className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted transition hover:bg-terra/10 hover:text-terra disabled:opacity-50">
+                    Revoke
+                  </SubmitButton>
+                </form>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {/* ── Tools reference (collapsible) ────────────────────── */}
       <details

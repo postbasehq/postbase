@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { DeveloperClient } from "@/components/DeveloperClient";
-import { mcpResourceUrl } from "@/lib/oauth";
+import { mcpResourceUrl, listConnectedApps } from "@/lib/oauth";
 
 export default async function DevelopersPage() {
   const supabase = await createClient();
@@ -9,6 +9,11 @@ export default async function DevelopersPage() {
     .from("api_keys")
     .select("id, label, key_hint, created_at, last_used_at")
     .order("created_at", { ascending: false });
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const connectedApps = user ? await listConnectedApps(user.id) : [];
 
   return (
     <div>
@@ -22,6 +27,7 @@ export default async function DevelopersPage() {
           keys={keys ?? []}
           brandfetchId={process.env.BRANDFETCH_API_KEY}
           mcpUrl={mcpResourceUrl()}
+          connectedApps={connectedApps}
         />
       </div>
     </div>
