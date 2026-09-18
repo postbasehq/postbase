@@ -946,31 +946,43 @@ export function PostForm({
           <button type="button" onClick={closeGen} className="text-sm font-medium text-muted hover:text-ink">
             {genBusy ? "Stop" : "Cancel"}
           </button>
-          <button
-            type="button"
-            onClick={runGenerate}
-            disabled={
-              genBusy ||
-              (aiLeft ? aiLeft[genMode] <= 0 : false) ||
-              (genMode === "image"
-                ? !genPrompt.trim()
-                : !genPrompt.trim() && !(genUseImage && firstImage))
-            }
-            className="inline-flex items-center gap-2 rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {genBusy ? (
-              <>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="animate-spin" aria-hidden>
-                  <path d="M21 12a9 9 0 1 1-6.2-8.5" />
-                </svg>
-                Generating…
-              </>
-            ) : genMode === "video" ? (
-              "Generate video"
-            ) : (
-              "Generate image"
-            )}
-          </button>
+          {aiLeft && aiLeft[genMode] <= 0 ? (
+            <Link
+              href="/billing"
+              onClick={closeGen}
+              className="inline-flex items-center gap-1.5 rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
+            >
+              Upgrade plan
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={runGenerate}
+              disabled={
+                genBusy ||
+                (genMode === "image"
+                  ? !genPrompt.trim()
+                  : !genPrompt.trim() && !(genUseImage && firstImage))
+              }
+              className="inline-flex items-center gap-2 rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {genBusy ? (
+                <>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="animate-spin" aria-hidden>
+                    <path d="M21 12a9 9 0 1 1-6.2-8.5" />
+                  </svg>
+                  Generating…
+                </>
+              ) : genMode === "video" ? (
+                "Generate video"
+              ) : (
+                "Generate image"
+              )}
+            </button>
+          )}
         </div>
       </Modal>
 

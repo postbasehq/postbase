@@ -26,11 +26,13 @@ export const AI_IMAGE_LIMIT: Record<PlanId, number> = {
   team: 200,
   growth: 500,
 };
+// Video is ~10-50x the per-unit cost of an image, so quotas stay conservative
+// to protect margin (see AI pricing notes).
 export const AI_VIDEO_LIMIT: Record<PlanId, number> = {
   trial: 2,
-  creator: 10,
-  team: 30,
-  growth: 100,
+  creator: 5,
+  team: 15,
+  growth: 40,
 };
 
 /** The AI-quota feature line for a plan, derived from the limits (single source). */
