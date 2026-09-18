@@ -30,6 +30,25 @@ const ALLOWED = [
 ];
 const ACCEPT = ALLOWED.join(",");
 
+// Faint / stronger Postbase brand washes for the dropzone (blue, amber, terracotta).
+const WASH_IDLE = [
+  "radial-gradient(90% 130% at 0% 0%, #2b59d914, transparent 60%)",
+  "radial-gradient(80% 130% at 100% 0%, #e3a72c12, transparent 55%)",
+  "radial-gradient(90% 130% at 100% 100%, #d14a3e12, transparent 60%)",
+].join(",");
+const WASH_ACTIVE = [
+  "radial-gradient(90% 130% at 0% 0%, #2b59d930, transparent 62%)",
+  "radial-gradient(80% 130% at 100% 0%, #e3a72c26, transparent 58%)",
+  "radial-gradient(90% 130% at 100% 100%, #d14a3e26, transparent 62%)",
+].join(",");
+
+// Cards rotate through the three brand colours for a lively hover accent.
+const ACCENTS = [
+  "hover:border-[#2b59d9]/50 hover:shadow-[0_16px_36px_-16px_rgba(43,89,217,0.5)]",
+  "hover:border-[#e3a72c]/55 hover:shadow-[0_16px_36px_-16px_rgba(227,167,44,0.5)]",
+  "hover:border-[#d14a3e]/50 hover:shadow-[0_16px_36px_-16px_rgba(209,74,62,0.5)]",
+];
+
 function formatBytes(n: number): string {
   if (n >= 1024 ** 3) return `${(n / 1024 ** 3).toFixed(1)} GB`;
   if (n >= 1024 ** 2) return `${(n / 1024 ** 2).toFixed(1)} MB`;
@@ -310,8 +329,9 @@ export function MediaLibrary({
           setDragOver(false);
           handleFiles(e.dataTransfer.files);
         }}
-        className={`flex flex-col items-center rounded-2xl border-2 border-dashed px-6 py-10 text-center transition-colors ${
-          dragOver ? "border-blue bg-blue-soft/50" : "border-line bg-surface"
+        style={{ backgroundImage: dragOver ? WASH_ACTIVE : WASH_IDLE }}
+        className={`relative flex flex-col items-center overflow-hidden rounded-2xl border-2 border-dashed bg-surface px-6 py-12 text-center transition-all duration-200 ${
+          dragOver ? "scale-[1.01] border-blue" : "border-line hover:border-blue/40"
         }`}
       >
         <input
@@ -325,23 +345,34 @@ export function MediaLibrary({
             e.target.value = "";
           }}
         />
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-muted" aria-hidden>
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <path d="M17 8l-5-5-5 5" />
-          <path d="M12 3v12" />
-        </svg>
-        <div className="mt-3 text-sm font-medium">
-          Drag &amp; drop, or{" "}
+        <span
+          className={`grid size-14 place-items-center rounded-2xl text-white shadow-md transition-transform duration-200 ${
+            dragOver ? "-translate-y-0.5 scale-105" : ""
+          }`}
+          style={{ backgroundImage: "linear-gradient(140deg, #2b59d9, #d14a3e)" }}
+          aria-hidden
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <path d="M17 8l-5-5-5 5" />
+            <path d="M12 3v12" />
+          </svg>
+        </span>
+        <div className="mt-4 font-display text-[15px] font-semibold tracking-[-0.01em]">
+          {dragOver ? "Drop to upload" : "Drag & drop your media"}
+        </div>
+        <p className="mt-1 text-sm text-muted">
+          or{" "}
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="font-semibold text-blue-ink underline underline-offset-2"
+            className="font-semibold text-blue-ink underline underline-offset-2 hover:no-underline"
           >
-            browse
+            browse files
           </button>
-        </div>
-        <p className="mt-1 text-xs text-muted">
-          Images and video up to 1&nbsp;GB · MP4, MOV, WebM, JPG, PNG, WebP, GIF
+        </p>
+        <p className="mt-3 text-xs text-muted">
+          Images &amp; video up to 1&nbsp;GB · MP4, MOV, WebM, JPG, PNG, WebP, GIF
         </p>
       </div>
 
@@ -453,14 +484,16 @@ export function MediaLibrary({
         </p>
       ) : (
         <div className="mt-4 grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-4">
-          {visible.map((item) => {
+          {visible.map((item, i) => {
             const isVideo = item.type.startsWith("video/");
             const isSelected = selected.has(item.id);
             return (
               <div
                 key={item.id}
-                className={`group flex flex-col overflow-hidden rounded-2xl border bg-surface shadow-sm transition ${
-                  isSelected ? "border-blue ring-2 ring-blue/40" : "border-line"
+                className={`group flex flex-col overflow-hidden rounded-2xl border bg-surface shadow-sm transition-all duration-200 ${
+                  isSelected
+                    ? "border-blue ring-2 ring-blue/40"
+                    : `border-line hover:-translate-y-0.5 ${ACCENTS[i % ACCENTS.length]}`
                 }`}
               >
                 <button
