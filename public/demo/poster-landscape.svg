@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="1200" height="675">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2b59d9"/>
+      <stop offset="0.55" stop-color="#5b3fd0"/>
+      <stop offset="1" stop-color="#c0492f"/>
+    </linearGradient>
+    <radialGradient id="h" cx="0.78" cy="0.2" r="0.7">
+      <stop offset="0" stop-color="#e3a72c" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#e3a72c" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#g)"/>
+  <rect width="1200" height="675" fill="url(#h)"/>
+  <g fill="none" stroke="#ffffff" stroke-opacity="0.16" stroke-width="2">
+    <circle cx="300" cy="470" r="210"/>
+    <circle cx="300" cy="470" r="320"/>
+    <circle cx="300" cy="470" r="430"/>
+  </g>
+  <g fill="#ffffff">
+    <text x="90" y="300" font-family="'Plus Jakarta Sans',sans-serif" font-size="76" font-weight="700" letter-spacing="-2">Ship it once.</text>
+    <text x="90" y="386" font-family="'Plus Jakarta Sans',sans-serif" font-size="76" font-weight="700" letter-spacing="-2" fill-opacity="0.72">Post everywhere.</text>
+  </g>
+</svg>

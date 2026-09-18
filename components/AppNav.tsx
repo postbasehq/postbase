@@ -55,8 +55,17 @@ const SECTIONS: Section[] = [
   },
 ];
 
-export function AppNav() {
-  const pathname = usePathname() ?? "";
+export function AppNav({
+  active,
+  frozen,
+}: {
+  /** Force a nav item active by href (used by marketing product demos). */
+  active?: string;
+  /** Render items as non-navigating spans (for embedded demos). */
+  frozen?: boolean;
+} = {}) {
+  const livePathname = usePathname() ?? "";
+  const pathname = active ?? livePathname;
   return (
     <nav className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {SECTIONS.map((section, i) => (
@@ -94,6 +103,21 @@ export function AppNav() {
             );
             const cls =
               "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors";
+            if (frozen) {
+              const isActive = pathname === item.href;
+              return (
+                <span
+                  key={item.href}
+                  className={`${cls} ${
+                    isActive
+                      ? "bg-blue-soft text-blue-ink"
+                      : "text-muted"
+                  }`}
+                >
+                  {inner}
+                </span>
+              );
+            }
             if (item.external) {
               return (
                 <a
