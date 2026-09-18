@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentOrgId } from "@/lib/org";
+import { getCurrentOrgId, getOrgRole } from "@/lib/org";
 import { getClient, issueCode } from "@/lib/oauth";
 
 /** Build a redirect back to the client with query params appended. */
@@ -30,8 +30,18 @@ export async function approveAuthorization(formData: FormData) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const orgId = await getCurrentOrgId();
-  if (!user || !orgId) redirect("/login");
+  if (!user) redirect("/login");
+
+  // Resolve the workspace to authorize: the picked one if the user is actually a
+  // member of it (never trust the form), else their active/default org.
+  const requestedOrg = String(formData.get("org_id") ?? "");
+  let orgId: string | null = null;
+  if (requestedOrg && (await getOrgRole(requestedOrg))) {
+    orgId = requestedOrg;
+  } else {
+    orgId = await getCurrentOrgId();
+  }
+  if (!orgId) redirect("/login");
 
   // Re-verify the client + redirect_uri server-side before issuing anything.
   const client = await getClient(clientId);

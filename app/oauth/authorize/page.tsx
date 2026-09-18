@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentOrgId } from "@/lib/org";
+import { getCurrentOrgId, getUserOrgs } from "@/lib/org";
 import { getClient } from "@/lib/oauth";
 import { approveAuthorization, denyAuthorization } from "./actions";
 
@@ -71,12 +71,11 @@ export default async function AuthorizePage({
     redirect(`/login?next=${encodeURIComponent(`/oauth/authorize?${qs}`)}`);
   }
 
-  const orgId = await getCurrentOrgId();
-  let orgName = "your workspace";
-  if (orgId) {
-    const { data: org } = await supabase.from("orgs").select("name").eq("id", orgId).maybeSingle();
-    if (org?.name) orgName = org.name;
-  }
+  const [orgId, orgs] = await Promise.all([getCurrentOrgId(), getUserOrgs()]);
+  const defaultOrgId = orgId ?? orgs[0]?.id ?? "";
+  const currentOrgName =
+    orgs.find((o) => o.id === defaultOrgId)?.name ?? orgs[0]?.name ?? "your workspace";
+  const multiOrg = orgs.length > 1;
 
   const appName = client.name?.trim() || "An application";
   const hidden = {
@@ -100,8 +99,13 @@ export default async function AuthorizePage({
           {appName} wants to connect to Postbase
         </h1>
         <p className="mt-2 text-sm text-muted">
-          Signed in as <b className="text-ink">{user.email}</b> · workspace{" "}
-          <b className="text-ink">{orgName}</b>
+          Signed in as <b className="text-ink">{user.email}</b>
+          {!multiOrg ? (
+            <>
+              {" "}
+              · workspace <b className="text-ink">{currentOrgName}</b>
+            </>
+          ) : null}
         </p>
 
         <div className="mt-5 rounded-xl border border-line bg-surface-2/40 p-4">
@@ -127,30 +131,47 @@ export default async function AuthorizePage({
           access anytime from Developers.
         </p>
 
-        <div className="mt-6 flex items-center gap-2.5">
-          <form action={denyAuthorization} className="flex-1">
-            {Object.entries(hidden).map(([k, v]) => (
-              <input key={k} type="hidden" name={k} value={v} />
-            ))}
+        <form className="mt-5">
+          {Object.entries(hidden).map(([k, v]) => (
+            <input key={k} type="hidden" name={k} value={v} />
+          ))}
+
+          {multiOrg ? (
+            <label className="mb-4 flex flex-col gap-1.5">
+              <span className="text-[13px] font-medium text-muted">Authorize for workspace</span>
+              <select
+                name="org_id"
+                defaultValue={defaultOrgId}
+                className="rounded-xl border border-line bg-ground px-3.5 py-2.5 text-sm outline-none focus-visible:border-blue"
+              >
+                {orgs.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <input type="hidden" name="org_id" value={defaultOrgId} />
+          )}
+
+          <div className="flex items-center gap-2.5">
             <button
               type="submit"
-              className="w-full rounded-full border border-line px-5 py-2.5 text-sm font-semibold text-muted transition hover:bg-surface-2 hover:text-ink"
+              formAction={denyAuthorization}
+              className="flex-1 rounded-full border border-line px-5 py-2.5 text-sm font-semibold text-muted transition hover:bg-surface-2 hover:text-ink"
             >
               Deny
             </button>
-          </form>
-          <form action={approveAuthorization} className="flex-1">
-            {Object.entries(hidden).map(([k, v]) => (
-              <input key={k} type="hidden" name={k} value={v} />
-            ))}
             <button
               type="submit"
-              className="w-full rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
+              formAction={approveAuthorization}
+              className="flex-1 rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
             >
               Authorize
             </button>
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
     </main>
   );
