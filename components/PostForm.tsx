@@ -934,56 +934,69 @@ export function PostForm({
           </h3>
         </div>
 
-        {/* image / video mode */}
-        <div className="mt-3 inline-flex rounded-lg border border-line p-0.5 text-xs font-semibold">
-          {(["image", "video"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              disabled={genBusy}
-              onClick={() => {
-                setGenMode(m);
-                setGenError(null);
-                if (m === "video") setGenAspect("9:16");
-              }}
-              className={`rounded-md px-3 py-1.5 capitalize transition ${
-                genMode === m ? "bg-blue-soft text-blue-ink" : "text-muted hover:text-ink"
-              }`}
-            >
-              {m}
-            </button>
-          ))}
-        </div>
+        {genBusy ? (
+          <div className="mt-2">
+            {genPrompt.trim() ? (
+              <p className="line-clamp-2 text-sm italic text-muted">“{genPrompt.trim()}”</p>
+            ) : (
+              <p className="text-sm text-muted">Animating your uploaded image…</p>
+            )}
+            <p className="mt-1 text-xs text-muted">
+              {genMode === "video"
+                ? "This usually takes a minute or two — hang tight."
+                : "This usually takes a few seconds — hang tight."}
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* image / video mode */}
+            <div className="mt-3 inline-flex rounded-lg border border-line p-0.5 text-xs font-semibold">
+              {(["image", "video"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => {
+                    setGenMode(m);
+                    setGenError(null);
+                    if (m === "video") setGenAspect("9:16");
+                  }}
+                  className={`rounded-md px-3 py-1.5 capitalize transition ${
+                    genMode === m ? "bg-blue-soft text-blue-ink" : "text-muted hover:text-ink"
+                  }`}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
 
-        <p className="mt-2 text-sm text-muted">
-          {genMode === "video"
-            ? "Describe the clip — we’ll generate a short video and add it to your post."
-            : "Describe what you want — we’ll create it and add it to your post."}
-        </p>
+            <p className="mt-2 text-sm text-muted">
+              {genMode === "video"
+                ? "Describe the clip — we’ll generate a short video and add it to your post."
+                : "Describe what you want — we’ll create it and add it to your post."}
+            </p>
 
-        {aiLeft ? (
-          <p
-            className={`mt-1 text-xs ${aiLeft[genMode] <= 0 ? "font-medium text-terra" : "text-muted"}`}
-          >
-            {aiLeft[genMode] <= 0
-              ? `No AI ${genMode}s left this month — upgrade your plan for more.`
-              : `${aiLeft[genMode]} ${genMode}${aiLeft[genMode] === 1 ? "" : "s"} left this month`}
-          </p>
-        ) : null}
+            {aiLeft ? (
+              <p className={`mt-1 text-xs ${aiLeft[genMode] <= 0 ? "font-medium text-terra" : "text-muted"}`}>
+                {aiLeft[genMode] <= 0
+                  ? `No AI ${genMode}s left this month — upgrade your plan for more.`
+                  : `${aiLeft[genMode]} ${genMode}${aiLeft[genMode] === 1 ? "" : "s"} left this month`}
+              </p>
+            ) : null}
 
-        {genMode === "video" && firstImage ? (
-          <label className="mt-3 flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={genUseImage}
-              disabled={genBusy}
-              onChange={(e) => setGenUseImage(e.target.checked)}
-              style={{ accentColor: "var(--blue)" }}
-              className="size-4"
-            />
-            <span className="text-ink">Animate my uploaded image</span>
-          </label>
-        ) : null}
+            {genMode === "video" && firstImage ? (
+              <label className="mt-3 flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={genUseImage}
+                  onChange={(e) => setGenUseImage(e.target.checked)}
+                  style={{ accentColor: "var(--blue)" }}
+                  className="size-4"
+                />
+                <span className="text-ink">Animate my uploaded image</span>
+              </label>
+            ) : null}
+          </>
+        )}
 
         {genBusy ? (
           <div className="mt-4 flex justify-center">
