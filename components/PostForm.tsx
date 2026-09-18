@@ -650,7 +650,7 @@ export function PostForm({
                     );
                     setGenOpen(true);
                   }}
-                  className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-blue-ink transition-colors hover:bg-blue-soft"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-blue/40 bg-blue-soft px-3 py-1.5 text-xs font-semibold text-blue-ink shadow-sm transition hover:border-blue/70 hover:shadow-md"
                 >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />
@@ -676,7 +676,7 @@ export function PostForm({
                     setDraftQuery("");
                     setDraftsOpen(true);
                   }}
-                  className="ml-auto inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-2 hover:text-ink"
+                  className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2/70 px-3 py-1.5 text-xs font-semibold text-ink shadow-sm transition hover:border-blue/50 hover:bg-surface-2 hover:shadow-md"
                 >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
