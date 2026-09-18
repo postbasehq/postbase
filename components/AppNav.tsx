@@ -31,7 +31,7 @@ const SECTIONS: Section[] = [
       { label: "Developers", href: "/api-keys", icon: ApiIcon },
       {
         label: "Docs",
-        href: "https://github.com/postbasehq/postbase",
+        href: "https://docs.postbase.so",
         icon: DocsIcon,
         external: true,
       },
