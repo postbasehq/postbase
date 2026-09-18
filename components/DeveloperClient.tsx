@@ -278,23 +278,20 @@ export function DeveloperClient({
       </div>
 
       {/* ── Tools reference ──────────────────────────────────── */}
-      <section id="tools" className="scroll-mt-4 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
-        <div className="border-b border-line px-5 py-4">
-          <h2 className="font-display text-[15px] font-semibold tracking-[-0.01em]">
-            What your agent can do
-          </h2>
-          <p className="mt-0.5 text-[13px] text-muted">
-            Once connected, ask it in plain language — e.g.{" "}
-            <em>"Schedule this thread for 9am to X and LinkedIn."</em>
+      <section id="tools" className="scroll-mt-4 rounded-2xl border border-line bg-surface p-5 shadow-sm">
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <h2 className="font-display text-[15px] font-semibold tracking-[-0.01em]">Tools</h2>
+          <p className="text-[13px] text-muted">
+            What your agent can call — just ask it in plain language.
           </p>
         </div>
-        <div className="grid gap-px bg-line sm:grid-cols-2">
+        <div className="mt-3.5 grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
           {MCP_TOOLS.map((t) => (
-            <div key={t.name} className="bg-surface px-5 py-4">
-              <code className="rounded-md bg-surface-2 px-2 py-1 font-mono text-[12.5px] font-semibold text-blue-ink">
+            <div key={t.name} className="flex items-baseline gap-2.5">
+              <code className="shrink-0 rounded-md bg-surface-2 px-1.5 py-0.5 font-mono text-[12px] font-semibold text-blue-ink">
                 {t.name}
               </code>
-              <p className="mt-2 text-[13px] text-muted">{t.desc}</p>
+              <span className="text-[12.5px] leading-snug text-muted">{t.desc}</span>
             </div>
           ))}
         </div>
