@@ -2,9 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ComponentType } from "react";
+import { useState, type ComponentType } from "react";
+import { FeedbackModal } from "@/components/FeedbackModal";
 
-type Item = { label: string; href: string; icon: ComponentType; external?: boolean };
+type Item = {
+  label: string;
+  href: string;
+  icon: ComponentType;
+  external?: boolean;
+  /** Opens an in-app action instead of navigating. */
+  action?: "feedback";
+};
 type Section = { label: string | null; items: Item[] };
 
 const SECTIONS: Section[] = [
@@ -49,14 +57,14 @@ const SECTIONS: Section[] = [
     label: "Support",
     items: [
       { label: "Postbase on X", href: "https://x.com/postbasehq", icon: XIcon, external: true },
-      // TODO: wire Feedback (swap href for a form/route, or convert to a modal trigger).
-      { label: "Feedback", href: "#", icon: FeedbackIcon },
+      { label: "Feedback", href: "#feedback", icon: FeedbackIcon, action: "feedback" },
     ],
   },
 ];
 
 export function AppNav() {
   const pathname = usePathname() ?? "";
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   return (
     <nav className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {SECTIONS.map((section, i) => (
@@ -94,6 +102,18 @@ export function AppNav() {
             );
             const cls =
               "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors";
+            if (item.action === "feedback") {
+              return (
+                <button
+                  key={item.href}
+                  type="button"
+                  onClick={() => setFeedbackOpen(true)}
+                  className={`${cls} w-full text-left text-muted hover:bg-surface-2 hover:text-ink`}
+                >
+                  {inner}
+                </button>
+              );
+            }
             if (item.external) {
               return (
                 <a
@@ -125,6 +145,7 @@ export function AppNav() {
           })}
         </div>
       ))}
+      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </nav>
   );
 }
