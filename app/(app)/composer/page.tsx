@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { PostForm } from "@/components/PostForm";
+import { higgsfieldConfigured } from "@/lib/higgsfield";
 import { createPost } from "../actions";
 
 export default async function ComposerPage({
@@ -33,6 +34,7 @@ export default async function ComposerPage({
         submitLabel="Schedule post"
         defaultScheduleLocal={defaultScheduleLocal}
         libraryItems={library ?? []}
+        aiEnabled={higgsfieldConfigured()}
       />
     </div>
   );

@@ -126,6 +126,8 @@ type PostFormProps = {
   defaultScheduleLocal?: string;
   /** Reusable assets from the media library, for the "Pick from library" picker. */
   libraryItems?: LibraryItem[];
+  /** Show the AI "Generate" control (Higgsfield keys configured server-side). */
+  aiEnabled?: boolean;
   initial?: {
     id: string;
     thread: string[];
@@ -153,6 +155,7 @@ export function PostForm({
   defaultScheduleLocal,
   libraryItems = [],
   initial,
+  aiEnabled = false,
 }: PostFormProps) {
   const [tweets, setTweets] = useState<Tweet[]>(() =>
     (initial?.thread?.length ? initial.thread : [""]).map((text, i) => ({
@@ -502,27 +505,29 @@ export function PostForm({
                 </svg>
                 Library
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setGenError(null);
-                  // Suggest an aspect ratio that suits the selected channels.
-                  setGenAspect(
-                    selectedPlatforms.some((p) => p === "tiktok" || p === "youtube")
-                      ? "9:16"
-                      : selectedPlatforms.includes("instagram")
-                        ? "4:5"
-                        : "1:1",
-                  );
-                  setGenOpen(true);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-blue-ink transition-colors hover:bg-blue-soft"
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />
-                </svg>
-                Generate
-              </button>
+              {aiEnabled ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGenError(null);
+                    // Suggest an aspect ratio that suits the selected channels.
+                    setGenAspect(
+                      selectedPlatforms.some((p) => p === "tiktok" || p === "youtube")
+                        ? "9:16"
+                        : selectedPlatforms.includes("instagram")
+                          ? "4:5"
+                          : "1:1",
+                    );
+                    setGenOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-blue-ink transition-colors hover:bg-blue-soft"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />
+                  </svg>
+                  Generate
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={addTweet}

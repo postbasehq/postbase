@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PostForm } from "@/components/PostForm";
+import { higgsfieldConfigured } from "@/lib/higgsfield";
 import { updatePost } from "../../actions";
 
 export default async function EditPostPage({
@@ -65,6 +66,7 @@ export default async function EditPostPage({
         action={updatePost}
         submitLabel="Save changes"
         libraryItems={library ?? []}
+        aiEnabled={higgsfieldConfigured()}
         initial={{
           id: post.id,
           thread: [post.body, ...((post.thread_tail as string[] | null) ?? [])],
