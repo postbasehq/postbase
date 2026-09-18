@@ -164,7 +164,7 @@ export function DeveloperClient({
     <div className="grid gap-8 lg:grid-cols-[160px_minmax(0,1fr)]">
       <SideMenu />
 
-      <div className="flex min-w-0 flex-col gap-6">
+      <div className="flex min-w-0 flex-col gap-6 pb-8">
       {/* ── API Key card ─────────────────────────────────────── */}
       <section id="api-keys" className="scroll-mt-4 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
         <div className="flex flex-wrap items-start gap-3 border-b border-line px-5 py-4">
