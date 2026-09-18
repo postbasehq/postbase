@@ -12,6 +12,28 @@ function backTo(redirectUri: string, params: Record<string, string>): string {
   return url.toString();
 }
 
+/** Re-enter the consent page with the original params — used when the client
+ *  can no longer be validated (e.g. it was re-registered), so the user sees the
+ *  friendly "reconnect from your tool" card instead of a raw runtime error. */
+function reAuthorizeUrl(formData: FormData): string {
+  const qs = new URLSearchParams();
+  for (const k of [
+    "response_type",
+    "client_id",
+    "redirect_uri",
+    "code_challenge",
+    "code_challenge_method",
+    "state",
+    "scope",
+    "resource",
+  ]) {
+    const v = String(formData.get(k) ?? "");
+    if (v) qs.set(k, v);
+  }
+  if (!qs.get("response_type")) qs.set("response_type", "code");
+  return `/oauth/authorize?${qs.toString()}`;
+}
+
 /**
  * Approve an authorization request: mint a single-use code bound to the signed-in
  * user's org and the client's PKCE challenge, then redirect back to the client.
@@ -44,9 +66,12 @@ export async function approveAuthorization(formData: FormData) {
   if (!orgId) redirect("/login");
 
   // Re-verify the client + redirect_uri server-side before issuing anything.
+  // If it can't be validated (e.g. the client was re-registered between render
+  // and submit), bounce to the consent page which shows a friendly reconnect
+  // message rather than throwing a runtime error.
   const client = await getClient(clientId);
   if (!client || !client.redirectUris.includes(redirectUri)) {
-    throw new Error("Invalid client or redirect_uri.");
+    redirect(reAuthorizeUrl(formData));
   }
 
   const code = await issueCode({
@@ -71,7 +96,7 @@ export async function denyAuthorization(formData: FormData) {
 
   const client = await getClient(clientId);
   if (!client || !client.redirectUris.includes(redirectUri)) {
-    throw new Error("Invalid client or redirect_uri.");
+    redirect(reAuthorizeUrl(formData));
   }
   redirect(backTo(redirectUri, { error: "access_denied", state }));
 }
