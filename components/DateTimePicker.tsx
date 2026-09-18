@@ -25,9 +25,12 @@ const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5);
 export function DateTimePicker({
   value,
   onChange,
+  timeZone,
 }: {
   value: string;
   onChange: (v: string) => void;
+  /** IANA zone the times are interpreted in, shown as a caption in the popover. */
+  timeZone?: string;
 }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -231,6 +234,16 @@ export function DateTimePicker({
               </select>
             </div>
           </div>
+
+          {timeZone ? (
+            <p className="mt-2 flex items-center gap-1.5 px-1 text-[11px] text-muted">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <circle cx="12" cy="12" r="10" />
+                <path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20" />
+              </svg>
+              Publishes in {timeZone}
+            </p>
+          ) : null}
 
           {/* actions */}
           <div className="mt-3 flex items-center justify-between px-1">

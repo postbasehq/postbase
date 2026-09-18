@@ -843,7 +843,7 @@ export function PostForm({
       {/* ── Action bar (fixed footer, spans the whole panel) ──── */}
       <div className="fixed bottom-3 left-0 right-3 z-30 rounded-b-2xl border border-line bg-surface shadow-[0_-4px_14px_-10px_rgba(16,24,40,0.22)] md:left-60">
         <div className="mx-auto flex w-full max-w-[1248px] flex-wrap items-center gap-x-4 gap-y-3 px-6 py-3.5">
-        <DateTimePicker value={scheduleLocal} onChange={setScheduleLocal} />
+        <DateTimePicker value={scheduleLocal} onChange={setScheduleLocal} timeZone={tz} />
 
         {!isDraft ? (
           <label
@@ -872,13 +872,9 @@ export function PostForm({
           </label>
         ) : null}
 
-        <span className="text-xs text-muted">
-          {isDraft
-            ? "No time — saves as a draft"
-            : repeatEvery
-              ? `Repeats · ${tz}`
-              : `Publishes · ${tz}`}
-        </span>
+        {isDraft ? (
+          <span className="text-xs text-muted">No time — saves as a draft</span>
+        ) : null}
 
         {selectedPlatforms.length > 0 ? (
           <span
