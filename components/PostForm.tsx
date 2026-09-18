@@ -97,6 +97,20 @@ function previewVars(platform: string, mode: "light" | "dark"): React.CSSPropert
   return (PREVIEW_PALETTES[platform] ?? PREVIEW_PALETTES.default)[mode] as React.CSSProperties;
 }
 
+// Shared glassy panel with the three Postbase brand colours washing across it,
+// reused by the composer's modals for a consistent, on-brand look.
+const BRAND_GLASS_PANEL: { panelClassName: string; panelStyle: React.CSSProperties } = {
+  panelClassName:
+    "border border-white/15 bg-surface/75 p-6 shadow-[0_28px_80px_-24px_rgba(16,24,40,0.7)] backdrop-blur-2xl",
+  panelStyle: {
+    backgroundImage: [
+      "radial-gradient(120% 90% at 0% 0%, #2b59d93d, transparent 55%)", // brand blue
+      "radial-gradient(110% 80% at 100% 4%, #e3a72c2e, transparent 52%)", // amber
+      "radial-gradient(120% 85% at 100% 100%, #d14a3e29, transparent 55%)", // terracotta
+    ].join(","),
+  },
+};
+
 let tweetSeq = 0;
 const freshTweet = (text = ""): Tweet => {
   const id =
@@ -834,14 +848,7 @@ export function PostForm({
         onClose={closeGen}
         labelledBy="gen-title"
         size="lg"
-        panelClassName="border border-white/15 bg-surface/75 p-6 shadow-[0_28px_80px_-24px_rgba(16,24,40,0.7)] backdrop-blur-2xl"
-        panelStyle={{
-          backgroundImage: [
-            "radial-gradient(120% 90% at 0% 0%, #2b59d93d, transparent 55%)", // brand blue
-            "radial-gradient(110% 80% at 100% 4%, #e3a72c2e, transparent 52%)", // amber
-            "radial-gradient(120% 85% at 100% 100%, #d14a3e29, transparent 55%)", // terracotta
-          ].join(","),
-        }}
+        {...BRAND_GLASS_PANEL}
       >
         <div className="flex items-center gap-3">
           <span className="flex size-9 shrink-0 items-center justify-center" aria-hidden>
@@ -989,7 +996,7 @@ export function PostForm({
         </div>
       </Modal>
 
-      <Modal open={libraryOpen} onClose={closeLibrary} labelledBy="lib-picker-title">
+      <Modal open={libraryOpen} onClose={closeLibrary} labelledBy="lib-picker-title" size="lg" {...BRAND_GLASS_PANEL}>
         <div className="flex items-center gap-2">
           <h3
             id="lib-picker-title"
@@ -1004,14 +1011,11 @@ export function PostForm({
 
         {libraryItems.length === 0 ? (
           <div className="mt-5 flex flex-col items-center rounded-2xl border border-dashed border-line bg-surface-2/40 px-6 py-10 text-center">
-            <span className="relative flex size-14 items-center justify-center">
-              <span className="absolute size-14 rounded-2xl bg-blue-soft/70" />
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2b59d9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="relative" aria-hidden>
-                <rect x="3" y="3" width="18" height="18" rx="3" />
-                <circle cx="8.5" cy="8.5" r="1.6" />
-                <path d="m21 15-4-4a2 2 0 0 0-2.8 0L4 21" />
-              </svg>
-            </span>
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted" aria-hidden>
+              <rect x="3" y="3" width="18" height="18" rx="3" />
+              <circle cx="8.5" cy="8.5" r="1.6" />
+              <path d="m21 15-4-4a2 2 0 0 0-2.8 0L4 21" />
+            </svg>
             <h4 className="mt-4 font-display text-[15px] font-semibold tracking-[-0.01em] text-ink">
               Nothing saved yet
             </h4>
