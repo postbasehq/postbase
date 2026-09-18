@@ -829,12 +829,24 @@ export function PostForm({
       </div>
 
       {/* Generate media with AI */}
-      <Modal open={genOpen} onClose={closeGen} labelledBy="gen-title">
-        <div className="flex items-center gap-2">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-ink" aria-hidden>
-            <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />
-          </svg>
-          <h3 id="gen-title" className="font-display text-lg font-semibold tracking-[-0.01em]">
+      <Modal
+        open={genOpen}
+        onClose={closeGen}
+        labelledBy="gen-title"
+        size="lg"
+        panelClassName="border border-white/15 bg-surface/75 p-6 shadow-[0_28px_80px_-24px_rgba(16,24,40,0.7)] backdrop-blur-2xl"
+        panelStyle={{
+          backgroundImage:
+            "radial-gradient(130% 90% at 0% 0%, color-mix(in oklab, var(--blue) 22%, transparent), transparent 55%), radial-gradient(120% 85% at 100% 6%, color-mix(in oklab, var(--blue) 13%, transparent), transparent 55%)",
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue to-blue-ink text-on-blue shadow-sm">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />
+            </svg>
+          </span>
+          <h3 id="gen-title" className="font-display text-xl font-semibold tracking-[-0.01em]">
             Generate {genMode === "video" ? "a video" : "an image"}
           </h3>
         </div>

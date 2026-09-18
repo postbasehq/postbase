@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 
 /**
  * Lightweight modal shell: backdrop, Escape-to-close, focus on open, and a
@@ -14,12 +14,17 @@ export function Modal({
   onClose,
   labelledBy,
   size = "md",
+  panelClassName,
+  panelStyle,
   children,
 }: {
   open: boolean;
   onClose: () => void;
   labelledBy?: string;
   size?: keyof typeof SIZES;
+  /** Override the panel's surface classes (border/bg/padding/shadow). */
+  panelClassName?: string;
+  panelStyle?: CSSProperties;
   children: ReactNode;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -55,7 +60,10 @@ export function Modal({
       <div
         ref={panelRef}
         tabIndex={-1}
-        className={`relative z-10 max-h-[88vh] w-full ${SIZES[size]} overflow-y-auto rounded-2xl border border-line bg-surface p-5 shadow-lg outline-none`}
+        style={panelStyle}
+        className={`relative z-10 max-h-[88vh] w-full ${SIZES[size]} overflow-y-auto rounded-2xl outline-none ${
+          panelClassName ?? "border border-line bg-surface p-5 shadow-lg"
+        }`}
       >
         {children}
       </div>
