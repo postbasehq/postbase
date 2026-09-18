@@ -105,6 +105,19 @@ function fmt(iso: string | null) {
 
 /** Shared destructive-confirm dialog (brand wash, solid red icon), used for
  *  revoking both API keys and connected apps. */
+const BAN_ICON = (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <path d="m4.9 4.9 14.2 14.2" />
+  </svg>
+);
+const ROTATE_ICON = (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 2v6h6M21 12A9 9 0 0 0 6 5.3L3 8" />
+    <path d="M21 22v-6h-6M3 12a9 9 0 0 0 15 6.7l3-2.7" />
+  </svg>
+);
+
 function RevokeDialog({
   open,
   onClose,
@@ -113,14 +126,18 @@ function RevokeDialog({
   action,
   id,
   confirmLabel = "Revoke access",
+  icon = BAN_ICON,
+  extraFields,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   description: React.ReactNode;
-  action: (formData: FormData) => Promise<void>;
+  action: (formData: FormData) => void | Promise<void>;
   id: string;
   confirmLabel?: string;
+  icon?: React.ReactNode;
+  extraFields?: Record<string, string>;
 }) {
   return (
     <Modal
@@ -142,10 +159,7 @@ function RevokeDialog({
           style={{ backgroundColor: "#d14a3e" }}
           aria-hidden
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <path d="m4.9 4.9 14.2 14.2" />
-          </svg>
+          {icon}
         </span>
         <h3 id="revoke-title" className="mt-4 font-display text-lg font-semibold tracking-[-0.01em]">
           {title}
@@ -163,6 +177,11 @@ function RevokeDialog({
         </button>
         <form action={action} onSubmit={onClose} className="flex-1">
           <input type="hidden" name="id" value={id} />
+          {extraFields
+            ? Object.entries(extraFields).map(([k, v]) => (
+                <input key={k} type="hidden" name={k} value={v} />
+              ))
+            : null}
           <SubmitButton
             pendingLabel="Revoking…"
             className="w-full rounded-full bg-[#d14a3e] px-5 py-2.5 font-display text-sm font-semibold text-white shadow-sm transition hover:bg-[#b83f34] hover:shadow-md disabled:opacity-60"
@@ -242,6 +261,7 @@ export function DeveloperClient({
   const error = createState.error ?? rotateState.error;
   const [revokeTarget, setRevokeTarget] = useState<ConnectedApp | null>(null);
   const [keyTarget, setKeyTarget] = useState<KeyRow | null>(null);
+  const [rotateTarget, setRotateTarget] = useState<KeyRow | null>(null);
 
   const sections: Section[] = [
     { id: "api-keys", label: "API keys" },
@@ -325,22 +345,19 @@ export function DeveloperClient({
                     </div>
                   </div>
                   <div className="ml-auto flex items-center gap-1">
-                    <form action={rotateAction}>
-                      <input type="hidden" name="id" value={k.id} />
-                      <input type="hidden" name="label" value={k.label ?? "Default"} />
-                      <button
-                        type="submit"
-                        disabled={rotating}
-                        title="Revoke this key and mint a replacement"
-                        className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted transition hover:bg-surface-2 hover:text-ink disabled:opacity-50"
-                      >
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                          <path d="M3 2v6h6M21 12A9 9 0 0 0 6 5.3L3 8" />
-                          <path d="M21 22v-6h-6M3 12a9 9 0 0 0 15 6.7l3-2.7" />
-                        </svg>
-                        Rotate
-                      </button>
-                    </form>
+                    <button
+                      type="button"
+                      onClick={() => setRotateTarget(k)}
+                      disabled={rotating}
+                      title="Revoke this key and mint a replacement"
+                      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted transition hover:bg-surface-2 hover:text-ink disabled:opacity-50"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M3 2v6h6M21 12A9 9 0 0 0 6 5.3L3 8" />
+                        <path d="M21 22v-6h-6M3 12a9 9 0 0 0 15 6.7l3-2.7" />
+                      </svg>
+                      Rotate
+                    </button>
                     <button
                       type="button"
                       onClick={() => setKeyTarget(k)}
@@ -442,7 +459,24 @@ export function DeveloperClient({
       </details>
       </div>
 
-      {/* Revoke confirmations */}
+      {/* Revoke / rotate confirmations */}
+      <RevokeDialog
+        open={rotateTarget !== null}
+        onClose={() => setRotateTarget(null)}
+        title={`Rotate ${rotateTarget?.label ?? "this key"}?`}
+        description={
+          <>
+            The current key stops working immediately and a fresh one is generated (shown once).
+            Update anything using it — the MCP server, CLI, or REST API — with the new key.
+          </>
+        }
+        action={rotateAction}
+        id={rotateTarget?.id ?? ""}
+        extraFields={{ label: rotateTarget?.label ?? "Default" }}
+        icon={ROTATE_ICON}
+        confirmLabel="Rotate key"
+      />
+
       <RevokeDialog
         open={keyTarget !== null}
         onClose={() => setKeyTarget(null)}
