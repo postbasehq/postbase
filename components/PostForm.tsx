@@ -491,8 +491,8 @@ export function PostForm({
         {/* ── Compose ──────────────────────────────────────────── */}
         <div className="flex flex-col gap-5">
           {/* channels */}
-          <div className="flex flex-col gap-2">
-          <p className="text-xs font-semibold text-muted">Available channels</p>
+          <div className="flex flex-col gap-3.5">
+          <p className="font-display text-base font-semibold text-ink">Available channels</p>
           <div
             ref={channelsRef}
             className={`flex flex-wrap items-center gap-3 rounded-xl transition-all duration-300 ${
