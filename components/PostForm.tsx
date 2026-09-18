@@ -921,12 +921,9 @@ export function PostForm({
         {...BRAND_GLASS_PANEL}
       >
         <div className="flex items-center gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center" aria-hidden>
-            <svg width="34" height="34" viewBox="0 0 40 40" fill="none">
-              {/* AI sparkles in the three Postbase brand colours */}
-              <path transform="translate(3.4 25.4) scale(0.42)" d="M12 2c.4 4.5 3.5 7.6 8 8-4.5.4-7.6 3.5-8 8-.4-4.5-3.5-7.6-8-8 4.5-.4 7.6-3.5 8-8z" fill="#d14a3e" />
-              <path transform="translate(22 2.5) scale(0.6)" d="M12 2c.4 4.5 3.5 7.6 8 8-4.5.4-7.6 3.5-8 8-.4-4.5-3.5-7.6-8-8 4.5-.4 7.6-3.5 8-8z" fill="#e3a72c" />
-              <path transform="translate(3.6 6.4) scale(1.1)" d="M12 2c.4 4.5 3.5 7.6 8 8-4.5.4-7.6 3.5-8 8-.4-4.5-3.5-7.6-8-8 4.5-.4 7.6-3.5 8-8z" fill="#2b59d9" />
+          <span className="flex size-9 shrink-0 items-center justify-center text-blue-ink" aria-hidden>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />
             </svg>
           </span>
           <h3 id="gen-title" className="font-display text-xl font-semibold tracking-[-0.01em]">
