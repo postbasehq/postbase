@@ -28,7 +28,7 @@ const SECTIONS: Section[] = [
   {
     label: "Developer",
     items: [
-      { label: "MCP & API", href: "/api-keys", icon: ApiIcon },
+      { label: "Developers", href: "/api-keys", icon: ApiIcon },
       {
         label: "Docs",
         href: "https://github.com/postbasehq/postbase",

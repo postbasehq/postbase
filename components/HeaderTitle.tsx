@@ -12,7 +12,7 @@ const TITLES: { prefix: string; title: string }[] = [
   { prefix: "/channels", title: "Channels" },
   { prefix: "/media", title: "Media" },
   { prefix: "/analytics", title: "Analytics" },
-  { prefix: "/api-keys", title: "MCP & API" },
+  { prefix: "/api-keys", title: "Developers" },
   { prefix: "/team", title: "Team" },
   { prefix: "/billing", title: "Billing" },
   { prefix: "/settings", title: "Settings" },

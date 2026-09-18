@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
-import { generateApiKey, hashApiKey } from "@/lib/apikey";
+import { generateApiKey, hashApiKey, maskApiKey } from "@/lib/apikey";
 
 export type CreateKeyState = { key?: string; label?: string; error?: string };
 
@@ -22,9 +22,42 @@ export async function createApiKey(
   const { error } = await supabase.from("api_keys").insert({
     org_id: orgId,
     hashed_key: hashApiKey(key),
+    key_hint: maskApiKey(key),
     label,
   });
   if (error) return { error: error.message };
+
+  revalidatePath("/api-keys");
+  return { key, label };
+}
+
+/**
+ * Rotate a key: revoke the old one and mint a replacement with the same label,
+ * in a single action. The new plaintext is returned ONCE, like create.
+ */
+export async function rotateApiKey(
+  _prev: CreateKeyState,
+  formData: FormData,
+): Promise<CreateKeyState> {
+  const supabase = await createClient();
+  const orgId = await getCurrentOrgId();
+  if (!orgId) return { error: "No workspace found for this user." };
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "Missing key id." };
+  const label = String(formData.get("label") ?? "").trim() || "Default";
+
+  const key = generateApiKey();
+  const { error: insertError } = await supabase.from("api_keys").insert({
+    org_id: orgId,
+    hashed_key: hashApiKey(key),
+    key_hint: maskApiKey(key),
+    label,
+  });
+  if (insertError) return { error: insertError.message };
+
+  // Best-effort: remove the old key. The new one is already live either way.
+  await supabase.from("api_keys").delete().eq("id", id).eq("org_id", orgId);
 
   revalidatePath("/api-keys");
   return { key, label };

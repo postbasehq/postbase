@@ -1,0 +1,292 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
+/**
+ * MCP client configuration generator. Picks a client and produces the exact
+ * setup for our npx-stdio MCP server (`@postbasehq/mcp`) authenticated with an
+ * API key. When a freshly-created/rotated key is available it's embedded
+ * directly; otherwise a placeholder is shown for the user to paste.
+ *
+ * The OAuth ("Sign in with Postbase") auth mode is intentionally rendered but
+ * disabled — it lights up in Phase 2 once the hosted remote MCP ships.
+ */
+
+const SERVER = "@postbasehq/mcp";
+const KEY_PLACEHOLDER = "pb_live_YOUR_KEY";
+
+type Built = {
+  language: "json" | "bash";
+  filename?: string;
+  where: string;
+  code: string;
+  deeplink?: { label: string; href: string };
+};
+
+type Client = {
+  id: string;
+  name: string;
+  accent: string;
+  glyph: string;
+  build: (key: string) => Built;
+};
+
+const serverObject = (key: string) => ({
+  command: "npx",
+  args: [SERVER],
+  env: { POSTBASE_API_KEY: key },
+});
+
+const jsonBlock = (key: string) =>
+  JSON.stringify({ mcpServers: { postbase: serverObject(key) } }, null, 2);
+
+const b64 = (s: string) =>
+  typeof window === "undefined" ? "" : window.btoa(s);
+
+const CLIENTS: Client[] = [
+  {
+    id: "claude",
+    name: "Claude Desktop",
+    accent: "#d97757",
+    glyph: "✳",
+    build: (key) => ({
+      language: "json",
+      filename: "claude_desktop_config.json",
+      where: "Settings → Developer → Edit Config, then restart Claude.",
+      code: jsonBlock(key),
+    }),
+  },
+  {
+    id: "claude-code",
+    name: "Claude Code",
+    accent: "#d97757",
+    glyph: "▚",
+    build: (key) => ({
+      language: "bash",
+      where: "Run in your terminal — Claude Code registers the server globally.",
+      code: `claude mcp add postbase --env POSTBASE_API_KEY=${key} -- npx ${SERVER}`,
+    }),
+  },
+  {
+    id: "cursor",
+    name: "Cursor",
+    accent: "#7c8894",
+    glyph: "▲",
+    build: (key) => ({
+      language: "json",
+      filename: "~/.cursor/mcp.json",
+      where: "Settings → MCP → Add, or drop this into ~/.cursor/mcp.json.",
+      code: jsonBlock(key),
+      deeplink: {
+        label: "Add to Cursor",
+        href: `cursor://anysphere.cursor-deeplink/mcp/install?name=postbase&config=${encodeURIComponent(
+          b64(JSON.stringify(serverObject(key))),
+        )}`,
+      },
+    }),
+  },
+  {
+    id: "vscode",
+    name: "VS Code",
+    accent: "#3b82f6",
+    glyph: "❮❯",
+    build: (key) => ({
+      language: "bash",
+      where: "Run once — adds the server to Copilot's MCP config.",
+      code: `code --add-mcp '${JSON.stringify({ name: "postbase", ...serverObject(key) })}'`,
+    }),
+  },
+  {
+    id: "windsurf",
+    name: "Windsurf",
+    accent: "#22c55e",
+    glyph: "≋",
+    build: (key) => ({
+      language: "json",
+      filename: "~/.codeium/windsurf/mcp_config.json",
+      where: "Cascade → MCP servers → Configure, or edit the file directly.",
+      code: jsonBlock(key),
+    }),
+  },
+  {
+    id: "gemini",
+    name: "Gemini CLI",
+    accent: "#4285f4",
+    glyph: "✦",
+    build: (key) => ({
+      language: "json",
+      filename: "~/.gemini/settings.json",
+      where: "Merge into the mcpServers block of ~/.gemini/settings.json.",
+      code: jsonBlock(key),
+    }),
+  },
+];
+
+function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) {
+  const [done, setDone] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(text);
+          setDone(true);
+          setTimeout(() => setDone(false), 1400);
+        } catch {
+          /* clipboard blocked — no-op */
+        }
+      }}
+      className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-white/80 transition hover:bg-white/10"
+    >
+      {done ? (
+        <>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+          Copied
+        </>
+      ) : (
+        <>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <rect x="9" y="9" width="13" height="13" rx="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+          </svg>
+          {label}
+        </>
+      )}
+    </button>
+  );
+}
+
+export function McpClientConfig({ apiKey }: { apiKey: string | null }) {
+  const [clientId, setClientId] = useState("claude");
+  const key = apiKey ?? KEY_PLACEHOLDER;
+  const client = CLIENTS.find((c) => c.id === clientId) ?? CLIENTS[0];
+  const built = useMemo(() => client.build(key), [client, key]);
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
+      <div className="flex flex-wrap items-start gap-3 border-b border-line px-5 py-4">
+        <div className="min-w-0">
+          <h2 className="font-display text-[15px] font-semibold tracking-[-0.01em]">
+            MCP client configuration
+          </h2>
+          <p className="mt-0.5 text-[13px] text-muted">
+            Connect the Postbase MCP server to your AI tool so it can schedule and publish for you.
+          </p>
+        </div>
+        <a
+          href="https://github.com/postbasehq/postbase"
+          target="_blank"
+          rel="noreferrer"
+          className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line px-3.5 py-2 text-[13px] font-semibold text-blue-ink transition hover:bg-surface-2"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+            <path d="M15 3h6v6M10 14 21 3" />
+          </svg>
+          Docs
+        </a>
+      </div>
+
+      <div className="flex flex-col gap-5 p-5">
+        {/* Authentication mode */}
+        <div>
+          <p className="mb-2 text-xs font-semibold text-muted">Authentication</p>
+          <div className="inline-flex items-center gap-1 rounded-full border border-line bg-surface-2/50 p-1">
+            <span className="rounded-full bg-blue px-3.5 py-1.5 text-xs font-semibold text-on-blue shadow-sm">
+              API key
+            </span>
+            <span className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold text-muted/70">
+              Sign in with Postbase
+              <span className="rounded-full bg-amber/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-bright">
+                Soon
+              </span>
+            </span>
+          </div>
+        </div>
+
+        {/* Client picker */}
+        <div>
+          <p className="mb-2 text-xs font-semibold text-muted">Client</p>
+          <div className="flex flex-wrap gap-2">
+            {CLIENTS.map((c) => {
+              const on = c.id === clientId;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setClientId(c.id)}
+                  aria-pressed={on}
+                  className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-[13px] font-semibold transition ${
+                    on
+                      ? "border-blue bg-blue-soft text-blue-ink shadow-sm"
+                      : "border-line text-ink hover:border-blue/40 hover:bg-surface-2"
+                  }`}
+                >
+                  <span
+                    className="grid size-6 shrink-0 place-items-center rounded-md text-[13px] font-bold"
+                    style={{ backgroundColor: `${c.accent}22`, color: c.accent }}
+                    aria-hidden
+                  >
+                    {c.glyph}
+                  </span>
+                  {c.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Generated config */}
+        <div>
+          <div className="mb-2 flex items-center gap-2">
+            <p className="text-xs font-semibold text-muted">
+              {built.filename ? (
+                <>
+                  Paste into <code className="rounded bg-surface-2 px-1.5 py-0.5 text-[11px] text-ink">{built.filename}</code>
+                </>
+              ) : (
+                "Run this"
+              )}
+            </p>
+            <span className="ml-auto text-[11px] text-muted">{built.where}</span>
+          </div>
+          <div className="relative overflow-hidden rounded-xl bg-[#12141a] ring-1 ring-white/10">
+            <div className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-white/40">
+                {built.language}
+              </span>
+              <div className="flex items-center gap-2">
+                {built.deeplink ? (
+                  <a
+                    href={built.deeplink.href}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue px-2.5 py-1.5 text-xs font-semibold text-on-blue transition hover:shadow"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M5 12h14M13 6l6 6-6 6" />
+                    </svg>
+                    {built.deeplink.label}
+                  </a>
+                ) : null}
+                <CopyButton text={built.code} />
+              </div>
+            </div>
+            <pre className="overflow-x-auto px-4 py-3.5 font-mono text-[12.5px] leading-6 text-[#e6e8ef]">
+              {built.code}
+            </pre>
+          </div>
+          {!apiKey ? (
+            <p className="mt-2 flex items-center gap-1.5 text-[12px] text-muted">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-amber-bright" aria-hidden>
+                <path d="M12 9v4M12 17h.01" />
+                <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+              </svg>
+              Replace <code className="rounded bg-surface-2 px-1 py-0.5 text-[11px] text-ink">{KEY_PLACEHOLDER}</code> with your key — generate or rotate one above to auto-fill it here.
+            </p>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
