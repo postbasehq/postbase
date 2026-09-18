@@ -985,41 +985,63 @@ export function PostForm({
           </label>
         ) : null}
 
-        <textarea
-          value={genPrompt}
-          onChange={(e) => setGenPrompt(e.target.value)}
-          rows={3}
-          disabled={genBusy}
-          placeholder={
-            genMode === "video"
-              ? "e.g. slow push-in on a coffee cup, steam rising, warm morning light"
-              : "e.g. a minimalist product shot of a phone on a pastel gradient, soft studio light"
-          }
-          className="mt-4 w-full resize-none rounded-xl border border-line bg-ground p-3 text-sm outline-none focus:border-blue disabled:opacity-60"
-        />
-
-        <div className="mt-3">
-          <span className="text-xs font-medium text-muted">Aspect ratio</span>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {ASPECT_RATIOS.map((a) => (
-              <button
-                key={a.value}
-                type="button"
-                disabled={genBusy}
-                onClick={() => setGenAspect(a.value)}
-                className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition disabled:opacity-60 ${
-                  genAspect === a.value
-                    ? "border-blue bg-blue-soft text-blue-ink"
-                    : "border-line text-muted hover:bg-surface-2 hover:text-ink"
-                }`}
-              >
-                {a.label}
-              </button>
-            ))}
+        {genBusy ? (
+          <div className="mt-4 flex justify-center">
+            {/* A "developing" frame in the chosen aspect ratio: a slow rotating
+                Postbase-colour aurora behind a pulsing sparkle. */}
+            <div
+              className="relative flex items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[#0d0f16]"
+              style={{ height: 240, aspectRatio: genAspect.replace(":", " / "), maxWidth: "100%" }}
+            >
+              <div
+                className="absolute -inset-1/2 animate-[spin_7s_linear_infinite] opacity-80 blur-2xl"
+                style={{ backgroundImage: "conic-gradient(from 0deg, #2b59d9, #e3a72c, #d14a3e, #2b59d9)" }}
+                aria-hidden
+              />
+              <div className="absolute inset-0 bg-[#0d0f16]/55" aria-hidden />
+              <div className="relative flex flex-col items-center gap-3 px-5 text-center text-white">
+                <svg className="animate-pulse" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />
+                </svg>
+                <p className="text-xs font-medium text-white/90">{genStage ?? "Generating…"}</p>
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <>
+            <textarea
+              value={genPrompt}
+              onChange={(e) => setGenPrompt(e.target.value)}
+              rows={3}
+              placeholder={
+                genMode === "video"
+                  ? "e.g. slow push-in on a coffee cup, steam rising, warm morning light"
+                  : "e.g. a minimalist product shot of a phone on a pastel gradient, soft studio light"
+              }
+              className="mt-4 w-full resize-none rounded-xl border border-line bg-ground p-3 text-sm outline-none focus:border-blue"
+            />
 
-        {genBusy && genStage ? <p className="mt-3 text-xs font-medium text-blue-ink">{genStage}</p> : null}
+            <div className="mt-3">
+              <span className="text-xs font-medium text-muted">Aspect ratio</span>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {ASPECT_RATIOS.map((a) => (
+                  <button
+                    key={a.value}
+                    type="button"
+                    onClick={() => setGenAspect(a.value)}
+                    className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition ${
+                      genAspect === a.value
+                        ? "border-blue bg-blue-soft text-blue-ink"
+                        : "border-line text-muted hover:bg-surface-2 hover:text-ink"
+                    }`}
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
         {genError ? <p className="mt-3 text-xs text-terra">{genError}</p> : null}
 
         <div className="mt-5 flex items-center justify-end gap-3">
