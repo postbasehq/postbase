@@ -103,6 +103,78 @@ function fmt(iso: string | null) {
   });
 }
 
+/** Shared destructive-confirm dialog (brand wash, solid red icon), used for
+ *  revoking both API keys and connected apps. */
+function RevokeDialog({
+  open,
+  onClose,
+  title,
+  description,
+  action,
+  id,
+  confirmLabel = "Revoke access",
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  description: React.ReactNode;
+  action: (formData: FormData) => Promise<void>;
+  id: string;
+  confirmLabel?: string;
+}) {
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      labelledBy="revoke-title"
+      size="md"
+      panelClassName="border border-line bg-surface p-6 shadow-lg"
+      panelStyle={{
+        backgroundImage: [
+          "radial-gradient(120% 100% at 0% 0%, #d14a3e33, transparent 60%)",
+          "radial-gradient(110% 90% at 100% 100%, #e3a72c2b, transparent 58%)",
+        ].join(","),
+      }}
+    >
+      <div className="text-center">
+        <span
+          className="mx-auto grid size-12 place-items-center rounded-full text-white"
+          style={{ backgroundColor: "#d14a3e" }}
+          aria-hidden
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <path d="m4.9 4.9 14.2 14.2" />
+          </svg>
+        </span>
+        <h3 id="revoke-title" className="mt-4 font-display text-lg font-semibold tracking-[-0.01em]">
+          {title}
+        </h3>
+        <p className="mx-auto mt-2 max-w-sm text-[13px] leading-relaxed text-muted">{description}</p>
+      </div>
+
+      <div className="mt-6 flex gap-2.5">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex-1 rounded-full border border-line px-4 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-2 hover:text-ink"
+        >
+          Cancel
+        </button>
+        <form action={action} onSubmit={onClose} className="flex-1">
+          <input type="hidden" name="id" value={id} />
+          <SubmitButton
+            pendingLabel="Revoking…"
+            className="w-full rounded-full bg-[#d14a3e] px-5 py-2.5 font-display text-sm font-semibold text-white shadow-sm transition hover:bg-[#b83f34] hover:shadow-md disabled:opacity-60"
+          >
+            {confirmLabel}
+          </SubmitButton>
+        </form>
+      </div>
+    </Modal>
+  );
+}
+
 function RevealedKey({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -169,6 +241,7 @@ export function DeveloperClient({
 
   const error = createState.error ?? rotateState.error;
   const [revokeTarget, setRevokeTarget] = useState<ConnectedApp | null>(null);
+  const [keyTarget, setKeyTarget] = useState<KeyRow | null>(null);
 
   const sections: Section[] = [
     { id: "api-keys", label: "API keys" },
@@ -268,15 +341,13 @@ export function DeveloperClient({
                         Rotate
                       </button>
                     </form>
-                    <form action={revokeApiKey}>
-                      <input type="hidden" name="id" value={k.id} />
-                      <button
-                        type="submit"
-                        className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted transition hover:bg-terra/10 hover:text-terra"
-                      >
-                        Revoke
-                      </button>
-                    </form>
+                    <button
+                      type="button"
+                      onClick={() => setKeyTarget(k)}
+                      className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted transition hover:bg-terra/10 hover:text-terra"
+                    >
+                      Revoke
+                    </button>
                   </div>
                 </div>
               ))}
@@ -371,60 +442,36 @@ export function DeveloperClient({
       </details>
       </div>
 
-      {/* Revoke confirmation */}
-      <Modal
+      {/* Revoke confirmations */}
+      <RevokeDialog
+        open={keyTarget !== null}
+        onClose={() => setKeyTarget(null)}
+        title={`Revoke ${keyTarget?.label ?? "this key"}?`}
+        description={
+          <>
+            This API key stops working immediately. Anything using it — the MCP server, CLI, or REST
+            API — will fail until you generate a new one.
+          </>
+        }
+        action={revokeApiKey}
+        id={keyTarget?.id ?? ""}
+        confirmLabel="Revoke key"
+      />
+
+      <RevokeDialog
         open={revokeTarget !== null}
         onClose={() => setRevokeTarget(null)}
-        labelledBy="revoke-title"
-        size="md"
-        panelClassName="border border-line bg-surface p-6 shadow-lg"
-        panelStyle={{
-          backgroundImage: [
-            "radial-gradient(120% 100% at 0% 0%, #d14a3e33, transparent 60%)", // brand red, top-left
-            "radial-gradient(110% 90% at 100% 100%, #e3a72c2b, transparent 58%)", // brand amber, bottom-right
-          ].join(","),
-        }}
-      >
-        <div className="text-center">
-          <span
-            className="mx-auto grid size-12 place-items-center rounded-full text-white"
-            style={{ backgroundColor: "#d14a3e" }}
-            aria-hidden
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <path d="m4.9 4.9 14.2 14.2" />
-            </svg>
-          </span>
-          <h3 id="revoke-title" className="mt-4 font-display text-lg font-semibold tracking-[-0.01em]">
-            Revoke {revokeTarget?.appName ?? "this app"}?
-          </h3>
-          <p className="mx-auto mt-2 max-w-sm text-[13px] leading-relaxed text-muted">
+        title={`Revoke ${revokeTarget?.appName ?? "this app"}?`}
+        description={
+          <>
             {revokeTarget?.appName ?? "This app"} will immediately lose access to the{" "}
             <b className="text-ink">{revokeTarget?.orgName}</b> workspace. Any agent using this
             connection stops working until it's reconnected.
-          </p>
-        </div>
-
-        <div className="mt-6 flex gap-2.5">
-          <button
-            type="button"
-            onClick={() => setRevokeTarget(null)}
-            className="flex-1 rounded-full border border-line px-4 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-2 hover:text-ink"
-          >
-            Cancel
-          </button>
-          <form action={revokeConnectedApp} onSubmit={() => setRevokeTarget(null)} className="flex-1">
-            <input type="hidden" name="id" value={revokeTarget?.id ?? ""} />
-            <SubmitButton
-              pendingLabel="Revoking…"
-              className="w-full rounded-full bg-[#d14a3e] px-5 py-2.5 font-display text-sm font-semibold text-white shadow-sm transition hover:bg-[#b83f34] hover:shadow-md disabled:opacity-60"
-            >
-              Revoke access
-            </SubmitButton>
-          </form>
-        </div>
-      </Modal>
+          </>
+        }
+        action={revokeConnectedApp}
+        id={revokeTarget?.id ?? ""}
+      />
     </div>
   );
 }
