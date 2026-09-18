@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { DeveloperClient } from "@/components/DeveloperClient";
+import { mcpResourceUrl } from "@/lib/oauth";
 
 export default async function DevelopersPage() {
   const supabase = await createClient();
@@ -17,7 +18,11 @@ export default async function DevelopersPage() {
       </p>
 
       <div className="mt-6">
-        <DeveloperClient keys={keys ?? []} brandfetchId={process.env.BRANDFETCH_API_KEY} />
+        <DeveloperClient
+          keys={keys ?? []}
+          brandfetchId={process.env.BRANDFETCH_API_KEY}
+          mcpUrl={mcpResourceUrl()}
+        />
       </div>
     </div>
   );

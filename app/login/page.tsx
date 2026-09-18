@@ -12,6 +12,17 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [oauthBusy, setOauthBusy] = useState<"google" | "github" | null>(null);
 
+  // Preserve a safe same-origin ?next=… through the auth round-trip (used by the
+  // MCP OAuth consent flow to return the user to /oauth/authorize after sign-in).
+  function callbackUrl(): string {
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next");
+    const suffix = next && next.startsWith("/") && !next.startsWith("//")
+      ? `?next=${encodeURIComponent(next)}`
+      : "";
+    return `${window.location.origin}/auth/callback${suffix}`;
+  }
+
   async function oauth(provider: "google" | "github") {
     setError(null);
     setOauthBusy(provider);
@@ -19,7 +30,7 @@ export default function LoginPage() {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
+        options: { redirectTo: callbackUrl() },
       });
       // On success the browser is redirected to the provider, so we only land
       // here on an error.
@@ -41,7 +52,7 @@ export default function LoginPage() {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        options: { emailRedirectTo: callbackUrl() },
       });
       if (error) setError(error.message);
       else setSent(true);

@@ -8,6 +8,30 @@ const nextConfig: NextConfig = {
   // Keep sharp (native) external so its binaries are traced into the serverless
   // function that transcodes images for Instagram publishing.
   serverExternalPackages: ["sharp"],
+  // Next's router ignores leading-dot folders, so the OAuth discovery documents
+  // live under /well-known/* and are exposed at the real /.well-known/* paths
+  // (RFC 8414 / 9728) via rewrites. The protected-resource doc also answers any
+  // resource-suffixed path that MCP clients probe.
+  async rewrites() {
+    return [
+      {
+        source: "/.well-known/oauth-authorization-server",
+        destination: "/well-known/oauth-authorization-server",
+      },
+      {
+        source: "/.well-known/oauth-authorization-server/:path*",
+        destination: "/well-known/oauth-authorization-server",
+      },
+      {
+        source: "/.well-known/oauth-protected-resource",
+        destination: "/well-known/oauth-protected-resource",
+      },
+      {
+        source: "/.well-known/oauth-protected-resource/:path*",
+        destination: "/well-known/oauth-protected-resource",
+      },
+    ];
+  },
 };
 
 export default nextConfig;
