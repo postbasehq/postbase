@@ -380,8 +380,8 @@ export function DeveloperClient({
       >
         <div className="text-center">
           <span
-            className="mx-auto grid size-12 place-items-center rounded-full"
-            style={{ backgroundColor: "#d14a3e1f", color: "#d14a3e" }}
+            className="mx-auto grid size-12 place-items-center rounded-full text-white"
+            style={{ backgroundColor: "#d14a3e" }}
             aria-hidden
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
