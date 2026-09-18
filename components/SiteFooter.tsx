@@ -11,6 +11,7 @@ export function SiteFooter() {
             <a href="/#features" className="hover:text-ink">Features</a>
             <a href="/#developers" className="hover:text-ink">For developers</a>
             <a href="/#pricing" className="hover:text-ink">Pricing</a>
+            <a href="https://docs.postbase.so" className="hover:text-ink">Docs</a>
             <a href="https://github.com/postbasehq" className="hover:text-ink">GitHub</a>
             <a href="https://x.com/postbasehq" className="hover:text-ink">X</a>
             <Link href="/privacy" className="hover:text-ink">Privacy</Link>
