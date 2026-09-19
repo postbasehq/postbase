@@ -9,6 +9,7 @@ import { AgentSparkIcon } from "@/components/AgentSparkIcon";
 import { AgentPostsList } from "@/components/AgentPostsList";
 import type { AgentList } from "@/lib/agent/tools";
 import { scheduleProposedPost, type ConfirmProposal } from "@/app/(app)/agent/confirm-actions";
+import { uploadAgentImage } from "@/app/(app)/agent/upload-actions";
 import { agentStore } from "@/lib/agent/ui-store";
 import {
   listConversations,
@@ -28,10 +29,13 @@ type Proposal = {
   media: { url: string; type: string }[];
 };
 
+type Attachment = { url: string; type: string };
+
 type Msg = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  attachments?: Attachment[];
   producedProposal?: boolean;
   list?: AgentList | null;
   toolNote?: string | null;
@@ -92,12 +96,31 @@ export function AgentChat({
     initialConversations ?? [],
   );
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [uploading, setUploading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, busy]);
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const room = Math.max(0, 4 - attachments.length);
+    const picked = Array.from(files).slice(0, room);
+    if (picked.length === 0) return;
+    setUploading(true);
+    for (const file of picked) {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await uploadAgentImage(fd);
+      if (res.ok) setAttachments((prev) => [...prev, { url: res.url, type: res.type }]);
+    }
+    setUploading(false);
+    if (fileRef.current) fileRef.current.value = "";
+  };
 
   const insertPrompt = (p: string) => {
     setInput(p);
@@ -176,13 +199,20 @@ export function AgentChat({
   const send = useCallback(
     async (text: string) => {
       const clean = text.trim();
-      if (!clean || busy) return;
+      const atts = attachments;
+      if ((!clean && atts.length === 0) || busy || uploading) return;
       if (remaining !== null && remaining <= 0) return;
       setInput("");
+      setAttachments([]);
       setBusy(true);
 
       const history = messages.map((m) => ({ role: m.role, content: m.content }));
-      const userMsg: Msg = { id: uid(), role: "user", content: clean };
+      const userMsg: Msg = {
+        id: uid(),
+        role: "user",
+        content: clean,
+        attachments: atts.length ? atts : undefined,
+      };
       const assistantId = uid();
       setMessages((prev) => [
         ...prev,
@@ -201,6 +231,7 @@ export function AgentChat({
           body: JSON.stringify({
             conversationId,
             messages: [...history, { role: "user", content: clean }],
+            attachments: atts,
           }),
         });
         if (!res.ok || !res.body) {
@@ -258,7 +289,7 @@ export function AgentChat({
         if (createdNew || conversationId) refreshConversations();
       }
     },
-    [busy, messages, remaining, conversationId, refreshConversations],
+    [busy, uploading, attachments, messages, remaining, conversationId, refreshConversations],
   );
 
   const outOfQuota = remaining !== null && remaining <= 0;
@@ -303,6 +334,33 @@ export function AgentChat({
               </div>
             ) : null}
 
+            {/* attached images */}
+            {attachments.length > 0 || uploading ? (
+              <div className="flex flex-wrap items-center gap-2 px-3 pt-3">
+                {attachments.map((a, i) => (
+                  <div key={i} className="group relative size-14 overflow-hidden rounded-lg border border-line">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={a.url} alt="" className="size-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setAttachments((prev) => prev.filter((_, j) => j !== i))}
+                      aria-label="Remove image"
+                      className="absolute right-0.5 top-0.5 flex size-4 items-center justify-center rounded-full bg-black/60 text-white"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M18 6 6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+                {uploading ? (
+                  <div className="flex size-14 items-center justify-center rounded-lg border border-dashed border-line text-[10px] text-muted">
+                    Uploading…
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
             <textarea
               ref={inputRef}
               value={input}
@@ -323,8 +381,28 @@ export function AgentChat({
               className="max-h-48 min-h-[56px] w-full resize-none bg-transparent px-4 pt-3.5 text-sm text-ink outline-none placeholder:text-muted disabled:opacity-60"
             />
 
-            {/* toolbar: quick-intent chips + send */}
+            {/* toolbar: attach + quick-intent chips + send */}
             <div className="flex items-center gap-1.5 px-2.5 pb-2.5">
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                multiple
+                className="hidden"
+                onChange={(e) => handleFiles(e.target.files)}
+              />
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={outOfQuota || attachments.length >= 4}
+                aria-label="Attach image"
+                title="Attach image"
+                className="flex size-8 shrink-0 items-center justify-center rounded-full border border-line text-muted transition hover:border-blue hover:text-ink disabled:opacity-40"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M21.44 11.05 12.25 20.24a5.5 5.5 0 0 1-7.78-7.78l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95l-9.2 9.19a1.5 1.5 0 0 1-2.12-2.12l8.49-8.49" />
+                </svg>
+              </button>
               {QUICK_ACTIONS.map((q) => (
                 <button
                   key={q.label}
@@ -339,12 +417,12 @@ export function AgentChat({
               ))}
               <button
                 type="submit"
-                disabled={busy || !input.trim() || outOfQuota}
+                disabled={busy || uploading || (!input.trim() && attachments.length === 0) || outOfQuota}
                 className="ml-auto flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue text-on-blue transition disabled:opacity-40"
                 aria-label="Send"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z" />
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M12 19V5M5 12l7-7 7 7" />
                 </svg>
               </button>
             </div>
@@ -422,10 +500,25 @@ function toolLabel(name: string): string {
 function MessageRow({ msg, onOpenProposal }: { msg: Msg; onOpenProposal: () => void }) {
   if (msg.role === "user") {
     return (
-      <div className="flex justify-end">
-        <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl bg-blue px-4 py-2.5 text-sm text-on-blue">
-          {msg.content}
-        </div>
+      <div className="flex flex-col items-end gap-1.5">
+        {msg.attachments && msg.attachments.length > 0 ? (
+          <div className="flex flex-wrap justify-end gap-1.5">
+            {msg.attachments.map((a, i) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={i}
+                src={a.url}
+                alt=""
+                className="size-20 rounded-xl border border-line object-cover"
+              />
+            ))}
+          </div>
+        ) : null}
+        {msg.content ? (
+          <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl bg-blue px-4 py-2.5 text-sm text-on-blue">
+            {msg.content}
+          </div>
+        ) : null}
       </div>
     );
   }

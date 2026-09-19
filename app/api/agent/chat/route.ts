@@ -36,14 +36,23 @@ export async function POST(req: Request) {
     });
   }
 
+  type Attachment = { url: string; type: string };
   let history: ClientMessage[] = [];
   let conversationId: string | null = null;
+  let attachments: Attachment[] = [];
   try {
-    const body = (await req.json()) as { messages?: ClientMessage[]; conversationId?: string };
+    const body = (await req.json()) as {
+      messages?: ClientMessage[];
+      conversationId?: string;
+      attachments?: Attachment[];
+    };
     history = (body.messages ?? [])
       .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
       .slice(-20);
     conversationId = typeof body.conversationId === "string" ? body.conversationId : null;
+    attachments = (body.attachments ?? [])
+      .filter((a) => a && typeof a.url === "string" && typeof a.type === "string" && a.type.startsWith("image/"))
+      .slice(0, 4);
   } catch {
     return new Response(JSON.stringify({ error: "Bad request." }), { status: 400 });
   }
@@ -108,6 +117,17 @@ export async function POST(req: Request) {
     content: m.content,
   }));
 
+  // Give Claude vision on the images the user attached this turn by rebuilding
+  // the last user message as text + image blocks.
+  if (attachments.length > 0 && messages.length > 0) {
+    const blocks: Anthropic.ContentBlockParam[] = [];
+    if (userText.trim()) blocks.push({ type: "text", text: userText });
+    for (const a of attachments) {
+      blocks.push({ type: "image", source: { type: "url", url: a.url } });
+    }
+    messages[messages.length - 1] = { role: "user", content: blocks };
+  }
+
   let assistantText = "";
   let latestProposal: PostProposal | null = null;
 
@@ -149,6 +169,13 @@ export async function POST(req: Request) {
               out = { forModel: e instanceof Error ? e.message : "Tool failed." };
             }
             if (out.proposal) {
+              // Fold this turn's uploaded images into the proposal, deduped by url.
+              if (attachments.length > 0) {
+                const seen = new Set(out.proposal.media.map((m) => m.url));
+                for (const a of attachments) {
+                  if (!seen.has(a.url)) out.proposal.media.push({ url: a.url, type: a.type });
+                }
+              }
               latestProposal = out.proposal;
               send({ type: "proposal", proposal: out.proposal });
             }
