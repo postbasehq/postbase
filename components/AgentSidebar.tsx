@@ -72,7 +72,7 @@ export function AgentSidebar({ onShowNav }: { onShowNav?: () => void }) {
         Conversations
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="-mr-1 min-h-0 flex-1 overflow-y-auto pr-1 pb-1 [scrollbar-color:color-mix(in_oklab,var(--muted)_45%,transparent)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted/40 [&::-webkit-scrollbar]:w-1.5">
         {conversations.length === 0 ? (
           <p className="px-3 py-3 text-[12px] leading-relaxed text-muted">
             No conversations yet. Start chatting and they&apos;ll appear here.

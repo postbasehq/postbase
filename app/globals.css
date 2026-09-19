@@ -266,6 +266,58 @@ body {
   }
 }
 
+/* Agent composer: inline mention chips (glass pill, brand-coloured). */
+.agent-editor {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.agent-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+  pointer-events: none;
+}
+.mention-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px 1px 5px;
+  margin: 0 1px;
+  border-radius: 999px;
+  font-size: 0.86em;
+  font-weight: 500;
+  line-height: 1.35;
+  white-space: nowrap;
+  vertical-align: baseline;
+  user-select: none;
+  color: var(--accent);
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in oklab, var(--accent) 30%, transparent);
+}
+.mention-at {
+  --accent: #2b59d9;
+}
+.mention-slash {
+  --accent: #d14a3e;
+}
+.mention-chip .mention-ic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .mention-chip {
+    color: color-mix(in oklab, var(--accent) 45%, white);
+    background: color-mix(in oklab, var(--accent) 24%, transparent);
+    border-color: color-mix(in oklab, var(--accent) 45%, transparent);
+  }
+}
+:root[data-theme="dark"] .mention-chip {
+  color: color-mix(in oklab, var(--accent) 45%, white);
+  background: color-mix(in oklab, var(--accent) 24%, transparent);
+  border-color: color-mix(in oklab, var(--accent) 45%, transparent);
+}
+
 /* Agent chat: compact markdown for streamed assistant replies. */
 .agent-prose > :first-child {
   margin-top: 0;

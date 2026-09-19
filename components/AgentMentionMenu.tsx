@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { BrandTile } from "@/components/BrandTile";
-import { listContextPosts } from "@/app/(app)/agent/context-actions";
+import { listContextPosts, searchContextPosts } from "@/app/(app)/agent/context-actions";
 import type { AgentPostRow } from "@/lib/agent/tools";
 
 /**
- * The @-mention context picker that drops up above the composer. Level 1 is the
- * two categories (drafts / scheduled); picking one loads its posts, and picking
- * a post hands it back to the chat as context.
+ * The /-mention context picker that drops up above the composer. With no query
+ * it shows the two categories (drafts / scheduled) to browse; once the user
+ * types after the slash ("/he…") it searches drafts + scheduled by body and
+ * shows a flat result list. Picking a post hands it back to the chat.
  */
 type View = "root" | "draft" | "scheduled";
 
@@ -20,37 +21,121 @@ function fmtWhen(iso: string | null): string {
 }
 
 export function AgentMentionMenu({
+  query,
   onPick,
   onClose,
 }: {
+  query: string;
   onPick: (post: AgentPostRow) => void;
   onClose: () => void;
 }) {
+  const searching = query.trim().length > 0;
   const [view, setView] = useState<View>("root");
   const [rows, setRows] = useState<AgentPostRow[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Search across drafts + scheduled as the user types after the slash.
   useEffect(() => {
-    if (view === "root") return;
+    if (!searching) return;
+    const q = query.trim();
+    let alive = true;
+    setLoading(true);
+    const t = setTimeout(() => {
+      searchContextPosts(q)
+        .then((r) => alive && setRows(r))
+        .finally(() => alive && setLoading(false));
+    }, 160);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [searching, query]);
+
+  // Browse a category when not searching.
+  useEffect(() => {
+    if (searching || view === "root") return;
     let alive = true;
     setLoading(true);
     listContextPosts(view)
-      .then((r) => {
-        if (alive) setRows(r);
-      })
-      .finally(() => {
-        if (alive) setLoading(false);
-      });
+      .then((r) => alive && setRows(r))
+      .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
-  }, [view]);
+  }, [searching, view]);
+
+  const list = (
+    <div className="min-h-0 flex-1 overflow-y-auto p-1">
+      {loading ? (
+        <p className="px-3 py-4 text-center text-[12px] text-muted">Searching…</p>
+      ) : rows.length === 0 ? (
+        <p className="px-3 py-4 text-center text-[12px] text-muted">No matching posts.</p>
+      ) : (
+        rows.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => {
+              onPick(p);
+              onClose();
+            }}
+            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition hover:bg-surface-2"
+          >
+            {p.channels.length > 0 ? (
+              <span className="flex shrink-0 -space-x-1.5">
+                {p.channels.slice(0, 3).map((c, i) => (
+                  <span key={i} className="rounded-[5px] bg-surface p-[1.5px] ring-1 ring-line">
+                    <BrandTile platform={c.platform} size={15} radius={4} />
+                  </span>
+                ))}
+              </span>
+            ) : null}
+            <span className="min-w-0 flex-1 truncate text-[13px] text-ink">
+              {p.body || <span className="text-muted">(empty)</span>}
+            </span>
+            <span className="shrink-0 text-[11px] tabular-nums text-muted">{fmtWhen(p.scheduledAt)}</span>
+          </button>
+        ))
+      )}
+    </div>
+  );
 
   return (
     <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-lg">
-      {view === "root" ? (
+      {searching ? (
+        <div className="flex max-h-72 flex-col">
+          <div className="flex items-center gap-2 border-b border-line px-3 py-2">
+            <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-muted">
+              Results for “{query.trim()}”
+            </span>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="flex size-5 shrink-0 items-center justify-center rounded-md text-muted transition hover:bg-surface-2 hover:text-ink"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          {list}
+        </div>
+      ) : view === "root" ? (
         <div className="p-1.5">
-          <div className="px-2.5 pb-1 pt-1 text-[11px] font-semibold text-muted">Add context</div>
+          <div className="flex items-center gap-2 px-2.5 pb-1 pt-1">
+            <span className="text-[11px] font-semibold text-muted">Add context</span>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="ml-auto flex size-5 items-center justify-center rounded-md text-muted transition hover:bg-surface-2 hover:text-ink"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
           <MenuRow
             icon={
               <>
@@ -89,41 +174,7 @@ export function AgentMentionMenu({
               {view === "draft" ? "Drafts" : "Scheduled posts"}
             </span>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto p-1">
-            {loading ? (
-              <p className="px-3 py-4 text-center text-[12px] text-muted">Loading…</p>
-            ) : rows.length === 0 ? (
-              <p className="px-3 py-4 text-center text-[12px] text-muted">
-                {view === "draft" ? "No drafts yet." : "Nothing scheduled."}
-              </p>
-            ) : (
-              rows.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => {
-                    onPick(p);
-                    onClose();
-                  }}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition hover:bg-surface-2"
-                >
-                  {p.channels.length > 0 ? (
-                    <span className="flex shrink-0 -space-x-1.5">
-                      {p.channels.slice(0, 3).map((c, i) => (
-                        <span key={i} className="rounded-[5px] bg-surface p-[1.5px] ring-1 ring-line">
-                          <BrandTile platform={c.platform} size={15} radius={4} />
-                        </span>
-                      ))}
-                    </span>
-                  ) : null}
-                  <span className="min-w-0 flex-1 truncate text-[13px] text-ink">
-                    {p.body || <span className="text-muted">(empty)</span>}
-                  </span>
-                  <span className="shrink-0 text-[11px] tabular-nums text-muted">{fmtWhen(p.scheduledAt)}</span>
-                </button>
-              ))
-            )}
-          </div>
+          {list}
         </div>
       )}
     </div>

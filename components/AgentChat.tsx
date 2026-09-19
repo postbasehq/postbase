@@ -9,6 +9,8 @@ import { AgentSparkIcon } from "@/components/AgentSparkIcon";
 import { AgentPostsList } from "@/components/AgentPostsList";
 import { AgentModelSelector } from "@/components/AgentModelSelector";
 import { AgentMentionMenu } from "@/components/AgentMentionMenu";
+import { AgentChannelMenu } from "@/components/AgentChannelMenu";
+import { AgentComposerInput, type AgentComposerHandle } from "@/components/AgentComposerInput";
 import { AGENT_MODELS, DEFAULT_MODEL_ID } from "@/lib/agent/models";
 import type { AgentPostRow } from "@/lib/agent/tools";
 import { BRAND_GLASS } from "@/lib/glass";
@@ -41,7 +43,6 @@ type Msg = {
   role: "user" | "assistant";
   content: string;
   attachments?: Attachment[];
-  contextRefs?: AgentPostRow[];
   producedProposal?: boolean;
   list?: AgentList | null;
   toolNote?: string | null;
@@ -108,7 +109,8 @@ export function AgentChat({
   const [uploading, setUploading] = useState(false);
   const [model, setModel] = useState(DEFAULT_MODEL_ID);
   const [mentionOpen, setMentionOpen] = useState(false);
-  const [contextPosts, setContextPosts] = useState<AgentPostRow[]>([]);
+  const [mentionKind, setMentionKind] = useState<"slash" | "at">("slash");
+  const [mentionQuery, setMentionQuery] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Remember the picked model per-viewer (falling back to a configured one).
@@ -128,7 +130,7 @@ export function AgentChat({
       // ignore
     }
   };
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<AgentComposerHandle>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
 
@@ -161,43 +163,37 @@ export function AgentChat({
     if (fileRef.current) fileRef.current.value = "";
   };
 
-  const insertPrompt = (p: string) => {
-    setInput(p);
-    requestAnimationFrame(() => {
-      const el = inputRef.current;
-      if (el) {
-        el.focus();
-        el.setSelectionRange(el.value.length, el.value.length);
-      }
-    });
+  const insertPrompt = (p: string) => editorRef.current?.setText(p);
+
+  const onTrigger = (kind: "@" | "/" | null, query: string) => {
+    if (kind) {
+      setMentionOpen(true);
+      setMentionKind(kind === "@" ? "at" : "slash");
+      setMentionQuery(query);
+    } else if (mentionOpen) {
+      setMentionOpen(false);
+      setMentionQuery("");
+    }
   };
 
-  // Open the @-mention menu when an "@" token is being typed at the cursor.
-  const onInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = e.target.value;
-    setInput(val);
-    const caret = e.target.selectionStart ?? val.length;
-    const before = val.slice(0, caret);
-    if (/(^|\s)@$/.test(before)) setMentionOpen(true);
-    else if (mentionOpen && !/(^|\s)@[^\s]*$/.test(before)) setMentionOpen(false);
+  const addChannel = (channel: AgentChannel) => {
+    const handle = `@${(channel.handle ?? channel.platform).replace(/^@/, "")}`;
+    editorRef.current?.insertMention({ kind: "@", label: handle, value: handle, platform: channel.platform });
+    setMentionOpen(false);
+    setMentionQuery("");
   };
 
   const addContext = (post: AgentPostRow) => {
-    setContextPosts((prev) => (prev.some((p) => p.id === post.id) ? prev : [...prev, post]));
-    // Strip the "@" token that opened the menu.
-    const el = inputRef.current;
-    const val = input;
-    const caret = el?.selectionStart ?? val.length;
-    const newBefore = val.slice(0, caret).replace(/(^|\s)@[^\s]*$/, "$1");
-    const next = newBefore + val.slice(caret);
-    setInput(next);
-    setMentionOpen(false);
-    requestAnimationFrame(() => {
-      if (el) {
-        el.focus();
-        el.setSelectionRange(newBefore.length, newBefore.length);
-      }
+    const body = post.body || "(empty draft)";
+    const label = body.length > 28 ? `${body.slice(0, 28)}…` : body;
+    editorRef.current?.insertMention({
+      kind: "/",
+      label,
+      value: body,
+      platform: post.channels[0]?.platform,
     });
+    setMentionOpen(false);
+    setMentionQuery("");
   };
 
   // Publish the conversation list + active id to the shared store so the app
@@ -267,30 +263,21 @@ export function AgentChat({
     async (text: string) => {
       const clean = text.trim();
       const atts = attachments;
-      const ctx = contextPosts;
       if ((!clean && atts.length === 0) || busy || uploading) return;
       if (remaining !== null && remaining <= 0) return;
       setInput("");
+      editorRef.current?.clear();
       setAttachments([]);
-      setContextPosts([]);
       setMentionOpen(false);
       setBusy(true);
 
-      // Fold referenced posts into the message the model sees (not the bubble).
-      const ctxBlock = ctx.length
-        ? `\n\nReferenced posts for context:\n${ctx
-            .map((p) => `- (${p.scheduledAt ? "scheduled" : "draft"}) ${p.body}`)
-            .join("\n")}`
-        : "";
-      const apiText = clean + ctxBlock;
-
+      const apiText = clean;
       const history = messages.map((m) => ({ role: m.role, content: m.content }));
       const userMsg: Msg = {
         id: uid(),
         role: "user",
         content: clean,
         attachments: atts.length ? atts : undefined,
-        contextRefs: ctx.length ? ctx : undefined,
       };
       const assistantId = uid();
       setMessages((prev) => [
@@ -369,7 +356,7 @@ export function AgentChat({
         if (createdNew || conversationId) refreshConversations();
       }
     },
-    [busy, uploading, attachments, contextPosts, model, messages, remaining, conversationId, refreshConversations],
+    [busy, uploading, attachments, model, messages, remaining, conversationId, refreshConversations],
   );
 
   const outOfQuota = remaining !== null && remaining <= 0;
@@ -401,7 +388,16 @@ export function AgentChat({
         <div ref={composerRef} className="relative mx-auto w-full max-w-2xl pt-3">
           {mentionOpen ? (
             <div className="absolute bottom-full left-0 z-30 mb-2 w-full max-w-sm">
-              <AgentMentionMenu onPick={addContext} onClose={() => setMentionOpen(false)} />
+              {mentionKind === "at" ? (
+                <AgentChannelMenu
+                  channels={channels}
+                  query={mentionQuery}
+                  onPick={addChannel}
+                  onClose={() => setMentionOpen(false)}
+                />
+              ) : (
+                <AgentMentionMenu query={mentionQuery} onPick={addContext} onClose={() => setMentionOpen(false)} />
+              )}
             </div>
           ) : null}
           <form
@@ -447,57 +443,19 @@ export function AgentChat({
               </div>
             ) : null}
 
-            {/* @-mentioned context posts */}
-            {contextPosts.length > 0 ? (
-              <div className="flex flex-wrap items-center gap-1.5 px-3 pt-3">
-                {contextPosts.map((p) => (
-                  <span
-                    key={p.id}
-                    className="flex max-w-[220px] items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-[12px] text-ink"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-blue-ink" aria-hidden>
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-                      <path d="M14 2v6h6" />
-                    </svg>
-                    <span className="truncate">{p.body || "(empty)"}</span>
-                    <button
-                      type="button"
-                      onClick={() => setContextPosts((prev) => prev.filter((x) => x.id !== p.id))}
-                      aria-label="Remove context"
-                      className="shrink-0 text-muted transition hover:text-ink"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                        <path d="M18 6 6 18M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </span>
-                ))}
-              </div>
-            ) : null}
-
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={onInputChange}
-              onKeyDown={(e) => {
-                if (e.key === "Escape" && mentionOpen) {
-                  e.preventDefault();
-                  setMentionOpen(false);
-                  return;
-                }
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  send(input);
-                }
-              }}
-              rows={2}
+            <AgentComposerInput
+              ref={editorRef}
               disabled={outOfQuota}
               placeholder={
                 outOfQuota
                   ? "You're out of agent messages this month"
                   : "Ask the agent to draft or schedule a post…"
               }
-              className="max-h-48 min-h-[56px] w-full resize-none bg-transparent px-4 pt-3.5 text-sm text-ink outline-none placeholder:text-muted disabled:opacity-60"
+              className="max-h-48 min-h-[56px] w-full overflow-y-auto bg-transparent px-4 pt-3.5 text-sm text-ink outline-none disabled:opacity-60"
+              onChange={setInput}
+              onSubmit={(t) => send(t)}
+              onTrigger={onTrigger}
+              onEscape={() => setMentionOpen(false)}
             />
 
             {/* toolbar: borderless icons left; model + send right */}
@@ -643,22 +601,6 @@ function MessageRow({ msg, onOpenProposal }: { msg: Msg; onOpenProposal: () => v
                 alt=""
                 className="size-20 rounded-xl border border-line object-cover"
               />
-            ))}
-          </div>
-        ) : null}
-        {msg.contextRefs && msg.contextRefs.length > 0 ? (
-          <div className="flex flex-wrap justify-end gap-1.5">
-            {msg.contextRefs.map((p) => (
-              <span
-                key={p.id}
-                className="flex max-w-[220px] items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-[12px] text-muted"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-blue-ink" aria-hidden>
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-                  <path d="M14 2v6h6" />
-                </svg>
-                <span className="truncate">{p.body || "(empty)"}</span>
-              </span>
             ))}
           </div>
         ) : null}
