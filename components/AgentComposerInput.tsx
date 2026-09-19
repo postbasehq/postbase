@@ -179,6 +179,14 @@ export const AgentComposerInput = forwardRef<
         const t = detectTrigger();
         onTrigger(t ? t.kind : null, t ? t.query : "");
       }}
+      onPaste={(e) => {
+        // Insert plain text only — never rich HTML (which would drop styled
+        // blocks, e.g. a copied message bubble, into the editor).
+        e.preventDefault();
+        const text = e.clipboardData.getData("text/plain");
+        document.execCommand("insertText", false, text);
+        emit();
+      }}
       onKeyDown={(e) => {
         if (e.key === "Escape") {
           onEscape();

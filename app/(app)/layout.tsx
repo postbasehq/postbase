@@ -7,6 +7,7 @@ import { UserMenu } from "@/components/UserMenu";
 import { SidebarSearch } from "@/components/SidebarSearch";
 import { HeaderTitle } from "@/components/HeaderTitle";
 import { SidebarSwitcher } from "@/components/SidebarSwitcher";
+import { AgentProposalDock } from "@/components/AgentProposalDock";
 import { NotificationBell, type Notice } from "@/components/NotificationBell";
 import { OrgSwitcher } from "@/components/OrgSwitcher";
 import { TimezoneSync } from "@/components/TimezoneSync";
@@ -103,23 +104,28 @@ export default async function AppLayout({
 
       {/* floating content panel — inset from the edges, elevated over the backdrop */}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col py-3 pl-0 pr-3">
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_18px_50px_-20px_rgba(16,24,40,0.35)]">
-          <header className="flex h-16 shrink-0 items-center gap-3 px-6">
-            <HeaderTitle />
-            <div className="ml-auto flex items-center gap-3">
-              <NotificationBell items={notices} />
-              <ThemeToggle />
-              <Link
-                href="/composer"
-                className="rounded-full bg-blue px-4 py-2 font-display text-sm font-semibold text-on-blue shadow-sm"
-              >
-                New post
-              </Link>
-            </div>
-          </header>
-          <main className="min-h-0 flex-1 overflow-y-auto p-6">
-            <div className="mx-auto h-full w-full max-w-[1200px]">{children}</div>
-          </main>
+        <div className="flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_18px_50px_-20px_rgba(16,24,40,0.35)]">
+          <div className="flex min-w-0 flex-1 flex-col">
+            <header className="flex h-16 shrink-0 items-center gap-3 px-6">
+              <HeaderTitle />
+              <div className="ml-auto flex items-center gap-3">
+                <NotificationBell items={notices} />
+                <ThemeToggle />
+                <Link
+                  href="/composer"
+                  className="rounded-full bg-blue px-4 py-2 font-display text-sm font-semibold text-on-blue shadow-sm"
+                >
+                  New post
+                </Link>
+              </div>
+            </header>
+            <main className="min-h-0 flex-1 overflow-y-auto p-6">
+              <div className="mx-auto h-full w-full max-w-[1200px]">{children}</div>
+            </main>
+          </div>
+
+          {/* Agent proposed-post panel — splits the card on /agent when open */}
+          <AgentProposalDock />
         </div>
       </div>
     </div>

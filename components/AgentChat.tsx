@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { marked } from "marked";
-import { PostPreview } from "@/components/PostPreview";
-import { BrandTile } from "@/components/BrandTile";
 import { AgentSparkIcon } from "@/components/AgentSparkIcon";
 import { AgentPostsList } from "@/components/AgentPostsList";
 import { AgentModelSelector } from "@/components/AgentModelSelector";
@@ -15,9 +13,8 @@ import { AGENT_MODELS, DEFAULT_MODEL_ID } from "@/lib/agent/models";
 import type { AgentPostRow } from "@/lib/agent/tools";
 import { BRAND_GLASS } from "@/lib/glass";
 import type { AgentList } from "@/lib/agent/tools";
-import { scheduleProposedPost, type ConfirmProposal } from "@/app/(app)/agent/confirm-actions";
 import { uploadAgentImage } from "@/app/(app)/agent/upload-actions";
-import { agentStore } from "@/lib/agent/ui-store";
+import { agentStore, type AgentProposal } from "@/lib/agent/ui-store";
 import {
   listConversations,
   getConversation,
@@ -27,15 +24,6 @@ import {
 } from "@/app/(app)/agent/history-actions";
 
 export type AgentChannel = { id: string; platform: string; handle: string | null };
-
-type Proposal = {
-  body: string;
-  thread: string[];
-  channelIds: string[];
-  scheduledAt: string | null;
-  media: { url: string; type: string }[];
-  variants?: Record<string, string>;
-};
 
 type Attachment = { url: string; type: string };
 
@@ -99,9 +87,6 @@ export function AgentChat({
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(initialRemaining ?? null);
-  const [proposal, setProposal] = useState<Proposal | null>(null);
-  const [proposalKey, setProposalKey] = useState(0);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [conversations, setConversations] = useState<ConversationSummary[]>(
     initialConversations ?? [],
   );
@@ -131,6 +116,13 @@ export function AgentChat({
       // ignore
     }
   };
+  // Start each visit with no dock, and clear it when leaving /agent so a stale
+  // proposal doesn't linger for the next visit.
+  useEffect(() => {
+    agentStore.clearProposal();
+    return () => agentStore.clearProposal();
+  }, []);
+
   const editorRef = useRef<AgentComposerHandle>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
@@ -211,25 +203,26 @@ export function AgentChat({
   const newChat = useCallback(() => {
     setMessages([]);
     setConversationId(null);
-    setProposal(null);
-    setDrawerOpen(false);
+    agentStore.clearProposal();
   }, []);
 
-  const openConversation = useCallback(async (id: string) => {
-    setConversationId(id);
-    const stored = await getConversation(id);
-    const mapped: Msg[] = stored.map((m) => ({
-      id: uid(),
-      role: m.role,
-      content: m.content,
-      producedProposal: !!m.proposal,
-    }));
-    const lastProposal = [...stored].reverse().find((m) => m.proposal)?.proposal ?? null;
-    setMessages(mapped);
-    setProposal((lastProposal as Proposal) ?? null);
-    setProposalKey((k) => k + 1);
-    setDrawerOpen(false);
-  }, []);
+  const openConversation = useCallback(
+    async (id: string) => {
+      setConversationId(id);
+      const stored = await getConversation(id);
+      const mapped: Msg[] = stored.map((m) => ({
+        id: uid(),
+        role: m.role,
+        content: m.content,
+        producedProposal: !!m.proposal,
+      }));
+      const lastProposal = [...stored].reverse().find((m) => m.proposal)?.proposal ?? null;
+      setMessages(mapped);
+      if (lastProposal) agentStore.restoreProposal(lastProposal as AgentProposal, channels);
+      else agentStore.clearProposal();
+    },
+    [channels],
+  );
 
   const removeConversation = useCallback(
     async (id: string) => {
@@ -338,9 +331,7 @@ export function AgentChat({
             } else if (data.type === "tool") {
               patch((m) => ({ ...m, toolNote: toolLabel(String(data.name)) }));
             } else if (data.type === "proposal") {
-              setProposal(data.proposal as Proposal);
-              setProposalKey((k) => k + 1);
-              setDrawerOpen(true);
+              agentStore.setProposal(data.proposal as AgentProposal, channels);
               patch((m) => ({ ...m, producedProposal: true, toolNote: null }));
             } else if (data.type === "list") {
               patch((m) => ({ ...m, list: data.list as AgentList, toolNote: null }));
@@ -357,7 +348,7 @@ export function AgentChat({
         if (createdNew || conversationId) refreshConversations();
       }
     },
-    [busy, uploading, attachments, model, messages, remaining, conversationId, refreshConversations],
+    [busy, uploading, attachments, model, channels, messages, remaining, conversationId, refreshConversations],
   );
 
   const outOfQuota = remaining !== null && remaining <= 0;
@@ -380,7 +371,7 @@ export function AgentChat({
           ) : (
             <div className="mx-auto flex max-w-2xl flex-col gap-5 py-4">
               {messages.map((m) => (
-                <MessageRow key={m.id} msg={m} onOpenProposal={() => setDrawerOpen(true)} />
+                <MessageRow key={m.id} msg={m} onOpenProposal={() => agentStore.openProposal()} />
               ))}
             </div>
           )}
@@ -534,39 +525,6 @@ export function AgentChat({
           </p>
         </div>
       </div>
-
-      {/* ── Proposed-post side panel (only once a draft exists, lg+) ─ */}
-      {proposal ? (
-        <aside
-          style={BRAND_GLASS.style}
-          className={`mb-[22px] hidden w-[420px] shrink-0 overflow-hidden rounded-2xl lg:flex xl:w-[480px] ${BRAND_GLASS.className}`}
-        >
-          <ProposalPanel key={proposalKey} proposal={proposal} channels={channels} />
-        </aside>
-      ) : null}
-
-      {/* ── Proposed-post drawer (slide-over, < lg) ──────────────── */}
-      {drawerOpen && proposal ? (
-        <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setDrawerOpen(false)}
-            aria-hidden
-          />
-          <div
-            style={BRAND_GLASS.style}
-            className={`absolute inset-y-0 right-0 flex w-full max-w-md flex-col overflow-hidden ${BRAND_GLASS.className}`}
-          >
-            <ProposalPanel
-              key={proposalKey}
-              proposal={proposal}
-              channels={channels}
-              onClose={() => setDrawerOpen(false)}
-            />
-          </div>
-        </div>
-      ) : null}
-
     </div>
   );
 }
@@ -653,338 +611,6 @@ function AssistantRow({ msg, onOpenProposal }: { msg: Msg; onOpenProposal: () =>
   );
 }
 
-function PanelTab({
-  active,
-  dot,
-  title,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  dot?: boolean;
-  title?: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition ${
-        active ? "bg-surface-2 text-ink shadow-sm" : "text-muted hover:text-ink"
-      }`}
-    >
-      {children}
-      {dot ? <span className="size-1.5 rounded-full bg-blue" /> : null}
-    </button>
-  );
-}
-
-// ── Proposed-post panel: review + edit + schedule, stacked vertically ───────
-function ProposalPanel({
-  proposal,
-  channels,
-  onClose,
-}: {
-  proposal: Proposal;
-  channels: AgentChannel[];
-  onClose?: () => void;
-}) {
-  const initialSegments = proposal.thread.length > 1 ? proposal.thread : [proposal.body];
-  const [segments, setSegments] = useState<string[]>(initialSegments);
-  const [selected, setSelected] = useState<string[]>(
-    proposal.channelIds.filter((id) => channels.some((c) => c.id === id)),
-  );
-  const [when, setWhen] = useState<string>(toLocalInput(proposal.scheduledAt));
-  const [showPreview, setShowPreview] = useState(true);
-  const [variants, setVariants] = useState<Record<string, string>>(proposal.variants ?? {});
-  const [activeTab, setActiveTab] = useState<string>("base");
-  const [saving, setSaving] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; msg: string; status?: string } | null>(null);
-
-  useEffect(() => {
-    if (activeTab !== "base" && !selected.includes(activeTab)) setActiveTab("base");
-  }, [selected, activeTab]);
-
-  const media = proposal.media;
-  const baseCaption = segments.filter((s) => s.trim()).join("\n\n");
-  const previewChannel =
-    channels.find((c) => c.id === (activeTab !== "base" ? activeTab : selected[0])) ??
-    channels.find((c) => c.id === proposal.channelIds[0]);
-  const previewVariant = previewChannel ? variants[previewChannel.id]?.trim() : "";
-  const previewThread = previewVariant ? [previewVariant] : segments;
-
-  const toggle = (id: string) =>
-    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-
-  const schedule = async () => {
-    if (saving || result?.ok) return;
-    setSaving(true);
-    const payload: ConfirmProposal = {
-      body: segments[0] ?? "",
-      thread: segments.slice(1),
-      channelIds: selected,
-      scheduledAt: when ? fromLocalInput(when) : null,
-      media,
-      variants: Object.fromEntries(
-        Object.entries(variants).filter(([k, v]) => selected.includes(k) && v.trim()),
-      ),
-    };
-    const res = await scheduleProposedPost(payload);
-    if (res.ok) {
-      setResult({
-        ok: true,
-        status: res.status,
-        msg: res.status === "scheduled" ? "Scheduled" : "Saved as draft",
-      });
-    } else {
-      setResult({ ok: false, msg: res.error });
-    }
-    setSaving(false);
-  };
-
-  return (
-    <div className="flex h-full w-full flex-col">
-      {/* header */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-line px-5 py-3.5">
-        <h2 className="font-display text-base font-semibold tracking-[-0.01em] text-ink">
-          Proposed post
-        </h2>
-        {onClose ? (
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="ml-auto flex size-7 items-center justify-center rounded-lg text-muted transition hover:bg-surface hover:text-ink"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
-          </button>
-        ) : (
-          <span className="ml-auto text-[12px] text-muted">Review &amp; edit</span>
-        )}
-      </div>
-
-      {result?.ok ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
-          <span className="flex size-11 items-center justify-center rounded-full bg-green text-white">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-          </span>
-          <div>
-            <div className="font-display text-base font-semibold text-ink">{result.msg}</div>
-            <div className="pt-0.5 text-[13px] text-muted">
-              Your post is {result.status === "scheduled" ? "in the queue" : "saved to drafts"}.
-            </div>
-          </div>
-          <Link
-            href={result.status === "scheduled" ? "/queue" : "/drafts"}
-            className="rounded-xl bg-blue px-4 py-2 text-sm font-semibold text-on-blue"
-          >
-            {result.status === "scheduled" ? "View in queue" : "View draft"}
-          </Link>
-        </div>
-      ) : (
-        <>
-          {/* scrollable body */}
-          <div className="min-h-0 flex-1 space-y-6 overflow-y-auto p-5">
-            <div>
-              <div className="pb-2 text-xs font-semibold text-muted">
-                Channels
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {channels.length === 0 ? (
-                  <Link href="/channels" className="text-[13px] font-medium text-blue">
-                    Connect a channel →
-                  </Link>
-                ) : (
-                  channels.map((c) => {
-                    const on = selected.includes(c.id);
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => toggle(c.id)}
-                        aria-pressed={on}
-                        title={c.handle ? `@${c.handle.replace(/^@/, "")}` : c.platform}
-                        className={`rounded-full transition ${
-                          on
-                            ? "ring-2 ring-blue ring-offset-2 ring-offset-surface-2"
-                            : "opacity-45 hover:opacity-100"
-                        }`}
-                      >
-                        <BrandTile platform={c.platform} size={30} radius={15} />
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2.5">
-              <div className="text-xs font-semibold text-muted">Text</div>
-
-              {selected.length > 0 ? (
-                <div className="flex flex-wrap items-center gap-1 rounded-lg bg-surface p-1">
-                  <PanelTab active={activeTab === "base"} onClick={() => setActiveTab("base")}>
-                    All
-                  </PanelTab>
-                  {selected.map((id) => {
-                    const c = channels.find((x) => x.id === id);
-                    if (!c) return null;
-                    return (
-                      <PanelTab
-                        key={id}
-                        active={activeTab === id}
-                        dot={!!variants[id]?.trim()}
-                        title={c.handle ? `@${c.handle.replace(/^@/, "")}` : c.platform}
-                        onClick={() => setActiveTab(id)}
-                      >
-                        <BrandTile platform={c.platform} size={14} radius={4} />
-                      </PanelTab>
-                    );
-                  })}
-                </div>
-              ) : null}
-
-              {activeTab === "base" ? (
-                segments.map((seg, i) => (
-                  <div key={i}>
-                    {segments.length > 1 ? (
-                      <div className="pb-1 text-[11px] font-medium text-muted">Post {i + 1}</div>
-                    ) : null}
-                    <textarea
-                      value={seg}
-                      onChange={(e) =>
-                        setSegments((prev) => prev.map((s, j) => (j === i ? e.target.value : s)))
-                      }
-                      rows={segments.length > 1 ? 3 : 5}
-                      className="w-full resize-y rounded-xl border border-line bg-surface p-2.5 text-sm text-ink outline-none focus:border-blue"
-                    />
-                  </div>
-                ))
-              ) : (
-                <div className="space-y-1.5">
-                  <textarea
-                    value={variants[activeTab] ?? ""}
-                    onChange={(e) => setVariants((p) => ({ ...p, [activeTab]: e.target.value }))}
-                    rows={5}
-                    placeholder="Customize this channel's caption… (empty = use the main text)"
-                    className="w-full resize-y rounded-xl border border-line bg-surface p-2.5 text-sm text-ink outline-none focus:border-blue"
-                  />
-                  <div className="flex items-center gap-3 text-[11px]">
-                    <button
-                      type="button"
-                      onClick={() => setVariants((p) => ({ ...p, [activeTab]: baseCaption }))}
-                      className="font-medium text-blue"
-                    >
-                      Copy main text
-                    </button>
-                    {variants[activeTab]?.trim() ? (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setVariants((p) => {
-                            const next = { ...p };
-                            delete next[activeTab];
-                            return next;
-                          })
-                        }
-                        className="ml-auto text-muted hover:text-ink"
-                      >
-                        Use main
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <div className="pb-2 text-xs font-semibold text-muted">
-                When
-              </div>
-              <input
-                type="datetime-local"
-                value={when}
-                onChange={(e) => setWhen(e.target.value)}
-                className="w-full rounded-xl border border-line bg-surface px-2.5 py-2 text-sm text-ink outline-none focus:border-blue"
-              />
-              <p className="pt-1 text-[11px] text-muted">Leave empty to save as a draft.</p>
-            </div>
-
-            <div>
-              <button
-                type="button"
-                onClick={() => setShowPreview((v) => !v)}
-                aria-expanded={showPreview}
-                className="flex w-full items-center gap-2 pb-2 text-xs font-semibold text-muted transition hover:text-ink"
-              >
-                Preview
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                  className={`ml-auto transition-transform ${showPreview ? "" : "-rotate-90"}`}
-                >
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </button>
-              {showPreview ? (
-                previewChannel ? (
-                  <PostPreview
-                    platform={previewChannel.platform}
-                    handle={previewChannel.handle}
-                    thread={previewThread}
-                    media={media}
-                    metrics={null}
-                    publishedAt={when ? fromLocalInput(when) : null}
-                  />
-                ) : (
-                  <div className="rounded-2xl border border-dashed border-line p-6 text-center text-[13px] text-muted">
-                    Select a channel to preview.
-                  </div>
-                )
-              ) : null}
-            </div>
-          </div>
-
-          {/* sticky footer */}
-          <div className="flex shrink-0 items-center gap-2 border-t border-line px-5 py-3.5">
-            {result && !result.ok ? (
-              <span className="text-[13px]" style={{ color: "#d14a3e" }}>
-                {result.msg}
-              </span>
-            ) : (
-              <span className="text-[12px] text-muted">
-                {selected.length} channel{selected.length === 1 ? "" : "s"} ·{" "}
-                {when ? "scheduled" : "draft"}
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={schedule}
-              disabled={saving || selected.length === 0}
-              className="ml-auto rounded-xl bg-blue px-4 py-2 text-sm font-semibold text-on-blue transition disabled:opacity-40"
-            >
-              {saving ? "Saving…" : when ? "Schedule" : "Save draft"}
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 function EmptyState({ channels, onPick }: { channels: AgentChannel[]; onPick: (t: string) => void }) {
   return (
     <div className="mx-auto flex h-full max-w-2xl flex-col items-center justify-center gap-6 py-10 text-center">
@@ -1010,17 +636,4 @@ function EmptyState({ channels, onPick }: { channels: AgentChannel[]; onPick: (t
       </div>
     </div>
   );
-}
-
-// datetime-local <-> ISO helpers (local wall-clock time)
-function toLocalInput(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-function fromLocalInput(local: string): string {
-  const d = new Date(local);
-  return Number.isNaN(d.getTime()) ? "" : d.toISOString();
 }

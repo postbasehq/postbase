@@ -18,10 +18,28 @@ type Actions = {
   remove: (id: string) => void;
 };
 
+export type AgentChannel = { id: string; platform: string; handle: string | null };
+export type AgentProposal = {
+  body: string;
+  thread: string[];
+  channelIds: string[];
+  scheduledAt: string | null;
+  media: { url: string; type: string }[];
+  variants?: Record<string, string>;
+};
+type ProposalSnapshot = {
+  proposal: AgentProposal | null;
+  channels: AgentChannel[];
+  key: number;
+  open: boolean;
+};
+
 const emptySnapshot: Snapshot = { conversations: [], activeId: null };
 const noop: Actions = { open() {}, newChat() {}, rename() {}, remove() {} };
+const emptyProposal: ProposalSnapshot = { proposal: null, channels: [], key: 0, open: false };
 
 let snapshot: Snapshot = emptySnapshot;
+let proposalSnapshot: ProposalSnapshot = emptyProposal;
 let actions: Actions = noop;
 const listeners = new Set<() => void>();
 
@@ -59,8 +77,45 @@ export const agentStore = {
   newChat: () => actions.newChat(),
   rename: (id: string, title: string) => actions.rename(id, title),
   remove: (id: string) => actions.remove(id),
+
+  // ── Proposal dock bridge ─────────────────────────────────────────
+  getProposal() {
+    return proposalSnapshot;
+  },
+  /** A fresh proposal from the agent — opens the dock. */
+  setProposal(proposal: AgentProposal, channels: AgentChannel[]) {
+    proposalSnapshot = { proposal, channels, key: proposalSnapshot.key + 1, open: true };
+    emit();
+  },
+  /** A proposal restored from history — kept closed until the user opens it. */
+  restoreProposal(proposal: AgentProposal, channels: AgentChannel[]) {
+    proposalSnapshot = { proposal, channels, key: proposalSnapshot.key + 1, open: false };
+    emit();
+  },
+  openProposal() {
+    if (proposalSnapshot.proposal && !proposalSnapshot.open) {
+      proposalSnapshot = { ...proposalSnapshot, open: true };
+      emit();
+    }
+  },
+  closeProposal() {
+    if (proposalSnapshot.open) {
+      proposalSnapshot = { ...proposalSnapshot, open: false };
+      emit();
+    }
+  },
+  clearProposal() {
+    if (proposalSnapshot.proposal || proposalSnapshot.open) {
+      proposalSnapshot = { proposal: null, channels: [], key: proposalSnapshot.key, open: false };
+      emit();
+    }
+  },
 };
 
 export function useAgentConversations(): Snapshot {
   return useSyncExternalStore(agentStore.subscribe, agentStore.getSnapshot, () => emptySnapshot);
+}
+
+export function useAgentProposal(): ProposalSnapshot {
+  return useSyncExternalStore(agentStore.subscribe, agentStore.getProposal, () => emptyProposal);
 }
