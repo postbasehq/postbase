@@ -178,7 +178,7 @@ export function AgentChat({
 
   const addChannel = (channel: AgentChannel) => {
     const handle = `@${(channel.handle ?? channel.platform).replace(/^@/, "")}`;
-    editorRef.current?.insertMention({ kind: "@", label: handle, value: handle, platform: channel.platform });
+    editorRef.current?.insertMention({ kind: "@", label: handle, value: handle, platforms: [channel.platform] });
     setMentionOpen(false);
     setMentionQuery("");
   };
@@ -190,7 +190,7 @@ export function AgentChat({
       kind: "/",
       label,
       value: body,
-      platform: post.channels[0]?.platform,
+      platforms: [...new Set(post.channels.map((c) => c.platform))],
     });
     setMentionOpen(false);
     setMentionQuery("");

@@ -305,6 +305,17 @@ body {
   justify-content: center;
   flex: none;
 }
+.mention-chip .mention-ics {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+.mention-chip .mention-ics > .mention-ic {
+  box-shadow: 0 0 0 1.5px var(--surface);
+}
+.mention-chip .mention-ics > .mention-ic + .mention-ic {
+  margin-left: -5px;
+}
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .mention-chip {
     color: color-mix(in oklab, var(--accent) 45%, white);

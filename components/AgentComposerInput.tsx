@@ -11,11 +11,23 @@ import { BRANDS } from "@/components/BrandTile";
  * source of truth; it calls back on change / submit / trigger.
  */
 export type AgentComposerHandle = {
-  insertMention: (m: { kind: "@" | "/"; label: string; value: string; platform?: string }) => void;
+  insertMention: (m: { kind: "@" | "/"; label: string; value: string; platforms?: string[] }) => void;
   setText: (text: string) => void;
   clear: () => void;
   focus: () => void;
 };
+
+function brandIcon(platform: string): HTMLElement {
+  const b = BRANDS[platform];
+  const ic = document.createElement("span");
+  ic.className = "mention-ic";
+  ic.style.width = "14px";
+  ic.style.height = "14px";
+  ic.style.background = b.bg;
+  ic.style.borderRadius = "4px";
+  ic.innerHTML = `<svg width="9" height="9" viewBox="${b.viewBox ?? "0 0 24 24"}" fill="#fff"><path d="${b.path}"/></svg>`;
+  return ic;
+}
 
 const DOC_ICON =
   '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>';
@@ -63,25 +75,24 @@ export const AgentComposerInput = forwardRef<
     sel?.addRange(range);
   };
 
-  const makeChip = (m: { kind: "@" | "/"; label: string; value: string; platform?: string }) => {
+  const makeChip = (m: { kind: "@" | "/"; label: string; value: string; platforms?: string[] }) => {
     const chip = document.createElement("span");
     chip.contentEditable = "false";
     chip.className = `mention-chip ${m.kind === "@" ? "mention-at" : "mention-slash"}`;
     chip.dataset.value = m.value;
 
-    const ic = document.createElement("span");
-    ic.className = "mention-ic";
-    const b = m.platform ? BRANDS[m.platform] : null;
-    if (b) {
-      ic.style.width = "14px";
-      ic.style.height = "14px";
-      ic.style.background = b.bg;
-      ic.style.borderRadius = "4px";
-      ic.innerHTML = `<svg width="9" height="9" viewBox="${b.viewBox ?? "0 0 24 24"}" fill="#fff"><path d="${b.path}"/></svg>`;
+    const platforms = (m.platforms ?? []).filter((p) => BRANDS[p]).slice(0, 3);
+    if (platforms.length > 0) {
+      const stack = document.createElement("span");
+      stack.className = "mention-ics";
+      platforms.forEach((p) => stack.appendChild(brandIcon(p)));
+      chip.appendChild(stack);
     } else {
+      const ic = document.createElement("span");
+      ic.className = "mention-ic";
       ic.innerHTML = DOC_ICON;
+      chip.appendChild(ic);
     }
-    chip.appendChild(ic);
     chip.appendChild(document.createTextNode(m.label));
     return chip;
   };
