@@ -18,6 +18,8 @@ export type PostProposal = {
   channelIds: string[];
   scheduledAt: string | null;
   media: ProposedMedia[];
+  /** Per-channel caption overrides: channel_id → caption. Empty = use body. */
+  variants: Record<string, string>;
 };
 
 export type AgentPostRow = {
@@ -103,6 +105,12 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
           items: { type: "string" },
           description: "URLs of images to attach (e.g. from generate_image).",
         },
+        variants: {
+          type: "object",
+          additionalProperties: { type: "string" },
+          description:
+            "Optional per-channel caption overrides: an object mapping a channel_id (from channel_ids) to that channel's caption. Use when channels need different text, e.g. hashtags on LinkedIn but not X. Omit channels that should use the main body/thread.",
+        },
       },
       additionalProperties: false,
     },
@@ -175,12 +183,20 @@ export async function runAgentTool(
       const thread = asStringArray(input.thread);
       const body = str(input.body) || thread[0] || "";
       const media = asStringArray(input.image_urls).map((url) => ({ url, type: "image/jpeg" }));
+      const channelIds = asStringArray(input.channel_ids);
+      const variants: Record<string, string> = {};
+      if (input.variants && typeof input.variants === "object" && !Array.isArray(input.variants)) {
+        for (const [k, v] of Object.entries(input.variants as Record<string, unknown>)) {
+          if (typeof v === "string" && v.trim() && channelIds.includes(k)) variants[k] = v;
+        }
+      }
       const proposal: PostProposal = {
         body,
         thread: thread.length > 1 ? thread : [],
-        channelIds: asStringArray(input.channel_ids),
+        channelIds,
         scheduledAt: str(input.scheduled_at) || null,
         media,
+        variants,
       };
       if (!proposal.body.trim() && proposal.thread.length === 0) {
         return { forModel: "Can't propose an empty post — provide body or thread text." };

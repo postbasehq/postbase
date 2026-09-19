@@ -34,6 +34,7 @@ type Proposal = {
   channelIds: string[];
   scheduledAt: string | null;
   media: { url: string; type: string }[];
+  variants?: Record<string, string>;
 };
 
 type Attachment = { url: string; type: string };
@@ -652,6 +653,34 @@ function AssistantRow({ msg, onOpenProposal }: { msg: Msg; onOpenProposal: () =>
   );
 }
 
+function PanelTab({
+  active,
+  dot,
+  title,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  dot?: boolean;
+  title?: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition ${
+        active ? "bg-surface-2 text-ink shadow-sm" : "text-muted hover:text-ink"
+      }`}
+    >
+      {children}
+      {dot ? <span className="size-1.5 rounded-full bg-blue" /> : null}
+    </button>
+  );
+}
+
 // ── Proposed-post panel: review + edit + schedule, stacked vertically ───────
 function ProposalPanel({
   proposal,
@@ -669,12 +698,22 @@ function ProposalPanel({
   );
   const [when, setWhen] = useState<string>(toLocalInput(proposal.scheduledAt));
   const [showPreview, setShowPreview] = useState(true);
+  const [variants, setVariants] = useState<Record<string, string>>(proposal.variants ?? {});
+  const [activeTab, setActiveTab] = useState<string>("base");
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; msg: string; status?: string } | null>(null);
 
+  useEffect(() => {
+    if (activeTab !== "base" && !selected.includes(activeTab)) setActiveTab("base");
+  }, [selected, activeTab]);
+
   const media = proposal.media;
+  const baseCaption = segments.filter((s) => s.trim()).join("\n\n");
   const previewChannel =
-    channels.find((c) => c.id === selected[0]) ?? channels.find((c) => c.id === proposal.channelIds[0]);
+    channels.find((c) => c.id === (activeTab !== "base" ? activeTab : selected[0])) ??
+    channels.find((c) => c.id === proposal.channelIds[0]);
+  const previewVariant = previewChannel ? variants[previewChannel.id]?.trim() : "";
+  const previewThread = previewVariant ? [previewVariant] : segments;
 
   const toggle = (id: string) =>
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -688,6 +727,9 @@ function ProposalPanel({
       channelIds: selected,
       scheduledAt: when ? fromLocalInput(when) : null,
       media,
+      variants: Object.fromEntries(
+        Object.entries(variants).filter(([k, v]) => selected.includes(k) && v.trim()),
+      ),
     };
     const res = await scheduleProposedPost(payload);
     if (res.ok) {
@@ -789,21 +831,81 @@ function ProposalPanel({
 
             <div className="space-y-2.5">
               <div className="text-xs font-semibold text-muted">Text</div>
-              {segments.map((seg, i) => (
-                <div key={i}>
-                  {segments.length > 1 ? (
-                    <div className="pb-1 text-[11px] font-medium text-muted">Post {i + 1}</div>
-                  ) : null}
+
+              {selected.length > 0 ? (
+                <div className="flex flex-wrap items-center gap-1 rounded-lg bg-surface p-1">
+                  <PanelTab active={activeTab === "base"} onClick={() => setActiveTab("base")}>
+                    All
+                  </PanelTab>
+                  {selected.map((id) => {
+                    const c = channels.find((x) => x.id === id);
+                    if (!c) return null;
+                    return (
+                      <PanelTab
+                        key={id}
+                        active={activeTab === id}
+                        dot={!!variants[id]?.trim()}
+                        title={c.handle ? `@${c.handle.replace(/^@/, "")}` : c.platform}
+                        onClick={() => setActiveTab(id)}
+                      >
+                        <BrandTile platform={c.platform} size={14} radius={4} />
+                      </PanelTab>
+                    );
+                  })}
+                </div>
+              ) : null}
+
+              {activeTab === "base" ? (
+                segments.map((seg, i) => (
+                  <div key={i}>
+                    {segments.length > 1 ? (
+                      <div className="pb-1 text-[11px] font-medium text-muted">Post {i + 1}</div>
+                    ) : null}
+                    <textarea
+                      value={seg}
+                      onChange={(e) =>
+                        setSegments((prev) => prev.map((s, j) => (j === i ? e.target.value : s)))
+                      }
+                      rows={segments.length > 1 ? 3 : 5}
+                      className="w-full resize-y rounded-xl border border-line bg-surface p-2.5 text-sm text-ink outline-none focus:border-blue"
+                    />
+                  </div>
+                ))
+              ) : (
+                <div className="space-y-1.5">
                   <textarea
-                    value={seg}
-                    onChange={(e) =>
-                      setSegments((prev) => prev.map((s, j) => (j === i ? e.target.value : s)))
-                    }
-                    rows={segments.length > 1 ? 3 : 5}
+                    value={variants[activeTab] ?? ""}
+                    onChange={(e) => setVariants((p) => ({ ...p, [activeTab]: e.target.value }))}
+                    rows={5}
+                    placeholder="Customize this channel's caption… (empty = use the main text)"
                     className="w-full resize-y rounded-xl border border-line bg-surface p-2.5 text-sm text-ink outline-none focus:border-blue"
                   />
+                  <div className="flex items-center gap-3 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setVariants((p) => ({ ...p, [activeTab]: baseCaption }))}
+                      className="font-medium text-blue"
+                    >
+                      Copy main text
+                    </button>
+                    {variants[activeTab]?.trim() ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setVariants((p) => {
+                            const next = { ...p };
+                            delete next[activeTab];
+                            return next;
+                          })
+                        }
+                        className="ml-auto text-muted hover:text-ink"
+                      >
+                        Use main
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
-              ))}
+              )}
             </div>
 
             <div>
@@ -847,7 +949,7 @@ function ProposalPanel({
                   <PostPreview
                     platform={previewChannel.platform}
                     handle={previewChannel.handle}
-                    thread={segments}
+                    thread={previewThread}
                     media={media}
                     metrics={null}
                     publishedAt={when ? fromLocalInput(when) : null}

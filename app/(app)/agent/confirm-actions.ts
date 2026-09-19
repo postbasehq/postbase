@@ -16,6 +16,7 @@ export type ConfirmProposal = {
   channelIds: string[];
   scheduledAt: string | null;
   media: { url: string; type: string }[];
+  variants?: Record<string, string>;
 };
 
 export async function scheduleProposedPost(
@@ -65,9 +66,15 @@ export async function scheduleProposedPost(
     .single();
   if (error) return { ok: false, error: error.message };
 
-  const { error: targetErr } = await supabase
-    .from("post_targets")
-    .insert(channelIds.map((channel_id) => ({ post_id: post.id, channel_id, status })));
+  const variants = proposal.variants ?? {};
+  const { error: targetErr } = await supabase.from("post_targets").insert(
+    channelIds.map((channel_id) => ({
+      post_id: post.id,
+      channel_id,
+      status,
+      variant_body: variants[channel_id]?.trim() ? variants[channel_id] : null,
+    })),
+  );
   if (targetErr) return { ok: false, error: targetErr.message };
 
   const media = (proposal.media ?? []).filter((m) => m?.url);
