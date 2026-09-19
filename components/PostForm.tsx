@@ -921,7 +921,7 @@ export function PostForm({
         {!isDraft ? (
           <label
             title="Automatically re-post on a fixed cadence"
-            className="flex items-center gap-1.5 rounded-lg border border-line bg-ground pl-2.5 pr-1 text-sm focus-within:border-blue"
+            className="flex items-center gap-1.5 rounded-lg border border-line bg-ground pl-2.5 pr-2 text-sm focus-within:border-blue"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted" aria-hidden>
               <path d="m17 2 4 4-4 4" />
@@ -933,7 +933,7 @@ export function PostForm({
               value={repeatEvery}
               onChange={(e) => setRepeatEvery(e.target.value)}
               aria-label="Repeat"
-              className={`bg-transparent py-2 text-sm outline-none ${repeatEvery ? "text-ink" : "text-muted"}`}
+              className={`appearance-none bg-transparent py-2 text-sm outline-none ${repeatEvery ? "text-ink" : "text-muted"}`}
             >
               <option value="">Don’t repeat</option>
               {REPEAT_OPTIONS.map((o) => (
@@ -942,6 +942,9 @@ export function PostForm({
                 </option>
               ))}
             </select>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="pointer-events-none -ml-0.5 shrink-0 text-muted" aria-hidden>
+              <path d="m6 9 6 6 6-6" />
+            </svg>
           </label>
         ) : null}
 

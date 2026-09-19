@@ -539,7 +539,7 @@ export function AgentChat({
       {proposal ? (
         <aside
           style={BRAND_GLASS.style}
-          className={`hidden w-[420px] shrink-0 overflow-hidden rounded-2xl lg:flex xl:w-[480px] ${BRAND_GLASS.className}`}
+          className={`mb-[22px] hidden w-[420px] shrink-0 overflow-hidden rounded-2xl lg:flex xl:w-[480px] ${BRAND_GLASS.className}`}
         >
           <ProposalPanel key={proposalKey} proposal={proposal} channels={channels} />
         </aside>
@@ -748,14 +748,9 @@ function ProposalPanel({
     <div className="flex h-full w-full flex-col">
       {/* header */}
       <div className="flex shrink-0 items-center gap-2 border-b border-line px-5 py-3.5">
-        <span className="flex size-6 items-center justify-center rounded-md bg-blue text-on-blue">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-            <path d="M9 18V5l12-2v13" />
-            <circle cx="6" cy="18" r="3" />
-            <circle cx="18" cy="16" r="3" />
-          </svg>
-        </span>
-        <span className="text-[13px] font-semibold text-ink">Proposed post</span>
+        <h2 className="font-display text-base font-semibold tracking-[-0.01em] text-ink">
+          Proposed post
+        </h2>
         {onClose ? (
           <button
             type="button"
