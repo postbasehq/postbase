@@ -23,19 +23,33 @@ import {
   type ConversationSummary,
 } from "@/app/(app)/agent/history-actions";
 
-export type AgentChannel = { id: string; platform: string; handle: string | null };
+export type AgentChannel = {
+  id: string;
+  platform: string;
+  handle: string | null;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+  verified?: boolean;
+};
 
 type Attachment = { url: string; type: string };
+
+type ProposalCard = { channels: number; scheduled: boolean };
 
 type Msg = {
   id: string;
   role: "user" | "assistant";
   content: string;
   attachments?: Attachment[];
-  producedProposal?: boolean;
+  proposalCard?: ProposalCard | null;
   list?: AgentList | null;
   toolNote?: string | null;
 };
+
+const cardFromProposal = (p: AgentProposal): ProposalCard => ({
+  channels: p.channelIds.length,
+  scheduled: !!p.scheduledAt,
+});
 
 const uid = () => Math.random().toString(36).slice(2);
 
@@ -125,6 +139,8 @@ export function AgentChat({
 
   const editorRef = useRef<AgentComposerHandle>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const stop = () => abortRef.current?.abort();
   const composerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -214,7 +230,7 @@ export function AgentChat({
         id: uid(),
         role: m.role,
         content: m.content,
-        producedProposal: !!m.proposal,
+        proposalCard: m.proposal ? cardFromProposal(m.proposal as AgentProposal) : null,
       }));
       const lastProposal = [...stored].reverse().find((m) => m.proposal)?.proposal ?? null;
       setMessages(mapped);
@@ -284,10 +300,13 @@ export function AgentChat({
         setMessages((prev) => prev.map((m) => (m.id === assistantId ? fn(m) : m)));
 
       let createdNew = false;
+      const controller = new AbortController();
+      abortRef.current = controller;
       try {
         const res = await fetch("/api/agent/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
           body: JSON.stringify({
             conversationId,
             messages: [...history, { role: "user", content: apiText }],
@@ -331,8 +350,9 @@ export function AgentChat({
             } else if (data.type === "tool") {
               patch((m) => ({ ...m, toolNote: toolLabel(String(data.name)) }));
             } else if (data.type === "proposal") {
-              agentStore.setProposal(data.proposal as AgentProposal, channels);
-              patch((m) => ({ ...m, producedProposal: true, toolNote: null }));
+              const p = data.proposal as AgentProposal;
+              agentStore.setProposal(p, channels);
+              patch((m) => ({ ...m, proposalCard: cardFromProposal(p), toolNote: null }));
             } else if (data.type === "list") {
               patch((m) => ({ ...m, list: data.list as AgentList, toolNote: null }));
             } else if (data.type === "error") {
@@ -340,9 +360,13 @@ export function AgentChat({
             }
           }
         }
-      } catch {
-        patch((m) => ({ ...m, content: m.content || "Something went wrong reaching the agent." }));
+      } catch (e) {
+        // A user-initiated stop (abort) keeps whatever streamed so far.
+        if ((e as Error)?.name !== "AbortError") {
+          patch((m) => ({ ...m, content: m.content || "Something went wrong reaching the agent." }));
+        }
       } finally {
+        abortRef.current = null;
         setBusy(false);
         // Refresh the rail so a new thread appears and titles/ordering update.
         if (createdNew || conversationId) refreshConversations();
@@ -490,16 +514,29 @@ export function AgentChat({
 
               <div className="ml-auto flex items-center gap-1">
                 <AgentModelSelector value={model} onChange={changeModel} ready={modelsReady} />
-                <button
-                  type="submit"
-                  disabled={busy || uploading || (!input.trim() && attachments.length === 0) || outOfQuota}
-                  className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue text-on-blue transition disabled:opacity-40"
-                  aria-label="Send"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                    <path d="M12 19V5M5 12l7-7 7 7" />
-                  </svg>
-                </button>
+                {busy ? (
+                  <button
+                    type="button"
+                    onClick={stop}
+                    className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue text-on-blue transition hover:opacity-90"
+                    aria-label="Stop"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                      <rect x="6" y="6" width="12" height="12" rx="2.5" />
+                    </svg>
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={uploading || (!input.trim() && attachments.length === 0) || outOfQuota}
+                    className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue text-on-blue transition disabled:opacity-40"
+                    aria-label="Send"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M12 19V5M5 12l7-7 7 7" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
           </form>
@@ -590,21 +627,23 @@ function AssistantRow({ msg, onOpenProposal }: { msg: Msg; onOpenProposal: () =>
         <div className="text-sm text-muted">{msg.toolNote}</div>
       ) : null}
       {msg.list ? <AgentPostsList list={msg.list} /> : null}
-      {msg.producedProposal ? (
+      {msg.proposalCard ? (
         <button
           type="button"
           onClick={onOpenProposal}
-          className="flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-[13px] font-medium text-ink transition hover:border-blue lg:hidden"
+          style={BRAND_GLASS.style}
+          className={`group flex w-full max-w-sm items-center gap-3 rounded-xl px-3.5 py-3 text-left transition hover:border-blue/60 ${BRAND_GLASS.className}`}
         >
-          <span className="flex size-5 items-center justify-center rounded-md bg-blue text-on-blue">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-              <path d="M9 18V5l12-2v13" />
-              <circle cx="6" cy="18" r="3" />
-              <circle cx="18" cy="16" r="3" />
-            </svg>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-semibold text-ink">Proposed post</span>
+            <span className="block truncate text-[12px] text-muted">
+              {msg.proposalCard.channels} channel{msg.proposalCard.channels === 1 ? "" : "s"} ·{" "}
+              {msg.proposalCard.scheduled ? "scheduled" : "draft"}
+            </span>
           </span>
-          Review proposed post
-          <span aria-hidden>→</span>
+          <span className="shrink-0 rounded-lg bg-blue px-3 py-1.5 text-[12px] font-semibold text-on-blue">
+            Open
+          </span>
         </button>
       ) : null}
     </div>

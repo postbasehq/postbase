@@ -90,17 +90,28 @@ export function refreshTokens(refreshToken: string): Promise<XTokens> {
 export async function getMe(
   accessToken: string,
 ): Promise<{ id: string; username: string; name: string; avatar_url?: string; verified?: boolean }> {
-  const res = await fetch(`${API}/users/me?user.fields=profile_image_url,verified`, {
+  const res = await fetch(`${API}/users/me?user.fields=profile_image_url,verified,verified_type`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   const json = (await res.json()) as {
-    data?: { id: string; username: string; name: string; profile_image_url?: string; verified?: boolean };
+    data?: {
+      id: string;
+      username: string;
+      name: string;
+      profile_image_url?: string;
+      verified?: boolean;
+      verified_type?: string;
+    };
     detail?: string;
   };
   if (!res.ok || !json.data) throw new Error(json.detail ?? `X users/me error ${res.status}`);
   // X returns a small "_normal" avatar; request the 400x400 variant instead.
   const avatar_url = json.data.profile_image_url?.replace("_normal.", "_400x400.");
-  return { id: json.data.id, username: json.data.username, name: json.data.name, avatar_url, verified: json.data.verified };
+  // Blue/Premium (and business/government) checks live in verified_type, not the
+  // legacy `verified` boolean — treat any non-"none" type as verified.
+  const verified =
+    !!json.data.verified || (!!json.data.verified_type && json.data.verified_type !== "none");
+  return { id: json.data.id, username: json.data.username, name: json.data.name, avatar_url, verified };
 }
 
 /** Upload media (image/video bytes) via the v2 endpoint. Returns a media id. Needs the media.write scope. */

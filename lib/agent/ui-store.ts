@@ -18,7 +18,14 @@ type Actions = {
   remove: (id: string) => void;
 };
 
-export type AgentChannel = { id: string; platform: string; handle: string | null };
+export type AgentChannel = {
+  id: string;
+  platform: string;
+  handle: string | null;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+  verified?: boolean;
+};
 export type AgentProposal = {
   body: string;
   thread: string[];

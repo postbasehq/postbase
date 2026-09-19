@@ -13,12 +13,15 @@ export default async function AgentPage() {
   // RLS scopes this to the user's active org's channels.
   const { data } = await supabase
     .from("channels")
-    .select("id, platform, handle")
+    .select("id, platform, handle, display_name, avatar_url, verified")
     .order("created_at", { ascending: true });
   const channels: AgentChannel[] = (data ?? []).map((c) => ({
     id: c.id,
     platform: c.platform,
     handle: c.handle,
+    displayName: c.display_name,
+    avatarUrl: c.avatar_url,
+    verified: c.verified,
   }));
 
   const [usage, conversations] = await Promise.all([

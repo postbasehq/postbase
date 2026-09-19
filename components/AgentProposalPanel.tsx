@@ -101,7 +101,7 @@ export function AgentProposalPanel({
   };
 
   return (
-    <div className="flex h-full w-full flex-col">
+    <div className="flex h-full w-full flex-col bg-ground">
       {/* header */}
       <div className="flex h-16 shrink-0 items-center gap-2 border-b border-line px-5">
         <h2 className="font-display text-lg font-semibold tracking-[-0.01em] text-ink">
@@ -320,6 +320,9 @@ export function AgentProposalPanel({
                     <PostPreview
                       platform={previewChannel.platform}
                       handle={previewChannel.handle}
+                      displayName={previewChannel.displayName}
+                      avatarUrl={previewChannel.avatarUrl}
+                      verified={previewChannel.verified}
                       thread={previewThread}
                       media={media}
                       metrics={null}
