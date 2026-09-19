@@ -228,7 +228,13 @@ export function PostForm({
     const t = setTimeout(() => setFlashChannels(false), 2600);
     return () => clearTimeout(t);
   }, [searchParams]);
-  const [variants] = useState<Record<string, string>>(initial?.variants ?? {});
+  const [variants, setVariants] = useState<Record<string, string>>(initial?.variants ?? {});
+  // Per-channel caption editing: "base" edits the shared thread; a channel id
+  // edits that channel's override (variant_body). Falls back to base if empty.
+  const [activeTab, setActiveTab] = useState<string>("base");
+  useEffect(() => {
+    if (activeTab !== "base" && !selected.has(activeTab)) setActiveTab("base");
+  }, [selected, activeTab]);
   const [tiktokPrivacy, setTiktokPrivacy] = useState(initial?.tiktokPrivacy ?? "SELF_ONLY");
   const [scheduleLocal, setScheduleLocal] = useState(
     () => utcToLocalInput(initial?.scheduledAt) || defaultScheduleLocal || "",
@@ -560,30 +566,84 @@ export function PostForm({
 
           {/* editor */}
           <div className="flex flex-col gap-4">
-            <Reorder.Group
-              as="div"
-              axis="y"
-              values={tweets}
-              onReorder={setTweets}
-              className="flex flex-col gap-4 select-none"
-            >
-              {tweets.map((tw, i) => (
-                <ThreadItem
-                  key={tw.id}
-                  tweet={tw}
-                  index={i}
-                  total={tweets.length}
-                  isThread={isThread}
-                  charLimit={charLimit}
-                  emptyWarning={i === 0 && bodyEmpty && !hasMedia}
-                  reordering={reordering}
-                  onDragChange={setReordering}
-                  onChange={(v) => updateTweet(i, v)}
-                  onRemove={() => removeTweet(i)}
-                  onMove={(dir) => moveTweet(i, dir)}
-                />
-              ))}
-            </Reorder.Group>
+            {/* per-channel caption tabs — only when channels are selected */}
+            {selectedChannels.length > 0 ? (
+              <p className="px-1 font-display text-base font-semibold text-ink">
+                Customize per channel
+              </p>
+            ) : null}
+            {selectedChannels.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-1 rounded-xl bg-surface-2/60 p-1">
+                <VariantTab
+                  active={activeTab === "base"}
+                  onClick={() => setActiveTab("base")}
+                >
+                  All channels
+                </VariantTab>
+                {selectedChannels.map((c) => (
+                  <VariantTab
+                    key={c.id}
+                    active={activeTab === c.id}
+                    dot={!!variants[c.id]?.trim()}
+                    onClick={() => {
+                      setActiveTab(c.id);
+                      setPreviewIdx(selectedChannels.findIndex((x) => x.id === c.id));
+                    }}
+                  >
+                    <BrandTile platform={c.platform} size={15} radius={4} />
+                    <span className="max-w-[90px] truncate">
+                      {c.handle ? `@${c.handle.replace(/^@/, "")}` : c.platform}
+                    </span>
+                  </VariantTab>
+                ))}
+              </div>
+            ) : null}
+
+            {activeTab === "base" ? (
+              <Reorder.Group
+                as="div"
+                axis="y"
+                values={tweets}
+                onReorder={setTweets}
+                className="flex flex-col gap-4 select-none"
+              >
+                {tweets.map((tw, i) => (
+                  <ThreadItem
+                    key={tw.id}
+                    tweet={tw}
+                    index={i}
+                    total={tweets.length}
+                    isThread={isThread}
+                    charLimit={charLimit}
+                    emptyWarning={i === 0 && bodyEmpty && !hasMedia}
+                    reordering={reordering}
+                    onDragChange={setReordering}
+                    onChange={(v) => updateTweet(i, v)}
+                    onRemove={() => removeTweet(i)}
+                    onMove={(dir) => moveTweet(i, dir)}
+                  />
+                ))}
+              </Reorder.Group>
+            ) : (
+              <ChannelVariantEditor
+                key={activeTab}
+                value={variants[activeTab] ?? ""}
+                base={caption}
+                limit={
+                  PLATFORM[selectedChannels.find((c) => c.id === activeTab)?.platform ?? ""]?.limit ??
+                  null
+                }
+                onChange={(v) => setVariants((prev) => ({ ...prev, [activeTab]: v }))}
+                onCopyBase={() => setVariants((prev) => ({ ...prev, [activeTab]: caption }))}
+                onUseBase={() =>
+                  setVariants((prev) => {
+                    const next = { ...prev };
+                    delete next[activeTab];
+                    return next;
+                  })
+                }
+              />
+            )}
 
             {/* media thumbnails */}
             {media.length > 0 ? (
@@ -664,17 +724,19 @@ export function PostForm({
                   Generate
                 </button>
               ) : null}
-              <button
-                type="button"
-                onClick={addTweet}
-                disabled={tweets.length >= MAX_TWEETS}
-                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-50"
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                Add comment / post
-              </button>
+              {activeTab === "base" ? (
+                <button
+                  type="button"
+                  onClick={addTweet}
+                  disabled={tweets.length >= MAX_TWEETS}
+                  className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-50"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  Add comment / post
+                </button>
+              ) : null}
               {otherDrafts.length > 0 ? (
                 <button
                   type="button"
@@ -766,23 +828,28 @@ export function PostForm({
         {/* ── Preview ──────────────────────────────────────────── */}
         <div className="flex flex-col gap-3 lg:sticky lg:top-6 lg:self-start">
           {previewChannel ? (
-            <div className="flex items-center justify-end gap-1.5 px-1">
-              {selectedChannels.length > 1
-                ? selectedChannels.map((c, i) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setPreviewIdx(i)}
-                      aria-label={`Preview ${label(c.platform)}`}
-                      title={label(c.platform)}
-                      className={`flex size-7 items-center justify-center rounded-lg transition ${
-                        i === previewClamped ? "bg-blue-soft" : "opacity-50 hover:bg-surface-2 hover:opacity-100"
-                      }`}
-                    >
-                      <BrandTile platform={c.platform} size={16} radius={4} />
-                    </button>
-                  ))
-                : null}
+            <p className="px-1 font-display text-base font-semibold text-ink">Preview</p>
+          ) : null}
+          {previewChannel ? (
+            <div className="flex items-center justify-between gap-2 px-1">
+              <div className="flex items-center gap-1.5">
+                {selectedChannels.length > 1
+                  ? selectedChannels.map((c, i) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setPreviewIdx(i)}
+                        aria-label={`Preview ${label(c.platform)}`}
+                        title={label(c.platform)}
+                        className={`flex size-7 items-center justify-center rounded-lg transition ${
+                          i === previewClamped ? "bg-blue-soft" : "opacity-50 hover:bg-surface-2 hover:opacity-100"
+                        }`}
+                      >
+                        <BrandTile platform={c.platform} size={16} radius={4} />
+                      </button>
+                    ))
+                  : null}
+              </div>
               {previewChannel ? (
                 <div className="flex items-center rounded-lg border border-line p-0.5">
                   <button
@@ -1294,6 +1361,88 @@ export function PostForm({
       <input type="hidden" name="scheduled_at" value={utc} />
       <input type="hidden" name="repeat_every" value={isDraft ? "" : repeatEvery} />
     </form>
+  );
+}
+
+// A tab in the per-channel caption row (Base / one per channel).
+function VariantTab({
+  active,
+  dot,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  dot?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
+        active ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"
+      }`}
+    >
+      {children}
+      {dot ? <span className="size-1.5 rounded-full bg-blue" /> : null}
+    </button>
+  );
+}
+
+// Editor for a single channel's caption override (variant_body). Empty = the
+// channel falls back to the base thread.
+function ChannelVariantEditor({
+  value,
+  base,
+  limit,
+  onChange,
+  onCopyBase,
+  onUseBase,
+}: {
+  value: string;
+  base: string;
+  limit: number | null;
+  onChange: (v: string) => void;
+  onCopyBase: () => void;
+  onUseBase: () => void;
+}) {
+  const len = value.length;
+  const nearLimit = limit != null && len >= limit * 0.9;
+  const atLimit = limit != null && len >= limit;
+  return (
+    <div className="rounded-xl border border-line bg-ground p-3.5 transition-shadow focus-within:border-blue">
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={6}
+        maxLength={limit ?? undefined}
+        placeholder={
+          base
+            ? "Customize this channel's caption… (leave empty to use the base text)"
+            : "Write this channel's caption…"
+        }
+        className="w-full resize-none select-text bg-transparent text-[15px] leading-relaxed outline-none placeholder:text-muted/70"
+      />
+      <div className="mt-1 flex items-center gap-3 text-xs">
+        <span
+          className={
+            atLimit ? "font-medium text-terra" : nearLimit ? "font-medium text-amber" : "text-muted"
+          }
+        >
+          {len.toLocaleString()}
+          {limit != null ? ` / ${limit.toLocaleString()}` : " characters"}
+        </span>
+        <button type="button" onClick={onCopyBase} className="font-medium text-blue-ink hover:underline">
+          Copy base text
+        </button>
+        {value.trim() ? (
+          <button type="button" onClick={onUseBase} className="ml-auto text-muted hover:text-ink">
+            Use base instead
+          </button>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
