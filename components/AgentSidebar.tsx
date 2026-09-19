@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { agentStore, useAgentConversations } from "@/lib/agent/ui-store";
+import { BRAND_GLASS } from "@/lib/glass";
 
 /**
  * The app sidebar's contents while on /agent: a way back to the rest of
@@ -24,13 +25,16 @@ export function AgentSidebar({ onShowNav }: { onShowNav?: () => void }) {
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col p-3">
+    <div
+      style={BRAND_GLASS.style}
+      className={`m-1.5 flex min-h-0 flex-1 flex-col rounded-2xl p-2.5 ${BRAND_GLASS.className}`}
+    >
       <div className="flex items-center gap-1">
         <Link
           href="/calendar"
-          className="flex flex-1 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-2 hover:text-ink"
+          className="flex min-w-0 flex-1 items-center gap-2 whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-2 hover:text-ink"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden>
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
           Back to Postbase
@@ -41,9 +45,9 @@ export function AgentSidebar({ onShowNav }: { onShowNav?: () => void }) {
             onClick={onShowNav}
             aria-label="Show menu"
             title="Show menu"
-            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-2 hover:text-ink"
+            className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-2 hover:text-ink"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <rect x="3" y="3" width="7" height="7" rx="1.5" />
               <rect x="14" y="3" width="7" height="7" rx="1.5" />
               <rect x="3" y="14" width="7" height="7" rx="1.5" />

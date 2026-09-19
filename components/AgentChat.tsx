@@ -11,6 +11,7 @@ import { AgentModelSelector } from "@/components/AgentModelSelector";
 import { AgentMentionMenu } from "@/components/AgentMentionMenu";
 import { AGENT_MODELS, DEFAULT_MODEL_ID } from "@/lib/agent/models";
 import type { AgentPostRow } from "@/lib/agent/tools";
+import { BRAND_GLASS } from "@/lib/glass";
 import type { AgentList } from "@/lib/agent/tools";
 import { scheduleProposedPost, type ConfirmProposal } from "@/app/(app)/agent/confirm-actions";
 import { uploadAgentImage } from "@/app/(app)/agent/upload-actions";
@@ -408,7 +409,8 @@ export function AgentChat({
               e.preventDefault();
               send(input);
             }}
-            className="rounded-2xl border border-line bg-surface shadow-sm transition focus-within:border-blue focus-within:shadow-md"
+            style={BRAND_GLASS.style}
+            className={`rounded-2xl transition focus-within:border-blue/60 ${BRAND_GLASS.className}`}
           >
             {/* status banner — clips onto the top while the agent works */}
             {busyStatus ? (
@@ -576,7 +578,10 @@ export function AgentChat({
 
       {/* ── Proposed-post side panel (only once a draft exists, lg+) ─ */}
       {proposal ? (
-        <aside className="hidden w-[420px] shrink-0 overflow-hidden rounded-2xl border border-line bg-surface-2 lg:flex xl:w-[480px]">
+        <aside
+          style={BRAND_GLASS.style}
+          className={`hidden w-[420px] shrink-0 overflow-hidden rounded-2xl lg:flex xl:w-[480px] ${BRAND_GLASS.className}`}
+        >
           <ProposalPanel key={proposalKey} proposal={proposal} channels={channels} />
         </aside>
       ) : null}
@@ -589,7 +594,10 @@ export function AgentChat({
             onClick={() => setDrawerOpen(false)}
             aria-hidden
           />
-          <div className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col overflow-hidden border-l border-line bg-surface-2 shadow-2xl">
+          <div
+            style={BRAND_GLASS.style}
+            className={`absolute inset-y-0 right-0 flex w-full max-w-md flex-col overflow-hidden ${BRAND_GLASS.className}`}
+          >
             <ProposalPanel
               key={proposalKey}
               proposal={proposal}
