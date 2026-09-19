@@ -54,7 +54,7 @@ const SUGGESTIONS = [
 
 // Quick-intent chips in the composer toolbar — they prefill the box, not send.
 const ic = (children: React.ReactNode) => (
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
     {children}
   </svg>
 );
@@ -427,19 +427,21 @@ export function AgentChat({
                   <path d="M21.44 11.05 12.25 20.24a5.5 5.5 0 0 1-7.78-7.78l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95l-9.2 9.19a1.5 1.5 0 0 1-2.12-2.12l8.49-8.49" />
                 </svg>
               </button>
-              {QUICK_ACTIONS.map((q) => (
-                <button
-                  key={q.label}
-                  type="button"
-                  disabled={outOfQuota}
-                  onClick={() => insertPrompt(q.prompt)}
-                  aria-label={q.label}
-                  title={q.label}
-                  className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-ink disabled:opacity-40"
-                >
-                  {q.icon}
-                </button>
-              ))}
+              <div className="ml-0.5 flex items-center gap-0.5 rounded-full bg-surface-2 p-1 ring-1 ring-line/60">
+                {QUICK_ACTIONS.map((q) => (
+                  <button
+                    key={q.label}
+                    type="button"
+                    disabled={outOfQuota}
+                    onClick={() => insertPrompt(q.prompt)}
+                    aria-label={q.label}
+                    title={q.label}
+                    className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted transition hover:-translate-y-px hover:bg-surface hover:text-blue-ink hover:shadow-sm disabled:opacity-40"
+                  >
+                    {q.icon}
+                  </button>
+                ))}
+              </div>
 
               <div className="ml-auto flex items-center gap-1">
                 <AgentModelSelector value={model} onChange={changeModel} ready={modelsReady} />
