@@ -35,6 +35,17 @@ export const AI_VIDEO_LIMIT: Record<PlanId, number> = {
   growth: 40,
 };
 
+// Monthly AI-agent message quota by plan. Each user turn in the /agent chat
+// costs one message (a turn may fan out to several tool calls). Kept generous
+// on paid plans but capped so a runaway session can't rack up an open-ended
+// model bill; the trial gets a taste.
+export const AGENT_MESSAGE_LIMIT: Record<PlanId, number> = {
+  trial: 25,
+  creator: 300,
+  team: 1000,
+  growth: 3000,
+};
+
 /** The AI-quota feature line for a plan, derived from the limits (single source). */
 export const aiFeature = (plan: PlanId): string =>
   `${AI_IMAGE_LIMIT[plan]} AI images + ${AI_VIDEO_LIMIT[plan]} videos / mo`;

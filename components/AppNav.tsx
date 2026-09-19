@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
+import { AgentSparkIcon } from "@/components/AgentSparkIcon";
 
 type Item = { label: string; href: string; icon: ComponentType; external?: boolean };
 type Section = { label: string | null; items: Item[] };
@@ -11,15 +12,16 @@ const SECTIONS: Section[] = [
   {
     label: null,
     items: [
+      { label: "Agent", href: "/agent", icon: AgentIcon },
       { label: "Calendar", href: "/calendar", icon: CalendarIcon },
       { label: "Queue", href: "/queue", icon: QueueIcon },
       { label: "Composer", href: "/composer", icon: ComposerIcon },
-      { label: "Drafts", href: "/drafts", icon: DraftsIcon },
     ],
   },
   {
     label: "Manage",
     items: [
+      { label: "Drafts", href: "/drafts", icon: DraftsIcon },
       { label: "Channels", href: "/channels", icon: ChannelsIcon },
       { label: "Media", href: "/media", icon: MediaIcon },
       { label: "Analytics", href: "/analytics", icon: AnalyticsIcon },
@@ -174,6 +176,9 @@ function base(children: React.ReactNode) {
   );
 }
 
+function AgentIcon() {
+  return <AgentSparkIcon size={16} />;
+}
 function CalendarIcon() {
   return base(
     <>

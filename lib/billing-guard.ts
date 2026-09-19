@@ -1,5 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { AI_IMAGE_LIMIT, AI_VIDEO_LIMIT, CHANNEL_LIMIT, type PlanId } from "@/lib/plans";
+import {
+  AGENT_MESSAGE_LIMIT,
+  AI_IMAGE_LIMIT,
+  AI_VIDEO_LIMIT,
+  CHANNEL_LIMIT,
+  type PlanId,
+} from "@/lib/plans";
 
 /**
  * Whether the org has hit its plan's channel allowance. Used to gate connecting
@@ -52,4 +58,31 @@ export async function aiUsage(db: SupabaseClient, orgId: string): Promise<AiUsag
 export async function atAiLimit(db: SupabaseClient, orgId: string, kind: AiKind): Promise<boolean> {
   const u = await aiUsage(db, orgId);
   return u[kind].remaining <= 0;
+}
+
+export type AgentUsage = { plan: PlanId; used: number; limit: number; remaining: number };
+
+/** This month's AI-agent message usage vs the org's plan quota. */
+export async function agentUsage(db: SupabaseClient, orgId: string): Promise<AgentUsage> {
+  const { data: org } = await db.from("orgs").select("plan").eq("id", orgId).single();
+  const plan = (org?.plan ?? "trial") as PlanId;
+  const { count } = await db
+    .from("agent_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("org_id", orgId)
+    .gte("created_at", monthStartIso());
+  const limit = AGENT_MESSAGE_LIMIT[plan] ?? AGENT_MESSAGE_LIMIT.trial;
+  const used = count ?? 0;
+  return { plan, used, limit, remaining: Math.max(0, limit - used) };
+}
+
+/** Whether the org has hit its monthly AI-agent message quota. */
+export async function atAgentLimit(db: SupabaseClient, orgId: string): Promise<boolean> {
+  const u = await agentUsage(db, orgId);
+  return u.remaining <= 0;
+}
+
+/** Record one used agent message (service-role insert, so it can't be tampered with). */
+export async function recordAgentMessage(db: SupabaseClient, orgId: string): Promise<void> {
+  await db.from("agent_messages").insert({ org_id: orgId });
 }

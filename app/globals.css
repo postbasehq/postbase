@@ -196,3 +196,119 @@ body {
   color: var(--blue-ink);
   text-decoration: underline;
 }
+
+/* Postbase AI mark (twin spark) — animates only in the thinking state. */
+@keyframes agent-spark-pulse {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.18) rotate(22deg);
+  }
+}
+@keyframes agent-spark-blink {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.agent-spark-main {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: agent-spark-pulse 2.2s ease-in-out infinite;
+}
+.agent-spark-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: agent-spark-blink 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .agent-spark-main,
+  .agent-spark-dot {
+    animation: none;
+  }
+  .agent-spark-dot {
+    opacity: 1;
+  }
+}
+
+/* Agent chat: shimmering "thinking" label. */
+@keyframes agent-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+.agent-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 0%,
+    var(--ink) 25%,
+    var(--muted) 50%,
+    var(--muted) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: agent-shimmer 2s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .agent-shimmer {
+    animation: none;
+    color: var(--muted);
+  }
+}
+
+/* Agent chat: compact markdown for streamed assistant replies. */
+.agent-prose > :first-child {
+  margin-top: 0;
+}
+.agent-prose > :last-child {
+  margin-bottom: 0;
+}
+.agent-prose p {
+  margin: 0 0 0.6rem;
+}
+.agent-prose ul,
+.agent-prose ol {
+  margin: 0 0 0.6rem;
+  padding-left: 1.25rem;
+}
+.agent-prose ul {
+  list-style: disc;
+}
+.agent-prose ol {
+  list-style: decimal;
+}
+.agent-prose li {
+  margin: 0.15rem 0;
+}
+.agent-prose strong {
+  font-weight: 600;
+}
+.agent-prose a {
+  color: var(--blue-ink);
+  text-decoration: underline;
+}
+.agent-prose code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.85em;
+  background: var(--surface-2);
+  padding: 0.1em 0.35em;
+  border-radius: 5px;
+}
+.agent-prose h1,
+.agent-prose h2,
+.agent-prose h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.02rem;
+  margin: 0.8rem 0 0.4rem;
+}

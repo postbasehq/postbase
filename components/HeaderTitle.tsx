@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 
 // Map the current route to its page title, shown in the app header.
 const TITLES: { prefix: string; title: string }[] = [
+  { prefix: "/agent", title: "Agent" },
   { prefix: "/calendar", title: "Calendar" },
   { prefix: "/queue", title: "Queue" },
   { prefix: "/composer/", title: "Edit post" },

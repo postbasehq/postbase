@@ -6,6 +6,7 @@ import { AppNav } from "@/components/AppNav";
 import { UserMenu } from "@/components/UserMenu";
 import { SidebarSearch } from "@/components/SidebarSearch";
 import { HeaderTitle } from "@/components/HeaderTitle";
+import { SidebarSwitcher } from "@/components/SidebarSwitcher";
 import { NotificationBell, type Notice } from "@/components/NotificationBell";
 import { OrgSwitcher } from "@/components/OrgSwitcher";
 import { TimezoneSync } from "@/components/TimezoneSync";
@@ -92,9 +93,11 @@ export default async function AppLayout({
         <div className="flex h-16 shrink-0 items-center px-5">
           <Logo href="/calendar" />
         </div>
-        <SidebarSearch />
-        <OrgSwitcher orgs={orgs} activeId={activeId} action={setActiveOrg} />
-        <AppNav />
+        <SidebarSwitcher>
+          <SidebarSearch />
+          <OrgSwitcher orgs={orgs} activeId={activeId} action={setActiveOrg} />
+          <AppNav />
+        </SidebarSwitcher>
         <UserMenu name={displayName} email={email} avatarUrl={avatarUrl} />
       </aside>
 
