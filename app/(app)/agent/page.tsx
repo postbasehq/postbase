@@ -26,6 +26,11 @@ export default async function AgentPage() {
     listConversations(),
   ]);
 
+  const modelsReady = {
+    anthropic: !!process.env.ANTHROPIC_API_KEY,
+    openai: !!process.env.OPENAI_API_KEY,
+  };
+
   return (
     <div className="h-full">
       <AgentChat
@@ -33,6 +38,7 @@ export default async function AgentPage() {
         conversations={conversations}
         remaining={usage?.remaining ?? null}
         limit={usage?.limit ?? null}
+        modelsReady={modelsReady}
       />
     </div>
   );

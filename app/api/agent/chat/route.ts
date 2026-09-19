@@ -1,16 +1,19 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { cookies } from "next/headers";
 import { getCurrentOrgId } from "@/lib/org";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { atAgentLimit, recordAgentMessage } from "@/lib/billing-guard";
-import { AGENT_MODEL, MAX_TOOL_ROUNDS, MAX_OUTPUT_TOKENS, systemPrompt } from "@/lib/agent/config";
-import { AGENT_TOOLS, runAgentTool, type PostProposal } from "@/lib/agent/tools";
+import { systemPrompt } from "@/lib/agent/config";
+import { getModel, DEFAULT_MODEL_ID } from "@/lib/agent/models";
+import { runAnthropic } from "@/lib/agent/run-anthropic";
+import { runOpenAI } from "@/lib/agent/run-openai";
+import type { PostProposal } from "@/lib/agent/tools";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 type ClientMessage = { role: "user" | "assistant"; content: string };
+type Attachment = { url: string; type: string };
 
 const enc = new TextEncoder();
 const sse = (obj: unknown) => enc.encode(`data: ${JSON.stringify(obj)}\n\n`);
@@ -28,23 +31,16 @@ export async function POST(req: Request) {
     });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return new Response(JSON.stringify({ error: "The agent isn't configured yet (ANTHROPIC_API_KEY missing)." }), {
-      status: 503,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  type Attachment = { url: string; type: string };
   let history: ClientMessage[] = [];
   let conversationId: string | null = null;
   let attachments: Attachment[] = [];
+  let modelId: string | null = null;
   try {
     const body = (await req.json()) as {
       messages?: ClientMessage[];
       conversationId?: string;
       attachments?: Attachment[];
+      model?: string;
     };
     history = (body.messages ?? [])
       .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
@@ -53,6 +49,7 @@ export async function POST(req: Request) {
     attachments = (body.attachments ?? [])
       .filter((a) => a && typeof a.url === "string" && typeof a.type === "string" && a.type.startsWith("image/"))
       .slice(0, 4);
+    modelId = typeof body.model === "string" ? body.model : null;
   } catch {
     return new Response(JSON.stringify({ error: "Bad request." }), { status: 400 });
   }
@@ -61,8 +58,19 @@ export async function POST(req: Request) {
   }
   const userText = history[history.length - 1].content;
 
+  // Resolve the model + provider, then require that provider's key.
+  const model = getModel(modelId) ?? getModel(DEFAULT_MODEL_ID) ?? getModel("claude-sonnet-5")!;
+  const apiKey =
+    model.provider === "anthropic" ? process.env.ANTHROPIC_API_KEY : process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    const envName = model.provider === "anthropic" ? "ANTHROPIC_API_KEY" : "OPENAI_API_KEY";
+    return new Response(
+      JSON.stringify({ error: `${model.label} isn't configured yet (${envName} missing).` }),
+      { status: 503, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
   // Meter usage: gate on the org's monthly message quota, then count this turn.
-  // Uses the service role so the count can't be tampered with client-side.
   const admin = createAdminClient();
   if (await atAgentLimit(admin, orgId)) {
     return new Response(
@@ -74,8 +82,7 @@ export async function POST(req: Request) {
   }
   await recordAgentMessage(admin, orgId);
 
-  // Resolve (or create) the conversation this turn belongs to, then persist the
-  // user message. Verify an incoming id belongs to this org before trusting it.
+  // Resolve (or create) the conversation, then persist the user message.
   let title = "New chat";
   if (conversationId) {
     const { data: convo } = await admin
@@ -111,79 +118,28 @@ export async function POST(req: Request) {
   const timezone = tz ? decodeURIComponent(tz) : "UTC";
   const system = systemPrompt({ now: new Date(), timezone });
 
-  const anthropic = new Anthropic({ apiKey });
-  const messages: Anthropic.MessageParam[] = history.map((m) => ({
-    role: m.role,
-    content: m.content,
-  }));
-
-  // Give Claude vision on the images the user attached this turn by rebuilding
-  // the last user message as text + image blocks.
-  if (attachments.length > 0 && messages.length > 0) {
-    const blocks: Anthropic.ContentBlockParam[] = [];
-    if (userText.trim()) blocks.push({ type: "text", text: userText });
-    for (const a of attachments) {
-      blocks.push({ type: "image", source: { type: "url", url: a.url } });
-    }
-    messages[messages.length - 1] = { role: "user", content: blocks };
-  }
-
-  let assistantText = "";
-  let latestProposal: PostProposal | null = null;
-
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const send = (obj: unknown) => controller.enqueue(sse(obj));
+      let assistantText = "";
+      let latestProposal: PostProposal | null = null;
       try {
-        send({ type: "meta", conversationId: convoId, title });
+        send({ type: "meta", conversationId: convoId, title, model: model.id });
 
-        for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-          const run = anthropic.messages.stream({
-            model: AGENT_MODEL,
-            max_tokens: MAX_OUTPUT_TOKENS,
-            system,
-            tools: AGENT_TOOLS,
-            messages,
-          });
+        const runner = model.provider === "anthropic" ? runAnthropic : runOpenAI;
+        const result = await runner({
+          apiKey,
+          model: model.id,
+          system,
+          history,
+          userText,
+          attachments,
+          orgId,
+          send,
+        });
+        assistantText = result.assistantText;
+        latestProposal = result.latestProposal;
 
-          run.on("text", (delta) => {
-            assistantText += delta;
-            send({ type: "token", text: delta });
-          });
-
-          const final = await run.finalMessage();
-          messages.push({ role: "assistant", content: final.content });
-
-          const toolUses = final.content.filter(
-            (b): b is Anthropic.ToolUseBlock => b.type === "tool_use",
-          );
-          if (final.stop_reason !== "tool_use" || toolUses.length === 0) break;
-
-          const results: Anthropic.ToolResultBlockParam[] = [];
-          for (const tu of toolUses) {
-            send({ type: "tool", name: tu.name });
-            let out;
-            try {
-              out = await runAgentTool(orgId, tu.name, (tu.input ?? {}) as Record<string, unknown>);
-            } catch (e) {
-              out = { forModel: e instanceof Error ? e.message : "Tool failed." };
-            }
-            if (out.proposal) {
-              // Fold this turn's uploaded images into the proposal, deduped by url.
-              if (attachments.length > 0) {
-                const seen = new Set(out.proposal.media.map((m) => m.url));
-                for (const a of attachments) {
-                  if (!seen.has(a.url)) out.proposal.media.push({ url: a.url, type: a.type });
-                }
-              }
-              latestProposal = out.proposal;
-              send({ type: "proposal", proposal: out.proposal });
-            }
-            if (out.list) send({ type: "list", list: out.list });
-            results.push({ type: "tool_result", tool_use_id: tu.id, content: out.forModel });
-          }
-          messages.push({ role: "user", content: results });
-        }
         send({ type: "done" });
       } catch (e) {
         send({ type: "error", message: e instanceof Error ? e.message : "The agent hit an error." });

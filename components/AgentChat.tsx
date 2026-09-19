@@ -7,6 +7,8 @@ import { PostPreview } from "@/components/PostPreview";
 import { BrandTile } from "@/components/BrandTile";
 import { AgentSparkIcon } from "@/components/AgentSparkIcon";
 import { AgentPostsList } from "@/components/AgentPostsList";
+import { AgentModelSelector } from "@/components/AgentModelSelector";
+import { AGENT_MODELS, DEFAULT_MODEL_ID } from "@/lib/agent/models";
 import type { AgentList } from "@/lib/agent/tools";
 import { scheduleProposedPost, type ConfirmProposal } from "@/app/(app)/agent/confirm-actions";
 import { uploadAgentImage } from "@/app/(app)/agent/upload-actions";
@@ -79,11 +81,13 @@ export function AgentChat({
   conversations: initialConversations,
   remaining: initialRemaining,
   limit,
+  modelsReady = { anthropic: true, openai: false },
 }: {
   channels: AgentChannel[];
   conversations?: ConversationSummary[];
   remaining?: number | null;
   limit?: number | null;
+  modelsReady?: { anthropic: boolean; openai: boolean };
 }) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -98,7 +102,26 @@ export function AgentChat({
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [model, setModel] = useState(DEFAULT_MODEL_ID);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Remember the picked model per-viewer (falling back to a configured one).
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("pb_agent_model");
+      if (saved && AGENT_MODELS.some((m) => m.id === saved)) setModel(saved);
+    } catch {
+      // ignore
+    }
+  }, []);
+  const changeModel = (id: string) => {
+    setModel(id);
+    try {
+      localStorage.setItem("pb_agent_model", id);
+    } catch {
+      // ignore
+    }
+  };
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -232,6 +255,7 @@ export function AgentChat({
             conversationId,
             messages: [...history, { role: "user", content: clean }],
             attachments: atts,
+            model,
           }),
         });
         if (!res.ok || !res.body) {
@@ -289,7 +313,7 @@ export function AgentChat({
         if (createdNew || conversationId) refreshConversations();
       }
     },
-    [busy, uploading, attachments, messages, remaining, conversationId, refreshConversations],
+    [busy, uploading, attachments, model, messages, remaining, conversationId, refreshConversations],
   );
 
   const outOfQuota = remaining !== null && remaining <= 0;
@@ -381,8 +405,9 @@ export function AgentChat({
               className="max-h-48 min-h-[56px] w-full resize-none bg-transparent px-4 pt-3.5 text-sm text-ink outline-none placeholder:text-muted disabled:opacity-60"
             />
 
-            {/* toolbar: attach + quick-intent chips + send */}
+            {/* toolbar: model + attach + quick-intent chips + send */}
             <div className="flex items-center gap-1.5 px-2.5 pb-2.5">
+              <AgentModelSelector value={model} onChange={changeModel} ready={modelsReady} />
               <input
                 ref={fileRef}
                 type="file"
