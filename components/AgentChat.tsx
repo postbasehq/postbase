@@ -8,7 +8,9 @@ import { BrandTile } from "@/components/BrandTile";
 import { AgentSparkIcon } from "@/components/AgentSparkIcon";
 import { AgentPostsList } from "@/components/AgentPostsList";
 import { AgentModelSelector } from "@/components/AgentModelSelector";
+import { AgentMentionMenu } from "@/components/AgentMentionMenu";
 import { AGENT_MODELS, DEFAULT_MODEL_ID } from "@/lib/agent/models";
+import type { AgentPostRow } from "@/lib/agent/tools";
 import type { AgentList } from "@/lib/agent/tools";
 import { scheduleProposedPost, type ConfirmProposal } from "@/app/(app)/agent/confirm-actions";
 import { uploadAgentImage } from "@/app/(app)/agent/upload-actions";
@@ -38,6 +40,7 @@ type Msg = {
   role: "user" | "assistant";
   content: string;
   attachments?: Attachment[];
+  contextRefs?: AgentPostRow[];
   producedProposal?: boolean;
   list?: AgentList | null;
   toolNote?: string | null;
@@ -103,6 +106,8 @@ export function AgentChat({
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [uploading, setUploading] = useState(false);
   const [model, setModel] = useState(DEFAULT_MODEL_ID);
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [contextPosts, setContextPosts] = useState<AgentPostRow[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Remember the picked model per-viewer (falling back to a configured one).
@@ -124,6 +129,16 @@ export function AgentChat({
   };
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!mentionOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (composerRef.current && !composerRef.current.contains(e.target as Node)) setMentionOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [mentionOpen]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -152,6 +167,34 @@ export function AgentChat({
       if (el) {
         el.focus();
         el.setSelectionRange(el.value.length, el.value.length);
+      }
+    });
+  };
+
+  // Open the @-mention menu when an "@" token is being typed at the cursor.
+  const onInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setInput(val);
+    const caret = e.target.selectionStart ?? val.length;
+    const before = val.slice(0, caret);
+    if (/(^|\s)@$/.test(before)) setMentionOpen(true);
+    else if (mentionOpen && !/(^|\s)@[^\s]*$/.test(before)) setMentionOpen(false);
+  };
+
+  const addContext = (post: AgentPostRow) => {
+    setContextPosts((prev) => (prev.some((p) => p.id === post.id) ? prev : [...prev, post]));
+    // Strip the "@" token that opened the menu.
+    const el = inputRef.current;
+    const val = input;
+    const caret = el?.selectionStart ?? val.length;
+    const newBefore = val.slice(0, caret).replace(/(^|\s)@[^\s]*$/, "$1");
+    const next = newBefore + val.slice(caret);
+    setInput(next);
+    setMentionOpen(false);
+    requestAnimationFrame(() => {
+      if (el) {
+        el.focus();
+        el.setSelectionRange(newBefore.length, newBefore.length);
       }
     });
   };
@@ -223,11 +266,22 @@ export function AgentChat({
     async (text: string) => {
       const clean = text.trim();
       const atts = attachments;
+      const ctx = contextPosts;
       if ((!clean && atts.length === 0) || busy || uploading) return;
       if (remaining !== null && remaining <= 0) return;
       setInput("");
       setAttachments([]);
+      setContextPosts([]);
+      setMentionOpen(false);
       setBusy(true);
+
+      // Fold referenced posts into the message the model sees (not the bubble).
+      const ctxBlock = ctx.length
+        ? `\n\nReferenced posts for context:\n${ctx
+            .map((p) => `- (${p.scheduledAt ? "scheduled" : "draft"}) ${p.body}`)
+            .join("\n")}`
+        : "";
+      const apiText = clean + ctxBlock;
 
       const history = messages.map((m) => ({ role: m.role, content: m.content }));
       const userMsg: Msg = {
@@ -235,6 +289,7 @@ export function AgentChat({
         role: "user",
         content: clean,
         attachments: atts.length ? atts : undefined,
+        contextRefs: ctx.length ? ctx : undefined,
       };
       const assistantId = uid();
       setMessages((prev) => [
@@ -253,7 +308,7 @@ export function AgentChat({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             conversationId,
-            messages: [...history, { role: "user", content: clean }],
+            messages: [...history, { role: "user", content: apiText }],
             attachments: atts,
             model,
           }),
@@ -313,7 +368,7 @@ export function AgentChat({
         if (createdNew || conversationId) refreshConversations();
       }
     },
-    [busy, uploading, attachments, model, messages, remaining, conversationId, refreshConversations],
+    [busy, uploading, attachments, contextPosts, model, messages, remaining, conversationId, refreshConversations],
   );
 
   const outOfQuota = remaining !== null && remaining <= 0;
@@ -342,7 +397,12 @@ export function AgentChat({
           )}
         </div>
 
-        <div className="mx-auto w-full max-w-2xl pt-3">
+        <div ref={composerRef} className="relative mx-auto w-full max-w-2xl pt-3">
+          {mentionOpen ? (
+            <div className="absolute bottom-full left-0 z-30 mb-2 w-full max-w-sm">
+              <AgentMentionMenu onPick={addContext} onClose={() => setMentionOpen(false)} />
+            </div>
+          ) : null}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -385,11 +445,44 @@ export function AgentChat({
               </div>
             ) : null}
 
+            {/* @-mentioned context posts */}
+            {contextPosts.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-1.5 px-3 pt-3">
+                {contextPosts.map((p) => (
+                  <span
+                    key={p.id}
+                    className="flex max-w-[220px] items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-[12px] text-ink"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-blue-ink" aria-hidden>
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                      <path d="M14 2v6h6" />
+                    </svg>
+                    <span className="truncate">{p.body || "(empty)"}</span>
+                    <button
+                      type="button"
+                      onClick={() => setContextPosts((prev) => prev.filter((x) => x.id !== p.id))}
+                      aria-label="Remove context"
+                      className="shrink-0 text-muted transition hover:text-ink"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M18 6 6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </span>
+                ))}
+              </div>
+            ) : null}
+
             <textarea
               ref={inputRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={onInputChange}
               onKeyDown={(e) => {
+                if (e.key === "Escape" && mentionOpen) {
+                  e.preventDefault();
+                  setMentionOpen(false);
+                  return;
+                }
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   send(input);
@@ -542,6 +635,22 @@ function MessageRow({ msg, onOpenProposal }: { msg: Msg; onOpenProposal: () => v
                 alt=""
                 className="size-20 rounded-xl border border-line object-cover"
               />
+            ))}
+          </div>
+        ) : null}
+        {msg.contextRefs && msg.contextRefs.length > 0 ? (
+          <div className="flex flex-wrap justify-end gap-1.5">
+            {msg.contextRefs.map((p) => (
+              <span
+                key={p.id}
+                className="flex max-w-[220px] items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-[12px] text-muted"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-blue-ink" aria-hidden>
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                  <path d="M14 2v6h6" />
+                </svg>
+                <span className="truncate">{p.body || "(empty)"}</span>
+              </span>
             ))}
           </div>
         ) : null}
