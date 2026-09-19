@@ -46,6 +46,30 @@ const SUGGESTIONS = [
   "Write a 3-tweet thread with tips for founders",
 ];
 
+// Quick-intent chips in the composer toolbar — they prefill the box, not send.
+const ic = (children: React.ReactNode) => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    {children}
+  </svg>
+);
+const QUICK_ACTIONS: { label: string; prompt: string; icon: React.ReactNode }[] = [
+  {
+    label: "Draft",
+    prompt: "Draft a post about ",
+    icon: ic(<><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></>),
+  },
+  {
+    label: "Schedule",
+    prompt: "Schedule a post for ",
+    icon: ic(<><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>),
+  },
+  {
+    label: "Ideas",
+    prompt: "Give me 3 post ideas about ",
+    icon: ic(<><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1h6c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2Z" /></>),
+  },
+];
+
 export function AgentChat({
   channels,
   conversations: initialConversations,
@@ -69,10 +93,22 @@ export function AgentChat({
   );
   const [conversationId, setConversationId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, busy]);
+
+  const insertPrompt = (p: string) => {
+    setInput(p);
+    requestAnimationFrame(() => {
+      const el = inputRef.current;
+      if (el) {
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+      }
+    });
+  };
 
   // Publish the conversation list + active id to the shared store so the app
   // sidebar (rendered in the layout) can show and drive them.
@@ -227,6 +263,13 @@ export function AgentChat({
 
   const outOfQuota = remaining !== null && remaining <= 0;
   const last = messages[messages.length - 1];
+  const busyStatus = busy
+    ? last?.role === "assistant" && last.toolNote
+      ? last.toolNote
+      : last?.role === "assistant" && last.content
+        ? "Responding…"
+        : "Thinking…"
+    : null;
 
   return (
     <div className="flex h-full gap-4">
@@ -240,9 +283,6 @@ export function AgentChat({
               {messages.map((m) => (
                 <MessageRow key={m.id} msg={m} onOpenProposal={() => setDrawerOpen(true)} />
               ))}
-              {busy && last?.role === "assistant" && last.content === "" ? (
-                <Thinking note={last.toolNote} />
-              ) : null}
             </div>
           )}
         </div>
@@ -253,9 +293,18 @@ export function AgentChat({
               e.preventDefault();
               send(input);
             }}
-            className="flex items-end gap-2 rounded-2xl border border-line bg-surface p-2 shadow-sm"
+            className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm transition focus-within:border-blue focus-within:shadow-md"
           >
+            {/* status banner — clips onto the top while the agent works */}
+            {busyStatus ? (
+              <div className="flex items-center gap-2 border-b border-line bg-blue-soft px-4 py-2">
+                <AgentSparkIcon size={16} animated className="text-blue-ink" />
+                <span className="agent-shimmer text-[13px] font-medium">{busyStatus}</span>
+              </div>
+            ) : null}
+
             <textarea
+              ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -264,25 +313,41 @@ export function AgentChat({
                   send(input);
                 }
               }}
-              rows={1}
+              rows={2}
               disabled={outOfQuota}
               placeholder={
                 outOfQuota
                   ? "You're out of agent messages this month"
                   : "Ask the agent to draft or schedule a post…"
               }
-              className="max-h-40 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm text-ink outline-none placeholder:text-muted disabled:opacity-60"
+              className="max-h-48 min-h-[56px] w-full resize-none bg-transparent px-4 pt-3.5 text-sm text-ink outline-none placeholder:text-muted disabled:opacity-60"
             />
-            <button
-              type="submit"
-              disabled={busy || !input.trim() || outOfQuota}
-              className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue text-on-blue transition disabled:opacity-40"
-              aria-label="Send"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z" />
-              </svg>
-            </button>
+
+            {/* toolbar: quick-intent chips + send */}
+            <div className="flex items-center gap-1.5 px-2.5 pb-2.5">
+              {QUICK_ACTIONS.map((q) => (
+                <button
+                  key={q.label}
+                  type="button"
+                  disabled={outOfQuota}
+                  onClick={() => insertPrompt(q.prompt)}
+                  className="flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-[12px] font-medium text-muted transition hover:border-blue hover:text-ink disabled:opacity-40"
+                >
+                  <span className="text-blue-ink">{q.icon}</span>
+                  {q.label}
+                </button>
+              ))}
+              <button
+                type="submit"
+                disabled={busy || !input.trim() || outOfQuota}
+                className="ml-auto flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue text-on-blue transition disabled:opacity-40"
+                aria-label="Send"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z" />
+                </svg>
+              </button>
+            </div>
           </form>
           <p className="px-2 pt-1.5 text-center text-[11px] text-muted">
             {remaining !== null && limit && remaining <= Math.max(5, Math.ceil(limit * 0.1)) ? (
@@ -400,15 +465,6 @@ function AssistantRow({ msg, onOpenProposal }: { msg: Msg; onOpenProposal: () =>
           <span aria-hidden>→</span>
         </button>
       ) : null}
-    </div>
-  );
-}
-
-function Thinking({ note }: { note?: string | null }) {
-  return (
-    <div className="flex items-center gap-2.5">
-      <AgentSparkIcon size={22} animated className="text-blue" />
-      <span className="agent-shimmer text-sm font-medium">{note ?? "Thinking…"}</span>
     </div>
   );
 }
