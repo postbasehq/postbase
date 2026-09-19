@@ -54,7 +54,7 @@ const SUGGESTIONS = [
 
 // Quick-intent chips in the composer toolbar — they prefill the box, not send.
 const ic = (children: React.ReactNode) => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
     {children}
   </svg>
 );
@@ -348,11 +348,11 @@ export function AgentChat({
               e.preventDefault();
               send(input);
             }}
-            className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm transition focus-within:border-blue focus-within:shadow-md"
+            className="rounded-2xl border border-line bg-surface shadow-sm transition focus-within:border-blue focus-within:shadow-md"
           >
             {/* status banner — clips onto the top while the agent works */}
             {busyStatus ? (
-              <div className="flex items-center gap-2 border-b border-line bg-blue-soft px-4 py-2">
+              <div className="flex items-center gap-2 rounded-t-2xl border-b border-line bg-blue-soft px-4 py-2">
                 <AgentSparkIcon size={16} animated className="text-blue-ink" />
                 <span className="agent-shimmer text-[13px] font-medium">{busyStatus}</span>
               </div>
@@ -405,9 +405,8 @@ export function AgentChat({
               className="max-h-48 min-h-[56px] w-full resize-none bg-transparent px-4 pt-3.5 text-sm text-ink outline-none placeholder:text-muted disabled:opacity-60"
             />
 
-            {/* toolbar: model + attach + quick-intent chips + send */}
-            <div className="flex items-center gap-1.5 px-2.5 pb-2.5">
-              <AgentModelSelector value={model} onChange={changeModel} ready={modelsReady} />
+            {/* toolbar: borderless icons left; model + send right */}
+            <div className="flex items-center gap-0.5 px-2.5 pb-2.5">
               <input
                 ref={fileRef}
                 type="file"
@@ -422,9 +421,9 @@ export function AgentChat({
                 disabled={outOfQuota || attachments.length >= 4}
                 aria-label="Attach image"
                 title="Attach image"
-                className="flex size-8 shrink-0 items-center justify-center rounded-full border border-line text-muted transition hover:border-blue hover:text-ink disabled:opacity-40"
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-ink disabled:opacity-40"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <path d="M21.44 11.05 12.25 20.24a5.5 5.5 0 0 1-7.78-7.78l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95l-9.2 9.19a1.5 1.5 0 0 1-2.12-2.12l8.49-8.49" />
                 </svg>
               </button>
@@ -434,22 +433,27 @@ export function AgentChat({
                   type="button"
                   disabled={outOfQuota}
                   onClick={() => insertPrompt(q.prompt)}
-                  className="flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-[12px] font-medium text-muted transition hover:border-blue hover:text-ink disabled:opacity-40"
+                  aria-label={q.label}
+                  title={q.label}
+                  className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-ink disabled:opacity-40"
                 >
-                  <span className="text-blue-ink">{q.icon}</span>
-                  {q.label}
+                  {q.icon}
                 </button>
               ))}
-              <button
-                type="submit"
-                disabled={busy || uploading || (!input.trim() && attachments.length === 0) || outOfQuota}
-                className="ml-auto flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue text-on-blue transition disabled:opacity-40"
-                aria-label="Send"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M12 19V5M5 12l7-7 7 7" />
-                </svg>
-              </button>
+
+              <div className="ml-auto flex items-center gap-1">
+                <AgentModelSelector value={model} onChange={changeModel} ready={modelsReady} />
+                <button
+                  type="submit"
+                  disabled={busy || uploading || (!input.trim() && attachments.length === 0) || outOfQuota}
+                  className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue text-on-blue transition disabled:opacity-40"
+                  aria-label="Send"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M12 19V5M5 12l7-7 7 7" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </form>
           <p className="px-2 pt-1.5 text-center text-[11px] text-muted">

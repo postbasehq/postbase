@@ -35,7 +35,7 @@ export function AgentModelSelector({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1 rounded-full border border-line px-2.5 py-1 text-[12px] font-medium text-muted transition hover:border-blue hover:text-ink"
+        className="flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-medium text-muted transition hover:text-ink"
       >
         {current.label}
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -44,7 +44,7 @@ export function AgentModelSelector({
       </button>
 
       {open ? (
-        <div className="absolute bottom-full left-0 z-20 mb-2 w-64 overflow-hidden rounded-xl border border-line bg-surface shadow-lg">
+        <div className="absolute bottom-full right-0 z-20 mb-2 w-64 overflow-hidden rounded-xl border border-line bg-surface shadow-lg">
           {AGENT_MODELS.map((m) => {
             const enabled = ready[m.provider];
             const active = m.id === value;
