@@ -831,8 +831,8 @@ export function PostForm({
             <p className="px-1 font-display text-base font-semibold text-ink">Preview</p>
           ) : null}
           {previewChannel ? (
-            <div className="flex items-center justify-between gap-2 px-1">
-              <div className="flex items-center gap-1.5">
+            <div className="flex items-start gap-2 px-1">
+              <div className="order-2 flex min-w-0 flex-1 flex-wrap items-center justify-end gap-1.5">
                 {selectedChannels.length > 1
                   ? selectedChannels.map((c, i) => (
                       <button
@@ -851,7 +851,7 @@ export function PostForm({
                   : null}
               </div>
               {previewChannel ? (
-                <div className="flex items-center rounded-lg border border-line p-0.5">
+                <div className="order-1 flex shrink-0 items-center rounded-lg border border-line p-0.5">
                   <button
                     type="button"
                     onClick={() => setPreviewTheme("light")}
