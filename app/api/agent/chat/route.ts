@@ -152,6 +152,7 @@ export async function POST(req: Request) {
               latestProposal = out.proposal;
               send({ type: "proposal", proposal: out.proposal });
             }
+            if (out.list) send({ type: "list", list: out.list });
             results.push({ type: "tool_result", tool_use_id: tu.id, content: out.forModel });
           }
           messages.push({ role: "user", content: results });

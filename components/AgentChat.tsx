@@ -6,6 +6,8 @@ import { marked } from "marked";
 import { PostPreview } from "@/components/PostPreview";
 import { BrandTile } from "@/components/BrandTile";
 import { AgentSparkIcon } from "@/components/AgentSparkIcon";
+import { AgentPostsList } from "@/components/AgentPostsList";
+import type { AgentList } from "@/lib/agent/tools";
 import { scheduleProposedPost, type ConfirmProposal } from "@/app/(app)/agent/confirm-actions";
 import { agentStore } from "@/lib/agent/ui-store";
 import {
@@ -31,6 +33,7 @@ type Msg = {
   role: "user" | "assistant";
   content: string;
   producedProposal?: boolean;
+  list?: AgentList | null;
   toolNote?: string | null;
 };
 
@@ -204,6 +207,8 @@ export function AgentChat({
               setProposalKey((k) => k + 1);
               setDrawerOpen(true);
               patch((m) => ({ ...m, producedProposal: true, toolNote: null }));
+            } else if (data.type === "list") {
+              patch((m) => ({ ...m, list: data.list as AgentList, toolNote: null }));
             } else if (data.type === "error") {
               patch((m) => ({ ...m, content: m.content + `\n\n_${String(data.message)}_`, toolNote: null }));
             }
@@ -377,6 +382,7 @@ function AssistantRow({ msg, onOpenProposal }: { msg: Msg; onOpenProposal: () =>
       ) : msg.toolNote ? (
         <div className="text-sm text-muted">{msg.toolNote}</div>
       ) : null}
+      {msg.list ? <AgentPostsList list={msg.list} /> : null}
       {msg.producedProposal ? (
         <button
           type="button"

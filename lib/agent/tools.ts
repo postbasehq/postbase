@@ -20,11 +20,24 @@ export type PostProposal = {
   media: ProposedMedia[];
 };
 
+export type AgentPostRow = {
+  id: string;
+  body: string;
+  scheduledAt: string | null;
+  status: string;
+  channels: { platform: string; handle: string | null }[];
+};
+
+/** A listing the client renders as a formatted table instead of the model prosing it. */
+export type AgentList = { kind: "posts"; title: string; rows: AgentPostRow[] };
+
 /** What a tool run hands back: text for the model, plus an optional side-effect payload. */
 export type ToolRun = {
   forModel: string;
   /** Set only by propose_post — the route streams this to the client as a card. */
   proposal?: PostProposal;
+  /** Set by listing tools — the route streams this to the client as a table. */
+  list?: AgentList;
 };
 
 export const AGENT_TOOLS: Anthropic.Tool[] = [
@@ -123,8 +136,29 @@ export async function runAgentTool(
     }
 
     case "list_scheduled": {
-      const posts = await listPosts(orgId, str(input.status) || undefined);
-      return { forModel: JSON.stringify(posts) };
+      const status = str(input.status) || "scheduled";
+      const [posts, channels] = await Promise.all([listPosts(orgId, status), listChannels(orgId)]);
+      const chMap = new Map(channels.map((c) => [c.id, c]));
+      const rows: AgentPostRow[] = (posts as { id: string; body: string; scheduled_at: string | null; status: string; post_targets?: { channel_id: string }[] }[]).map((p) => ({
+        id: p.id,
+        body: p.body,
+        scheduledAt: p.scheduled_at ?? null,
+        status: p.status,
+        channels: (p.post_targets ?? [])
+          .map((t) => {
+            const c = chMap.get(t.channel_id);
+            return { platform: c?.platform ?? "", handle: c?.handle ?? null };
+          })
+          .filter((c) => c.platform),
+      }));
+      const title = status === "draft" ? "Drafts" : status === "scheduled" ? "Scheduled posts" : `Posts · ${status}`;
+      // Compact summary for the model; the full rows render as a table client-side.
+      const forModel = JSON.stringify({
+        count: rows.length,
+        status,
+        posts: rows.map((r) => ({ id: r.id, body: r.body, scheduledAt: r.scheduledAt, channels: r.channels.map((c) => c.platform) })),
+      });
+      return { forModel, list: { kind: "posts", title, rows } };
     }
 
     case "generate_image": {
