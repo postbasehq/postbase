@@ -366,7 +366,7 @@ export default async function QueuePage({
                             </span>
                             <form action={retryTarget} className="shrink-0">
                               <input type="hidden" name="target_id" value={t.id} />
-                              <SubmitButton className="rounded-full border border-line bg-surface px-2.5 py-0.5 text-[11px] font-semibold text-blue-ink hover:bg-surface-2 disabled:opacity-50">
+                              <SubmitButton className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-semibold text-ink hover:bg-surface-2 disabled:opacity-50">
                                 Retry
                               </SubmitButton>
                             </form>
