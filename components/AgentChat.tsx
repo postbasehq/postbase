@@ -43,6 +43,8 @@ type Msg = {
   attachments?: Attachment[];
   proposalCard?: ProposalCard | null;
   list?: AgentList | null;
+  images?: string[];
+  generatingImage?: boolean;
   toolNote?: string | null;
 };
 
@@ -348,7 +350,19 @@ export function AgentChat({
             } else if (data.type === "token") {
               patch((m) => ({ ...m, content: m.content + String(data.text ?? ""), toolNote: null }));
             } else if (data.type === "tool") {
-              patch((m) => ({ ...m, toolNote: toolLabel(String(data.name)) }));
+              const name = String(data.name);
+              patch((m) => ({
+                ...m,
+                toolNote: toolLabel(name),
+                generatingImage: name === "generate_image" ? true : m.generatingImage,
+              }));
+            } else if (data.type === "image") {
+              patch((m) => ({
+                ...m,
+                images: [...(m.images ?? []), String(data.url)],
+                generatingImage: false,
+                toolNote: null,
+              }));
             } else if (data.type === "proposal") {
               const p = data.proposal as AgentProposal;
               agentStore.setProposal(p, channels);
@@ -367,6 +381,7 @@ export function AgentChat({
         }
       } finally {
         abortRef.current = null;
+        patch((m) => ({ ...m, generatingImage: false }));
         setBusy(false);
         // Refresh the rail so a new thread appears and titles/ordering update.
         if (createdNew || conversationId) refreshConversations();
@@ -626,6 +641,25 @@ function AssistantRow({ msg, onOpenProposal }: { msg: Msg; onOpenProposal: () =>
       ) : msg.toolNote ? (
         <div className="text-sm text-muted">{msg.toolNote}</div>
       ) : null}
+      {msg.images && msg.images.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {msg.images.map((url, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={i}
+              src={url}
+              alt=""
+              className="w-full max-w-[280px] rounded-xl border border-line object-cover"
+            />
+          ))}
+        </div>
+      ) : null}
+      {msg.generatingImage ? (
+        <div className="flex aspect-square w-full max-w-[280px] flex-col items-center justify-center gap-2 rounded-xl border border-line bg-surface-2">
+          <AgentSparkIcon size={28} animated className="text-blue-ink" />
+          <span className="agent-shimmer text-[12px] font-medium">Generating image…</span>
+        </div>
+      ) : null}
       {msg.list ? <AgentPostsList list={msg.list} /> : null}
       {msg.proposalCard ? (
         <button
@@ -637,8 +671,7 @@ function AssistantRow({ msg, onOpenProposal }: { msg: Msg; onOpenProposal: () =>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-semibold text-ink">Proposed post</span>
             <span className="block truncate text-[12px] text-muted">
-              {msg.proposalCard.channels} channel{msg.proposalCard.channels === 1 ? "" : "s"} ·{" "}
-              {msg.proposalCard.scheduled ? "scheduled" : "draft"}
+              {msg.proposalCard.channels} channel{msg.proposalCard.channels === 1 ? "" : "s"}
             </span>
           </span>
           <span className="shrink-0 rounded-lg bg-blue px-3 py-1.5 text-[12px] font-semibold text-on-blue">

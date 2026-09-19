@@ -74,14 +74,14 @@ export function AgentProposalPanel({
   const toggle = (id: string) =>
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
-  const schedule = async () => {
-    if (saving || result?.ok) return;
+  const submit = async (scheduledAt: string | null) => {
+    if (saving || result?.ok || selected.length === 0) return;
     setSaving(true);
     const payload: ConfirmProposal = {
       body: segments[0] ?? "",
       thread: segments.slice(1),
       channelIds: selected,
-      scheduledAt: when ? fromLocalInput(when) : null,
+      scheduledAt,
       media,
       variants: Object.fromEntries(
         Object.entries(variants).filter(([k, v]) => selected.includes(k) && v.trim()),
@@ -99,26 +99,40 @@ export function AgentProposalPanel({
     }
     setSaving(false);
   };
+  const schedule = () => submit(when ? fromLocalInput(when) : null);
+  const saveDraft = () => submit(null);
 
   return (
     <div className="flex h-full w-full flex-col bg-ground">
       {/* header */}
-      <div className="flex h-16 shrink-0 items-center gap-2 border-b border-line px-5">
+      <div className="flex h-16 shrink-0 items-center gap-2 px-5">
         <h2 className="font-display text-lg font-semibold tracking-[-0.01em] text-ink">
           Proposed post
         </h2>
-        {onClose ? (
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="ml-auto flex size-8 items-center justify-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-ink"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
-          </button>
-        ) : null}
+        <div className="ml-auto flex items-center gap-1.5">
+          {!result?.ok ? (
+            <button
+              type="button"
+              onClick={saveDraft}
+              disabled={saving || selected.length === 0}
+              className="rounded-lg border border-line px-3 py-1.5 text-[13px] font-medium text-ink transition hover:bg-surface-2 disabled:opacity-40"
+            >
+              Add to drafts
+            </button>
+          ) : null}
+          {onClose ? (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="flex size-8 items-center justify-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-ink"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {result?.ok ? (
@@ -344,12 +358,7 @@ export function AgentProposalPanel({
               <span className="text-[13px]" style={{ color: "#d14a3e" }}>
                 {result.msg}
               </span>
-            ) : (
-              <span className="text-[12px] text-muted">
-                {selected.length} channel{selected.length === 1 ? "" : "s"} ·{" "}
-                {when ? "scheduled" : "draft"}
-              </span>
-            )}
+            ) : null}
             <button
               type="button"
               onClick={schedule}

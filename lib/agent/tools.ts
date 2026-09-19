@@ -40,6 +40,8 @@ export type ToolRun = {
   proposal?: PostProposal;
   /** Set by listing tools — the route streams this to the client as a table. */
   list?: AgentList;
+  /** Set by generate_image — the route streams this so the client shows the image. */
+  image?: { url: string; type: string };
 };
 
 export const AGENT_TOOLS: Anthropic.Tool[] = [
@@ -175,7 +177,10 @@ export async function runAgentTool(
       }
       const res = await generateAiImage(str(input.prompt), str(input.aspect_ratio) || "1:1");
       return res.ok
-        ? { forModel: JSON.stringify({ url: res.url, type: res.type }) }
+        ? {
+            forModel: "Image generated and shown to the user. Do not include the URL in your reply.",
+            image: { url: res.url, type: res.type },
+          }
         : { forModel: `Image generation failed: ${res.error}` };
     }
 

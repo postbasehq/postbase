@@ -50,6 +50,7 @@ export async function execAgentTool(
     send({ type: "proposal", proposal: out.proposal });
   }
   if ("list" in out && out.list) send({ type: "list", list: out.list });
+  if ("image" in out && out.image) send({ type: "image", url: out.image.url });
 
   return { forModel: out.forModel, proposal };
 }
