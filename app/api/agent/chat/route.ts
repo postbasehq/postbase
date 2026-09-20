@@ -2,7 +2,8 @@ import { cookies } from "next/headers";
 import { getCurrentOrgId } from "@/lib/org";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { atAgentLimit, recordAgentMessage } from "@/lib/billing-guard";
+import { atAgentLimit, recordAgentMessage, aiUsage } from "@/lib/billing-guard";
+import { higgsfieldConfigured } from "@/lib/higgsfield";
 import { systemPrompt } from "@/lib/agent/config";
 import { getModel, DEFAULT_MODEL_ID } from "@/lib/agent/models";
 import { runAnthropic } from "@/lib/agent/run-anthropic";
@@ -116,7 +117,12 @@ export async function POST(req: Request) {
 
   const tz = (await cookies()).get("pb_tz")?.value;
   const timezone = tz ? decodeURIComponent(tz) : "UTC";
-  const system = systemPrompt({ now: new Date(), timezone });
+  // Tell the agent its remaining image budget so it can warn before generating
+  // (or refuse at zero) — only when image generation is actually available.
+  const imageCredits = higgsfieldConfigured()
+    ? await aiUsage(admin, orgId).then((u) => ({ remaining: u.image.remaining, limit: u.image.limit }))
+    : null;
+  const system = systemPrompt({ now: new Date(), timezone, imageCredits });
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {

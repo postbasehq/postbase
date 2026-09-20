@@ -1,7 +1,8 @@
 import { AgentChat, type AgentChannel } from "@/components/AgentChat";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
-import { agentUsage } from "@/lib/billing-guard";
+import { agentUsage, aiUsage } from "@/lib/billing-guard";
+import { higgsfieldConfigured } from "@/lib/higgsfield";
 import { listConversations } from "./history-actions";
 
 export const metadata = { title: "Agent · Postbase" };
@@ -24,8 +25,11 @@ export default async function AgentPage() {
     verified: c.verified,
   }));
 
-  const [usage, conversations] = await Promise.all([
+  // Only surface image credits when image generation is actually available.
+  const imageGenReady = higgsfieldConfigured();
+  const [usage, images, conversations] = await Promise.all([
     orgId ? agentUsage(supabase, orgId) : Promise.resolve(null),
+    orgId && imageGenReady ? aiUsage(supabase, orgId).then((u) => u.image) : Promise.resolve(null),
     listConversations(),
   ]);
 
@@ -41,6 +45,8 @@ export default async function AgentPage() {
         conversations={conversations}
         remaining={usage?.remaining ?? null}
         limit={usage?.limit ?? null}
+        imagesRemaining={images?.remaining ?? null}
+        imagesLimit={images?.limit ?? null}
         modelsReady={modelsReady}
       />
     </div>

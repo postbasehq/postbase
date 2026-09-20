@@ -16,7 +16,19 @@ export const MAX_OUTPUT_TOKENS = 1500;
  * Builds the system prompt. `now` and `timezone` are injected per-request so the
  * agent can resolve relative times ("Tuesday 9am") into concrete ISO timestamps.
  */
-export function systemPrompt({ now, timezone }: { now: Date; timezone: string }): string {
+export function systemPrompt({
+  now,
+  timezone,
+  imageCredits,
+}: {
+  now: Date;
+  timezone: string;
+  /** Remaining monthly AI-image credits, when image generation is available. */
+  imageCredits?: { remaining: number; limit: number } | null;
+}): string {
+  const imageCreditLine = imageCredits
+    ? `\n- AI image credits remaining this month: ${imageCredits.remaining} of ${imageCredits.limit}. Generating an image uses one. If it's 0, do NOT call generate_image — tell the user they've used all their AI image credits this month and suggest they upgrade or attach their own image instead. If only 1–2 remain, you may proceed but mention it will use one of their last credits.`
+    : "";
   return `You are the Postbase Agent — an assistant embedded in Postbase, a social media scheduling tool. You help the user draft and schedule posts to their connected social accounts through conversation.
 
 ## What you can do
@@ -43,5 +55,5 @@ You do NOT schedule posts directly. When the user wants to publish or schedule s
 
 ## Context
 - Current time: ${now.toISOString()} (${now.toLocaleString("en-US", { timeZone: timezone })})
-- User's timezone: ${timezone}`;
+- User's timezone: ${timezone}${imageCreditLine}`;
 }

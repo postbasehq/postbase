@@ -92,18 +92,23 @@ export function AgentChat({
   conversations: initialConversations,
   remaining: initialRemaining,
   limit,
+  imagesRemaining: initialImagesRemaining = null,
+  imagesLimit = null,
   modelsReady = { anthropic: true, openai: false },
 }: {
   channels: AgentChannel[];
   conversations?: ConversationSummary[];
   remaining?: number | null;
   limit?: number | null;
+  imagesRemaining?: number | null;
+  imagesLimit?: number | null;
   modelsReady?: { anthropic: boolean; openai: boolean };
 }) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(initialRemaining ?? null);
+  const [imagesRemaining, setImagesRemaining] = useState<number | null>(initialImagesRemaining);
   const [conversations, setConversations] = useState<ConversationSummary[]>(
     initialConversations ?? [],
   );
@@ -377,6 +382,7 @@ export function AgentChat({
                 generatingImage: false,
                 toolNote: null,
               }));
+              setImagesRemaining((r) => (r === null ? r : Math.max(0, r - 1)));
             } else if (data.type === "proposal") {
               const p = data.proposal as AgentProposal;
               agentStore.setProposal(p, channels);
@@ -593,6 +599,20 @@ export function AgentChat({
             ) : (
               "The agent drafts posts for you to review — nothing publishes until you click Schedule."
             )}
+            {imagesRemaining !== null && imagesLimit ? (
+              <>
+                {" · "}
+                {imagesRemaining <= 0 ? (
+                  <span style={{ color: "#d14a3e" }} className="font-medium">
+                    No AI image credits left
+                  </span>
+                ) : (
+                  <>
+                    {imagesRemaining} AI image{imagesRemaining === 1 ? "" : "s"} left
+                  </>
+                )}
+              </>
+            ) : null}
           </p>
         </div>
       </div>
