@@ -6,7 +6,7 @@
  * id from /v2/userinfo) and w_member_social (to post on their behalf).
  *
  * Requires LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, LINKEDIN_CALLBACK_URL
- * (+ optional LINKEDIN_API_VERSION, default 202509).
+ * (+ optional LINKEDIN_API_VERSION in YYYYMM format, default 202609).
  */
 
 const AUTHORIZE_URL = "https://www.linkedin.com/oauth/v2/authorization";
@@ -15,7 +15,9 @@ const API = "https://api.linkedin.com";
 const SCOPES = ["openid", "profile", "w_member_social"];
 
 function apiVersion(): string {
-  return process.env.LINKEDIN_API_VERSION ?? "202509";
+  // LinkedIn versions are YYYYMM and sunset after ~12 months. Keep this on a
+  // currently-supported version (202609 = the latest as of Sep 2026).
+  return process.env.LINKEDIN_API_VERSION ?? "202609";
 }
 
 export type LinkedInTokens = {

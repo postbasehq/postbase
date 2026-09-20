@@ -918,6 +918,16 @@ export function PostForm({
         <div className="mx-auto flex w-full max-w-[1248px] flex-wrap items-center gap-x-4 gap-y-3 px-6 py-3.5">
         <DateTimePicker value={scheduleLocal} onChange={setScheduleLocal} timeZone={tz} />
 
+        {initial && scheduleLocal ? (
+          <button
+            type="button"
+            onClick={() => setScheduleLocal("")}
+            className="text-xs font-semibold text-blue-ink hover:underline"
+          >
+            Unschedule
+          </button>
+        ) : null}
+
         {!isDraft ? (
           <label
             title="Automatically re-post on a fixed cadence"

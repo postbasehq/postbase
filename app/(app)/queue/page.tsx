@@ -6,7 +6,7 @@ import { BrandTile } from "@/components/BrandTile";
 import { QueueControls } from "@/components/QueueControls";
 import { DeletePostButton } from "@/components/DeletePostButton";
 import { PostStatsButton } from "@/components/PostStatsButton";
-import { cancelPost, retryTarget, deletePost } from "../actions";
+import { retryTarget, deletePost } from "../actions";
 
 const pill =
   "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold font-display whitespace-nowrap";
@@ -332,14 +332,6 @@ export default async function QueuePage({
                             }))}
                             className="flex-1 rounded-lg border border-line px-2.5 py-1.5 text-center text-xs font-semibold text-ink transition-colors hover:border-blue hover:bg-surface-2"
                           />
-                        ) : null}
-                        {p.status === "scheduled" ? (
-                          <form action={cancelPost} className="shrink-0">
-                            <input type="hidden" name="post_id" value={p.id} />
-                            <SubmitButton className="rounded-lg px-2 py-1.5 text-xs font-medium text-muted hover:text-terra disabled:opacity-50">
-                              Cancel
-                            </SubmitButton>
-                          </form>
                         ) : null}
                         {p.status !== "publishing" ? (
                           <span className="ml-auto shrink-0">
