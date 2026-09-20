@@ -54,11 +54,13 @@ function videoEndpoint(): string {
   return process.env.HIGGSFIELD_VIDEO_ENDPOINT || `${API}/higgsfield-ai/kling/2.5/standard`;
 }
 
-const HF_HOST = "api.higgsfield.ai";
+// Higgsfield submits jobs on api.higgsfield.ai but hands back status/cancel URLs
+// on platform.higgsfield.ai — both must be allowed for polling to work.
+const HF_HOSTS = new Set(["api.higgsfield.ai", "platform.higgsfield.ai"]);
 /** Guard against SSRF / auth-header leakage when polling a client-supplied URL. */
 export function isHiggsfieldUrl(url: string): boolean {
   try {
-    return new URL(url).host === HF_HOST;
+    return HF_HOSTS.has(new URL(url).host);
   } catch {
     return false;
   }
