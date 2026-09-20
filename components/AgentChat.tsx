@@ -40,6 +40,7 @@ type Msg = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  createdAt?: number;
   attachments?: Attachment[];
   proposalCard?: ProposalCard | null;
   list?: AgentList | null;
@@ -113,6 +114,7 @@ export function AgentChat({
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionKind, setMentionKind] = useState<"slash" | "at">("slash");
   const [mentionQuery, setMentionQuery] = useState("");
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Remember the picked model per-viewer (falling back to a configured one).
@@ -176,6 +178,16 @@ export function AgentChat({
 
   const insertPrompt = (p: string) => editorRef.current?.setText(p);
 
+  // "Use in a post" from the image lightbox: stage the image as an attachment so
+  // the next message includes it, then focus the composer.
+  const useImageInPost = useCallback((url: string) => {
+    setAttachments((prev) =>
+      prev.length >= 4 || prev.some((a) => a.url === url) ? prev : [...prev, { url, type: "image/jpeg" }],
+    );
+    setLightbox(null);
+    editorRef.current?.focus();
+  }, []);
+
   const onTrigger = (kind: "@" | "/" | null, query: string) => {
     if (kind) {
       setMentionOpen(true);
@@ -232,6 +244,7 @@ export function AgentChat({
         id: uid(),
         role: m.role,
         content: m.content,
+        createdAt: m.createdAt,
         proposalCard: m.proposal ? cardFromProposal(m.proposal as AgentProposal) : null,
       }));
       const lastProposal = [...stored].reverse().find((m) => m.proposal)?.proposal ?? null;
@@ -289,13 +302,14 @@ export function AgentChat({
         id: uid(),
         role: "user",
         content: clean,
+        createdAt: Date.now(),
         attachments: atts.length ? atts : undefined,
       };
       const assistantId = uid();
       setMessages((prev) => [
         ...prev,
         userMsg,
-        { id: assistantId, role: "assistant", content: "", toolNote: null },
+        { id: assistantId, role: "assistant", content: "", createdAt: Date.now(), toolNote: null },
       ]);
 
       const patch = (fn: (m: Msg) => Msg) =>
@@ -410,7 +424,12 @@ export function AgentChat({
           ) : (
             <div className="mx-auto flex max-w-2xl flex-col gap-5 py-4">
               {messages.map((m) => (
-                <MessageRow key={m.id} msg={m} onOpenProposal={() => agentStore.openProposal()} />
+                <MessageRow
+                  key={m.id}
+                  msg={m}
+                  onOpenProposal={() => agentStore.openProposal()}
+                  onImageClick={setLightbox}
+                />
               ))}
             </div>
           )}
@@ -577,6 +596,75 @@ export function AgentChat({
           </p>
         </div>
       </div>
+
+      {lightbox ? (
+        <ImageLightbox url={lightbox} onClose={() => setLightbox(null)} onUse={useImageInPost} />
+      ) : null}
+    </div>
+  );
+}
+
+function ImageLightbox({
+  url,
+  onClose,
+  onUse,
+}: {
+  url: string;
+  onClose: () => void;
+  onUse: (url: string) => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/75 p-6 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-full max-w-3xl flex-col items-center gap-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={url} alt="" className="max-h-[74vh] w-auto rounded-xl object-contain shadow-2xl" />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onUse(url)}
+            className="flex items-center gap-1.5 rounded-lg bg-blue px-4 py-2 text-sm font-semibold text-on-blue transition hover:opacity-90"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Use in a post
+          </button>
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1.5 rounded-lg bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+            </svg>
+            Open original
+          </a>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close"
+        className="absolute right-5 top-5 flex size-9 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
     </div>
   );
 }
@@ -598,10 +686,99 @@ function toolLabel(name: string): string {
   }
 }
 
-function MessageRow({ msg, onOpenProposal }: { msg: Msg; onOpenProposal: () => void }) {
+function msgTime(ts: number): string {
+  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (s < 45) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return new Date(ts).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function MessageActions({
+  content,
+  createdAt,
+  align = "start",
+}: {
+  content: string;
+  createdAt?: number;
+  align?: "start" | "end";
+}) {
+  const [copied, setCopied] = useState(false);
+  const [vote, setVote] = useState<"up" | "down" | null>(null);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // ignore
+    }
+  };
+  const btn = "flex size-6 items-center justify-center rounded-md transition hover:bg-surface-2 hover:text-ink";
+  return (
+    <div
+      className={`flex items-center gap-0.5 text-muted opacity-0 transition-opacity group-hover:opacity-100 ${
+        align === "end" ? "justify-end" : "justify-start"
+      }`}
+    >
+      {content ? (
+        <button type="button" onClick={copy} aria-label="Copy" title="Copy" className={btn}>
+          {copied ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <rect x="9" y="9" width="13" height="13" rx="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+          )}
+        </button>
+      ) : null}
+      <button
+        type="button"
+        onClick={() => setVote((v) => (v === "up" ? null : "up"))}
+        aria-label="Good response"
+        className={`${btn} ${vote === "up" ? "text-blue-ink" : ""}`}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M7 10v12M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        onClick={() => setVote((v) => (v === "down" ? null : "down"))}
+        aria-label="Bad response"
+        className={`${btn} ${vote === "down" ? "text-blue-ink" : ""}`}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M17 14V2M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z" />
+        </svg>
+      </button>
+      {createdAt ? <span className="pl-1 text-[11px] tabular-nums">{msgTime(createdAt)}</span> : null}
+    </div>
+  );
+}
+
+function MessageRow({
+  msg,
+  onOpenProposal,
+  onImageClick,
+}: {
+  msg: Msg;
+  onOpenProposal: () => void;
+  onImageClick: (url: string) => void;
+}) {
   if (msg.role === "user") {
     return (
-      <div className="flex flex-col items-end gap-1.5">
+      <div className="group flex flex-col items-end gap-1.5">
         {msg.attachments && msg.attachments.length > 0 ? (
           <div className="flex flex-wrap justify-end gap-1.5">
             {msg.attachments.map((a, i) => (
@@ -610,7 +787,8 @@ function MessageRow({ msg, onOpenProposal }: { msg: Msg; onOpenProposal: () => v
                 key={i}
                 src={a.url}
                 alt=""
-                className="size-20 rounded-xl border border-line object-cover"
+                onClick={() => onImageClick(a.url)}
+                className="size-20 cursor-zoom-in rounded-xl border border-line object-cover transition hover:opacity-90"
               />
             ))}
           </div>
@@ -620,19 +798,29 @@ function MessageRow({ msg, onOpenProposal }: { msg: Msg; onOpenProposal: () => v
             {msg.content}
           </div>
         ) : null}
+        <MessageActions content={msg.content} createdAt={msg.createdAt} align="end" />
       </div>
     );
   }
-  return <AssistantRow msg={msg} onOpenProposal={onOpenProposal} />;
+  return <AssistantRow msg={msg} onOpenProposal={onOpenProposal} onImageClick={onImageClick} />;
 }
 
-function AssistantRow({ msg, onOpenProposal }: { msg: Msg; onOpenProposal: () => void }) {
+function AssistantRow({
+  msg,
+  onOpenProposal,
+  onImageClick,
+}: {
+  msg: Msg;
+  onOpenProposal: () => void;
+  onImageClick: (url: string) => void;
+}) {
   const html = useMemo(
     () => (msg.content ? marked.parse(msg.content, { async: false }) : ""),
     [msg.content],
   );
+  const settled = !!(msg.content || (msg.images && msg.images.length) || msg.list || msg.proposalCard);
   return (
-    <div className="flex flex-col items-start gap-2">
+    <div className="group flex flex-col items-start gap-2">
       {msg.content ? (
         <div
           className="agent-prose max-w-none text-sm leading-relaxed text-ink"
@@ -649,7 +837,8 @@ function AssistantRow({ msg, onOpenProposal }: { msg: Msg; onOpenProposal: () =>
               key={i}
               src={url}
               alt=""
-              className="w-full max-w-[280px] rounded-xl border border-line object-cover"
+              onClick={() => onImageClick(url)}
+              className="w-full max-w-[280px] cursor-zoom-in rounded-xl border border-line object-cover transition hover:opacity-90"
             />
           ))}
         </div>
@@ -679,6 +868,7 @@ function AssistantRow({ msg, onOpenProposal }: { msg: Msg; onOpenProposal: () =>
           </span>
         </button>
       ) : null}
+      {settled ? <MessageActions content={msg.content} createdAt={msg.createdAt} align="start" /> : null}
     </div>
   );
 }
