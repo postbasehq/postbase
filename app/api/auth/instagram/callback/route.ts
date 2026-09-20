@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
 import { atChannelLimit } from "@/lib/billing-guard";
 import { encryptJson } from "@/lib/crypto";
-import { exchangeCode, longLivedToken, resolveInstagram, type MetaTokens } from "@/lib/platforms/meta";
+import { exchangeCode, getMeId, longLivedToken, resolveInstagram, type MetaTokens } from "@/lib/platforms/meta";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -60,6 +60,9 @@ export async function GET(request: Request) {
       status: "active",
       display_name: ig.name ?? null,
       avatar_url: ig.avatarUrl ?? null,
+      // App-scoped FB user id — lets the deauthorize/data-deletion callbacks
+      // find and remove this channel when the user removes the app.
+      provider_user_id: await getMeId(longLived.access_token),
     };
 
     // Reconnecting the same account updates the existing channel instead of duplicating it.

@@ -878,10 +878,7 @@ export function PostForm({
             </div>
           ) : null}
           {previewChannel ? (
-            <div
-              style={previewVars(previewChannel.platform, previewTheme)}
-              className="rounded-2xl border border-line bg-ground p-3"
-            >
+            <div style={previewVars(previewChannel.platform, previewTheme)}>
               <PostPreview
                 platform={previewChannel.platform}
                 handle={previewChannel.handle}

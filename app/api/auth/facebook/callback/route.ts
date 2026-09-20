@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
 import { atChannelLimit } from "@/lib/billing-guard";
 import { encryptJson } from "@/lib/crypto";
-import { exchangeCode, longLivedToken, resolvePages, type FacebookTokens } from "@/lib/platforms/meta";
+import { exchangeCode, getMeId, longLivedToken, resolvePages, type FacebookTokens } from "@/lib/platforms/meta";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -56,6 +56,9 @@ export async function GET(request: Request) {
       encrypted_tokens: encryptJson(tokens),
       token_expiry: tokenExpiry,
       status: "active",
+      // App-scoped FB user id — lets the deauthorize/data-deletion callbacks
+      // find and remove this channel when the user removes the app.
+      provider_user_id: await getMeId(longLived.access_token),
     };
 
     const { data: existing } = await supabase

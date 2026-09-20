@@ -13,6 +13,8 @@
  * META_GRAPH_API_VERSION, default v25.0).
  */
 
+import crypto from "node:crypto";
+
 const SCOPES = [
   "instagram_basic",
   "instagram_content_publish",
@@ -44,6 +46,40 @@ export function metaConfigured(): boolean {
   return Boolean(
     process.env.META_APP_ID && process.env.META_APP_SECRET && process.env.META_CALLBACK_URL,
   );
+}
+
+/** The app-scoped Facebook user id for a user access token (stored at connect
+ *  so the deauthorize + data-deletion callbacks can find the right channels). */
+export async function getMeId(userAccessToken: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `${graph()}/me?fields=id&access_token=${encodeURIComponent(userAccessToken)}`,
+    );
+    const json = (await res.json()) as { id?: string };
+    return json.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Verify + parse a Meta `signed_request` (deauthorize / data-deletion callbacks).
+ * Returns the payload (with the app-scoped `user_id`) only when the HMAC-SHA256
+ * signature matches our app secret; null otherwise.
+ */
+export function parseSignedRequest(signed: string): { user_id?: string } | null {
+  const [sig, payload] = (signed ?? "").split(".");
+  const secret = process.env.META_APP_SECRET;
+  if (!sig || !payload || !secret) return null;
+  const b64url = (s: string) => Buffer.from(s.replace(/-/g, "+").replace(/_/g, "/"), "base64");
+  const expected = crypto.createHmac("sha256", secret).update(payload).digest();
+  const actual = b64url(sig);
+  if (expected.length !== actual.length || !crypto.timingSafeEqual(expected, actual)) return null;
+  try {
+    return JSON.parse(b64url(payload).toString("utf8")) as { user_id?: string };
+  } catch {
+    return null;
+  }
 }
 
 // Facebook Page publishing scopes (reuses the same Meta app / Facebook Login).
