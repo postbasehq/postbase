@@ -11,7 +11,9 @@ import { runOpenAI } from "@/lib/agent/run-openai";
 import type { PostProposal } from "@/lib/agent/tools";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+// Image generation can sit in Higgsfield's queue for a while before running, so
+// give the function real headroom — the image poller waits up to ~110s.
+export const maxDuration = 120;
 
 type ClientMessage = { role: "user" | "assistant"; content: string };
 type Attachment = { url: string; type: string };

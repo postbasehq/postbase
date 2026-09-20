@@ -181,7 +181,9 @@ export async function runAgentTool(
             forModel: "Image generated and shown to the user. Do not include the URL in your reply.",
             image: { url: res.url, type: res.type },
           }
-        : { forModel: `Image generation failed: ${res.error}` };
+        : {
+            forModel: `Image generation did not succeed. Tell the user this exact reason, do not invent a different cause: "${res.error}"`,
+          };
     }
 
     case "propose_post": {

@@ -124,20 +124,28 @@ export async function generateSoulImage(prompt: string, aspectRatio: AspectRatio
     throw new Error("Higgsfield returned no status_url to poll.");
   }
 
-  const deadline = Date.now() + 90_000;
+  // Stay comfortably under the calling route's maxDuration so we return a clean
+  // error instead of the whole function being killed mid-poll.
+  const deadline = Date.now() + 110_000;
+  let lastStatus = "queued";
   while (Date.now() < deadline) {
     await sleep(2000);
     const s = await fetch(statusUrl, { headers: { Authorization: authHeader() } });
     const sj = (await s.json().catch(() => ({}))) as Record<string, any>;
     const status = String(sj.status ?? "").toLowerCase();
+    if (status) lastStatus = status;
     if (status === "completed" || status === "succeeded" || status === "success") {
       const url = extractUrl(sj);
       if (url) return url;
-      throw new Error("Generation finished but no image URL was found.");
+      console.error("[higgsfield] completed but no URL in payload:", JSON.stringify(sj).slice(0, 500));
+      throw new Error("The image finished generating but couldn't be retrieved. Please try again.");
     }
     if (status === "failed" || status === "canceled" || status === "cancelled" || status === "error") {
-      throw new Error(sj.error || `Generation ${status}.`);
+      console.error("[higgsfield] generation failed:", JSON.stringify(sj).slice(0, 500));
+      throw new Error(sj.error || "Higgsfield couldn't generate this image (it may have been blocked by a content filter). Try rewording the prompt.");
     }
   }
-  throw new Error("Image generation timed out.");
+  // Still queued/running at the deadline — a transient slowdown, retrying helps.
+  console.error(`[higgsfield] timed out while status="${lastStatus}"`);
+  throw new Error("Image generation is taking longer than usual and hasn't finished yet. Please try again in a moment.");
 }
