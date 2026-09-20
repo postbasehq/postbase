@@ -16,6 +16,7 @@ export type StoredMessage = {
   role: "user" | "assistant";
   content: string;
   proposal: unknown | null;
+  createdAt: number;
 };
 
 export async function listConversations(): Promise<ConversationSummary[]> {
@@ -32,13 +33,14 @@ export async function getConversation(id: string): Promise<StoredMessage[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("agent_chat_messages")
-    .select("role, content, proposal")
+    .select("role, content, proposal, created_at")
     .eq("conversation_id", id)
     .order("created_at", { ascending: true });
   return (data ?? []).map((m) => ({
     role: m.role as "user" | "assistant",
     content: m.content,
     proposal: m.proposal ?? null,
+    createdAt: m.created_at ? Date.parse(m.created_at) : Date.now(),
   }));
 }
 
