@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PostForm } from "@/components/PostForm";
+import { type TikTokInitial } from "@/components/TikTokSettings";
 import { higgsfieldConfigured } from "@/lib/higgsfield";
 import { getCurrentOrgId } from "@/lib/org";
 import { aiUsage } from "@/lib/billing-guard";
@@ -17,7 +18,7 @@ export default async function EditPostPage({
   const { data: post } = await supabase
     .from("posts")
     .select(
-      "id, body, thread_tail, scheduled_at, status, tiktok_privacy_level, repeat_every, post_targets(channel_id, variant_body, status, platform_post_id)",
+      "id, body, thread_tail, scheduled_at, status, tiktok_privacy_level, tiktok_options, repeat_every, post_targets(channel_id, variant_body, status, platform_post_id)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -108,7 +109,8 @@ export default async function EditPostPage({
           channelIds,
           variants,
           media,
-          tiktokPrivacy: (post.tiktok_privacy_level as string | null) ?? "SELF_ONLY",
+          tiktokPrivacy: (post.tiktok_privacy_level as string | null) ?? undefined,
+          tiktokOptions: (post.tiktok_options as TikTokInitial | null) ?? null,
           repeatEvery: (post.repeat_every as string | null) ?? null,
         }}
       />

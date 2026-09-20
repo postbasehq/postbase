@@ -9,6 +9,7 @@ import { SubmitButton } from "@/components/SubmitButton";
 import { Modal } from "@/components/Modal";
 import { BrandTile } from "@/components/BrandTile";
 import { DateTimePicker } from "@/components/DateTimePicker";
+import { TikTokSettings, type TikTokInitial } from "@/components/TikTokSettings";
 import { REPEAT_OPTIONS } from "@/lib/publish/repeat";
 import { ASPECT_RATIOS, type AspectRatio } from "@/lib/higgsfield";
 import { generateAiImage, startAiVideo, pollAiVideo } from "@/app/(app)/actions";
@@ -41,13 +42,6 @@ const PLATFORM: Record<string, PlatformMeta> = {
   mastodon: { label: "Mastodon", dot: "bg-blue", limit: 500, thread: true },
 };
 const label = (p: string) => PLATFORM[p]?.label ?? p;
-
-const TIKTOK_PRIVACY = [
-  { value: "PUBLIC_TO_EVERYONE", label: "Public" },
-  { value: "MUTUAL_FOLLOW_FRIENDS", label: "Friends" },
-  { value: "FOLLOWER_OF_CREATOR", label: "Followers" },
-  { value: "SELF_ONLY", label: "Only me" },
-];
 
 const MAX_TWEETS = 25;
 
@@ -179,6 +173,7 @@ type PostFormProps = {
     variants: Record<string, string>;
     media: Media[];
     tiktokPrivacy?: string;
+    tiktokOptions?: TikTokInitial | null;
     repeatEvery?: string | null;
   };
 };
@@ -235,7 +230,7 @@ export function PostForm({
   useEffect(() => {
     if (activeTab !== "base" && !selected.has(activeTab)) setActiveTab("base");
   }, [selected, activeTab]);
-  const [tiktokPrivacy, setTiktokPrivacy] = useState(initial?.tiktokPrivacy ?? "SELF_ONLY");
+  const [tiktokValid, setTiktokValid] = useState(true);
   const [scheduleLocal, setScheduleLocal] = useState(
     () => utcToLocalInput(initial?.scheduledAt) || defaultScheduleLocal || "",
   );
@@ -335,7 +330,11 @@ export function PostForm({
   const checks = selectedPlatforms.map((p) => ({ platform: p, notes: checkPlatform(p) }));
   const hasBlocking = checks.some((c) => c.notes.some((n) => n.level === "error"));
   const bodyEmpty = cleanTweets.length === 0;
-  const canSubmit = !bodyEmpty && (isDraft || !hasBlocking);
+  // The first selected TikTok account drives the compliant TikTok settings.
+  const tiktokChannel = selectedChannels.find((c) => c.platform === "tiktok") ?? null;
+  const tiktokPhotoOnly = hasMedia && !hasVideo;
+  // TikTok settings must be complete before scheduling (not required for drafts).
+  const canSubmit = !bodyEmpty && (isDraft || (!hasBlocking && tiktokValid));
 
   /* actions */
   const updateTweet = (i: number, v: string) =>
@@ -755,25 +754,20 @@ export function PostForm({
               ) : null}
             </div>
 
-            {/* TikTok privacy */}
-            {selectedPlatforms.includes("tiktok") ? (
-              <label className="flex flex-col gap-1.5 pt-1">
-                <span className="text-xs font-medium text-muted">TikTok privacy</span>
-                <select
-                  value={tiktokPrivacy}
-                  onChange={(e) => setTiktokPrivacy(e.target.value)}
-                  className="rounded-lg border border-line bg-ground px-3 py-2 text-sm outline-none focus-visible:border-blue"
-                >
-                  {TIKTOK_PRIVACY.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                <span className="text-[11px] text-muted">
-                  Until TikTok approves the app, posts publish as “Only me”.
-                </span>
-              </label>
+            {/* TikTok settings (Content Sharing Guidelines compliant) */}
+            {tiktokChannel ? (
+              <div className="pt-1">
+                <TikTokSettings
+                  channelId={tiktokChannel.id}
+                  channelHandle={tiktokChannel.handle}
+                  isPhoto={tiktokPhotoOnly}
+                  initial={{
+                    privacy: initial?.tiktokPrivacy,
+                    ...(initial?.tiktokOptions ?? {}),
+                  }}
+                  onValidChange={setTiktokValid}
+                />
+              </div>
             ) : null}
 
             {/* preflight — inline warnings */}
@@ -1368,9 +1362,6 @@ export function PostForm({
           ),
         )}
       />
-      {selectedPlatforms.includes("tiktok") ? (
-        <input type="hidden" name="tiktok_privacy_level" value={tiktokPrivacy} />
-      ) : null}
       <input type="hidden" name="scheduled_at" value={utc} />
       <input type="hidden" name="repeat_every" value={isDraft ? "" : repeatEvery} />
     </form>

@@ -27,6 +27,7 @@ import {
   initVideoUpload,
   uploadVideoFile,
   initPhotoPost,
+  type TikTokPostOptions,
   waitForPublish,
   creatorInfo,
   pickPrivacyLevel,
@@ -74,6 +75,7 @@ export type PublishInput = {
   encryptedTokens: string | null;
   tokenExpiry: string | null;
   tiktokPrivacyLevel?: string | null;
+  tiktokOptions?: TikTokPostOptions | null;
 };
 
 export type PublishResult =
@@ -379,7 +381,13 @@ async function publishToTikTok(input: PublishInput): Promise<PublishResult> {
       if (bytes.byteLength > TIKTOK_MAX_SINGLE_CHUNK) {
         throw new Error("TikTok video must be under 64MB.");
       }
-      const init = await initVideoUpload(tokens.access_token, caption, privacy, bytes.byteLength);
+      const init = await initVideoUpload(
+        tokens.access_token,
+        caption,
+        privacy,
+        bytes.byteLength,
+        input.tiktokOptions ?? undefined,
+      );
       await uploadVideoFile(init.uploadUrl, bytes, videos[0].type || "video/mp4");
       publishId = init.publishId;
     } else {
@@ -389,6 +397,7 @@ async function publishToTikTok(input: PublishInput): Promise<PublishResult> {
         images.slice(0, 35).map((m) => proxiedMediaUrl(m.url)),
         caption,
         privacy,
+        input.tiktokOptions ?? undefined,
       );
     }
 

@@ -31,6 +31,23 @@ function parseTiktokPrivacy(formData: FormData): string | null {
   return TIKTOK_PRIVACY.includes(v) ? v : null;
 }
 
+/**
+ * TikTok Direct Post options (interaction toggles + commercial disclosure),
+ * required by TikTok's Content Sharing Guidelines. Null unless the composer
+ * emitted TikTok fields (i.e. a TikTok channel was selected).
+ */
+function parseTiktokOptions(formData: FormData): Record<string, boolean> | null {
+  if (formData.get("tiktok_privacy_level") == null) return null;
+  const on = (k: string) => formData.get(k) === "true";
+  return {
+    disableComment: on("tiktok_disable_comment"),
+    disableDuet: on("tiktok_disable_duet"),
+    disableStitch: on("tiktok_disable_stitch"),
+    brandOrganic: on("tiktok_brand_organic"),
+    brandedContent: on("tiktok_branded_content"),
+  };
+}
+
 /** Parse the repeat cadence, or null if absent/invalid or the post isn't scheduled. */
 function parseRepeatEvery(formData: FormData, scheduled: boolean): string | null {
   if (!scheduled) return null; // drafts don't repeat
@@ -180,6 +197,7 @@ export async function createPost(formData: FormData) {
       scheduled_at: scheduledAt,
       status,
       tiktok_privacy_level: parseTiktokPrivacy(formData),
+      tiktok_options: parseTiktokOptions(formData),
       repeat_every: parseRepeatEvery(formData, status === "scheduled"),
     })
     .select("id")
@@ -266,6 +284,7 @@ export async function updatePost(formData: FormData) {
       scheduled_at: scheduledAt,
       status,
       tiktok_privacy_level: parseTiktokPrivacy(formData),
+      tiktok_options: parseTiktokOptions(formData),
       repeat_every: parseRepeatEvery(formData, status === "scheduled"),
       // Editing re-arms the repeat: a rescheduled post hasn't published yet.
       repeat_next_spawned: false,

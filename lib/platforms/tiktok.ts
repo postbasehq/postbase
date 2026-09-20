@@ -42,6 +42,22 @@ export type TikTokTokens = {
   scope?: string;
 };
 
+/** Per-post Direct Post options (interaction + commercial disclosure). */
+export type TikTokPostOptions = {
+  disableComment?: boolean;
+  disableDuet?: boolean;
+  disableStitch?: boolean;
+  brandOrganic?: boolean; // "Your brand" → brand_organic_toggle
+  brandedContent?: boolean; // "Branded content" → brand_content_toggle
+};
+
+function commercialFlags(o?: TikTokPostOptions) {
+  return {
+    brand_content_toggle: o?.brandedContent ?? false,
+    brand_organic_toggle: o?.brandOrganic ?? false,
+  };
+}
+
 export function tiktokConfigured(): boolean {
   return Boolean(
     process.env.TIKTOK_CLIENT_KEY &&
@@ -169,7 +185,16 @@ export async function getUser(
 /** Required before Direct Post — returns the privacy levels the creator can use. */
 export async function creatorInfo(
   accessToken: string,
-): Promise<{ privacy_level_options?: string[]; max_video_post_duration_sec?: number }> {
+): Promise<{
+  creator_nickname?: string;
+  creator_username?: string;
+  creator_avatar_url?: string;
+  privacy_level_options?: string[];
+  comment_disabled?: boolean;
+  duet_disabled?: boolean;
+  stitch_disabled?: boolean;
+  max_video_post_duration_sec?: number;
+}> {
   return tiktokJson(`${API}/post/publish/creator_info/query/`, {
     method: "POST",
     headers: authHeaders(accessToken),
@@ -188,6 +213,7 @@ export async function initVideoUpload(
   caption: string,
   privacyLevel: string,
   videoSize: number,
+  options?: TikTokPostOptions,
 ): Promise<{ publishId: string; uploadUrl: string }> {
   const data = await tiktokJson<{ publish_id: string; upload_url: string }>(
     `${API}/post/publish/video/init/`,
@@ -198,9 +224,10 @@ export async function initVideoUpload(
         post_info: {
           title: caption,
           privacy_level: privacyLevel,
-          disable_duet: false,
-          disable_comment: false,
-          disable_stitch: false,
+          disable_duet: options?.disableDuet ?? false,
+          disable_comment: options?.disableComment ?? false,
+          disable_stitch: options?.disableStitch ?? false,
+          ...commercialFlags(options),
         },
         // Single chunk: the whole file in one PUT.
         source_info: {
@@ -240,6 +267,7 @@ export async function initPhotoPost(
   photoUrls: string[],
   caption: string,
   privacyLevel: string,
+  options?: TikTokPostOptions,
 ): Promise<string> {
   const data = await tiktokJson<{ publish_id: string }>(`${API}/post/publish/content/init/`, {
     method: "POST",
@@ -249,8 +277,9 @@ export async function initPhotoPost(
         title: caption,
         description: caption,
         privacy_level: privacyLevel,
-        disable_comment: false,
+        disable_comment: options?.disableComment ?? false,
         auto_add_music: true,
+        ...commercialFlags(options),
       },
       source_info: { source: "PULL_FROM_URL", photo_cover_index: 0, photo_images: photoUrls },
       post_mode: "DIRECT_POST",

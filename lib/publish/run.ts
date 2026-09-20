@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { publish } from "@/lib/publish/adapters";
+import type { TikTokPostOptions } from "@/lib/platforms/tiktok";
 import { isRepeatEvery, nextOccurrence } from "@/lib/publish/repeat";
 
 type Db = ReturnType<typeof createAdminClient>;
@@ -24,6 +25,7 @@ type PostRow = {
   body: string;
   thread_tail: string[] | null;
   tiktok_privacy_level: string | null;
+  tiktok_options: TikTokPostOptions | null;
 };
 type MediaItem = { url: string; type: string };
 
@@ -83,6 +85,7 @@ async function publishTarget(
     encryptedTokens: target.channels?.encrypted_tokens ?? null,
     tokenExpiry: target.channels?.token_expiry ?? null,
     tiktokPrivacyLevel: post.tiktok_privacy_level,
+    tiktokOptions: post.tiktok_options,
   });
 
   if (result.ok) {
@@ -139,7 +142,7 @@ async function spawnRepeatIfDue(db: Db, postId: string): Promise<void> {
     .eq("status", "published")
     .eq("repeat_next_spawned", false)
     .not("repeat_every", "is", null)
-    .select("org_id, author_id, body, thread_tail, tiktok_privacy_level, scheduled_at, repeat_every")
+    .select("org_id, author_id, body, thread_tail, tiktok_privacy_level, tiktok_options, scheduled_at, repeat_every")
     .maybeSingle();
   if (!origin || !isRepeatEvery(origin.repeat_every)) return;
 
@@ -155,6 +158,7 @@ async function spawnRepeatIfDue(db: Db, postId: string): Promise<void> {
       scheduled_at: nextAt,
       status: "scheduled",
       tiktok_privacy_level: origin.tiktok_privacy_level,
+      tiktok_options: origin.tiktok_options,
       repeat_every: origin.repeat_every,
     })
     .select("id")
@@ -208,7 +212,7 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
     .update({ status: "publishing", updated_at: nowIso })
     .eq("status", "scheduled")
     .lte("scheduled_at", nowIso)
-    .select("id, body, thread_tail, tiktok_privacy_level");
+    .select("id, body, thread_tail, tiktok_privacy_level, tiktok_options");
 
   // 2. Reclaim posts stranded in `publishing` past the stuck window.
   const { data: reclaimed } = await db
@@ -216,7 +220,7 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
     .update({ status: "publishing", updated_at: nowIso })
     .eq("status", "publishing")
     .lt("updated_at", stuckBeforeIso)
-    .select("id, body, thread_tail, tiktok_privacy_level");
+    .select("id, body, thread_tail, tiktok_privacy_level, tiktok_options");
 
   const posts = [...(claimed ?? []), ...(reclaimed ?? [])] as PostRow[];
   for (const post of posts) {
@@ -246,7 +250,7 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
     touched.add(postId);
     const { data: postData } = await db
       .from("posts")
-      .select("id, body, thread_tail, tiktok_privacy_level")
+      .select("id, body, thread_tail, tiktok_privacy_level, tiktok_options")
       .eq("id", postId)
       .single();
     if (!postData) continue;
