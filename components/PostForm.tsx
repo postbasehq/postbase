@@ -335,6 +335,9 @@ export function PostForm({
   const tiktokPhotoOnly = hasMedia && !hasVideo;
   // TikTok settings must be complete before scheduling (not required for drafts).
   const canSubmit = !bodyEmpty && (isDraft || (!hasBlocking && tiktokValid));
+  // Not ready to publish if a platform check fails OR the TikTok settings are
+  // incomplete — keep the status indicator consistent with the disabled button.
+  const notReady = hasBlocking || !tiktokValid;
 
   /* actions */
   const updateTweet = (i: number, v: string) =>
@@ -956,18 +959,18 @@ export function PostForm({
         {selectedPlatforms.length > 0 ? (
           <span
             className={`inline-flex items-center gap-1.5 text-xs font-medium ${
-              hasBlocking ? "text-terra" : "text-green"
+              notReady ? "text-terra" : "text-green"
             }`}
           >
-            <span className={`size-2 rounded-full ${hasBlocking ? "bg-terra" : "bg-green"}`} />
-            {hasBlocking ? "Needs attention" : "Ready to publish"}
+            <span className={`size-2 rounded-full ${notReady ? "bg-terra" : "bg-green"}`} />
+            {notReady ? "Needs attention" : "Ready to publish"}
           </span>
         ) : null}
 
         <div className="ml-auto flex items-center gap-3">
           {bodyEmpty ? (
             <span className="hidden text-xs text-muted sm:inline">Write something to continue.</span>
-          ) : hasBlocking && !isDraft ? (
+          ) : notReady && !isDraft ? (
             <span className="hidden text-xs text-terra sm:inline">
               Fix the flagged channels, or clear the time to save a draft.
             </span>

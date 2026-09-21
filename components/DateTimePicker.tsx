@@ -19,9 +19,6 @@ const fmt = (y: number, m: number, d: number, hh: number, mm: number) =>
 const sameDay = (a: Date, b: Date) =>
   a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5);
-
 export function DateTimePicker({
   value,
   onChange,
@@ -75,7 +72,7 @@ export function DateTimePicker({
   }, [open]);
 
   const selHour = parsed ? parsed.getHours() : 9;
-  const selMin = parsed ? (Math.round(parsed.getMinutes() / 5) * 5) % 60 : 0;
+  const selMin = parsed ? parsed.getMinutes() : 0;
 
   const pickDay = (date: Date) =>
     onChange(fmt(date.getFullYear(), date.getMonth(), date.getDate(), selHour, selMin));
@@ -206,33 +203,19 @@ export function DateTimePicker({
               <path d="M12 7v5l3 2" />
             </svg>
             <span className="text-xs font-medium text-muted">Time</span>
-            <div className="ml-auto flex items-center gap-1">
-              <select
-                aria-label="Hour"
-                value={selHour}
-                onChange={(e) => setTime(Number(e.target.value), selMin)}
-                className={selectCls}
-              >
-                {HOURS.map((h) => (
-                  <option key={h} value={h}>
-                    {pad(h)}
-                  </option>
-                ))}
-              </select>
-              <span className="text-muted">:</span>
-              <select
-                aria-label="Minute"
-                value={selMin}
-                onChange={(e) => setTime(selHour, Number(e.target.value))}
-                className={selectCls}
-              >
-                {MINUTES.map((m) => (
-                  <option key={m} value={m}>
-                    {pad(m)}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <input
+              type="time"
+              aria-label="Time"
+              step={60}
+              value={`${pad(selHour)}:${pad(selMin)}`}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (!v) return;
+                const [h, m] = v.split(":").map(Number);
+                if (!Number.isNaN(h) && !Number.isNaN(m)) setTime(h, m);
+              }}
+              className={`ml-auto ${selectCls}`}
+            />
           </div>
 
           {timeZone ? (
@@ -260,7 +243,7 @@ export function DateTimePicker({
                 onClick={() => {
                   const n = new Date();
                   onChange(
-                    fmt(n.getFullYear(), n.getMonth(), n.getDate(), n.getHours(), Math.round(n.getMinutes() / 5) * 5 % 60),
+                    fmt(n.getFullYear(), n.getMonth(), n.getDate(), n.getHours(), n.getMinutes()),
                   );
                 }}
                 className="text-xs font-semibold text-blue-ink hover:underline"
