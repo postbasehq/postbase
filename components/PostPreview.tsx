@@ -1176,21 +1176,14 @@ function TikTokPost({
           <path d="M12 21s-7.5-4.6-10-9.3C.6 8.9 1.8 5.6 4.8 5c2-.4 3.6.7 4.4 2 .8-1.3 2.4-2.4 4.4-2 3 .6 4.2 3.9 2.8 6.7C19.5 16.4 12 21 12 21z" />
         </TkRail>
         <TkRail value={m?.comments}>
-          <path d="M4 4h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H9l-5 4V5a1 1 0 0 1 1-1z" />
+          <path d="M12 4C6.9 4 3 7.3 3 11.2c0 2.1 1.1 4 3 5.3l-1 3.5 3.9-1.9c1 .3 2 .4 3.1.4 5.1 0 9-3.3 9-7.3S17.1 4 12 4z" />
         </TkRail>
         <TkRail value={undefined}>
           <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
         </TkRail>
         <TkRail value={m?.shares}>
-          <path d="M21 12 3 3l4 9-4 9 18-9z" />
+          <path d="M13 5v3C7 8.5 3.5 12 2 18c2.5-3.4 6-5 11-5v3l7-5.5L13 5z" />
         </TkRail>
-        <span className="mt-1 flex size-9 items-center justify-center rounded-full bg-gradient-to-br from-[#333] to-black ring-1 ring-white/20">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-white/90" aria-hidden>
-            <path d="M9 18V5l12-2v13" />
-            <circle cx="6" cy="18" r="3" />
-            <circle cx="18" cy="16" r="3" />
-          </svg>
-        </span>
       </div>
 
       {/* bottom-left caption */}
