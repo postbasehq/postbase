@@ -33,6 +33,16 @@ export function youtubeConfigured(): boolean {
   );
 }
 
+/** Revoke a Google token on disconnect (revoke the refresh token to fully
+ *  de-authorize; falls back to the access token). Best-effort. */
+export async function revokeAccess(token: string): Promise<void> {
+  await fetch("https://oauth2.googleapis.com/revoke", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ token }),
+  });
+}
+
 export function defaultPrivacyStatus(): string {
   return process.env.YOUTUBE_PRIVACY_STATUS ?? "private";
 }

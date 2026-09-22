@@ -51,6 +51,15 @@ function basicAuth(): string {
   return "Basic " + Buffer.from(creds).toString("base64");
 }
 
+/** Revoke an access token on X's side (used on disconnect). Best-effort. */
+export async function revokeAccess(token: string): Promise<void> {
+  await fetch("https://api.twitter.com/2/oauth2/revoke", {
+    method: "POST",
+    headers: { Authorization: basicAuth(), "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ token, token_type_hint: "access_token" }),
+  });
+}
+
 async function tokenRequest(body: URLSearchParams): Promise<XTokens> {
   const res = await fetch(TOKEN_URL, {
     method: "POST",

@@ -7,6 +7,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentOrgId } from "@/lib/org";
 import { encryptJson, decryptJson } from "@/lib/crypto";
 import { revokeAccess as revokeTikTokAccess, type TikTokTokens } from "@/lib/platforms/tiktok";
+import { revokeAccess as revokeXAccess, type XTokens } from "@/lib/platforms/x";
+import { revokeAccess as revokeYouTubeAccess, type YouTubeTokens } from "@/lib/platforms/youtube";
+import { revokeAccess as revokeMetaAccess, type MetaTokens } from "@/lib/platforms/meta";
 import { atChannelLimit, atAiLimit } from "@/lib/billing-guard";
 import { connectBluesky } from "@/lib/platforms/bluesky";
 import { isRepeatEvery } from "@/lib/publish/repeat";
@@ -150,10 +153,21 @@ export async function disconnectChannel(formData: FormData) {
     .eq("id", channelId)
     .eq("org_id", orgId)
     .maybeSingle();
-  if (channel?.platform === "tiktok" && channel.encrypted_tokens) {
+  if (channel?.encrypted_tokens) {
+    const enc = channel.encrypted_tokens;
     try {
-      const tokens = decryptJson<TikTokTokens>(channel.encrypted_tokens);
-      await revokeTikTokAccess(tokens.access_token);
+      if (channel.platform === "tiktok") {
+        await revokeTikTokAccess(decryptJson<TikTokTokens>(enc).access_token);
+      } else if (channel.platform === "x") {
+        await revokeXAccess(decryptJson<XTokens>(enc).access_token);
+      } else if (channel.platform === "youtube") {
+        const t = decryptJson<YouTubeTokens>(enc);
+        await revokeYouTubeAccess(t.refresh_token ?? t.access_token);
+      } else if (channel.platform === "instagram") {
+        // Meta revoke needs the user token (Instagram channels store it).
+        const t = decryptJson<MetaTokens>(enc);
+        if (t.user_access_token) await revokeMetaAccess(t.user_access_token);
+      }
     } catch {
       // Revoke is best-effort — never block disconnect on it.
     }

@@ -82,6 +82,14 @@ export function parseSignedRequest(signed: string): { user_id?: string } | null 
   }
 }
 
+/** Revoke the app's permissions for a user on disconnect (needs the user access
+ *  token). Best-effort — de-authorizes Postbase for that Facebook user. */
+export async function revokeAccess(userAccessToken: string): Promise<void> {
+  await fetch(`${graph()}/me/permissions?access_token=${encodeURIComponent(userAccessToken)}`, {
+    method: "DELETE",
+  });
+}
+
 // Facebook Page publishing scopes (reuses the same Meta app / Facebook Login).
 // pages_manage_posts must be added to the app's permissions to be granted.
 export const FACEBOOK_SCOPES = [
