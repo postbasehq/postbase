@@ -70,6 +70,23 @@ export function defaultPrivacyLevel(): string {
   return process.env.TIKTOK_PRIVACY_LEVEL ?? "SELF_ONLY";
 }
 
+/**
+ * Revoke the app's access for this token on TikTok's side. Called on disconnect
+ * so removing a channel truly de-authorizes Postbase (and a later reconnect
+ * shows the consent screen again). Best-effort — callers ignore failures.
+ */
+export async function revokeAccess(accessToken: string): Promise<void> {
+  await fetch("https://open.tiktokapis.com/v2/oauth/revoke/", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_key: process.env.TIKTOK_CLIENT_KEY ?? "",
+      client_secret: process.env.TIKTOK_CLIENT_SECRET ?? "",
+      token: accessToken,
+    }),
+  });
+}
+
 export const TIKTOK_PRIVACY_LEVELS = [
   "PUBLIC_TO_EVERYONE",
   "MUTUAL_FOLLOW_FRIENDS",

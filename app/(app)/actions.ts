@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentOrgId } from "@/lib/org";
-import { encryptJson } from "@/lib/crypto";
+import { encryptJson, decryptJson } from "@/lib/crypto";
+import { revokeAccess as revokeTikTokAccess, type TikTokTokens } from "@/lib/platforms/tiktok";
 import { atChannelLimit, atAiLimit } from "@/lib/billing-guard";
 import { connectBluesky } from "@/lib/platforms/bluesky";
 import { isRepeatEvery } from "@/lib/publish/repeat";
@@ -140,6 +141,23 @@ export async function disconnectChannel(formData: FormData) {
 
   const channelId = String(formData.get("channel_id") ?? "");
   if (!channelId) throw new Error("Missing channel id.");
+
+  // Best-effort: revoke the grant on the provider's side before we drop the row,
+  // so disconnect truly de-authorizes Postbase (not just a local token delete).
+  const { data: channel } = await supabase
+    .from("channels")
+    .select("platform, encrypted_tokens")
+    .eq("id", channelId)
+    .eq("org_id", orgId)
+    .maybeSingle();
+  if (channel?.platform === "tiktok" && channel.encrypted_tokens) {
+    try {
+      const tokens = decryptJson<TikTokTokens>(channel.encrypted_tokens);
+      await revokeTikTokAccess(tokens.access_token);
+    } catch {
+      // Revoke is best-effort — never block disconnect on it.
+    }
+  }
 
   // Scoped to the caller's org (RLS + explicit check). post_targets cascade-delete.
   const { error } = await supabase
