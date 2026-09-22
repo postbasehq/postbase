@@ -37,7 +37,6 @@ const PLATFORM_LABEL: Record<string, string> = {
   mastodon: "Mastodon",
 };
 
-const METRICS_SUPPORTED = new Set(["bluesky", "mastodon"]);
 const isDelivered = (t: Target) => t.status === "published" || !!t.platform_post_id;
 const fmt = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
 
@@ -212,16 +211,36 @@ export function PostStatsButton({
 
                 {current.metrics ? (
                   <div className="grid grid-cols-3 gap-3">
-                    <MetricCard label="Likes" value={fmt(current.metrics.likes ?? 0)} icon={<HeartIcon />} />
-                    <MetricCard label="Shares" value={fmt(current.metrics.shares ?? 0)} icon={<RepeatIcon />} />
-                    <MetricCard label="Comments" value={fmt(current.metrics.comments ?? 0)} icon={<CommentIcon />} />
+                    {(
+                      [
+                        {
+                          key: "impressions",
+                          label:
+                            current.platform === "tiktok" || current.platform === "youtube"
+                              ? "Views"
+                              : "Impressions",
+                          icon: <EyeIcon />,
+                        },
+                        { key: "likes", label: "Likes", icon: <HeartIcon /> },
+                        { key: "comments", label: "Comments", icon: <CommentIcon /> },
+                        { key: "shares", label: "Shares", icon: <RepeatIcon /> },
+                        { key: "saves", label: "Saves", icon: <BookmarkIcon /> },
+                      ] as const
+                    )
+                      .filter((s) => typeof current.metrics?.[s.key] === "number")
+                      .map((s) => (
+                        <MetricCard
+                          key={s.key}
+                          label={s.label}
+                          value={fmt(current.metrics![s.key])}
+                          icon={s.icon}
+                        />
+                      ))}
                   </div>
                 ) : (
                   <div className="rounded-xl border border-line bg-surface-2/40 p-5 text-center">
                     <p className="text-sm text-muted">
-                      {METRICS_SUPPORTED.has(current.platform)
-                        ? "Metrics are refreshed periodically — check back shortly."
-                        : `Per-post metrics for ${PLATFORM_LABEL[current.platform] ?? current.platform} aren’t collected yet.`}
+                      Metrics are refreshed periodically — check back shortly.
                     </p>
                   </div>
                 )}
@@ -293,6 +312,21 @@ function CommentIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+function EyeIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+function BookmarkIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
     </svg>
   );
 }
