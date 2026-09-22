@@ -138,6 +138,12 @@ export function TikTokSettings({
     onValidChange(valid);
   }, [valid, onValidChange]);
 
+  // Branded content can't be private — clear a "Only me" selection so it truly
+  // disappears and the user must pick a wider audience (matches TikTok's UI).
+  useEffect(() => {
+    if (disclose && brandedContent && privacy === "SELF_ONLY") setPrivacy("");
+  }, [disclose, brandedContent, privacy]);
+
   if (!channelId) return null;
 
   const options = (info?.privacyOptions?.length ? info.privacyOptions : ["SELF_ONLY"]).filter(
