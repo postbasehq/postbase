@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/marketing/AppShell";
 import { BrandTile } from "@/components/BrandTile";
-import { PostPreview } from "@/components/PostPreview";
 import { CERAMICS, COFFEE, FIELDNOTE, RUNNING, type Example } from "@/components/marketing/examples";
 
 /*
@@ -36,7 +35,6 @@ type Ev = {
   hour: number;
   minute: number;
   status: Status;
-  /** First channel is the one previewed. */
   chans: string[];
   post: Example;
   /** Scheduled by an agent over MCP (shown in the developers view). */
@@ -71,7 +69,6 @@ const NEW_POST: Ev = {
 };
 
 // Same status styling as the app's calendar pills.
-const DOT: Record<Status, string> = { draft: "bg-muted", scheduled: "bg-blue", published: "bg-green" };
 const PILL: Record<Status, string> = {
   draft: "border-line bg-surface-2 border-l-muted",
   scheduled: "border-line bg-blue-soft border-l-blue",
@@ -96,13 +93,9 @@ type Pointer = { day: number; hour: number; visible: boolean };
 /**
  * `productShot` renders the full app (sidebar + week view) for the hero and
  * loops a short sequence: posts appear, one is dragged to another day, a new
- * post lands, and today's post goes out. Otherwise the week sits beside a panel
- * previewing whichever post you click.
+ * post lands, and today's post goes out. Otherwise it's the still week view.
  */
 export function CalendarDemo({ showAgent = false, productShot = false }: { showAgent?: boolean; productShot?: boolean }) {
-  const [openId, setOpenId] = useState("easy");
-  const open = EVENTS.find((e) => e.id === openId)!;
-
   const rootRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
   const [entered, setEntered] = useState(!productShot);
@@ -284,14 +277,9 @@ export function CalendarDemo({ showAgent = false, productShot = false }: { showA
                       <button
                         key={ev.id}
                         type="button"
-                        tabIndex={productShot ? -1 : 0}
-                        onClick={() => !productShot && setOpenId(ev.id)}
-                        title={ev.post.body}
-                        className={`absolute flex items-center gap-1.5 rounded-md border border-l-[3px] px-1.5 text-left text-[11px] text-ink ${PILL[ev.status]} ${
-                          !productShot && ev.id === openId ? "ring-1 ring-blue" : ""
-                        } ${isLifted ? "z-20 shadow-[0_12px_26px_-8px_rgba(16,24,40,0.45)]" : "z-10 shadow-sm"} ${
-                          productShot ? "cursor-default" : "hover:shadow"
-                        }`}
+                        tabIndex={-1}
+                                                title={ev.post.body}
+                        className={`absolute flex items-center gap-1.5 rounded-md border border-l-[3px] px-1.5 text-left text-[11px] text-ink ${PILL[ev.status]} ${isLifted ? "z-20 shadow-[0_12px_26px_-8px_rgba(16,24,40,0.45)]" : "z-10 shadow-sm"} cursor-default`}
                         style={{
                           left: colLeft(ev.day),
                           width: colWidth,
@@ -379,32 +367,6 @@ export function CalendarDemo({ showAgent = false, productShot = false }: { showA
           </div>
         </div>
 
-        {/* selected post */}
-        <aside className={`hidden w-[330px] shrink-0 flex-col border-l border-line/70 ${productShot ? "" : "lg:flex"}`}>
-          <div className="flex items-center gap-2 border-b border-line/70 px-4 py-3">
-            <span className={`size-1.5 rounded-full ${DOT[open.status]}`} />
-            <span className="text-[12.5px] font-semibold capitalize text-ink">{open.status}</span>
-            <span className="text-[12.5px] text-muted">
-              · {DAYS[open.day].dow} {pad(open.hour)}:{pad(open.minute)}
-            </span>
-            {showAgent && open.agent ? (
-              <span className="ml-auto rounded-full border border-line px-2 py-0.5 font-mono text-[10.5px] text-muted">via MCP</span>
-            ) : null}
-          </div>
-          <div className="min-h-0 flex-1 overflow-y-auto p-4">
-            <div key={open.id} className="swap-in">
-              <PostPreview
-                platform={open.chans[0]}
-                handle={open.post.handle}
-                displayName={open.post.name}
-                thread={open.post.body.split(/\n{2,}/)}
-                media={[]}
-                metrics={null}
-                publishedAt={null}
-              />
-            </div>
-          </div>
-        </aside>
       </div>
     </AppShell>
   );

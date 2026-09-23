@@ -5,7 +5,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { BrandTile, BRANDS } from "@/components/BrandTile";
 import { AudienceProvider, AudienceToggle, Swap, useAudience, type Audience } from "@/components/marketing/Audience";
-import { AgentChatDemo } from "@/components/marketing/AgentChatDemo";
+import { DevShot } from "@/components/marketing/DevShot";
 import { CalendarDemo } from "@/components/marketing/CalendarDemo";
 import { ComposerShot } from "@/components/marketing/ComposerShot";
 import { CtaDecor, HeroDecor } from "@/components/marketing/Decor";
@@ -144,7 +144,7 @@ const HERO: Record<
     ),
     sub: "Connect Claude, Cursor or your own code over MCP or the REST API. Your agent drafts and schedules posts, and every one lands in your calendar.",
     cta: { label: "Get an API key", href: "/login" },
-    frame: "Ask your agent, watch the post land",
+    frame: "Connect your agent from the Developers page",
   },
 };
 
@@ -197,7 +197,9 @@ function Hero() {
                 <CalendarDemo productShot />
               </div>
             ) : (
-              <AgentChatDemo />
+              <div className="h-[700px] overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_50px_120px_-50px_rgba(16,24,40,0.45)]">
+              <DevShot />
+            </div>
             )}
           </Swap>
         </div>
