@@ -10,10 +10,17 @@ const LOGOS: Record<string, { color: string; path: string }> = {
   gemini: { color: "#8E75B2", path: "M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81" },
 };
 
-/** A client's logo on a small white tile, as in the Developers page picker. */
-export function ClientLogo({ id, size = 24 }: { id: string; size?: number }) {
+/** A client's logo on a small white tile, as in the Developers page picker. `bare` draws just the mark. */
+export function ClientLogo({ id, size = 24, bare = false }: { id: string; size?: number; bare?: boolean }) {
   const l = LOGOS[id];
   if (!l) return null;
+  if (bare) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill={l.color} aria-hidden className="shrink-0">
+        <path d={l.path} />
+      </svg>
+    );
+  }
   const glyph = Math.round(size * 0.68);
   return (
     <span

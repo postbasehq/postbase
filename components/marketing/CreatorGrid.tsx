@@ -5,6 +5,7 @@ import { BrandTile } from "@/components/BrandTile";
 import { useLoop } from "@/components/marketing/Mocks";
 import { AgentSparkIcon } from "@/components/AgentSparkIcon";
 import { BRAND_GLASS } from "@/lib/glass";
+import { ClientLogo } from "@/components/ClientLogo";
 import { ComposerShot } from "@/components/marketing/ComposerShot";
 
 /*
@@ -317,7 +318,10 @@ function AgentShot() {
       <div className="flex items-center gap-2.5 border-b border-line pb-4">
         <AgentSparkIcon size={24} className="text-blue" animated={busy} />
         <span className="font-display text-[16px] font-semibold text-ink">Postbase Agent</span>
-        <span className="ml-auto rounded-full bg-surface-2 px-2.5 py-1 text-[12px] font-medium text-ink">Sonnet 5</span>
+        <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-surface-2 py-1 pl-2 pr-2.5 text-[12px] font-medium text-ink">
+          <ClientLogo id="claude" size={14} bare />
+          Sonnet 5
+        </span>
       </div>
 
       <div className="flex min-h-[300px] flex-col gap-4 pt-5">
