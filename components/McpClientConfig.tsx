@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ClientLogo } from "@/components/ClientLogo";
 
 /**
  * MCP client configuration generator. Picks a client and produces the exact
@@ -26,10 +27,6 @@ type Built = {
 type Client = {
   id: string;
   name: string;
-  accent: string;
-  glyph: string;
-  /** Domain used for the Brandfetch Logo Link CDN; falls back to the glyph. */
-  domain: string;
   build: (key: string) => Built;
 };
 
@@ -48,10 +45,7 @@ const b64 = (s: string) =>
 const CLIENTS: Client[] = [
   {
     id: "claude",
-    domain: "claude.ai",
     name: "Claude Desktop",
-    accent: "#d97757",
-    glyph: "✳",
     build: (key) => ({
       language: "json",
       filename: "claude_desktop_config.json",
@@ -61,10 +55,7 @@ const CLIENTS: Client[] = [
   },
   {
     id: "claude-code",
-    domain: "claude.ai",
     name: "Claude Code",
-    accent: "#d97757",
-    glyph: "▚",
     build: (key) => ({
       language: "bash",
       where: "Run in your terminal — Claude Code registers the server globally.",
@@ -73,10 +64,7 @@ const CLIENTS: Client[] = [
   },
   {
     id: "cursor",
-    domain: "cursor.com",
     name: "Cursor",
-    accent: "#7c8894",
-    glyph: "▲",
     build: (key) => ({
       language: "json",
       filename: "~/.cursor/mcp.json",
@@ -92,10 +80,7 @@ const CLIENTS: Client[] = [
   },
   {
     id: "vscode",
-    domain: "code.visualstudio.com",
     name: "VS Code",
-    accent: "#3b82f6",
-    glyph: "❮❯",
     build: (key) => ({
       language: "bash",
       where: "Run once — adds the server to Copilot's MCP config.",
@@ -104,10 +89,7 @@ const CLIENTS: Client[] = [
   },
   {
     id: "windsurf",
-    domain: "windsurf.com",
     name: "Windsurf",
-    accent: "#22c55e",
-    glyph: "≋",
     build: (key) => ({
       language: "json",
       filename: "~/.codeium/windsurf/mcp_config.json",
@@ -117,10 +99,7 @@ const CLIENTS: Client[] = [
   },
   {
     id: "gemini",
-    domain: "gemini.google.com",
     name: "Gemini CLI",
-    accent: "#4285f4",
-    glyph: "✦",
     build: (key) => ({
       language: "json",
       filename: "~/.gemini/settings.json",
@@ -221,46 +200,12 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
   );
 }
 
-/**
- * Brandfetch Logo Link (CDN) with a graceful fallback to the accent glyph.
- * The CDN blocks non-browser traffic and may restrict the client id to
- * allow-listed domains, so any load failure quietly falls back.
- */
-function ClientLogo({ client, brandfetchId }: { client: Client; brandfetchId?: string }) {
-  const [failed, setFailed] = useState(false);
-  const showLogo = brandfetchId && !failed;
-  return (
-    <span
-      className={`grid size-6 shrink-0 place-items-center overflow-hidden rounded-md text-[13px] font-bold ${
-        showLogo ? "bg-white ring-1 ring-black/5" : ""
-      }`}
-      style={showLogo ? undefined : { backgroundColor: `${client.accent}22`, color: client.accent }}
-      aria-hidden
-    >
-      {showLogo ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={`https://cdn.brandfetch.io/${client.domain}/w/48/h/48/type/icon/fallback/404?c=${brandfetchId}`}
-          alt=""
-          width={18}
-          height={18}
-          className="size-[18px] object-contain"
-          onError={() => setFailed(true)}
-        />
-      ) : (
-        client.glyph
-      )}
-    </span>
-  );
-}
 
 export function McpClientConfig({
   apiKey,
-  brandfetchId,
   mcpUrl,
 }: {
   apiKey: string | null;
-  brandfetchId?: string;
   mcpUrl: string;
 }) {
   const [clientId, setClientId] = useState("claude");
@@ -346,7 +291,7 @@ export function McpClientConfig({
                       : "border-line text-ink hover:border-blue/40 hover:bg-surface-2"
                   }`}
                 >
-                  <ClientLogo client={c} brandfetchId={brandfetchId} />
+                  <ClientLogo id={c.id} />
                   {c.name}
                 </button>
               );

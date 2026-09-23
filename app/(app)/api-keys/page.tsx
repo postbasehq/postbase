@@ -25,7 +25,6 @@ export default async function DevelopersPage() {
       <div className="mt-6">
         <DeveloperClient
           keys={keys ?? []}
-          brandfetchId={process.env.BRANDFETCH_API_KEY}
           mcpUrl={mcpResourceUrl()}
           connectedApps={connectedApps}
         />

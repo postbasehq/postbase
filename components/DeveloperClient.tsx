@@ -231,12 +231,10 @@ function RevealedKey({ value }: { value: string }) {
 
 export function DeveloperClient({
   keys,
-  brandfetchId,
   mcpUrl,
   connectedApps = [],
 }: {
   keys: KeyRow[];
-  brandfetchId?: string;
   mcpUrl: string;
   connectedApps?: ConnectedApp[];
 }) {
@@ -379,7 +377,7 @@ export function DeveloperClient({
 
       {/* ── MCP client configuration ─────────────────────────── */}
       <div id="mcp" className="scroll-mt-4">
-        <McpClientConfig apiKey={revealed} brandfetchId={brandfetchId} mcpUrl={mcpUrl} />
+        <McpClientConfig apiKey={revealed} mcpUrl={mcpUrl} />
       </div>
 
       {/* ── Connected apps (OAuth tokens) ────────────────────── */}

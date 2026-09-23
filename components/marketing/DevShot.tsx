@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/marketing/AppShell";
+import { ClientLogo } from "@/components/ClientLogo";
 
 /*
  * Product shot of the real Developers page (components/DeveloperClient.tsx +
@@ -14,12 +15,12 @@ import { AppShell } from "@/components/marketing/AppShell";
 const MCP_URL = "https://www.postbase.so/api/mcp";
 
 const CLIENTS = [
-  { id: "claude", name: "Claude Desktop", accent: "#d97757", glyph: "✳" },
-  { id: "claude-code", name: "Claude Code", accent: "#d97757", glyph: "▚" },
-  { id: "cursor", name: "Cursor", accent: "#7c8894", glyph: "▲" },
-  { id: "vscode", name: "VS Code", accent: "#3b82f6", glyph: "❮❯" },
-  { id: "windsurf", name: "Windsurf", accent: "#22c55e", glyph: "≋" },
-  { id: "gemini", name: "Gemini CLI", accent: "#4285f4", glyph: "✦" },
+  { id: "claude", name: "Claude Desktop" },
+  { id: "claude-code", name: "Claude Code" },
+  { id: "cursor", name: "Cursor" },
+  { id: "vscode", name: "VS Code" },
+  { id: "windsurf", name: "Windsurf" },
+  { id: "gemini", name: "Gemini CLI" },
 ];
 
 const SECTIONS = [
@@ -313,12 +314,7 @@ export function DevShot() {
                               on ? "border-blue bg-blue-soft text-blue-ink shadow-sm" : "border-line text-ink"
                             }`}
                           >
-                            <span
-                              className="grid size-6 shrink-0 place-items-center rounded-md text-[13px] font-bold"
-                              style={{ backgroundColor: `${c.accent}22`, color: c.accent }}
-                            >
-                              {c.glyph}
-                            </span>
+                            <ClientLogo id={c.id} size={24} />
                             {c.name}
                           </span>
                         );

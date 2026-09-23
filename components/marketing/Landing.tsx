@@ -7,14 +7,14 @@ import { BrandTile, BRANDS } from "@/components/BrandTile";
 import { AudienceProvider, AudienceToggle, Swap, useAudience, type Audience } from "@/components/marketing/Audience";
 import { DevShot } from "@/components/marketing/DevShot";
 import { CalendarDemo } from "@/components/marketing/CalendarDemo";
-import { ComposerShot } from "@/components/marketing/ComposerShot";
+import { CreatorGrid } from "@/components/marketing/CreatorGrid";
+import { DevGrid } from "@/components/marketing/DevGrid";
 import { HeroDecor } from "@/components/marketing/Decor";
 import { CtaCollage } from "@/components/marketing/CtaCollage";
+import { WhoFor as WhoForList } from "@/components/marketing/WhoFor";
 import { PLAN_ORDER, PLANS } from "@/lib/plans";
-import { AgentMock, AnalyticsMock, DeliveryMock, MediaMock, WorkspacesMock } from "@/components/marketing/Mocks";
 
 const NETWORKS = ["x", "linkedin", "instagram", "tiktok", "youtube", "bluesky", "mastodon"];
-const MCP_URL = "https://www.postbase.so/api/mcp";
 
 export function Landing() {
   return (
@@ -23,7 +23,6 @@ export function Landing() {
       <main>
         <Hero />
         <WhoFor />
-        <AudienceSections />
         <Features />
         <Channels />
         <Pricing />
@@ -89,14 +88,6 @@ function Underlined({ children }: { children: React.ReactNode }) {
       >
         <path d="M3 11C60 5 150 2 297 8" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
       </svg>
-    </span>
-  );
-}
-
-function Pill({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-block rounded-full border border-line bg-ground px-2.5 py-1 font-display text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted">
-      {children}
     </span>
   );
 }
@@ -213,335 +204,40 @@ function Hero() {
 // ── Who it's for ─────────────────────────────────────────────────────────
 
 function WhoFor() {
-  const { setAudience } = useAudience();
-  const show = (a: Audience) => {
-    setAudience(a);
-    document.getElementById("product")?.scrollIntoView({ behavior: "smooth" });
-  };
-  const items: { title: string; body: string; icon: React.ReactNode; action?: () => void; cta?: string }[] = [
-    {
-      title: "Creators",
-      body: "Write a post once and send the right version to every network you're on. Plan the week in one sitting.",
-      icon: <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />,
-      action: () => show("creators"),
-      cta: "See the composer",
-    },
-    {
-      title: "Agencies and teams",
-      body: "A workspace per client, each with its own channels and people. Switch between brands from the sidebar.",
-      icon: (
-        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" />
-      ),
-    },
-    {
-      title: "Developers and agents",
-      body: "Let Claude, Cursor or your own code schedule posts over MCP or the REST API, with the same calendar and guardrails.",
-      icon: <path d="m16 18 6-6-6-6M8 6l-6 6 6 6" />,
-      action: () => show("developers"),
-      cta: "See the agent",
-    },
-  ];
   return (
     <section className={`${wrap} pt-28 md:pt-36`}>
       <Heading title="Who is Postbase for?" />
-      <div className="grid gap-4 md:grid-cols-3">
-        {items.map((it) => (
-          <div key={it.title} className={`${card} flex flex-col p-7`}>
-            <svg
-              width="30"
-              height="30"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-blue"
-              aria-hidden
-            >
-              {it.icon}
-            </svg>
-            <h3 className="mt-6 font-display text-[21px] font-semibold tracking-[-0.01em] text-ink">{it.title}</h3>
-            <p className="mt-2 text-[15px] leading-relaxed text-muted">{it.body}</p>
-            {it.action ? (
-              <button
-                type="button"
-                onClick={it.action}
-                className="mt-5 self-start text-[14px] font-semibold text-blue hover:underline"
-              >
-                {it.cta} →
-              </button>
-            ) : null}
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-// ── Audience-specific sections ───────────────────────────────────────────
-
-function AudienceSections() {
-  const { audience } = useAudience();
-  const creators = audience === "creators";
-  return (
-    <Swap k={audience}>
-      {creators ? (
-        <section className={`${wrap} pt-28 md:pt-36`}>
-          <Heading
-            title={
-              <>
-                Every feed gets its <Underlined>own cut</Underlined>
-              </>
-            }
-            sub="Write the post once, then tailor it for each network in the same composer. Every version keeps to that network's character limit."
-          />
-          <div className="mx-auto h-[570px] max-w-[860px] overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_50px_120px_-50px_rgba(16,24,40,0.45)]">
-            <ComposerShot />
-          </div>
-        </section>
-      ) : (
-        <ConnectSection />
-      )}
-
-      {creators ? null : (
-        <section className={`${wrap} pt-28 md:pt-36`}>
-          <Heading
-            title="Every agent post lands in your calendar"
-            sub="Posts your agent schedules sit next to yours, marked MCP. Review, edit or cancel them before they go out."
-          />
-          <div className="h-[700px] overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_50px_120px_-50px_rgba(16,24,40,0.4)]">
-            <CalendarDemo showAgent />
-          </div>
-        </section>
-      )}
-    </Swap>
-  );
-}
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        navigator.clipboard?.writeText(text).then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1400);
-        });
-      }}
-      className="shrink-0 rounded-md border border-line bg-surface px-2 py-1 text-[11.5px] font-semibold text-ink transition-colors hover:border-ink"
-    >
-      {copied ? "Copied" : "Copy"}
-    </button>
-  );
-}
-
-const TOOLS: [string, string][] = [
-  ["list_channels", "See which accounts are connected"],
-  ["create_post", "Write a post or thread, then schedule it or save a draft"],
-  ["list_scheduled", "Check what's queued, by status"],
-  ["cancel_post", "Pull a scheduled post back to drafts"],
-];
-
-const ENDPOINTS: [string, string][] = [
-  ["GET", "/api/v1/channels"],
-  ["GET", "/api/v1/posts"],
-  ["POST", "/api/v1/posts"],
-  ["POST", "/api/v1/posts/:id/cancel"],
-];
-
-function ConnectCard({
-  label,
-  title,
-  body,
-  children,
-}: {
-  label: string;
-  title: string;
-  body: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className={`${card} flex flex-col p-6 md:p-7`}>
-      <div>
-        <Pill>{label}</Pill>
-      </div>
-      <h3 className="mt-4 font-display text-[22px] font-semibold tracking-[-0.01em] text-ink">{title}</h3>
-      <p className="mt-2 max-w-[44ch] text-[15px] leading-relaxed text-muted">{body}</p>
-      <div className="mt-6 flex flex-1 flex-col justify-end">{children}</div>
-    </div>
-  );
-}
-
-function ConnectSection() {
-  return (
-    <section className={`${wrap} pt-28 md:pt-36`}>
-      <Heading
-        title={
-          <>
-            Plug Postbase into <Underlined>any agent</Underlined>
-          </>
-        }
-        sub="Postbase speaks MCP and plain HTTPS. Pick whichever fits the way you work."
-      />
-      <div className="grid gap-4 md:grid-cols-2">
-        <ConnectCard
-          label="Via Claude"
-          title="Custom connector"
-          body="Paste the URL, sign in to Postbase and choose a workspace. No keys to copy around."
-        >
-          <div className="rounded-xl border border-line bg-ground p-3.5">
-            <div className="text-[12px] font-medium text-muted">Remote MCP server URL</div>
-            <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-line bg-surface py-1.5 pl-3 pr-1.5">
-              <span className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-ink">{MCP_URL}</span>
-              <CopyButton text={MCP_URL} />
-            </div>
-          </div>
-        </ConnectCard>
-
-        <ConnectCard
-          label="Via Cursor"
-          title="Any MCP client"
-          body="Run the Postbase MCP server with an API key from your Developers page."
-        >
-          <div className="rounded-xl border border-line bg-ground p-3.5">
-            <div className="flex items-center gap-2 rounded-lg border border-line bg-surface py-1.5 pl-3 pr-1.5">
-              <span className="font-mono text-[12.5px] text-muted">$</span>
-              <span className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-ink">npx @postbasehq/mcp</span>
-              <CopyButton text="npx @postbasehq/mcp" />
-            </div>
-          </div>
-        </ConnectCard>
-
-        <ConnectCard
-          label="Via REST"
-          title="Public API"
-          body="Four endpoints with the same rules as the dashboard. Call it from a script, a cron job or your own app."
-        >
-          <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-ground">
-            {ENDPOINTS.map(([m, path]) => (
-              <li key={m + path} className="flex items-center gap-3 px-3.5 py-2.5 font-mono text-[12.5px]">
-                <span className={`w-10 font-semibold ${m === "GET" ? "text-green" : "text-blue"}`}>{m}</span>
-                <span className="truncate text-ink">{path}</span>
-              </li>
-            ))}
-          </ul>
-        </ConnectCard>
-
-        <ConnectCard
-          label="The tools"
-          title="Four tools, nothing surprising"
-          body="Your agent can't delete posts or change your account. Every key and connection can be revoked in one click."
-        >
-          <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-ground">
-            {TOOLS.map(([name, what]) => (
-              <li key={name} className="flex items-baseline gap-3 px-3.5 py-2.5">
-                <code className="w-[112px] shrink-0 font-mono text-[12.5px] font-semibold text-ink">{name}</code>
-                <span className="text-[12.5px] text-muted">{what}</span>
-              </li>
-            ))}
-          </ul>
-        </ConnectCard>
-      </div>
+      <WhoForList />
     </section>
   );
 }
 
 // ── Features ─────────────────────────────────────────────────────────────
 
-// Solid Postbase brand colours for the feature cards (no tints).
-const TONES = {
-  blue: { bg: "#2b59d9", fg: "text-white", sub: "text-white/85", pill: "text-[#2b59d9]" },
-  amber: { bg: "#e3a72c", fg: "text-[#202124]", sub: "text-[#202124]/80", pill: "text-[#8a5a00]" },
-  red: { bg: "#d14a3e", fg: "text-white", sub: "text-white/85", pill: "text-[#d14a3e]" },
-} as const;
-
-function Feature({
-  label,
-  title,
-  body,
-  mock,
-  tone,
-  wide = false,
-}: {
-  label: string;
-  title: string;
-  body: string;
-  mock: React.ReactNode;
-  tone: keyof typeof TONES;
-  wide?: boolean;
-}) {
-  const t = TONES[tone];
-  return (
-    <div
-      className={`grid content-start gap-6 rounded-[24px] p-6 shadow-[0_24px_60px_-34px_rgba(16,24,40,0.55)] md:p-7 ${
-        wide ? "md:col-span-2 md:grid-cols-2 md:items-center" : ""
-      }`}
-      style={{ backgroundColor: t.bg }}
-    >
-      <div>
-        <span
-          className={`inline-block rounded-full bg-white px-2.5 py-1 font-display text-[10.5px] font-semibold uppercase tracking-[0.08em] ${t.pill}`}
-        >
-          {label}
-        </span>
-        <h3 className={`mt-4 font-display text-[22px] font-semibold tracking-[-0.01em] ${t.fg}`}>{title}</h3>
-        <p className={`mt-2 max-w-[44ch] text-[15px] leading-relaxed ${t.sub}`}>{body}</p>
-      </div>
-      <div className="[&>*]:shadow-[0_18px_40px_-20px_rgba(16,24,40,0.5)]">{mock}</div>
-    </div>
-  );
-}
-
 function Features() {
+  const { audience } = useAudience();
+  const creators = audience === "creators";
   return (
     <section id="features" className={`${wrap} scroll-mt-28 pt-28 md:pt-36`}>
       <Heading
         title={
-          <>
-            Everything you need to post, <Underlined>in one place</Underlined>
-          </>
+          creators ? (
+            <>
+              Everything you need to post, <Underlined>in one place</Underlined>
+            </>
+          ) : (
+            <>
+              Plug Postbase into <Underlined>any agent</Underlined>
+            </>
+          )
+        }
+        sub={
+          creators
+            ? "From the first draft to the numbers afterwards, without leaving Postbase."
+            : "MCP for your AI tools, a REST API for everything else, and a calendar that shows what they did."
         }
       />
-      <div className="grid gap-4 md:grid-cols-2">
-        <Feature
-          wide
-          tone="blue"
-          label="Publishing"
-          title="Posts that actually go out"
-          body="Each post publishes at its time. If a network has a hiccup, Postbase retries. If something needs you, like a reconnect, it tells you."
-          mock={<DeliveryMock />}
-        />
-        <Feature
-          tone="amber"
-          label="AI agent"
-          title="Draft with the built-in agent"
-          body="Ask for a post in plain words. The agent drafts it and asks before anything is scheduled."
-          mock={<AgentMock />}
-        />
-        <Feature
-          tone="red"
-          label="Media"
-          title="One media library"
-          body="Upload photos and video once, up to 1 GB each, and attach them to any post."
-          mock={<MediaMock />}
-        />
-        <Feature
-          tone="blue"
-          label="Teams"
-          title="A workspace per brand"
-          body="Keep each client's channels and people separate. Useful when you run accounts for several clients."
-          mock={<WorkspacesMock />}
-        />
-        <Feature
-          tone="amber"
-          label="Analytics"
-          title="See what's working"
-          body="Impressions, engagement and clicks for the posts you publish, per network, in one view."
-          mock={<AnalyticsMock />}
-        />
-      </div>
+      <Swap k={audience}>{creators ? <CreatorGrid /> : <DevGrid />}</Swap>
     </section>
   );
 }

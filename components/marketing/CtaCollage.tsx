@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ClientLogo } from "@/components/ClientLogo";
 import { AppNav } from "@/components/AppNav";
 import { BrandTile } from "@/components/BrandTile";
 import { useLoop } from "@/components/marketing/Mocks";
@@ -201,9 +202,9 @@ function CreatorsCollage() {
 // ── Developers ───────────────────────────────────────────────────────────
 
 const CLIENTS = [
-  { name: "Claude Desktop", accent: "#d97757", glyph: "✳" },
-  { name: "Cursor", accent: "#7c8894", glyph: "▲" },
-  { name: "VS Code", accent: "#3b82f6", glyph: "❮❯" },
+  { id: "claude", name: "Claude Desktop" },
+  { id: "cursor", name: "Cursor" },
+  { id: "vscode", name: "VS Code" },
 ];
 
 function DevelopersCollage() {
@@ -264,12 +265,7 @@ function DevelopersCollage() {
                   i === 0 ? "border-blue bg-blue-soft text-blue-ink" : "border-line text-ink"
                 }`}
               >
-                <span
-                  className="grid size-5 place-items-center rounded-md text-[11px] font-bold"
-                  style={{ backgroundColor: `${c.accent}22`, color: c.accent }}
-                >
-                  {c.glyph}
-                </span>
+                <ClientLogo id={c.id} size={20} />
                 {c.name}
               </span>
             ))}

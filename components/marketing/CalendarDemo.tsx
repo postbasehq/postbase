@@ -66,6 +66,7 @@ const NEW_POST: Ev = {
   status: "scheduled",
   chans: ["x", "linkedin", "bluesky"],
   post: { ...FIELDNOTE, body: "Launch week recap: offline mode, faster sync and 1,200 new teams. Thank you all." },
+  agent: true,
 };
 
 // Same status styling as the app's calendar pills.
@@ -95,7 +96,16 @@ type Pointer = { day: number; hour: number; visible: boolean };
  * loops a short sequence: posts appear, one is dragged to another day, a new
  * post lands, and today's post goes out. Otherwise it's the still week view.
  */
-export function CalendarDemo({ showAgent = false, productShot = false }: { showAgent?: boolean; productShot?: boolean }) {
+export function CalendarDemo({
+  showAgent = false,
+  productShot = false,
+  sidebar = productShot,
+}: {
+  showAgent?: boolean;
+  productShot?: boolean;
+  /** Show the app sidebar (defaults to on for the product shot). */
+  sidebar?: boolean;
+}) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
   const [entered, setEntered] = useState(!productShot);
@@ -189,7 +199,7 @@ export function CalendarDemo({ showAgent = false, productShot = false }: { showA
   };
 
   return (
-    <AppShell active="/calendar" title="Calendar" sidebar={productShot}>
+    <AppShell active="/calendar" title="Calendar" sidebar={sidebar}>
       <div ref={rootRef} className="flex h-full">
         <div className="flex min-w-0 flex-1 flex-col px-5 pb-1 pt-1">
           {/* header bar */}
