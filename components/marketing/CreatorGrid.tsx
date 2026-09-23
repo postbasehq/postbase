@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { BrandTile } from "@/components/BrandTile";
-import { AgentMock, useLoop } from "@/components/marketing/Mocks";
+import { useLoop } from "@/components/marketing/Mocks";
+import { AgentSparkIcon } from "@/components/AgentSparkIcon";
+import { BRAND_GLASS } from "@/lib/glass";
 import { ComposerShot } from "@/components/marketing/ComposerShot";
 
 /*
@@ -102,11 +104,11 @@ export function CreatorGrid() {
         tone="amber"
         layout="bottom"
         label="AI agent"
-        title="Ask for a post, get a draft"
-        body="Tell the built-in agent what you want in plain words. It drafts for your channels and waits for you to hit Schedule."
+        title="Tell it what to post. It does the rest."
+        body="Describe a post in one sentence. The agent checks your channels, writes it for each network and lines it up for the time you asked. Nothing goes out until you say so."
       >
-        <div className="w-[480px] pt-16">
-          <AgentMock />
+        <div className="pt-16">
+          <AgentShot />
         </div>
       </Tile>
       <Tile
@@ -272,6 +274,113 @@ function MonthShot() {
             })}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ── AI agent: one sentence → a proposed post → scheduled ─────────────────
+
+const AGENT_PROMPT = "Announce our new Kochere roast on X, LinkedIn and Bluesky for Wednesday at noon.";
+type AgentPhase = "typing" | "channels" | "drafting" | "proposed" | "scheduled";
+
+function AgentShot() {
+  const [typed, setTyped] = useState(AGENT_PROMPT.length);
+  const [phase, setPhase] = useState<AgentPhase>("proposed");
+  const [pressed, setPressed] = useState(false);
+  const [ref] = useLoop<HTMLDivElement>(async (step) => {
+    setPhase("typing");
+    setPressed(false);
+    setTyped(0);
+    await step(500);
+    for (let i = 1; i <= AGENT_PROMPT.length; i += 2) {
+      setTyped(i);
+      await step(24);
+    }
+    setTyped(AGENT_PROMPT.length);
+    await step(400);
+    setPhase("channels");
+    await step(1200);
+    setPhase("drafting");
+    await step(1500);
+    setPhase("proposed");
+    await step(1800);
+    setPressed(true);
+    await step(220);
+    setPhase("scheduled");
+    await step(3000);
+  });
+  const busy = phase === "channels" || phase === "drafting";
+  const done = phase === "proposed" || phase === "scheduled";
+  return (
+    <div ref={ref} className={`${shot} w-[404px] p-5`}>
+      <div className="flex items-center gap-2.5 border-b border-line pb-4">
+        <AgentSparkIcon size={24} className="text-blue" animated={busy} />
+        <span className="font-display text-[16px] font-semibold text-ink">Postbase Agent</span>
+        <span className="ml-auto rounded-full bg-surface-2 px-2.5 py-1 text-[12px] font-medium text-ink">Sonnet 5</span>
+      </div>
+
+      <div className="flex min-h-[300px] flex-col gap-4 pt-5">
+        {/* your message */}
+        <div className="max-w-[88%] self-end rounded-2xl rounded-br-md bg-blue px-4 py-3 text-[15px] leading-snug text-on-blue">
+          {AGENT_PROMPT.slice(0, typed)}
+          {phase === "typing" ? <span className="ml-0.5 animate-pulse">▍</span> : null}
+        </div>
+
+        {/* the agent at work */}
+        {busy ? (
+          <div key={phase} className="swap-in flex items-center gap-2.5">
+            <AgentSparkIcon size={20} animated className="text-blue-ink" />
+            <span className="agent-shimmer text-[15px] font-medium">
+              {phase === "channels" ? "Checking your channels…" : "Drafting a post…"}
+            </span>
+          </div>
+        ) : null}
+
+        {done ? (
+          <div className="swap-in flex flex-col gap-3">
+            <p className="text-[15px] leading-relaxed text-ink">
+              Here&apos;s a post for all three, with a shorter cut for X. It&apos;s set for Wednesday at 12:00.
+            </p>
+            {phase === "proposed" ? (
+              <div style={BRAND_GLASS.style} className={`flex items-center gap-3.5 rounded-2xl px-4 py-3.5 ${BRAND_GLASS.className}`}>
+                <div className="min-w-0 flex-1">
+                  <div className="font-display text-[15px] font-semibold text-ink">Proposed post</div>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <span className="flex -space-x-1">
+                      {["x", "linkedin", "bluesky"].map((c) => (
+                        <span key={c} className="rounded-full ring-2 ring-surface">
+                          <BrandTile platform={c} size={20} radius={10} />
+                        </span>
+                      ))}
+                    </span>
+                    <span className="text-[13px] text-muted">3 channels · Wed 23 Sep, 12:00</span>
+                  </div>
+                </div>
+                <span
+                  className={`shrink-0 rounded-xl bg-blue px-4 py-2 text-[14px] font-semibold text-on-blue transition-transform ${
+                    pressed ? "scale-95" : ""
+                  }`}
+                >
+                  Schedule
+                </span>
+              </div>
+            ) : (
+              <div className="swap-in flex items-center gap-3.5 rounded-2xl border border-line bg-surface px-4 py-3.5">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#188038] text-white">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="font-display text-[15px] font-semibold text-ink">Scheduled</div>
+                  <div className="text-[13px] text-muted">Your post is in the queue.</div>
+                </div>
+                <span className="shrink-0 rounded-xl bg-blue px-4 py-2 text-[14px] font-semibold text-on-blue">View in queue</span>
+              </div>
+            )}
+          </div>
+        ) : null}
       </div>
     </div>
   );

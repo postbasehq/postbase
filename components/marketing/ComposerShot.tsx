@@ -68,7 +68,9 @@ export function ComposerShot() {
       if (!el || !root) return;
       const a = el.getBoundingClientRect();
       const b = root.getBoundingClientRect();
-      setCursor((c) => ({ ...c, x: a.left - b.left + a.width * 0.55, y: a.top - b.top + a.height * 0.6, visible: true }));
+      // Rects are in screen px; the cursor moves in the shot's own px (it may be zoomed).
+      const k = b.width / root.offsetWidth || 1;
+      setCursor((c) => ({ ...c, x: (a.left - b.left + a.width * 0.55) / k, y: (a.top - b.top + a.height * 0.6) / k, visible: true }));
     };
     (async () => {
       try {

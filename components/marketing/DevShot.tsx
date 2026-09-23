@@ -85,7 +85,9 @@ export function DevShot() {
       if (!el || !root) return;
       const a = el.getBoundingClientRect();
       const b = root.getBoundingClientRect();
-      setCursor((c) => ({ ...c, x: a.left - b.left + a.width * fx, y: a.top - b.top + a.height * fy, visible: true }));
+      // Rects are in screen px; the cursor moves in the shot's own px (it may be zoomed).
+      const z = b.width / root.offsetWidth || 1;
+      setCursor((c) => ({ ...c, x: (a.left - b.left + a.width * fx) / z, y: (a.top - b.top + a.height * fy) / z, visible: true }));
     };
     const click = async () => {
       setCursor((c) => ({ ...c, down: true }));

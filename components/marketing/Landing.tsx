@@ -187,13 +187,13 @@ function Hero() {
               {h.frame}
             </h2>
             {audience === "creators" ? (
-              <Fit minWidth={860} height={700}>
+              <Fit minWidth={860} height={700} mobile={{ renderWidth: 860, viewWidth: 430, x: 196, y: 124, height: 470 }}>
                 <div className="h-full overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_50px_120px_-50px_rgba(16,24,40,0.45)]">
                   <CalendarDemo productShot />
                 </div>
               </Fit>
             ) : (
-              <Fit minWidth={900} height={700}>
+              <Fit minWidth={900} height={700} mobile={{ renderWidth: 480, viewWidth: 480, height: 700 }}>
                 <div className="h-full overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_50px_120px_-50px_rgba(16,24,40,0.45)]">
                   <DevShot />
                 </div>
