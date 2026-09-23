@@ -279,12 +279,7 @@ function DevelopersCollage() {
           <div className="border-b border-line px-3.5 py-2.5 font-display text-[13px] font-semibold text-ink">Connected apps</div>
           {(claude ? ["Claude", "Cursor"] : ["Cursor"]).map((name) => (
             <div key={name} className={`flex items-center gap-2.5 px-3.5 py-2.5 ${name === "Claude" ? "swap-in border-b border-line" : ""}`}>
-              <span className="grid size-7 place-items-center rounded-lg bg-surface-2 text-muted">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-              </span>
+              <ClientLogo id={name === "Claude" ? "claude" : "cursor"} size={28} />
               <div className="min-w-0 leading-tight">
                 <div className="text-[12.5px] font-semibold text-ink">{name}</div>
                 <div className="truncate text-[10.5px] text-muted">

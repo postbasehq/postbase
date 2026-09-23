@@ -361,12 +361,7 @@ export function DevShot() {
                       a === NEW_APP ? "swap-in" : ""
                     }`}
                   >
-                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-2 text-muted" aria-hidden>
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2" />
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                      </svg>
-                    </span>
+                    <ClientLogo id={a.name === "Claude" ? "claude" : "cursor"} size={36} />
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-ink">{a.name}</div>
                       <div className="mt-0.5 truncate text-xs text-muted">{a.sub}</div>
