@@ -7,9 +7,10 @@ import { BrandTile, BRANDS } from "@/components/BrandTile";
 import { AudienceProvider, AudienceToggle, Swap, useAudience, type Audience } from "@/components/marketing/Audience";
 import { AgentChatDemo } from "@/components/marketing/AgentChatDemo";
 import { CalendarDemo } from "@/components/marketing/CalendarDemo";
-import { PreviewWall } from "@/components/marketing/PreviewWall";
+import { ComposerShot } from "@/components/marketing/ComposerShot";
+import { CtaDecor, HeroDecor } from "@/components/marketing/Decor";
 import { PLAN_ORDER, PLANS } from "@/lib/plans";
-import { AgentMock, AnalyticsMock, DeliveryMock, MediaMock, VersionsMock, WorkspacesMock } from "@/components/marketing/Mocks";
+import { AgentMock, AnalyticsMock, DeliveryMock, MediaMock, WorkspacesMock } from "@/components/marketing/Mocks";
 
 const NETWORKS = ["x", "linkedin", "instagram", "tiktok", "youtube", "bluesky", "mastodon"];
 const MCP_URL = "https://www.postbase.so/api/mcp";
@@ -66,7 +67,9 @@ function Heading({ title, sub }: { title: React.ReactNode; sub?: React.ReactNode
       <h2 className="font-display text-[clamp(32px,4.4vw,52px)] font-semibold leading-[1.08] tracking-[-0.03em] text-ink text-balance">
         {title}
       </h2>
-      {sub ? <p className="mx-auto mt-4 max-w-[56ch] text-[17px] leading-relaxed text-muted text-balance">{sub}</p> : null}
+      {sub ? (
+        <p className="mx-auto mt-4 max-w-[56ch] text-[17px] leading-relaxed text-muted text-balance">{sub}</p>
+      ) : null}
     </div>
   );
 }
@@ -98,7 +101,17 @@ function Pill({ children }: { children: React.ReactNode }) {
 
 function Arrow() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
       <path d="M5 12h14M13 6l6 6-6 6" />
     </svg>
   );
@@ -106,7 +119,10 @@ function Arrow() {
 
 // ── Hero ─────────────────────────────────────────────────────────────────
 
-const HERO: Record<Audience, { title: React.ReactNode; sub: string; cta: { label: string; href: string }; frame: string }> = {
+const HERO: Record<
+  Audience,
+  { title: React.ReactNode; sub: string; cta: { label: string; href: string }; frame: string }
+> = {
   creators: {
     title: (
       <>
@@ -136,48 +152,55 @@ function Hero() {
   const { audience } = useAudience();
   const h = HERO[audience];
   return (
-    <section className={`${wrap} pt-14 text-center md:pt-20`}>
-      <Swap k={audience}>
-        <h1 className="mx-auto max-w-[15ch] font-display text-[clamp(42px,6.8vw,84px)] font-semibold leading-[1.04] tracking-[-0.04em] text-ink">
-          {h.title}
-        </h1>
-        <p className="mx-auto mt-6 max-w-[54ch] text-[17px] leading-relaxed text-muted text-balance md:text-[19px]">{h.sub}</p>
-      </Swap>
-
-      <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5" aria-label="Supported networks">
-        {NETWORKS.map((n) => (
-          <span key={n} title={BRANDS[n]?.label}>
-            <BrandTile platform={n} size={30} radius={8} />
-          </span>
-        ))}
-      </div>
-
-      <div className="mt-8">
-        <a
-          href={h.cta.href}
-          className="inline-flex items-center gap-2 rounded-full bg-blue px-7 py-3.5 font-display text-[15px] font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
-        >
-          {h.cta.label}
-          <Arrow />
-        </a>
-        <p className="mt-3 text-[13px] text-muted">Cancel anytime · or self-host for free</p>
-      </div>
-
-      <div id="hero-toggle" className="mt-10 flex justify-center">
-        <AudienceToggle />
-      </div>
-
-      <div id="product" className={`${card} mt-8 scroll-mt-28 p-3 text-left md:p-5`}>
+    <section className="relative isolate">
+      <HeroDecor />
+      <div className={`${wrap} pt-14 text-center md:pt-20`}>
         <Swap k={audience}>
-          <h2 className="mb-4 mt-1 text-center font-display text-[18px] font-semibold text-ink md:mb-5 md:text-[22px]">{h.frame}</h2>
-          {audience === "creators" ? (
-            <div className="h-[700px] overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_50px_120px_-50px_rgba(16,24,40,0.45)]">
-              <CalendarDemo productShot />
-            </div>
-          ) : (
-            <AgentChatDemo />
-          )}
+          <h1 className="mx-auto max-w-[15ch] font-display text-[clamp(42px,6.8vw,84px)] font-semibold leading-[1.04] tracking-[-0.04em] text-ink">
+            {h.title}
+          </h1>
+          <p className="mx-auto mt-6 max-w-[54ch] text-[17px] leading-relaxed text-muted text-balance md:text-[19px]">
+            {h.sub}
+          </p>
         </Swap>
+
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5 lg:hidden" aria-label="Supported networks">
+          {NETWORKS.map((n) => (
+            <span key={n} title={BRANDS[n]?.label}>
+              <BrandTile platform={n} size={30} radius={8} />
+            </span>
+          ))}
+        </div>
+
+        <div className="mt-8">
+          <a
+            href={h.cta.href}
+            className="inline-flex items-center gap-2 rounded-full bg-blue px-7 py-3.5 font-display text-[15px] font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
+          >
+            {h.cta.label}
+            <Arrow />
+          </a>
+          <p className="mt-3 text-[13px] text-muted">Cancel anytime · or self-host for free</p>
+        </div>
+
+        <div id="hero-toggle" className="mt-10 flex justify-center">
+          <AudienceToggle />
+        </div>
+
+        <div id="product" className={`${card} mt-8 scroll-mt-28 p-3 text-left md:p-5`}>
+          <Swap k={audience}>
+            <h2 className="mb-4 mt-1 text-center font-display text-[18px] font-semibold text-ink md:mb-5 md:text-[22px]">
+              {h.frame}
+            </h2>
+            {audience === "creators" ? (
+              <div className="h-[700px] overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_50px_120px_-50px_rgba(16,24,40,0.45)]">
+                <CalendarDemo productShot />
+              </div>
+            ) : (
+              <AgentChatDemo />
+            )}
+          </Swap>
+        </div>
       </div>
     </section>
   );
@@ -202,7 +225,9 @@ function WhoFor() {
     {
       title: "Agencies and teams",
       body: "A workspace per client, each with its own channels and people. Switch between brands from the sidebar.",
-      icon: <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" />,
+      icon: (
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" />
+      ),
     },
     {
       title: "Developers and agents",
@@ -218,13 +243,28 @@ function WhoFor() {
       <div className="grid gap-4 md:grid-cols-3">
         {items.map((it) => (
           <div key={it.title} className={`${card} flex flex-col p-7`}>
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="text-blue" aria-hidden>
+            <svg
+              width="30"
+              height="30"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-blue"
+              aria-hidden
+            >
               {it.icon}
             </svg>
             <h3 className="mt-6 font-display text-[21px] font-semibold tracking-[-0.01em] text-ink">{it.title}</h3>
             <p className="mt-2 text-[15px] leading-relaxed text-muted">{it.body}</p>
             {it.action ? (
-              <button type="button" onClick={it.action} className="mt-5 self-start text-[14px] font-semibold text-blue hover:underline">
+              <button
+                type="button"
+                onClick={it.action}
+                className="mt-5 self-start text-[14px] font-semibold text-blue hover:underline"
+              >
                 {it.cta} →
               </button>
             ) : null}
@@ -250,9 +290,11 @@ function AudienceSections() {
                 Every feed gets its <Underlined>own cut</Underlined>
               </>
             }
-            sub="See exactly how a post will look on each network before it goes out, and change one version without touching the others."
+            sub="Write the post once, then tailor it for each network in the same composer. Every version keeps to that network's character limit."
           />
-          <PreviewWall />
+          <div className="mx-auto h-[570px] max-w-[860px] overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_50px_120px_-50px_rgba(16,24,40,0.45)]">
+            <ComposerShot />
+          </div>
         </section>
       ) : (
         <ConnectSection />
@@ -305,7 +347,17 @@ const ENDPOINTS: [string, string][] = [
   ["POST", "/api/v1/posts/:id/cancel"],
 ];
 
-function ConnectCard({ label, title, body, children }: { label: string; title: string; body: string; children: React.ReactNode }) {
+function ConnectCard({
+  label,
+  title,
+  body,
+  children,
+}: {
+  label: string;
+  title: string;
+  body: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className={`${card} flex flex-col p-6 md:p-7`}>
       <div>
@@ -330,7 +382,11 @@ function ConnectSection() {
         sub="Postbase speaks MCP and plain HTTPS. Pick whichever fits the way you work."
       />
       <div className="grid gap-4 md:grid-cols-2">
-        <ConnectCard label="Via Claude" title="Custom connector" body="Paste the URL, sign in to Postbase and choose a workspace. No keys to copy around.">
+        <ConnectCard
+          label="Via Claude"
+          title="Custom connector"
+          body="Paste the URL, sign in to Postbase and choose a workspace. No keys to copy around."
+        >
           <div className="rounded-xl border border-line bg-ground p-3.5">
             <div className="text-[12px] font-medium text-muted">Remote MCP server URL</div>
             <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-line bg-surface py-1.5 pl-3 pr-1.5">
@@ -340,7 +396,11 @@ function ConnectSection() {
           </div>
         </ConnectCard>
 
-        <ConnectCard label="Via Cursor" title="Any MCP client" body="Run the Postbase MCP server with an API key from your Developers page.">
+        <ConnectCard
+          label="Via Cursor"
+          title="Any MCP client"
+          body="Run the Postbase MCP server with an API key from your Developers page."
+        >
           <div className="rounded-xl border border-line bg-ground p-3.5">
             <div className="flex items-center gap-2 rounded-lg border border-line bg-surface py-1.5 pl-3 pr-1.5">
               <span className="font-mono text-[12.5px] text-muted">$</span>
@@ -350,7 +410,11 @@ function ConnectSection() {
           </div>
         </ConnectCard>
 
-        <ConnectCard label="Via REST" title="Public API" body="Four endpoints with the same rules as the dashboard. Call it from a script, a cron job or your own app.">
+        <ConnectCard
+          label="Via REST"
+          title="Public API"
+          body="Four endpoints with the same rules as the dashboard. Call it from a script, a cron job or your own app."
+        >
           <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-ground">
             {ENDPOINTS.map(([m, path]) => (
               <li key={m + path} className="flex items-center gap-3 px-3.5 py-2.5 font-mono text-[12.5px]">
@@ -361,7 +425,11 @@ function ConnectSection() {
           </ul>
         </ConnectCard>
 
-        <ConnectCard label="The tools" title="Four tools, nothing surprising" body="Your agent can't delete posts or change your account. Every key and connection can be revoked in one click.">
+        <ConnectCard
+          label="The tools"
+          title="Four tools, nothing surprising"
+          body="Your agent can't delete posts or change your account. Every key and connection can be revoked in one click."
+        >
           <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-ground">
             {TOOLS.map(([name, what]) => (
               <li key={name} className="flex items-baseline gap-3 px-3.5 py-2.5">
@@ -378,9 +446,23 @@ function ConnectSection() {
 
 // ── Features ─────────────────────────────────────────────────────────────
 
-function Feature({ label, title, body, mock, wide = false }: { label: string; title: string; body: string; mock: React.ReactNode; wide?: boolean }) {
+function Feature({
+  label,
+  title,
+  body,
+  mock,
+  wide = false,
+}: {
+  label: string;
+  title: string;
+  body: string;
+  mock: React.ReactNode;
+  wide?: boolean;
+}) {
   return (
-    <div className={`${card} grid content-start gap-6 p-6 md:p-7 ${wide ? "md:col-span-2 md:grid-cols-2 md:items-center" : ""}`}>
+    <div
+      className={`${card} grid content-start gap-6 p-6 md:p-7 ${wide ? "md:col-span-2 md:grid-cols-2 md:items-center" : ""}`}
+    >
       <div>
         <Pill>{label}</Pill>
         <h3 className="mt-4 font-display text-[22px] font-semibold tracking-[-0.01em] text-ink">{title}</h3>
@@ -403,10 +485,11 @@ function Features() {
       />
       <div className="grid gap-4 md:grid-cols-2">
         <Feature
-          label="Writing"
-          title="A version for each network"
-          body="Start from one post, then trim the LinkedIn cut or turn the X version into a thread."
-          mock={<VersionsMock />}
+          wide
+          label="Publishing"
+          title="Posts that actually go out"
+          body="Each post publishes at its time. If a network has a hiccup, Postbase retries. If something needs you, like a reconnect, it tells you."
+          mock={<DeliveryMock />}
         />
         <Feature
           label="AI agent"
@@ -415,13 +498,11 @@ function Features() {
           mock={<AgentMock />}
         />
         <Feature
-          wide
-          label="Publishing"
-          title="Posts that actually go out"
-          body="Each post publishes at its time. If a network has a hiccup, Postbase retries. If something needs you, like a reconnect, it tells you."
-          mock={<DeliveryMock />}
+          label="Media"
+          title="One media library"
+          body="Upload photos and video once, up to 1 GB each, and attach them to any post."
+          mock={<MediaMock />}
         />
-        <Feature label="Media" title="One media library" body="Upload photos and video once, up to 1 GB each, and attach them to any post." mock={<MediaMock />} />
         <Feature
           label="Teams"
           title="A workspace per brand"
@@ -429,7 +510,6 @@ function Features() {
           mock={<WorkspacesMock />}
         />
         <Feature
-          wide
           label="Analytics"
           title="See what's working"
           body="Impressions, engagement and clicks for the posts you publish, per network, in one view."
@@ -445,7 +525,10 @@ function Features() {
 function Channels() {
   return (
     <section id="channels" className={`${wrap} scroll-mt-28 pt-28 md:pt-36`}>
-      <Heading title="The networks you post to" sub="Connect an account once and publish to it from the composer, the calendar or your agent." />
+      <Heading
+        title="The networks you post to"
+        sub="Connect an account once and publish to it from the composer, the calendar or your agent."
+      />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
         {NETWORKS.map((n) => (
           <div key={n} className={`${card} flex flex-col items-center gap-3 px-3 py-6`}>
@@ -464,7 +547,10 @@ function Pricing() {
   const [annual, setAnnual] = useState(false);
   return (
     <section id="pricing" className={`${wrap} scroll-mt-28 pt-28 md:pt-36`}>
-      <Heading title="Simple pricing, seven days free" sub="Every plan includes the MCP server and every network. Or run Postbase yourself for free." />
+      <Heading
+        title="Simple pricing, seven days free"
+        sub="Every plan includes the MCP server and every network. Or run Postbase yourself for free."
+      />
       <div className="mb-8 flex justify-center">
         <div className="inline-flex items-center gap-1 rounded-full border border-line bg-surface p-1 text-[14px] shadow-sm">
           {[false, true].map((yr) => (
@@ -491,18 +577,35 @@ function Pricing() {
             <div key={id} className={`${card} flex flex-col p-6 ${popular ? "border-blue ring-1 ring-blue" : ""}`}>
               <div className="flex items-center gap-2">
                 <span className="font-display text-[16px] font-semibold text-ink">{p.name}</span>
-                {popular ? <span className="rounded-full bg-blue px-2 py-0.5 text-[11px] font-semibold text-on-blue">Popular</span> : null}
+                {popular ? (
+                  <span className="rounded-full bg-blue px-2 py-0.5 text-[11px] font-semibold text-on-blue">
+                    Popular
+                  </span>
+                ) : null}
               </div>
               <p className="mt-1 text-[14px] text-muted">{p.blurb}</p>
               <div className="mt-5 flex items-end gap-1">
-                <span className="font-display text-[42px] font-semibold leading-none tracking-[-0.035em] text-ink">${price}</span>
+                <span className="font-display text-[42px] font-semibold leading-none tracking-[-0.035em] text-ink">
+                  ${price}
+                </span>
                 <span className="pb-1 text-[14px] font-medium text-muted">/month</span>
                 {annual ? <span className="ml-auto pb-1 text-[12px] text-muted">billed yearly</span> : null}
               </div>
               <ul className="mb-7 mt-6 flex flex-col gap-2.5">
                 {p.features.map((f) => (
                   <li key={f} className="flex items-start gap-2.5 text-[14px] text-ink">
-                    <svg className="mt-0.5 shrink-0 text-blue" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <svg
+                      className="mt-0.5 shrink-0 text-blue"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                    >
                       <path d="m5 12 5 5L20 7" />
                     </svg>
                     {f}
@@ -524,7 +627,9 @@ function Pricing() {
       <div className={`${card} mt-4 flex flex-wrap items-center gap-4 px-6 py-5`}>
         <div>
           <div className="font-display text-[16px] font-semibold text-ink">Self-host for free</div>
-          <p className="mt-0.5 text-[14px] text-muted">The same product on your own servers, with your own platform API keys.</p>
+          <p className="mt-0.5 text-[14px] text-muted">
+            The same product on your own servers, with your own platform API keys.
+          </p>
         </div>
         <a
           href="https://github.com/postbasehq"
@@ -541,8 +646,14 @@ function Pricing() {
 // ── FAQ ──────────────────────────────────────────────────────────────────
 
 const FAQ: [string, string][] = [
-  ["Is Postbase open source?", "Yes. The code is on GitHub, and you can run it yourself for free with your own platform API keys. The hosted cloud is the paid, managed option."],
-  ["Is there a free trial?", "Yes. Every plan starts with 7 days free. A card is required, and you can cancel any time before the trial ends."],
+  [
+    "Is Postbase open source?",
+    "Yes. The code is on GitHub, and you can run it yourself for free with your own platform API keys. The hosted cloud is the paid, managed option.",
+  ],
+  [
+    "Is there a free trial?",
+    "Yes. Every plan starts with 7 days free. A card is required, and you can cancel any time before the trial ends.",
+  ],
   [
     "Can AI agents post through Postbase?",
     "Yes. Add Postbase to Claude as a custom connector, or run @postbasehq/mcp in Cursor or any MCP client. Agents can list your channels, create and schedule posts or threads, check the queue and cancel posts.",
@@ -560,7 +671,10 @@ const FAQ: [string, string][] = [
     "What happens if a post fails to publish?",
     "Postbase retries temporary failures automatically. If a post needs you, for example because an account has to be reconnected, you'll see it in your notifications.",
   ],
-  ["Can I manage several brands or clients?", "Yes. Each workspace has its own channels and team, and you can switch between them from the sidebar."],
+  [
+    "Can I manage several brands or clients?",
+    "Yes. Each workspace has its own channels and team, and you can switch between them from the sidebar.",
+  ],
 ];
 
 function Faq() {
@@ -600,9 +714,12 @@ function ClosingCta() {
   const { audience } = useAudience();
   return (
     <section className={`${wrap} py-28 md:py-36`}>
-      <div className={`${card} px-6 py-16 text-center md:py-20`}>
+      <div className={`${card} relative isolate px-6 py-16 text-center md:py-20`}>
+        <CtaDecor />
         <Swap k={audience}>
-          <h2 className="font-display text-[clamp(34px,5vw,60px)] font-semibold leading-[1.04] tracking-[-0.035em] text-ink">Ready to get started?</h2>
+          <h2 className="font-display text-[clamp(34px,5vw,60px)] font-semibold leading-[1.04] tracking-[-0.035em] text-ink">
+            Ready to get started?
+          </h2>
           <p className="mx-auto mt-4 max-w-[46ch] text-[17px] leading-relaxed text-muted">
             {audience === "creators"
               ? "Plan next week in one sitting and let Postbase handle the rest."

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { BrandTile } from "@/components/BrandTile";
 
 /*
@@ -147,39 +146,6 @@ export function DeliveryMock() {
           </li>
         ))}
       </ul>
-    </div>
-  );
-}
-
-/** Per-network versions: tabs over one post with each network's cut. */
-export function VersionsMock() {
-  const versions: Record<string, string> = {
-    x: "Your easy runs are too fast. If you can't say a full sentence, slow down. 🧵",
-    linkedin:
-      "Most runners I coach make the same mistake: their easy runs are too fast. Here's the simple test I use with every athlete…",
-    bluesky: "Hot take from a coach: your easy runs are too fast. The talk test fixes it.",
-  };
-  const [tab, setTab] = useState<keyof typeof versions>("x");
-  return (
-    <div className={frame}>
-      <div className="mb-2.5 flex gap-1">
-        {Object.keys(versions).map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => setTab(p)}
-            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium capitalize transition-colors ${
-              tab === p ? "bg-ink text-surface" : "text-muted hover:text-ink"
-            }`}
-          >
-            <BrandTile platform={p} size={14} radius={7} />
-            {p === "x" ? "X" : p === "linkedin" ? "LinkedIn" : "Bluesky"}
-          </button>
-        ))}
-      </div>
-      <p key={tab} className="swap-in min-h-[64px] rounded-lg border border-line bg-surface p-2.5 text-[12.5px] leading-relaxed text-ink">
-        {versions[tab]}
-      </p>
     </div>
   );
 }
