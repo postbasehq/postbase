@@ -375,3 +375,45 @@ body {
   font-size: 1.02rem;
   margin: 0.8rem 0 0.4rem;
 }
+
+/* Marketing: content swapping in when the creators/developers toggle changes. */
+@keyframes swap-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.swap-in {
+  animation: swap-in 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .swap-in {
+    animation: none;
+  }
+}
+
+/* Marketing site: always the light palette, even when the system is dark. */
+.light-only {
+  color-scheme: light;
+  --ground: #f8f9fa;
+  --surface: #ffffff;
+  --surface-2: #f1f3f4;
+  --ink: #202124;
+  --muted: #5f6368;
+  --line: #dadce0;
+  --blue: #3b5bdb;
+  --blue-ink: #2b44ae;
+  --blue-soft: #e8ecfc;
+  --on-blue: #ffffff;
+  --terra: #c0492f;
+  --amber: #b06a0f;
+  --amber-bright: #e3a82c;
+  --green: #188038;
+}
+body:has(.light-only) {
+  background: #f8f9fa;
+}

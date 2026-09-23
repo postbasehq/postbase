@@ -15,6 +15,8 @@ export function AppShell({
   action,
   children,
   className = "",
+  workspace = { name: "Berkway", sub: "5 channels" },
+  sidebar = true,
 }: {
   /** href of the nav item to highlight, e.g. "/composer". */
   active: string;
@@ -24,17 +26,17 @@ export function AppShell({
   action?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  /** Workspace shown in the switcher (and the signed-in user chip). */
+  workspace?: { name: string; sub: string; avatar?: string };
+  /** Hide the app sidebar when the screen needs the full width. */
+  sidebar?: boolean;
 }) {
   return (
     <div
-      className={`flex overflow-hidden rounded-2xl border border-line ${className}`}
-      style={{
-        background:
-          "radial-gradient(900px 460px at 8% -10%, color-mix(in oklab, var(--blue-soft) 70%, transparent), transparent 70%), radial-gradient(760px 520px at 102% 112%, color-mix(in oklab, var(--blue-soft) 44%, transparent), transparent 66%), var(--ground)",
-      }}
+      className={`flex h-full overflow-hidden rounded-2xl border border-line bg-ground ${className}`}
     >
       {/* sidebar — transparent, on the backdrop */}
-      <aside className="hidden w-[224px] shrink-0 flex-col py-1.5 lg:flex">
+      <aside className={`hidden w-[224px] shrink-0 flex-col py-1.5 ${sidebar ? "lg:flex" : ""}`}>
         <div className="flex h-14 shrink-0 items-center gap-2.5 px-5 font-display text-[18px] font-semibold tracking-[-0.02em] text-ink">
           <span className="size-[26px] shrink-0 overflow-hidden rounded-[24%] shadow-sm">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -58,12 +60,17 @@ export function AppShell({
         {/* workspace switcher */}
         <div className="px-3 py-1.5">
           <div className="flex items-center gap-2.5 rounded-lg border border-line bg-surface/60 px-3 py-2">
-            <span className="flex size-6 items-center justify-center rounded-md bg-blue font-display text-[11px] font-bold text-on-blue">
-              B
-            </span>
+            {workspace.avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={workspace.avatar} alt="" className="size-6 rounded-md object-cover" />
+            ) : (
+              <span className="flex size-6 items-center justify-center rounded-md bg-blue font-display text-[11px] font-bold text-on-blue">
+                {workspace.name.charAt(0)}
+              </span>
+            )}
             <div className="min-w-0 leading-tight">
-              <div className="truncate text-[12.5px] font-semibold text-ink">Berkway</div>
-              <div className="truncate text-[10.5px] text-muted">5 channels</div>
+              <div className="truncate text-[12.5px] font-semibold text-ink">{workspace.name}</div>
+              <div className="truncate text-[10.5px] text-muted">{workspace.sub}</div>
             </div>
             <svg className="ml-auto text-muted" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="m6 9 6 6 6-6" />
@@ -73,22 +80,10 @@ export function AppShell({
 
         <AppNav active={active} frozen />
 
-        {/* user chip */}
-        <div className="mt-auto px-3 pb-1 pt-2">
-          <div className="flex items-center gap-2.5 rounded-lg px-2 py-1.5">
-            <span className="flex size-7 items-center justify-center rounded-full bg-terra font-display text-[12px] font-semibold text-white">
-              S
-            </span>
-            <div className="min-w-0 leading-tight">
-              <div className="truncate text-[12.5px] font-semibold text-ink">Syed Shah</div>
-              <div className="truncate text-[10.5px] text-muted">Owner</div>
-            </div>
-          </div>
-        </div>
       </aside>
 
       {/* floating content panel */}
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col py-2.5 pl-2.5 lg:pl-0 lg:pr-2.5">
+      <div className={`flex min-h-0 min-w-0 flex-1 flex-col py-2.5 pl-2.5 pr-2.5 ${sidebar ? "lg:pl-0" : ""}`}>
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-[0_18px_50px_-20px_rgba(16,24,40,0.35)]">
           <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line/70 px-5">
             <span className="font-display text-[16px] font-semibold text-ink">{title}</span>
