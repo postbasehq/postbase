@@ -136,7 +136,7 @@ const HERO: Record<
         <Underlined>publish button</Underlined>.
       </>
     ),
-    sub: "Connect Claude, Cursor or your own code over MCP or the REST API. Your agent drafts and schedules posts, and every one lands in your calendar.",
+    sub: "Connect Claude, Cursor or your own code over MCP or the REST API. Every post your agent schedules lands in your calendar.",
     cta: { label: "Get an API key", href: "/login" },
     frame: "Connect your agent from the Developers page",
   },
