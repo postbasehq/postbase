@@ -32,14 +32,14 @@ const SCENARIOS: Scenario[] = [
   },
   {
     chip: "Queue a product drop",
-    prompt: "Queue the Kochere post for Wednesday at noon on Instagram, X and LinkedIn.",
+    prompt: "Queue the Kochere post for Wednesday at noon on X, LinkedIn and Bluesky.",
     tools: [
-      { name: "list_channels", detail: "Found Instagram, X and LinkedIn" },
+      { name: "list_channels", detail: "Found X, LinkedIn and Bluesky" },
       { name: "create_post", detail: "3 channels · Wed 12:00 PM" },
     ],
-    reply: "Done. Kochere goes out Wednesday at 12:00 PM on all three, with the photo attached.",
+    reply: "Done. Kochere goes out Wednesday at 12:00 PM on all three.",
     when: "Wed 12:00 PM",
-    channels: ["instagram", "x", "linkedin"],
+    channels: ["x", "linkedin", "bluesky"],
     post: COFFEE,
   },
   {
@@ -200,7 +200,7 @@ export function AgentChatDemo() {
                   handle={s.post.handle}
                   displayName={s.post.name}
                   thread={s.post.body.split(/\n{2,}/)}
-                  media={s.post.image ? [{ url: s.post.image, type: "image/jpeg" }] : []}
+                  media={[]}
                   metrics={null}
                   publishedAt={null}
                 />

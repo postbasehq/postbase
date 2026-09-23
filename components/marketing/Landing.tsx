@@ -5,7 +5,6 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { BrandTile, BRANDS } from "@/components/BrandTile";
 import { AudienceProvider, AudienceToggle, Swap, useAudience, type Audience } from "@/components/marketing/Audience";
-import { ComposerDemo } from "@/components/marketing/ComposerDemo";
 import { AgentChatDemo } from "@/components/marketing/AgentChatDemo";
 import { CalendarDemo } from "@/components/marketing/CalendarDemo";
 import { PreviewWall } from "@/components/marketing/PreviewWall";
@@ -118,7 +117,7 @@ const HERO: Record<Audience, { title: React.ReactNode; sub: string; cta: { label
     ),
     sub: "Postbase turns one post into the right version for every network, shows you exactly how each will look, and publishes them on time.",
     cta: { label: "Start your 7-day free trial", href: "/login" },
-    frame: "Write once, see every version",
+    frame: "Your whole week in one calendar",
   },
   developers: {
     title: (
@@ -171,7 +170,13 @@ function Hero() {
       <div id="product" className={`${card} mt-8 scroll-mt-28 p-3 text-left md:p-5`}>
         <Swap k={audience}>
           <h2 className="mb-4 mt-1 text-center font-display text-[18px] font-semibold text-ink md:mb-5 md:text-[22px]">{h.frame}</h2>
-          {audience === "creators" ? <ComposerDemo /> : <AgentChatDemo />}
+          {audience === "creators" ? (
+            <div className="h-[700px] overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_50px_120px_-50px_rgba(16,24,40,0.45)]">
+              <CalendarDemo productShot />
+            </div>
+          ) : (
+            <AgentChatDemo />
+          )}
         </Swap>
       </div>
     </section>
@@ -253,19 +258,17 @@ function AudienceSections() {
         <ConnectSection />
       )}
 
-      <section className={`${wrap} pt-28 md:pt-36`}>
-        <Heading
-          title={creators ? "Your whole week in one calendar" : "Every agent post lands in your calendar"}
-          sub={
-            creators
-              ? "Everything published, scheduled and still in draft. Click a post to check it before it goes out."
-              : "Posts your agent schedules sit next to yours, marked MCP. Review, edit or cancel them before they go out."
-          }
-        />
-        <div className="h-[600px] overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_50px_120px_-50px_rgba(16,24,40,0.4)]">
-          <CalendarDemo showAgent={!creators} />
-        </div>
-      </section>
+      {creators ? null : (
+        <section className={`${wrap} pt-28 md:pt-36`}>
+          <Heading
+            title="Every agent post lands in your calendar"
+            sub="Posts your agent schedules sit next to yours, marked MCP. Review, edit or cancel them before they go out."
+          />
+          <div className="h-[700px] overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_50px_120px_-50px_rgba(16,24,40,0.4)]">
+            <CalendarDemo showAgent />
+          </div>
+        </section>
+      )}
     </Swap>
   );
 }

@@ -33,7 +33,7 @@ const COLUMNS: { title: string; links: [string, string][] }[] = [
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-line pb-10 pt-14 text-[14px]">
+    <footer className="pb-10 pt-14 text-[14px]">
       <div className="mx-auto max-w-[1180px] px-5 md:px-8">
         <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
           <div>
@@ -63,7 +63,7 @@ export function SiteFooter() {
             </div>
           ))}
         </div>
-        <p className="mt-12 border-t border-line pt-6 text-[12px] leading-relaxed text-muted">
+        <p className="mt-12 text-[12px] leading-relaxed text-muted">
           © {new Date().getFullYear()} Berkway Group Limited, trading as Postbase. Registered in England and Wales.
           Postbase is a publishing tool and is not affiliated with X, LinkedIn, Instagram, TikTok, YouTube, Bluesky or
           Mastodon.

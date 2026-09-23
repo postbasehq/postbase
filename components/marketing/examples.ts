@@ -1,15 +1,10 @@
 // Example accounts and posts for the marketing demos. The people and brands are
-// fictional. Only the coffee post carries a photo (hotlinked from Unsplash, as
-// they recommend); everything else is text so the page isn't wall-to-wall stock.
-
-export const photo = (id: string, w = 1000, h = 750) =>
-  `https://images.unsplash.com/photo-${id}?w=${w}&h=${h}&fit=crop&auto=format&q=80`;
+// fictional, and the posts are text-only: no stock photos anywhere.
 
 export type Example = {
   name: string;
   handle: string;
   body: string;
-  image?: string;
   channels: string[];
 };
 
@@ -17,9 +12,8 @@ export const COFFEE: Example = {
   name: "Halden Coffee",
   handle: "haldencoffee",
   body:
-    "New on the shelf: Kochere, Ethiopia ☕️\n\nWashed process, light roast. In the cup it's apricot, black tea and a little bergamot.\n\nRoasted Monday, shipped Tuesday. 40 bags this week — link in bio.",
-  image: photo("1447933601403-0c6688de566e"),
-  channels: ["instagram", "x", "linkedin"],
+    "New on the shelf: Kochere, Ethiopia ☕️\n\nWashed process, light roast. In the cup it's apricot, black tea and a little bergamot.\n\nRoasted Monday, shipped Tuesday. 40 bags this week, and they go fast.",
+  channels: ["x", "linkedin", "bluesky"],
 };
 
 export const RUNNING: Example = {

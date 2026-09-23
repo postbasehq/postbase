@@ -15,7 +15,7 @@ export function SiteNav({ center }: { center?: React.ReactNode }) {
   return (
     <div className="sticky top-0 z-50">
       <PreviewBanner />
-      <nav className="border-b border-line bg-ground/85 backdrop-blur-md backdrop-saturate-150">
+      <nav className="bg-ground/85 backdrop-blur-md backdrop-saturate-150">
         <div className="mx-auto flex h-16 max-w-[1180px] items-center gap-4 md:grid md:grid-cols-[1fr_auto_1fr] md:gap-6 px-5 md:px-8">
           <div className="flex items-center gap-7">
             <Logo />

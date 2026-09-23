@@ -33,7 +33,12 @@ export function AppShell({
 }) {
   return (
     <div
-      className={`flex h-full overflow-hidden rounded-2xl border border-line bg-ground ${className}`}
+      className={`flex h-full overflow-hidden rounded-2xl border border-line ${className}`}
+      style={{
+        // Same backdrop as the real app layout.
+        background:
+          "radial-gradient(1000px 520px at 12% -8%, color-mix(in oklab, var(--blue-soft) 65%, transparent), transparent 70%), radial-gradient(900px 600px at 100% 110%, color-mix(in oklab, var(--blue-soft) 40%, transparent), transparent 65%), var(--ground)",
+      }}
     >
       {/* sidebar — transparent, on the backdrop */}
       <aside className={`hidden w-[224px] shrink-0 flex-col py-1.5 ${sidebar ? "lg:flex" : ""}`}>
@@ -85,9 +90,20 @@ export function AppShell({
       {/* floating content panel */}
       <div className={`flex min-h-0 min-w-0 flex-1 flex-col py-2.5 pl-2.5 pr-2.5 ${sidebar ? "lg:pl-0" : ""}`}>
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-[0_18px_50px_-20px_rgba(16,24,40,0.35)]">
-          <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line/70 px-5">
+          <header className="flex h-14 shrink-0 items-center gap-3 px-5">
             <span className="font-display text-[16px] font-semibold text-ink">{title}</span>
             <div className="ml-auto flex items-center gap-2.5">
+              {/* bell + theme toggle, as in the real header */}
+              <span className="flex size-8 items-center justify-center rounded-full text-muted" aria-hidden>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                </svg>
+              </span>
+              <span className="flex size-8 items-center justify-center rounded-full text-muted" aria-hidden>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+              </span>
               {action ?? (
                 <span className="rounded-full bg-blue px-3.5 py-1.5 font-display text-[13px] font-semibold text-on-blue shadow-sm">
                   New post
