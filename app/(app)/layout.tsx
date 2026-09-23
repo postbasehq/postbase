@@ -12,6 +12,7 @@ import { NotificationBell, type Notice } from "@/components/NotificationBell";
 import { OrgSwitcher } from "@/components/OrgSwitcher";
 import { TimezoneSync } from "@/components/TimezoneSync";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
+import { PreviewBanner } from "@/components/PreviewBanner";
 import { createClient } from "@/lib/supabase/server";
 import { getUserOrgs, getCurrentOrgId } from "@/lib/org";
 import { setActiveOrg } from "./team-actions";
@@ -80,52 +81,55 @@ export default async function AppLayout({
   }
 
   return (
-    <div
-      className="flex h-dvh overflow-hidden"
-      style={{
-        background:
-          "radial-gradient(1000px 520px at 12% -8%, color-mix(in oklab, var(--blue-soft) 65%, transparent), transparent 70%), radial-gradient(900px 600px at 100% 110%, color-mix(in oklab, var(--blue-soft) 40%, transparent), transparent 65%), var(--ground)",
-      }}
-    >
-      <TimezoneSync />
-      {onboarding.show ? <OnboardingWizard connected={onboarding.connected} /> : null}
-      {/* sidebar — transparent, sits on the backdrop (a layer behind the panel) */}
-      <aside className="hidden w-60 shrink-0 flex-col md:flex">
-        <div className="flex h-16 shrink-0 items-center px-5">
-          <Logo href="/calendar" />
-        </div>
-        <SidebarSwitcher>
-          <SidebarSearch />
-          <OrgSwitcher orgs={orgs} activeId={activeId} action={setActiveOrg} />
-          <AppNav />
-        </SidebarSwitcher>
-        <UserMenu name={displayName} email={email} avatarUrl={avatarUrl} />
-      </aside>
-
-      {/* floating content panel — inset from the edges, elevated over the backdrop */}
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col py-3 pl-0 pr-3">
-        <div className="flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_18px_50px_-20px_rgba(16,24,40,0.35)]">
-          <div className="flex min-w-0 flex-1 flex-col">
-            <header className="flex h-16 shrink-0 items-center gap-3 px-6">
-              <HeaderTitle />
-              <div className="ml-auto flex items-center gap-3">
-                <NotificationBell items={notices} />
-                <ThemeToggle />
-                <Link
-                  href="/composer"
-                  className="rounded-full bg-blue px-4 py-2 font-display text-sm font-semibold text-on-blue shadow-sm"
-                >
-                  New post
-                </Link>
-              </div>
-            </header>
-            <main className="min-h-0 flex-1 overflow-y-auto p-6">
-              <div className="mx-auto h-full w-full max-w-[1200px]">{children}</div>
-            </main>
+    <div className="flex h-dvh flex-col overflow-hidden">
+      <PreviewBanner />
+      <div
+        className="flex min-h-0 flex-1 overflow-hidden"
+        style={{
+          background:
+            "radial-gradient(1000px 520px at 12% -8%, color-mix(in oklab, var(--blue-soft) 65%, transparent), transparent 70%), radial-gradient(900px 600px at 100% 110%, color-mix(in oklab, var(--blue-soft) 40%, transparent), transparent 65%), var(--ground)",
+        }}
+      >
+        <TimezoneSync />
+        {onboarding.show ? <OnboardingWizard connected={onboarding.connected} /> : null}
+        {/* sidebar — transparent, sits on the backdrop (a layer behind the panel) */}
+        <aside className="hidden w-60 shrink-0 flex-col md:flex">
+          <div className="flex h-16 shrink-0 items-center px-5">
+            <Logo href="/calendar" />
           </div>
+          <SidebarSwitcher>
+            <SidebarSearch />
+            <OrgSwitcher orgs={orgs} activeId={activeId} action={setActiveOrg} />
+            <AppNav />
+          </SidebarSwitcher>
+          <UserMenu name={displayName} email={email} avatarUrl={avatarUrl} />
+        </aside>
 
-          {/* Agent proposed-post panel — splits the card on /agent when open */}
-          <AgentProposalDock />
+        {/* floating content panel — inset from the edges, elevated over the backdrop */}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col py-3 pl-0 pr-3">
+          <div className="flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_18px_50px_-20px_rgba(16,24,40,0.35)]">
+            <div className="flex min-w-0 flex-1 flex-col">
+              <header className="flex h-16 shrink-0 items-center gap-3 px-6">
+                <HeaderTitle />
+                <div className="ml-auto flex items-center gap-3">
+                  <NotificationBell items={notices} />
+                  <ThemeToggle />
+                  <Link
+                    href="/composer"
+                    className="rounded-full bg-blue px-4 py-2 font-display text-sm font-semibold text-on-blue shadow-sm"
+                  >
+                    New post
+                  </Link>
+                </div>
+              </header>
+              <main className="min-h-0 flex-1 overflow-y-auto p-6">
+                <div className="mx-auto h-full w-full max-w-[1200px]">{children}</div>
+              </main>
+            </div>
+
+            {/* Agent proposed-post panel — splits the card on /agent when open */}
+            <AgentProposalDock />
+          </div>
         </div>
       </div>
     </div>
