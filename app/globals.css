@@ -437,11 +437,3 @@ body:has(.light-only) {
     animation: none;
   }
 }
-
-/* Marketing: fine dot grid that fades out toward the edges. */
-.dot-grid {
-  background-image: radial-gradient(circle, #cfd3da 1px, transparent 1.3px);
-  background-size: 22px 22px;
-  -webkit-mask-image: radial-gradient(ellipse 60% 55% at 50% 40%, #000 35%, transparent 100%);
-  mask-image: radial-gradient(ellipse 60% 55% at 50% 40%, #000 35%, transparent 100%);
-}

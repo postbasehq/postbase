@@ -54,7 +54,6 @@ function Loop({ className = "" }: { className?: string }) {
 export function HeroDecor() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[760px] overflow-hidden">
-      <div className="dot-grid absolute inset-0" />
       <div className="absolute inset-y-0 left-1/2 hidden w-full max-w-[1440px] -translate-x-1/2 lg:block">
         {HERO_TILES.map((t) => (
           <FloatingTile key={t.p} t={t} />
@@ -77,7 +76,6 @@ export function CtaDecor() {
   ];
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[24px]">
-      <div className="dot-grid absolute inset-0" />
       <div className="absolute inset-0 hidden md:block">
         {tiles.map((t) => (
           <FloatingTile key={t.p} t={t} />
