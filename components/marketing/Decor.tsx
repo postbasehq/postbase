@@ -65,23 +65,3 @@ export function HeroDecor() {
     </div>
   );
 }
-
-/** Lighter version for the closing call-to-action card. */
-export function CtaDecor() {
-  const tiles: Tile[] = [
-    { p: "x", x: "6%", y: 40, tilt: -10, size: 38, dur: 7, delay: 0 },
-    { p: "linkedin", x: "12%", y: 170, tilt: 8, size: 34, dur: 8, delay: 1 },
-    { p: "bluesky", x: "86%", y: 50, tilt: 9, size: 38, dur: 7.5, delay: 0.5 },
-    { p: "mastodon", x: "90%", y: 180, tilt: -7, size: 32, dur: 6.8, delay: 1.5 },
-  ];
-  return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[24px]">
-      <div className="absolute inset-0 hidden md:block">
-        {tiles.map((t) => (
-          <FloatingTile key={t.p} t={t} />
-        ))}
-        <Sparkle className="absolute left-[76%] top-[28px] size-6 text-blue" />
-      </div>
-    </div>
-  );
-}

@@ -8,7 +8,8 @@ import { AudienceProvider, AudienceToggle, Swap, useAudience, type Audience } fr
 import { DevShot } from "@/components/marketing/DevShot";
 import { CalendarDemo } from "@/components/marketing/CalendarDemo";
 import { ComposerShot } from "@/components/marketing/ComposerShot";
-import { CtaDecor, HeroDecor } from "@/components/marketing/Decor";
+import { HeroDecor } from "@/components/marketing/Decor";
+import { CtaCollage } from "@/components/marketing/CtaCollage";
 import { PLAN_ORDER, PLANS } from "@/lib/plans";
 import { AgentMock, AnalyticsMock, DeliveryMock, MediaMock, WorkspacesMock } from "@/components/marketing/Mocks";
 
@@ -18,7 +19,7 @@ const MCP_URL = "https://www.postbase.so/api/mcp";
 export function Landing() {
   return (
     <AudienceProvider>
-      <SiteNav center={<NavToggle />} />
+      <SiteNav />
       <main>
         <Hero />
         <WhoFor />
@@ -30,12 +31,13 @@ export function Landing() {
         <ClosingCta />
       </main>
       <SiteFooter />
+      <FloatingToggle />
     </AudienceProvider>
   );
 }
 
-/** Compact switch in the nav, shown once the hero's switch scrolls away. */
-function NavToggle() {
+/** Floating switch pinned bottom-left, shown once the hero's switch scrolls away. */
+function FloatingToggle() {
   const [show, setShow] = useState(false);
   useEffect(() => {
     const el = document.getElementById("hero-toggle");
@@ -47,8 +49,8 @@ function NavToggle() {
   return (
     <div
       inert={!show}
-      className={`transition-[opacity,transform] duration-300 motion-reduce:transition-none ${
-        show ? "opacity-100" : "pointer-events-none -translate-y-1.5 opacity-0"
+      className={`fixed bottom-5 left-5 z-50 rounded-full border border-line bg-surface px-4 py-2.5 shadow-[0_12px_32px_-12px_rgba(16,24,40,0.35)] transition-[opacity,transform] duration-300 motion-reduce:transition-none ${
+        show ? "opacity-100" : "pointer-events-none translate-y-3 opacity-0"
       }`}
     >
       <AudienceToggle compact />
@@ -448,29 +450,46 @@ function ConnectSection() {
 
 // ── Features ─────────────────────────────────────────────────────────────
 
+// Solid Postbase brand colours for the feature cards (no tints).
+const TONES = {
+  blue: { bg: "#2b59d9", fg: "text-white", sub: "text-white/85", pill: "text-[#2b59d9]" },
+  amber: { bg: "#e3a72c", fg: "text-[#202124]", sub: "text-[#202124]/80", pill: "text-[#8a5a00]" },
+  red: { bg: "#d14a3e", fg: "text-white", sub: "text-white/85", pill: "text-[#d14a3e]" },
+} as const;
+
 function Feature({
   label,
   title,
   body,
   mock,
+  tone,
   wide = false,
 }: {
   label: string;
   title: string;
   body: string;
   mock: React.ReactNode;
+  tone: keyof typeof TONES;
   wide?: boolean;
 }) {
+  const t = TONES[tone];
   return (
     <div
-      className={`${card} grid content-start gap-6 p-6 md:p-7 ${wide ? "md:col-span-2 md:grid-cols-2 md:items-center" : ""}`}
+      className={`grid content-start gap-6 rounded-[24px] p-6 shadow-[0_24px_60px_-34px_rgba(16,24,40,0.55)] md:p-7 ${
+        wide ? "md:col-span-2 md:grid-cols-2 md:items-center" : ""
+      }`}
+      style={{ backgroundColor: t.bg }}
     >
       <div>
-        <Pill>{label}</Pill>
-        <h3 className="mt-4 font-display text-[22px] font-semibold tracking-[-0.01em] text-ink">{title}</h3>
-        <p className="mt-2 max-w-[44ch] text-[15px] leading-relaxed text-muted">{body}</p>
+        <span
+          className={`inline-block rounded-full bg-white px-2.5 py-1 font-display text-[10.5px] font-semibold uppercase tracking-[0.08em] ${t.pill}`}
+        >
+          {label}
+        </span>
+        <h3 className={`mt-4 font-display text-[22px] font-semibold tracking-[-0.01em] ${t.fg}`}>{title}</h3>
+        <p className={`mt-2 max-w-[44ch] text-[15px] leading-relaxed ${t.sub}`}>{body}</p>
       </div>
-      <div>{mock}</div>
+      <div className="[&>*]:shadow-[0_18px_40px_-20px_rgba(16,24,40,0.5)]">{mock}</div>
     </div>
   );
 }
@@ -488,30 +507,35 @@ function Features() {
       <div className="grid gap-4 md:grid-cols-2">
         <Feature
           wide
+          tone="blue"
           label="Publishing"
           title="Posts that actually go out"
           body="Each post publishes at its time. If a network has a hiccup, Postbase retries. If something needs you, like a reconnect, it tells you."
           mock={<DeliveryMock />}
         />
         <Feature
+          tone="amber"
           label="AI agent"
           title="Draft with the built-in agent"
           body="Ask for a post in plain words. The agent drafts it and asks before anything is scheduled."
           mock={<AgentMock />}
         />
         <Feature
+          tone="red"
           label="Media"
           title="One media library"
           body="Upload photos and video once, up to 1 GB each, and attach them to any post."
           mock={<MediaMock />}
         />
         <Feature
+          tone="blue"
           label="Teams"
           title="A workspace per brand"
           body="Keep each client's channels and people separate. Useful when you run accounts for several clients."
           mock={<WorkspacesMock />}
         />
         <Feature
+          tone="amber"
           label="Analytics"
           title="See what's working"
           body="Impressions, engagement and clicks for the posts you publish, per network, in one view."
@@ -525,19 +549,36 @@ function Features() {
 // ── Channels ─────────────────────────────────────────────────────────────
 
 function Channels() {
+  // One run is the networks repeated to fill a wide screen; the track holds two
+  // runs so shifting it by -50% loops seamlessly.
+  const networks = [...NETWORKS, "facebook", "threads"];
+  const run = [...networks, ...networks, ...networks];
   return (
-    <section id="channels" className={`${wrap} scroll-mt-28 pt-28 md:pt-36`}>
-      <Heading
-        title="The networks you post to"
-        sub="Connect an account once and publish to it from the composer, the calendar or your agent."
-      />
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-        {NETWORKS.map((n) => (
-          <div key={n} className={`${card} flex flex-col items-center gap-3 px-3 py-6`}>
-            <BrandTile platform={n} size={40} radius={11} />
-            <span className="text-[14px] font-semibold text-ink">{BRANDS[n]?.label}</span>
-          </div>
-        ))}
+    <section id="channels" className="scroll-mt-28 pt-28 md:pt-36">
+      <div className={wrap}>
+        <Heading
+          title="The networks you post to"
+          sub="Connect an account once and publish to it from the composer, the calendar or your agent."
+        />
+      </div>
+      <div
+        className="overflow-hidden py-4"
+        style={{
+          maskImage: "linear-gradient(to right, transparent, #000 12%, #000 88%, transparent)",
+          WebkitMaskImage: "linear-gradient(to right, transparent, #000 12%, #000 88%, transparent)",
+        }}
+      >
+        <div className="marquee flex w-max">
+          {[0, 1].map((half) => (
+            <div key={half} className="flex shrink-0 gap-5 pr-5 md:gap-7 md:pr-7" aria-hidden={half === 1}>
+              {run.map((n, i) => (
+                <span key={`${n}-${i}`} title={BRANDS[n]?.label} className="shrink-0">
+                  <BrandTile platform={n} size={112} radius={28} />
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -714,28 +755,52 @@ function Faq() {
 
 function ClosingCta() {
   const { audience } = useAudience();
+  const creators = audience === "creators";
   return (
     <section className={`${wrap} py-28 md:py-36`}>
-      <div className={`${card} relative isolate px-6 py-16 text-center md:py-20`}>
-        <CtaDecor />
-        <Swap k={audience}>
-          <h2 className="font-display text-[clamp(34px,5vw,60px)] font-semibold leading-[1.04] tracking-[-0.035em] text-ink">
-            Ready to get started?
-          </h2>
-          <p className="mx-auto mt-4 max-w-[46ch] text-[17px] leading-relaxed text-muted">
-            {audience === "creators"
-              ? "Plan next week in one sitting and let Postbase handle the rest."
-              : "Connect your agent in a minute and let it post the launch."}
-          </p>
-        </Swap>
-        <a
-          href="/login"
-          className="mt-8 inline-flex items-center gap-2 rounded-full bg-blue px-7 py-3.5 font-display text-[15px] font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
-        >
-          Start your 7-day free trial
-          <Arrow />
-        </a>
+      <div className="relative isolate overflow-hidden rounded-[32px] bg-[#2b59d9] px-7 py-14 shadow-[0_40px_100px_-40px_rgba(43,89,217,0.8)] md:px-14 md:py-20">
+        {/* brand shapes, echoing the logo's blocks */}
+        <span aria-hidden className="absolute -bottom-24 -left-16 -z-10 h-64 w-80 rotate-[-14deg] rounded-[64px] bg-[#d14a3e]" />
+        <span aria-hidden className="absolute -right-20 -top-24 -z-10 size-72 rounded-full bg-[#e3a72c]" />
+        <span aria-hidden className="absolute -bottom-16 right-[30%] -z-10 hidden size-40 rotate-12 rounded-[40px] bg-[#e3a72c] md:block" />
+
+        <div className="grid items-center gap-12 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+          <Swap k={audience}>
+            <h2 className="max-w-[12ch] font-display text-[clamp(40px,6vw,76px)] font-semibold leading-[0.98] tracking-[-0.04em] text-white">
+              Ready to get started?
+            </h2>
+            <p className="mt-5 max-w-[40ch] text-[18px] leading-relaxed text-white/85">
+              {creators
+                ? "Plan next week in one sitting. Postbase shapes each post for every network and publishes it on time."
+                : "Connect your agent in a minute. It drafts and schedules, and you see every post in your calendar."}
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <a
+                href="/login"
+                className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 font-display text-[15px] font-semibold text-[#2b59d9] shadow-[0_12px_30px_-12px_rgba(0,0,0,0.45)] transition-transform hover:-translate-y-0.5"
+              >
+                Start your 7-day free trial
+                <Arrow />
+              </a>
+              <a
+                href={creators ? "#pricing" : "https://docs.postbase.so/mcp/connect"}
+                className="rounded-full px-5 py-3.5 font-display text-[15px] font-semibold text-white ring-1 ring-white/50 transition-colors hover:ring-white"
+              >
+                {creators ? "See pricing" : "Read the docs"}
+              </a>
+            </div>
+            <p className="mt-4 text-[13px] text-white/70">Cancel anytime · or self-host for free</p>
+          </Swap>
+
+          {/* floating pieces of the real app */}
+          <div className="hidden md:block">
+            <Swap k={audience}>
+              <CtaCollage developers={!creators} />
+            </Swap>
+          </div>
+        </div>
       </div>
     </section>
   );
 }
+

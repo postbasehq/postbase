@@ -56,13 +56,13 @@ export function AudienceToggle({ compact = false }: { compact?: boolean }) {
         aria-checked={dev}
         aria-label="Show Postbase for developers"
         onClick={() => setAudience(dev ? "creators" : "developers")}
-        className={`relative shrink-0 rounded-full bg-blue shadow-inner focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue ${
+        className={`relative shrink-0 rounded-full transition-colors duration-300 ${dev ? "bg-[#d14a3e]" : "bg-blue"} ${compact ? "" : "shadow-inner"} focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue ${
           compact ? "h-5 w-9" : "h-7 w-12"
         }`}
       >
         <span
           aria-hidden
-          className={`absolute left-1 top-1 rounded-full bg-white shadow transition-transform duration-300 ease-[cubic-bezier(0.3,0.7,0.2,1)] motion-reduce:transition-none ${
+          className={`absolute left-1 top-1 rounded-full bg-white ${compact ? "" : "shadow"} transition-transform duration-300 ease-[cubic-bezier(0.3,0.7,0.2,1)] motion-reduce:transition-none ${
             compact ? "size-3" : "size-5"
           }`}
           style={{ transform: dev ? `translateX(${compact ? 16 : 20}px)` : "none" }}
