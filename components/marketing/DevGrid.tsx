@@ -15,7 +15,7 @@ import { Tile, shot } from "@/components/marketing/CreatorGrid";
 
 export function DevGrid() {
   return (
-    <div className="grid gap-5 md:grid-cols-5">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-5">
       <Tile
         className="md:col-span-3"
         tone="blue"
@@ -272,7 +272,7 @@ function DocsShot() {
             >
               <div className="font-display text-[14px] font-semibold text-ink">{title}</div>
               <div className="mt-1.5 flex items-center gap-2 font-mono text-[12px]">
-                <span className={`rounded px-1.5 py-0.5 font-semibold text-white ${method === "GET" ? "bg-green" : "bg-blue"}`}>{method}</span>
+                <span className={`rounded px-1.5 py-0.5 font-semibold text-white ${method === "GET" ? "bg-[#188038]" : "bg-[#2b59d9]"}`}>{method}</span>
                 <span className="truncate text-ink">{path}</span>
               </div>
             </div>

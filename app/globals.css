@@ -41,6 +41,7 @@
   --amber: #b06a0f;
   --amber-bright: #e3a82c;
   --green: #188038;
+  --tile-edge: transparent;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -59,6 +60,7 @@
     --amber: #e6b44f;
     --amber-bright: #e6b44f;
     --green: #81c995;
+    --tile-edge: rgba(255, 255, 255, 0.16);
   }
 }
 
@@ -77,6 +79,7 @@
   --amber: #e6b44f;
   --amber-bright: #e6b44f;
   --green: #81c995;
+  --tile-edge: rgba(255, 255, 255, 0.16);
 }
 
 html {
@@ -394,28 +397,6 @@ body {
   .swap-in {
     animation: none;
   }
-}
-
-/* Marketing site: always the light palette, even when the system is dark. */
-.light-only {
-  color-scheme: light;
-  --ground: #f8f9fa;
-  --surface: #ffffff;
-  --surface-2: #f1f3f4;
-  --ink: #202124;
-  --muted: #5f6368;
-  --line: #dadce0;
-  --blue: #3b5bdb;
-  --blue-ink: #2b44ae;
-  --blue-soft: #e8ecfc;
-  --on-blue: #ffffff;
-  --terra: #c0492f;
-  --amber: #b06a0f;
-  --amber-bright: #e3a82c;
-  --green: #188038;
-}
-body:has(.light-only) {
-  background: #f8f9fa;
 }
 
 /* Marketing: gentle bob for the floating network tiles. */

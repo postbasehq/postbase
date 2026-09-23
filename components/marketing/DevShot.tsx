@@ -334,7 +334,7 @@ export function DevShot() {
                       <span
                         ref={reg("copy")}
                         className={`shrink-0 rounded-lg px-2.5 py-1 text-[12px] font-semibold transition-colors ${
-                          copied ? "bg-green text-white" : "bg-surface text-ink ring-1 ring-line"
+                          copied ? "bg-[#188038] text-white" : "bg-surface text-ink ring-1 ring-line"
                         }`}
                       >
                         {copied ? "Copied" : "Copy"}

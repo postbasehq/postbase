@@ -10,6 +10,7 @@ import { CalendarDemo } from "@/components/marketing/CalendarDemo";
 import { CreatorGrid } from "@/components/marketing/CreatorGrid";
 import { DevGrid } from "@/components/marketing/DevGrid";
 import { HeroDecor } from "@/components/marketing/Decor";
+import { Fit } from "@/components/marketing/Fit";
 import { CtaCollage } from "@/components/marketing/CtaCollage";
 import { WhoFor as WhoForList } from "@/components/marketing/WhoFor";
 import { PLAN_ORDER, PLANS } from "@/lib/plans";
@@ -48,7 +49,7 @@ function FloatingToggle() {
   return (
     <div
       inert={!show}
-      className={`fixed bottom-5 left-5 z-50 rounded-full border border-line bg-surface px-4 py-2.5 shadow-[0_12px_32px_-12px_rgba(16,24,40,0.35)] transition-[opacity,transform] duration-300 motion-reduce:transition-none ${
+      className={`fixed bottom-4 left-4 z-50 rounded-full border max-sm:[zoom:0.88] sm:bottom-5 sm:left-5 border-line bg-surface px-4 py-2.5 shadow-[0_12px_32px_-12px_rgba(16,24,40,0.35)] transition-[opacity,transform] duration-300 motion-reduce:transition-none ${
         show ? "opacity-100" : "pointer-events-none translate-y-3 opacity-0"
       }`}
     >
@@ -186,13 +187,17 @@ function Hero() {
               {h.frame}
             </h2>
             {audience === "creators" ? (
-              <div className="h-[700px] overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_50px_120px_-50px_rgba(16,24,40,0.45)]">
-                <CalendarDemo productShot />
-              </div>
+              <Fit minWidth={860} height={700}>
+                <div className="h-full overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_50px_120px_-50px_rgba(16,24,40,0.45)]">
+                  <CalendarDemo productShot />
+                </div>
+              </Fit>
             ) : (
-              <div className="h-[700px] overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_50px_120px_-50px_rgba(16,24,40,0.45)]">
-              <DevShot />
-            </div>
+              <Fit minWidth={900} height={700}>
+                <div className="h-full overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_50px_120px_-50px_rgba(16,24,40,0.45)]">
+                  <DevShot />
+                </div>
+              </Fit>
             )}
           </Swap>
         </div>
@@ -264,7 +269,7 @@ function Channels() {
           WebkitMaskImage: "linear-gradient(to right, transparent, #000 12%, #000 88%, transparent)",
         }}
       >
-        <div className="marquee flex w-max">
+        <div className="marquee flex w-max max-sm:[zoom:0.7]">
           {[0, 1].map((half) => (
             <div key={half} className="flex shrink-0 gap-5 pr-5 md:gap-7 md:pr-7" aria-hidden={half === 1}>
               {run.map((n, i) => (
@@ -457,10 +462,10 @@ function ClosingCta() {
       <div className="relative isolate overflow-hidden rounded-[32px] bg-[#2b59d9] px-7 py-14 shadow-[0_40px_100px_-40px_rgba(43,89,217,0.8)] md:px-14 md:py-20">
         {/* brand shapes, echoing the logo's blocks */}
         <span aria-hidden className="absolute -bottom-24 -left-16 -z-10 h-64 w-80 rotate-[-14deg] rounded-[64px] bg-[#d14a3e]" />
-        <span aria-hidden className="absolute -right-20 -top-24 -z-10 size-72 rounded-full bg-[#e3a72c]" />
+        <span aria-hidden className="absolute -right-24 -top-28 -z-10 size-52 rounded-full bg-[#e3a72c] md:-right-20 md:-top-24 md:size-72" />
         <span aria-hidden className="absolute -bottom-16 right-[30%] -z-10 hidden size-40 rotate-12 rounded-[40px] bg-[#e3a72c] md:block" />
 
-        <div className="grid items-center gap-12 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+        <div className="grid grid-cols-[minmax(0,1fr)] items-center gap-12 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
           <Swap k={audience}>
             <h2 className="max-w-[12ch] font-display text-[clamp(40px,6vw,76px)] font-semibold leading-[0.98] tracking-[-0.04em] text-white">
               Ready to get started?
@@ -489,9 +494,11 @@ function ClosingCta() {
           </Swap>
 
           {/* floating pieces of the real app */}
-          <div className="hidden md:block">
+          <div>
             <Swap k={audience}>
-              <CtaCollage developers={!creators} />
+              <Fit minWidth={480} height={430}>
+                <CtaCollage developers={!creators} />
+              </Fit>
             </Swap>
           </div>
         </div>

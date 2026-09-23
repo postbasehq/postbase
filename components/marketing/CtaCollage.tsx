@@ -65,7 +65,7 @@ function NavCard({ active, offset = 0 }: { active: string; offset?: number }) {
 function Toast({ children }: { children: React.ReactNode }) {
   return (
     <div className="swap-in inline-flex items-center gap-2 rounded-full bg-ink px-3.5 py-2 text-[12px] font-medium text-surface shadow-[0_20px_40px_-16px_rgba(0,0,0,0.6)]">
-      <span className="flex size-4 items-center justify-center rounded-full bg-green text-[10px] font-bold text-white">✓</span>
+      <span className="flex size-4 items-center justify-center rounded-full bg-[#188038] text-[10px] font-bold text-white">✓</span>
       {children}
     </div>
   );
@@ -237,7 +237,7 @@ function DevelopersCollage() {
               </code>
               <span
                 className={`shrink-0 rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-colors ${
-                  copied ? "bg-green text-white" : "bg-blue text-on-blue"
+                  copied ? "bg-[#188038] text-white" : "bg-blue text-on-blue"
                 }`}
               >
                 {copied ? "Copied" : "Copy"}

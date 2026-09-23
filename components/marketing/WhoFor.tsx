@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { BrandTile } from "@/components/BrandTile";
 import { useAudience, type Audience } from "@/components/marketing/Audience";
+import { Fit } from "@/components/marketing/Fit";
 
 /*
  * "Who is Postbase for?" — a list of audiences on the left that auto-advances
@@ -82,7 +83,7 @@ export function WhoFor() {
   const p = PERSONAS[active];
 
   return (
-    <div ref={ref} className="grid items-center gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-14">
+    <div ref={ref} className="grid grid-cols-[minmax(0,1fr)] items-center gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-14">
       {/* audiences */}
       <ul className="flex flex-col">
         {PERSONAS.map((x, i) => {
@@ -116,8 +117,9 @@ export function WhoFor() {
                         setAudience(x.audience!);
                         document.getElementById("product")?.scrollIntoView({ behavior: "smooth" });
                       }}
-                      className="ml-[60px] mt-3 text-[14px] font-semibold hover:underline"
-                      style={{ color: x.color === "#e3a72c" ? "#8a5a00" : x.color }}
+                      className={`ml-[60px] mt-3 text-[14px] font-semibold hover:underline ${
+                        x.audience === "developers" ? "text-terra" : "text-blue-ink"
+                      }`}
                     >
                       {x.cta} →
                     </button>
@@ -143,13 +145,12 @@ export function WhoFor() {
       </ul>
 
       {/* product panel */}
-      <div
-        className="relative h-[440px] overflow-hidden rounded-[28px] transition-colors duration-500 md:h-[480px]"
-        style={{ backgroundColor: p.color }}
-      >
-        <div key={p.id} className="swap-in absolute inset-0 flex items-center justify-center p-6 md:p-10">
-          {p.panel}
-        </div>
+      <div className="overflow-hidden rounded-[28px] transition-colors duration-500" style={{ backgroundColor: p.color }}>
+        <Fit minWidth={540} height={480}>
+          <div key={p.id} className="swap-in flex h-full items-center justify-center p-10">
+            {p.panel}
+          </div>
+        </Fit>
       </div>
 
       <style>{`@keyframes who-progress{from{width:0%}to{width:100%}}`}</style>

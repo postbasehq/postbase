@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "./Logo";
 import { PreviewBanner } from "./PreviewBanner";
+import { ThemeToggle } from "./ThemeToggle";
 
 const LINKS = [
   { href: "/#features", label: "Features" },
@@ -28,6 +29,7 @@ export function SiteNav() {
             </div>
           </div>
           <div className="ml-auto flex items-center justify-end gap-3.5">
+            <ThemeToggle />
             <Link
               href="/login"
               className="hidden rounded-full border border-line px-4 py-2 font-display text-[14px] font-semibold text-ink transition-colors hover:border-ink sm:inline"

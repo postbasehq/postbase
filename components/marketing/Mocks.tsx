@@ -99,7 +99,7 @@ export function AgentMock() {
           <div className="overflow-hidden">
             {phase === "done" ? (
               <div className="flex items-center gap-2 border-b border-line bg-surface px-3 py-1.5">
-                <span className="flex size-4 items-center justify-center rounded-full bg-green text-[9px] font-bold text-white">✓</span>
+                <span className="flex size-4 items-center justify-center rounded-full bg-[#188038] text-[9px] font-bold text-white">✓</span>
                 <span className="text-[12px] font-medium text-ink">Draft ready — review it before scheduling</span>
               </div>
             ) : (

@@ -67,17 +67,17 @@ export function Tile({
       {layout === "top" ? (
         <>
           {copy}
-          <div className="-mb-20 -mr-24 mt-9">{children}</div>
+          <div className="-mb-20 -mr-24 mt-9 max-md:[zoom:0.6]">{children}</div>
         </>
       ) : layout === "bottom" ? (
         <>
-          <div className="-mr-24 -mt-16 mb-9">{children}</div>
+          <div className="-mr-24 -mt-16 mb-9 max-md:[zoom:0.6]">{children}</div>
           {copy}
         </>
       ) : (
-        <div className="grid items-center gap-10 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+        <div className="grid grid-cols-[minmax(0,1fr)] items-center gap-10 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
           {copy}
-          <div className="-mb-24 -mr-28 md:mt-6">{children}</div>
+          <div className="-mb-24 -mr-28 md:mt-6 max-md:[zoom:0.6]">{children}</div>
         </div>
       )}
     </div>
@@ -86,7 +86,7 @@ export function Tile({
 
 export function CreatorGrid() {
   return (
-    <div className="grid gap-5 md:grid-cols-5">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-5">
       <Tile
         className="md:col-span-3"
         tone="blue"

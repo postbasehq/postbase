@@ -343,7 +343,7 @@ export function CalendarDemo({
 
             {toast ? (
               <div className="swap-in pointer-events-none absolute bottom-3 right-3 z-40 inline-flex items-center gap-2 rounded-full bg-ink px-3.5 py-2 text-[12px] font-medium text-surface shadow-lg">
-                <span className="flex size-4 items-center justify-center rounded-full bg-green text-[10px] font-bold text-white">✓</span>
+                <span className="flex size-4 items-center justify-center rounded-full bg-[#188038] text-[10px] font-bold text-white">✓</span>
                 {toast}
               </div>
             ) : null}
