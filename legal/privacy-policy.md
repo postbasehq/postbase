@@ -36,8 +36,10 @@ own privacy policies.
 ## 3. Information we collect
 
 **You give us:**
-- **Account data** — name, email address, password (stored only as a secure hash), and
-  organisation/team details.
+- **Account data** — name, email address, and organisation/team details. You sign in with
+  an emailed link or with Google or GitHub, so we never ask for or store a password. If
+  you use Google or GitHub, we receive your name, email address and profile picture from
+  that provider.
 - **Connected channel data** — when you connect a social account, we receive and store
   the OAuth access/refresh tokens and basic profile identifiers for that account. **Tokens
   are encrypted at rest.**

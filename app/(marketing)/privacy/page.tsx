@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { LegalHeader } from "@/components/LegalHeader";
-import { SiteFooter } from "@/components/SiteFooter";
+import { LegalPage } from "@/components/LegalPage";
 import { renderLegal } from "@/lib/legal";
 
 export const metadata: Metadata = {
@@ -9,14 +8,12 @@ export const metadata: Metadata = {
 };
 
 export default async function PrivacyPage() {
-  const html = await renderLegal("privacy-policy.md");
+  const doc = await renderLegal("privacy-policy.md");
   return (
-    <>
-      <LegalHeader />
-      <main className="mx-auto max-w-[760px] px-6 py-13">
-        <article className="prose-legal" dangerouslySetInnerHTML={{ __html: html }} />
-      </main>
-      <SiteFooter />
-    </>
+    <LegalPage
+      doc={doc}
+      current="/privacy"
+      summary="What we collect when you use Postbase, why we collect it, who we share it with, and the choices you have."
+    />
   );
 }

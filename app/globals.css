@@ -148,56 +148,110 @@ body {
 }
 
 /* Rendered legal / prose content */
-.prose-legal h1 {
-  font-family: var(--font-display);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  font-size: clamp(30px, 4.5vw, 42px);
-  margin: 0 0 0.5rem;
+.prose-legal {
+  color: var(--ink);
+  font-size: 15.5px;
 }
 .prose-legal h2 {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 21px;
-  margin: 2.2rem 0 0.6rem;
+  font-size: 22px;
+  letter-spacing: -0.015em;
+  margin: 2.6rem 0 0.9rem;
+  padding-top: 2.2rem;
+  border-top: 1px solid var(--line);
+  scroll-margin-top: 130px;
+}
+.prose-legal > h2:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.prose-legal h2 a {
+  color: inherit;
+  text-decoration: none;
+}
+.prose-legal h2 a:hover::after {
+  content: " #";
+  color: var(--muted);
+}
+.prose-legal h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  margin: 1.6rem 0 0.5rem;
 }
 .prose-legal p {
-  margin: 0 0 0.9rem;
-  line-height: 1.65;
+  margin: 0 0 1rem;
+  line-height: 1.75;
+}
+.prose-legal ul,
+.prose-legal ol {
+  margin: 0 0 1.1rem;
+  padding-left: 1.3rem;
 }
 .prose-legal ul {
-  margin: 0 0 1rem;
-  padding-left: 1.4rem;
   list-style: disc;
 }
+.prose-legal ol {
+  list-style: decimal;
+}
 .prose-legal li {
-  margin: 0.35rem 0;
+  margin: 0.45rem 0;
+  line-height: 1.7;
+  padding-left: 0.2rem;
+}
+.prose-legal li::marker {
+  color: var(--blue);
 }
 .prose-legal strong {
   font-weight: 600;
 }
 .prose-legal table {
   width: 100%;
-  border-collapse: collapse;
-  margin: 0.5rem 0 1.25rem;
-  font-size: 0.9rem;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0.75rem 0 1.5rem;
+  font-size: 0.92rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
 }
 .prose-legal th,
 .prose-legal td {
   text-align: left;
-  padding: 0.7rem 0.9rem;
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--line);
   vertical-align: top;
+}
+.prose-legal tr:last-child td {
+  border-bottom: 0;
 }
 .prose-legal th {
   font-family: var(--font-display);
   font-weight: 600;
   color: var(--muted);
   font-size: 0.8rem;
+  background: var(--ground);
 }
 .prose-legal a {
   color: var(--blue-ink);
   text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose-legal blockquote {
+  margin: 0 0 1.1rem;
+  padding: 0.8rem 1.1rem;
+  border-left: 3px solid var(--blue);
+  background: var(--ground);
+  border-radius: 0 12px 12px 0;
+}
+.prose-legal code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.88em;
+  background: var(--surface-2);
+  padding: 0.1em 0.35em;
+  border-radius: 5px;
 }
 
 /* Postbase AI mark (twin spark) — animates only in the thinking state. */
