@@ -231,7 +231,7 @@ const PILL = {
 
 const X_CUT = "New on the shelf: Kochere, Ethiopia ☕️ Apricot, black tea and a little bergamot.";
 
-function CreatorsScene() {
+export function CreatorsScene() {
   const [typed, setTyped] = useState(X_CUT.length);
   const [pressed, setPressed] = useState(false);
   const [landed, setLanded] = useState(true);
@@ -365,7 +365,7 @@ function Pill({
 
 const INVITE = "lee@crumbandco.com";
 
-function TeamsScene() {
+export function TeamsScene() {
   const [ws, setWs] = useState(1);
   const [email, setEmail] = useState(INVITE.length);
   const [pressed, setPressed] = useState(false);
@@ -490,7 +490,7 @@ const DEV_CLIENTS: { id: string; name: string; code: string }[] = [
   { id: "claude-code", name: "Claude Code", code: "claude mcp add --transport http postbase …" },
 ];
 
-function DevelopersScene() {
+export function DevelopersScene() {
   const [client, setClient] = useState(0);
   const [connected, setConnected] = useState(true);
   const [ref] = useLoop<HTMLDivElement>(async (step) => {

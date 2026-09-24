@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { Logo } from "@/components/Logo";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { ClientLogo } from "@/components/ClientLogo";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId, getUserOrgs } from "@/lib/org";
 import { getClient } from "@/lib/oauth";
@@ -8,15 +9,40 @@ import { approveAuthorization, denyAuthorization } from "./actions";
 type SearchParams = Record<string, string | string[] | undefined>;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
+const SHELL = {
+  tone: "red" as const,
+  scene: "developers" as const,
+  title: "Give your agent a publish button.",
+  sub: "Connected tools can draft and schedule posts in your workspace. Everything they do shows up in your calendar.",
+};
+
 function ErrorCard({ title, detail }: { title: string; detail: string }) {
   return (
-    <main className="flex min-h-dvh items-center justify-center px-6 py-12">
-      <div className="w-full max-w-[420px] rounded-2xl border border-line bg-surface p-7 text-center shadow-md">
-        <h1 className="font-display text-lg font-semibold">{title}</h1>
-        <p className="mt-2 text-sm text-muted">{detail}</p>
+    <AuthShell {...SHELL}>
+      <div className="swap-in">
+        <span className="flex size-14 items-center justify-center rounded-2xl bg-[#d14a3e] text-white">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v4M12 16h.01" />
+          </svg>
+        </span>
+        <h1 className="mt-6 font-display text-[30px] font-semibold leading-tight tracking-[-0.025em] text-ink">{title}</h1>
+        <p className="mt-2.5 text-[15px] leading-relaxed text-muted">{detail}</p>
       </div>
-    </main>
+    </AuthShell>
   );
+}
+
+/** Match a client's registered name to one of our bundled tool logos. */
+function logoFor(name: string): string | null {
+  const n = name.toLowerCase();
+  if (n.includes("claude code")) return "claude-code";
+  if (n.includes("claude")) return "claude";
+  if (n.includes("cursor")) return "cursor";
+  if (n.includes("vs code") || n.includes("visual studio") || n.includes("copilot")) return "vscode";
+  if (n.includes("windsurf")) return "windsurf";
+  if (n.includes("gemini")) return "gemini";
+  return null;
 }
 
 export default async function AuthorizePage({
@@ -88,50 +114,77 @@ export default async function AuthorizePage({
     resource,
   };
 
+  const logo = logoFor(appName);
   return (
-    <main className="flex min-h-dvh items-center justify-center px-6 py-12">
-      <div className="w-full max-w-[440px] rounded-2xl border border-line bg-surface p-7 shadow-md">
-        <div className="flex items-center gap-2.5">
-          <Logo />
+    <AuthShell {...SHELL}>
+      <div className="swap-in">
+        {/* app ⇄ Postbase */}
+        <div className="flex items-center gap-3">
+          {logo ? (
+            <span className="rounded-2xl shadow-sm">
+              <ClientLogo id={logo} size={56} />
+            </span>
+          ) : (
+            <span className="flex size-14 items-center justify-center rounded-2xl bg-surface-2 font-display text-[22px] font-semibold text-ink ring-1 ring-line">
+              {appName.charAt(0).toUpperCase()}
+            </span>
+          )}
+          <span className="flex items-center gap-1 text-muted" aria-hidden>
+            <span className="size-1 rounded-full bg-line" />
+            <span className="size-1 rounded-full bg-line" />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M7 16 3 12l4-4M3 12h18M17 8l4 4-4 4" />
+            </svg>
+            <span className="size-1 rounded-full bg-line" />
+            <span className="size-1 rounded-full bg-line" />
+          </span>
+          <span className="size-14 overflow-hidden rounded-2xl shadow-sm">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/postbase-icon.png" alt="" className="size-full object-cover" />
+          </span>
         </div>
 
-        <h1 className="mt-6 font-display text-xl font-semibold tracking-[-0.01em]">
+        <h1 className="mt-6 font-display text-[28px] font-semibold leading-tight tracking-[-0.025em] text-ink">
           {appName} wants to connect to Postbase
         </h1>
-        <p className="mt-2 text-sm text-muted">
-          Signed in as <b className="text-ink">{user.email}</b>
-          {!multiOrg ? (
-            <>
-              {" "}
-              · workspace <b className="text-ink">{currentOrgName}</b>
-            </>
-          ) : null}
-        </p>
+        <div className="mt-4 flex items-center gap-2.5 rounded-xl border border-line bg-surface px-3.5 py-2.5">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-ink font-display text-[13px] font-semibold text-surface">
+            {(user.email ?? "?").charAt(0).toUpperCase()}
+          </span>
+          <div className="min-w-0 leading-tight">
+            <div className="truncate text-[13.5px] font-semibold text-ink">{user.email}</div>
+            {!multiOrg ? <div className="truncate text-[12px] text-muted">Workspace: {currentOrgName}</div> : null}
+          </div>
+        </div>
 
-        <div className="mt-5 rounded-xl border border-line bg-surface-2/40 p-4">
-          <p className="text-[13px] font-semibold text-ink">This will let {appName}:</p>
-          <ul className="mt-2.5 flex flex-col gap-2 text-[13px] text-muted">
+        <div className="mt-5">
+          <p className="text-[13px] font-semibold text-ink">{appName} will be able to:</p>
+          <ul className="mt-3 flex flex-col gap-2.5">
             {[
-              "See your connected channels",
-              "Draft and schedule posts",
-              "Review and cancel scheduled posts",
-            ].map((t) => (
-              <li key={t} className="flex items-start gap-2">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0 text-blue" aria-hidden>
-                  <path d="M20 6 9 17l-5-5" />
-                </svg>
+              ["See your connected channels", "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"],
+              ["Draft and schedule posts", "M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"],
+              ["Review and cancel scheduled posts", "M3 4h18v18H3zM16 2v4M8 2v4M3 10h18"],
+            ].map(([t, d]) => (
+              <li key={t} className="flex items-center gap-3 text-[14px] text-ink">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-surface-2 text-blue-ink">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d={d} />
+                  </svg>
+                </span>
                 {t}
               </li>
             ))}
           </ul>
         </div>
 
-        <p className="mt-4 text-xs text-muted">
-          It won't be able to change billing, team members, or your account settings. You can revoke
-          access anytime from Developers.
+        <p className="mt-5 flex items-start gap-2 text-[12.5px] leading-relaxed text-muted">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0" aria-hidden>
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+          It can&apos;t change billing, team members or your account settings. You can revoke access any time from Developers.
         </p>
 
-        <form className="mt-5">
+        <form className="mt-6">
           {Object.entries(hidden).map(([k, v]) => (
             <input key={k} type="hidden" name={k} value={v} />
           ))}
@@ -159,20 +212,20 @@ export default async function AuthorizePage({
             <button
               type="submit"
               formAction={denyAuthorization}
-              className="flex-1 rounded-full border border-line px-5 py-2.5 text-sm font-semibold text-muted transition hover:bg-surface-2 hover:text-ink"
+              className="h-12 flex-1 rounded-full border border-line bg-surface text-[15px] font-semibold text-ink shadow-sm transition hover:border-ink/30"
             >
               Deny
             </button>
             <button
               type="submit"
               formAction={approveAuthorization}
-              className="flex-1 rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
+              className="h-12 flex-1 rounded-full bg-blue font-display text-[15px] font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
             >
               Authorize
             </button>
           </div>
         </form>
       </div>
-    </main>
+    </AuthShell>
   );
 }
