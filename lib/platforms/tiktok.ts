@@ -9,11 +9,12 @@
  * to be verified in the TikTok app — so photos are served through our own domain
  * (see /api/media/proxy), not the Supabase domain, which can't be verified.
  *
- * Until the app passes TikTok's audit, posts are limited to SELF_ONLY (private)
- * visibility on the developer's own account.
+ * The app passed TikTok's Content Posting API audit (Sept 2026), so posts use the
+ * visibility the creator picks in the composer (clamped to their creator_info).
  *
- * Requires TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET, TIKTOK_CALLBACK_URL
- * (+ optional TIKTOK_PRIVACY_LEVEL, default SELF_ONLY).
+ * Requires TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET, TIKTOK_CALLBACK_URL.
+ * TIKTOK_PRIVACY_LEVEL is an optional hard cap (e.g. SELF_ONLY for a sandbox
+ * app); leave it unset in production.
  */
 
 import crypto from "node:crypto";

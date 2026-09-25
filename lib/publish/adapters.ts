@@ -356,10 +356,10 @@ async function publishToTikTok(input: PublishInput): Promise<PublishResult> {
 
   const caption = [input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean).join(" ");
 
-  // Privacy level: the user's choice, unless TIKTOK_PRIVACY_LEVEL is set — which
-  // acts as a hard override so the app can be capped to SELF_ONLY while it's
-  // unaudited (unset it after TikTok approves public posting). Clamped to what
-  // creator_info reports this creator can use (TikTok requires that query first).
+  // Privacy level: the user's choice, unless TIKTOK_PRIVACY_LEVEL is set — a hard
+  // cap for sandbox/unaudited apps (leave it unset in production now that the app
+  // is audited). Clamped to what creator_info reports this creator can use (TikTok
+  // requires that query first).
   const override = process.env.TIKTOK_PRIVACY_LEVEL?.trim();
   const preferred = override || input.tiktokPrivacyLevel || "SELF_ONLY";
   let privacy = preferred;

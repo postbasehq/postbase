@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Data deletion — Postbase",
+  title: "Data deletion",
 };
 
 export default async function DataDeletionPage({

@@ -14,7 +14,7 @@ const COLUMNS: { title: string; links: [string, string][] }[] = [
   {
     title: "Developers",
     links: [
-      ["For developers", "/?for=developers"],
+      ["For developers", "/developers"],
       ["MCP server", "https://docs.postbase.so/mcp/connect"],
       ["Docs", "https://docs.postbase.so"],
       ["GitHub", "https://github.com/postbasehq"],

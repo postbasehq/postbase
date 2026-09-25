@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/site";
 import { LegalPage } from "@/components/LegalPage";
 import { renderLegal } from "@/lib/legal";
 
 export const metadata: Metadata = {
-  title: "Terms of Service · Postbase",
-  description: "The terms for using Postbase.",
+  title: "Terms of Service",
+  ...pageMeta("/terms"),
+  description: "The terms for using Postbase, the social media scheduler run by Berkway Group Limited: accounts, connected channels, API and MCP access, billing and more.",
 };
 
 export default async function TermsPage() {

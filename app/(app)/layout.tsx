@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
@@ -16,6 +17,9 @@ import { PreviewBanner } from "@/components/PreviewBanner";
 import { createClient } from "@/lib/supabase/server";
 import { getUserOrgs, getCurrentOrgId } from "@/lib/org";
 import { setActiveOrg } from "./team-actions";
+
+// The signed-in app is never indexed (robots.txt also disallows these paths).
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default async function AppLayout({
   children,

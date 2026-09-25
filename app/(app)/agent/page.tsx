@@ -5,7 +5,7 @@ import { agentUsage, aiUsage } from "@/lib/billing-guard";
 import { higgsfieldConfigured } from "@/lib/higgsfield";
 import { listConversations } from "./history-actions";
 
-export const metadata = { title: "Agent · Postbase" };
+export const metadata = { title: "Agent" };
 
 export default async function AgentPage() {
   const supabase = await createClient();

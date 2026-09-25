@@ -160,8 +160,8 @@ export default async function AnalyticsPage() {
         <p className="mt-4 text-center text-xs text-muted">
           Metrics refresh within a few minutes of publishing, then periodically. Coverage varies:
           X is full; LinkedIn shows likes/comments only; Instagram insights unlock once the app’s
-          analytics permission is approved; TikTok metrics need public posts (after the app passes
-          TikTok’s audit — private/sandbox posts have no readable metrics).
+          analytics permission is approved; TikTok shows metrics for public posts only (posts set to
+          “Only me” have none).
         </p>
       ) : null}
     </div>

@@ -1,10 +1,13 @@
 import { SiteNav } from "@/components/SiteNav";
+import { pageMeta } from "@/lib/site";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PlanPicker } from "@/components/PlanPicker";
 
 export const metadata = {
-  title: "Pricing — Postbase",
-  description: "Simple plans for creators. Let your AI post for you.",
+  title: "Pricing",
+  description:
+    "Postbase plans start at $29/month with a 7-day free trial: every network, the MCP server and the API included. Or self-host the open-source version for free.",
+  ...pageMeta("/pricing"),
 };
 
 export default function PricingPage() {

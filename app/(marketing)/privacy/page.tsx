@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/site";
 import { LegalPage } from "@/components/LegalPage";
 import { renderLegal } from "@/lib/legal";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy · Postbase",
+  title: "Privacy Policy",
+  ...pageMeta("/privacy"),
   description: "How Postbase (Berkway Group Limited) handles your data.",
 };
 
