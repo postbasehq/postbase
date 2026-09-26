@@ -364,7 +364,7 @@ export const NETWORKS: Network[] = [
     blurb: "Videos and Shorts with a title and description.",
     facts: [
       { label: "Format", value: "Video uploads, including Shorts" },
-      { label: "Title", value: "The first line of your post, up to 100 characters" },
+      { label: "Title", value: "The first 100 characters of your post" },
       { label: "Description", value: "Up to 5,000 characters" },
       { label: "Upload", value: "Through YouTube's official Data API" },
     ],
@@ -386,7 +386,7 @@ export const NETWORKS: Network[] = [
       CONNECT_OAUTH("YouTube"),
       {
         title: "Upload and describe",
-        body: "Add your video in the composer. The first line becomes the title and the rest becomes the description.",
+        body: "Add your video in the composer and write the post. The start of it becomes the video title and the full text becomes the description.",
       },
       SCHEDULE_STEP,
     ],
@@ -397,7 +397,7 @@ export const NETWORKS: Network[] = [
       ],
       [
         "How does Postbase set the video title?",
-        "The first line of your post becomes the title (up to 100 characters) and the full text becomes the description.",
+        "The first 100 characters of your post become the title, and the full text becomes the description. Keep the opening line short and it works as a title on its own.",
       ],
       [
         "Can I post the same video to YouTube and TikTok?",

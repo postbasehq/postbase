@@ -3,6 +3,7 @@ import { SITE_URL } from "@/lib/site";
 import { LIVE_NETWORKS } from "@/lib/seo/networks";
 import { CLIENTS } from "@/lib/seo/clients";
 import { COMPETITORS } from "@/lib/seo/competitors";
+import { listPosts } from "@/lib/blog";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
@@ -22,6 +23,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...CLIENTS.map((c) => page(`/ai/${c.slug}`, 0.8, "monthly")),
     page("/alternatives", 0.6, "monthly"),
     ...COMPETITORS.map((c) => page(`/alternatives/${c.slug}`, 0.7, "monthly")),
+    page("/tools", 0.6, "monthly"),
+    page("/tools/character-counter", 0.8, "monthly"),
+    page("/tools/mcp-config", 0.7, "monthly"),
+    page("/blog", 0.8, "weekly"),
+    ...listPosts().map((p) => ({ ...page(`/blog/${p.slug}`, 0.7, "monthly"), lastModified: new Date(p.updated ?? p.date) })),
     page("/login", 0.5, "yearly"),
     page("/terms", 0.3, "yearly"),
     page("/privacy", 0.3, "yearly"),

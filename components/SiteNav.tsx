@@ -7,6 +7,7 @@ const LINKS = [
   { href: "/#features", label: "Features" },
   { href: "/#channels", label: "Channels" },
   { href: "/#pricing", label: "Pricing" },
+  { href: "/blog", label: "Blog" },
   { href: "https://docs.postbase.so", label: "Docs" },
   { href: "https://github.com/postbasehq", label: "GitHub" },
 ];

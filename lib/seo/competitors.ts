@@ -97,7 +97,7 @@ export const COMPETITORS: Competitor[] = [
       ],
       [
         "Can I use Claude with both?",
-        "Yes, both have an MCP server. Postbase also has its own agent inside the app, and posts your agent schedules appear on your Postbase calendar marked MCP.",
+        "Yes, both have an MCP server. Postbase also has its own agent inside the app, and posts your agent schedules appear on your Postbase calendar.",
       ],
       [
         "Can I import my Buffer queue?",

@@ -34,11 +34,15 @@ export function Fit({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [w, setW] = useState<number | null>(null);
+  const [phone, setPhone] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const measure = () => setW(el.clientWidth);
+    const measure = () => {
+      setW(el.clientWidth);
+      setPhone(window.innerWidth < 768);
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
@@ -46,8 +50,10 @@ export function Fit({
   }, []);
 
   const cw = w ?? minWidth;
-  // Phones only; tablets still get the whole shot as a miniature.
-  if (mobile && cw < Math.min(minWidth, 640)) {
+  // Phones only; tablets, and narrow columns on wide screens (a blog post),
+  // still get the whole shot as a miniature. The shots' own layout switches at
+  // the viewport's md breakpoint, so the close-up is only right below it.
+  if (mobile && phone && cw < Math.min(minWidth, 640)) {
     const zoom = Math.min(1, cw / mobile.viewWidth);
     return (
       <div ref={ref} className="w-full overflow-hidden rounded-2xl border border-line bg-surface" style={{ height: mobile.height * zoom }}>

@@ -254,6 +254,133 @@ body {
   border-radius: 5px;
 }
 
+/* Blog posts (content/blog/*.md) */
+.prose-blog {
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1.75;
+}
+.prose-blog h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 28px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin: 2.8rem 0 1rem;
+  scroll-margin-top: 130px;
+}
+.prose-blog > div:first-child > h2:first-child {
+  margin-top: 0;
+}
+.prose-blog h2 a {
+  color: inherit;
+  text-decoration: none;
+}
+.prose-blog h2 a:hover::after {
+  content: " #";
+  color: var(--muted);
+}
+.prose-blog h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  margin: 2rem 0 0.6rem;
+}
+.prose-blog p {
+  margin: 0 0 1.2rem;
+}
+.prose-blog ul,
+.prose-blog ol {
+  margin: 0 0 1.3rem;
+  padding-left: 1.3rem;
+}
+.prose-blog ul {
+  list-style: disc;
+}
+.prose-blog ol {
+  list-style: decimal;
+}
+.prose-blog li {
+  margin: 0.5rem 0;
+  padding-left: 0.2rem;
+}
+.prose-blog li::marker {
+  color: var(--blue);
+  font-weight: 600;
+}
+.prose-blog strong {
+  font-weight: 600;
+}
+.prose-blog a {
+  color: var(--blue-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.prose-blog blockquote {
+  margin: 0 0 1.3rem;
+  padding: 0.9rem 1.2rem;
+  border-left: 3px solid var(--blue);
+  background: var(--ground);
+  border-radius: 0 14px 14px 0;
+}
+.prose-blog blockquote p:last-child {
+  margin-bottom: 0;
+}
+.prose-blog :not(pre) > code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.86em;
+  background: var(--surface-2);
+  padding: 0.12em 0.4em;
+  border-radius: 6px;
+}
+.prose-blog pre {
+  margin: 0 0 1.4rem;
+  padding: 1rem 1.2rem;
+  overflow-x: auto;
+  background: #12141a;
+  color: #e6e8ef;
+  border-radius: 16px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+.prose-blog table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0.5rem 0 1.6rem;
+  font-size: 15px;
+  line-height: 1.55;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  display: block;
+  overflow-x: auto;
+}
+.prose-blog th,
+.prose-blog td {
+  text-align: left;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.prose-blog tr:last-child td {
+  border-bottom: 0;
+}
+.prose-blog th {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 13px;
+  background: var(--ground);
+}
+.prose-blog hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 2.4rem 0;
+}
+
 /* Postbase AI mark (twin spark) — animates only in the thinking state. */
 @keyframes agent-spark-pulse {
   0%,

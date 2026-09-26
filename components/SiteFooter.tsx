@@ -10,6 +10,8 @@ const COLUMNS: { title: string; links: [string, string][] }[] = [
       ["Pricing", "/#pricing"],
       ["FAQ", "/#faq"],
       ["Compare", "/alternatives"],
+      ["Blog", "/blog"],
+      ["Free tools", "/tools"],
     ],
   },
   {
