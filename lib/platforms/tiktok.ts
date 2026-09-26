@@ -292,7 +292,8 @@ export async function initPhotoPost(
     headers: authHeaders(accessToken),
     body: JSON.stringify({
       post_info: {
-        title: caption,
+        // Photo titles cap at 90 chars (longer fails the post), so the caption
+        // goes in description (up to 4000) and title is omitted — as Postiz does.
         description: caption,
         privacy_level: privacyLevel,
         disable_comment: options?.disableComment ?? false,

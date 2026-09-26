@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
-import { decryptJson } from "@/lib/crypto";
 import { creatorInfo, type TikTokTokens } from "@/lib/platforms/tiktok";
+import { freshTikTokTokens } from "@/lib/platforms/tiktok-session";
 
 export const runtime = "nodejs";
 
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
   const { data: channel } = await supabase
     .from("channels")
-    .select("id, encrypted_tokens")
+    .select("id, encrypted_tokens, token_expiry")
     .eq("id", channelId)
     .eq("org_id", orgId)
     .eq("platform", "tiktok")
@@ -41,15 +41,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
+  // TikTok access tokens last ~24h and are otherwise only refreshed when
+  // publishing, so refresh here too — and once more if TikTok rejects the token.
   let tokens: TikTokTokens;
   try {
-    tokens = decryptJson<TikTokTokens>(channel.encrypted_tokens);
+    tokens = await freshTikTokTokens(channel.id, channel.encrypted_tokens, channel.token_expiry);
   } catch {
-    return NextResponse.json({ error: "bad_credentials" }, { status: 500 });
+    return NextResponse.json({ error: "reconnect_required" }, { status: 401 });
   }
 
   try {
-    const info = await creatorInfo(tokens.access_token);
+    let info;
+    try {
+      info = await creatorInfo(tokens.access_token);
+    } catch {
+      // Re-read: the refresh above may have rotated the stored tokens.
+      const { data: latest } = await supabase
+        .from("channels")
+        .select("encrypted_tokens")
+        .eq("id", channel.id)
+        .single();
+      tokens = await freshTikTokTokens(channel.id, latest?.encrypted_tokens ?? channel.encrypted_tokens, null, {
+        force: true,
+      });
+      info = await creatorInfo(tokens.access_token);
+    }
     return NextResponse.json({
       nickname: info.creator_nickname ?? null,
       username: info.creator_username ?? null,

@@ -31,7 +31,6 @@ import {
   waitForPublish,
   creatorInfo,
   pickPrivacyLevel,
-  refreshTokens as ttRefreshTokens,
   TIKTOK_MAX_SINGLE_CHUNK,
   type TikTokTokens,
 } from "@/lib/platforms/tiktok";
@@ -51,6 +50,7 @@ import {
   MASTODON_MAX_CHARS,
   type MastodonTokens,
 } from "@/lib/platforms/mastodon";
+import { freshTikTokTokens } from "@/lib/platforms/tiktok-session";
 
 const MEDIA_BUCKET = "post-media";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -316,36 +316,9 @@ async function publishToTikTok(input: PublishInput): Promise<PublishResult> {
 
   let tokens: TikTokTokens;
   try {
-    tokens = decryptJson<TikTokTokens>(input.encryptedTokens);
-  } catch (e) {
-    return {
-      ok: false,
-      error: `Could not read stored TikTok credentials: ${e instanceof Error ? e.message : String(e)}`,
-    };
-  }
-
-  // Refresh an expiring access token when a refresh token is available.
-  if (isExpiring(input.tokenExpiry) && tokens.refresh_token) {
-    try {
-      const refreshed = await ttRefreshTokens(tokens.refresh_token);
-      tokens = {
-        ...tokens,
-        access_token: refreshed.access_token!,
-        refresh_token: refreshed.refresh_token ?? tokens.refresh_token,
-      };
-      const db = createAdminClient();
-      await db
-        .from("channels")
-        .update({
-          encrypted_tokens: encryptJson(tokens),
-          token_expiry: refreshed.expires_in
-            ? new Date(Date.now() + refreshed.expires_in * 1000).toISOString()
-            : null,
-        })
-        .eq("id", input.channelId);
-    } catch {
-      return { ok: false, error: "TikTok token expired — reconnect the channel." };
-    }
+    tokens = await freshTikTokTokens(input.channelId, input.encryptedTokens, input.tokenExpiry);
+  } catch {
+    return { ok: false, error: "TikTok token expired — reconnect the channel." };
   }
 
   const images = input.media.filter((m) => m.type.startsWith("image/"));
