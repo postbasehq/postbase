@@ -4,8 +4,43 @@ import {
   AI_IMAGE_LIMIT,
   AI_VIDEO_LIMIT,
   CHANNEL_LIMIT,
+  planIsActive,
   type PlanId,
 } from "@/lib/plans";
+
+/**
+ * Billing is enforced only once Stripe is fully configured (secret, webhook and
+ * at least the base price). Self-hosted installs without Stripe keep full access.
+ */
+export function billingEnforced(): boolean {
+  return Boolean(
+    process.env.STRIPE_SECRET_KEY &&
+      process.env.STRIPE_WEBHOOK_SECRET &&
+      process.env.STRIPE_PRICE_CREATOR_MONTH,
+  );
+}
+
+export type OrgAccessRow = { subscription_status: string | null; comped: boolean | null };
+
+/** Whether an org may schedule, publish and use AI: a live subscription (incl. trialing) or comped. */
+export function orgHasAccess(org: OrgAccessRow | null | undefined): boolean {
+  if (!billingEnforced()) return true;
+  if (!org) return false;
+  return Boolean(org.comped) || planIsActive(org.subscription_status);
+}
+
+export async function hasAccess(db: SupabaseClient, orgId: string): Promise<boolean> {
+  if (!billingEnforced()) return true;
+  const { data: org } = await db
+    .from("orgs")
+    .select("subscription_status, comped")
+    .eq("id", orgId)
+    .maybeSingle();
+  return orgHasAccess(org);
+}
+
+export const NO_PLAN_MESSAGE =
+  "This workspace has no active plan. Start your 7-day free trial on the Billing page to schedule posts.";
 
 /**
  * Whether the org has hit its plan's channel allowance. Used to gate connecting
@@ -56,6 +91,7 @@ export async function aiUsage(db: SupabaseClient, orgId: string): Promise<AiUsag
 
 /** Whether the org has hit its monthly quota for the given kind. */
 export async function atAiLimit(db: SupabaseClient, orgId: string, kind: AiKind): Promise<boolean> {
+  if (!(await hasAccess(db, orgId))) return true;
   const u = await aiUsage(db, orgId);
   return u[kind].remaining <= 0;
 }
@@ -78,6 +114,7 @@ export async function agentUsage(db: SupabaseClient, orgId: string): Promise<Age
 
 /** Whether the org has hit its monthly AI-agent message quota. */
 export async function atAgentLimit(db: SupabaseClient, orgId: string): Promise<boolean> {
+  if (!(await hasAccess(db, orgId))) return true;
   const u = await agentUsage(db, orgId);
   return u.remaining <= 0;
 }

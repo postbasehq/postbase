@@ -14,6 +14,8 @@ import { OrgSwitcher } from "@/components/OrgSwitcher";
 import { TimezoneSync } from "@/components/TimezoneSync";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { PreviewBanner } from "@/components/PreviewBanner";
+import { PlanGate } from "@/components/PlanGate";
+import { orgHasAccess, type OrgAccessRow } from "@/lib/billing-guard";
 import { createClient } from "@/lib/supabase/server";
 import { getUserOrgs, getCurrentOrgId } from "@/lib/org";
 import { setActiveOrg } from "./team-actions";
@@ -49,10 +51,15 @@ export default async function AppLayout({
   // First-run onboarding + notification bell data (both scoped by RLS).
   let onboarding: { show: boolean; connected: string[] } = { show: false, connected: [] };
   let notices: Notice[] = [];
+  let locked = false;
   if (activeId) {
     const supabase = await createClient();
     const [{ data: org }, { data: channels }, { data: failed }] = await Promise.all([
-      supabase.from("orgs").select("onboarded_at").eq("id", activeId).maybeSingle(),
+      supabase
+        .from("orgs")
+        .select("onboarded_at, subscription_status, comped")
+        .eq("id", activeId)
+        .maybeSingle(),
       supabase.from("channels").select("platform"),
       // Terminally-failed deliveries (no retry pending) become notifications.
       supabase
@@ -62,6 +69,7 @@ export default async function AppLayout({
         .is("next_attempt_at", null)
         .limit(20),
     ]);
+    locked = !orgHasAccess(org as OrgAccessRow | null);
     if (org && org.onboarded_at === null) {
       onboarding = {
         show: true,
@@ -127,7 +135,9 @@ export default async function AppLayout({
                 </div>
               </header>
               <main className="min-h-0 flex-1 overflow-y-auto p-6">
-                <div className="mx-auto h-full w-full max-w-[1200px]">{children}</div>
+                <div className="mx-auto h-full w-full max-w-[1200px]">
+                  <PlanGate locked={locked}>{children}</PlanGate>
+                </div>
               </main>
             </div>
 

@@ -5,7 +5,7 @@ import { getStripe, stripeConfigured, billingUrls } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentOrgId } from "@/lib/org";
-import { PLANS, priceId, type PlanId } from "@/lib/plans";
+import { PLANS, planIsActive, priceId, type PlanId } from "@/lib/plans";
 
 /** Get (or lazily create) the org's Stripe customer. */
 async function ensureCustomer(orgId: string, email: string): Promise<string> {
@@ -43,12 +43,25 @@ export async function startCheckout(formData: FormData) {
   const price = priceId(plan, interval);
   if (!PLANS[plan] || !price) throw new Error("That plan isn’t available.");
 
+  // Already subscribed: plan changes go through the portal, never a second subscription.
+  const { data: org } = await createAdminClient()
+    .from("orgs")
+    .select("stripe_subscription_id, subscription_status")
+    .eq("id", orgId)
+    .single();
+  if (org?.stripe_subscription_id && planIsActive(org.subscription_status)) {
+    return openPortal();
+  }
+
   const customer = await ensureCustomer(orgId, user.email);
+  // The 7-day trial is once per workspace: no trial if it has ever subscribed.
+  const previous = await getStripe().subscriptions.list({ customer, status: "all", limit: 1 });
+  const trial = previous.data.length === 0 ? { trial_period_days: 7 } : {};
   const session = await getStripe().checkout.sessions.create({
     mode: "subscription",
     customer,
     line_items: [{ price, quantity: 1 }],
-    subscription_data: { trial_period_days: 7, metadata: { org_id: orgId } },
+    subscription_data: { ...trial, metadata: { org_id: orgId } },
     success_url: billingUrls.success,
     cancel_url: billingUrls.cancel,
     allow_promotion_codes: true,

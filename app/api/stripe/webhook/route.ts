@@ -34,6 +34,7 @@ export async function POST(request: Request) {
       current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
     };
     if (plan) update.plan = plan;
+    else console.error(`[stripe] unknown price ${price} on subscription ${sub.id}; plan not updated`);
     const q = db.from("orgs").update(update);
     await (orgId ? q.eq("id", orgId) : q.eq("stripe_customer_id", customer));
   }
@@ -45,6 +46,9 @@ export async function POST(request: Request) {
       await syncSubscription(event.data.object);
       break;
     case "customer.subscription.deleted": {
+      // Ended for good (cancelled at period end, or unpaid). Access is derived
+      // from subscription_status, so "canceled" locks the workspace; plan drops
+      // to trial limits. A new checkout won't grant a second trial.
       const sub = event.data.object;
       const customer = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
       await db

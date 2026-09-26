@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { hasAccess, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
 
 /**
  * Core operations exposed to the public API / MCP server, always scoped to one org.
@@ -63,6 +64,7 @@ export async function createPost(orgId: string, input: CreatePostInput) {
 
   const scheduledAt = input.scheduledAt ? new Date(input.scheduledAt).toISOString() : null;
   const status = scheduledAt ? "scheduled" : "draft";
+  if (status === "scheduled" && !(await hasAccess(db, orgId))) throw new Error(NO_PLAN_MESSAGE);
 
   const { data: post, error } = await db
     .from("posts")

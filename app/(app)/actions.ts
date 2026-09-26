@@ -10,7 +10,7 @@ import { revokeAccess as revokeTikTokAccess, type TikTokTokens } from "@/lib/pla
 import { revokeAccess as revokeXAccess, type XTokens } from "@/lib/platforms/x";
 import { revokeAccess as revokeYouTubeAccess, type YouTubeTokens } from "@/lib/platforms/youtube";
 import { revokeAccess as revokeMetaAccess, type MetaTokens } from "@/lib/platforms/meta";
-import { atChannelLimit, atAiLimit } from "@/lib/billing-guard";
+import { atChannelLimit, atAiLimit, hasAccess, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
 import { connectBluesky } from "@/lib/platforms/bluesky";
 import { isRepeatEvery } from "@/lib/publish/repeat";
 import {
@@ -203,6 +203,8 @@ export async function createPost(formData: FormData) {
 
   const scheduledAt = scheduledRaw ? new Date(scheduledRaw).toISOString() : null;
   const status = scheduledAt ? "scheduled" : "draft";
+  // Drafts are always allowed; scheduling needs an active plan.
+  if (status === "scheduled" && !(await hasAccess(supabase, orgId))) throw new Error(NO_PLAN_MESSAGE);
 
   // Backstop against double-submits: if an identical post was created in this
   // workspace in the last 15s, treat this as a duplicate click and don't insert
@@ -306,6 +308,8 @@ export async function updatePost(formData: FormData) {
 
   const scheduledAt = scheduledRaw ? new Date(scheduledRaw).toISOString() : null;
   const status = scheduledAt ? "scheduled" : "draft";
+  // Drafts are always allowed; scheduling needs an active plan.
+  if (status === "scheduled" && !(await hasAccess(supabase, orgId))) throw new Error(NO_PLAN_MESSAGE);
 
   // Update the post, scoped to the org, and confirm it was ours.
   const { data: updated, error } = await supabase
@@ -390,6 +394,7 @@ export async function retryTarget(formData: FormData) {
 
   const targetId = String(formData.get("target_id") ?? "");
   if (!targetId) throw new Error("Missing target id.");
+  if (!(await hasAccess(supabase, orgId))) throw new Error(NO_PLAN_MESSAGE);
 
   // Reset the attempt counter and make it due now. RLS scopes this to the
   // caller's org, so a target id from another tenant hits nothing.
