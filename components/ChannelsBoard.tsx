@@ -6,6 +6,7 @@ import { BrandTile, BRANDS } from "@/components/BrandTile";
 import { BlueskyForm } from "@/components/BlueskyForm";
 import { DisconnectButton } from "@/components/DisconnectButton";
 import { Modal } from "@/components/Modal";
+import { COMING_SOON } from "@/lib/platforms/availability";
 
 type Account = {
   id: string;
@@ -139,6 +140,7 @@ export function ChannelsBoard({
     const brand = BRANDS[p.id];
     const accounts = accountsByPlatform[p.id] ?? [];
     const connected = accounts.length > 0;
+    const comingSoon = COMING_SOON[p.id];
     return (
       <div
         key={p.id}
@@ -152,6 +154,9 @@ export function ChannelsBoard({
               {brand?.label ?? p.id}
             </div>
             <p className="mt-0.5 text-[13px] leading-snug text-muted">{p.desc}</p>
+            {comingSoon && !connected ? (
+              <p className="mt-1 text-[12px] font-medium leading-snug text-muted">{comingSoon}</p>
+            ) : null}
           </div>
           {connected ? (
             <span className="ml-auto shrink-0">
@@ -208,17 +213,23 @@ export function ChannelsBoard({
         ) : null}
 
         <div className="mt-4 flex pt-1">
-          <button
-            type="button"
-            onClick={() => setActive(p.id)}
-            className={
-              connected
-                ? "ml-auto rounded-full border border-line px-4 py-2 text-sm font-semibold text-blue-ink transition-colors hover:bg-surface-2"
-                : "ml-auto rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
-            }
-          >
-            {connected ? "Add another" : `Connect ${brand?.label ?? ""}`.trim()}
-          </button>
+          {comingSoon && !connected ? (
+            <span className="ml-auto rounded-full border border-line px-4 py-2 text-sm font-semibold text-muted">
+              Coming soon
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setActive(p.id)}
+              className={
+                connected
+                  ? "ml-auto rounded-full border border-line px-4 py-2 text-sm font-semibold text-blue-ink transition-colors hover:bg-surface-2"
+                  : "ml-auto rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
+              }
+            >
+              {connected ? "Add another" : `Connect ${brand?.label ?? ""}`.trim()}
+            </button>
+          )}
         </div>
       </div>
     );

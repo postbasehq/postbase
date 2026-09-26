@@ -6,6 +6,7 @@ import { BrandTile, BRANDS } from "@/components/BrandTile";
 import { BlueskyForm } from "@/components/BlueskyForm";
 import { completeOnboarding } from "@/app/(app)/onboarding-actions";
 import { createApiKey } from "@/app/(app)/apikey-actions";
+import { COMING_SOON } from "@/lib/platforms/availability";
 
 const PLATFORMS = ["x", "linkedin", "instagram", "tiktok", "youtube"] as const;
 
@@ -212,15 +213,19 @@ function StepChannels({
         {PLATFORMS.map((p) => {
           const isConnected = connected.includes(p);
           const isBusy = busy === p;
+          const soon = !isConnected && Boolean(COMING_SOON[p]);
           return (
             <button
               key={p}
-              onClick={() => !isConnected && !isBusy && onConnect(p)}
-              disabled={isConnected || isBusy}
+              onClick={() => !isConnected && !isBusy && !soon && onConnect(p)}
+              disabled={isConnected || isBusy || soon}
+              title={soon ? COMING_SOON[p] : undefined}
               className={`group relative flex flex-col items-center gap-2.5 rounded-2xl border p-5 transition ${
                 isConnected
                   ? "border-green/40 bg-green/[0.06]"
-                  : "border-line bg-surface hover:border-blue hover:shadow-sm"
+                  : soon
+                    ? "cursor-not-allowed border-line bg-surface opacity-60"
+                    : "border-line bg-surface hover:border-blue hover:shadow-sm"
               }`}
             >
               <BrandTile platform={p} size={52} />
@@ -234,6 +239,8 @@ function StepChannels({
                 </span>
               ) : isBusy ? (
                 <span className="text-xs text-muted">Connecting…</span>
+              ) : soon ? (
+                <span className="text-xs text-muted">Coming soon</span>
               ) : (
                 <span className="text-xs text-muted group-hover:text-blue-ink">Connect</span>
               )}
