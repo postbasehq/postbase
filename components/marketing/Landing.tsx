@@ -11,10 +11,10 @@ import { CreatorGrid } from "@/components/marketing/CreatorGrid";
 import { DevGrid } from "@/components/marketing/DevGrid";
 import { HeroDecor } from "@/components/marketing/Decor";
 import { Fit } from "@/components/marketing/Fit";
-import { CtaCollage } from "@/components/marketing/CtaCollage";
 import { WhoFor as WhoForList } from "@/components/marketing/WhoFor";
 import { PLAN_ORDER, PLANS } from "@/lib/plans";
 import { FAQ } from "@/components/marketing/faq";
+import { Arrow, CtaBand, FaqList, Heading, Underlined, card, wrap } from "@/components/marketing/ui";
 
 const NETWORKS = ["x", "linkedin", "instagram", "tiktok", "youtube", "bluesky", "mastodon"];
 
@@ -56,59 +56,6 @@ function FloatingToggle() {
     >
       <AudienceToggle compact />
     </div>
-  );
-}
-
-// ── Shared pieces ────────────────────────────────────────────────────────
-
-const wrap = "mx-auto max-w-[1180px] px-5 md:px-8";
-const card = "rounded-[24px] border border-line bg-surface";
-
-function Heading({ title, sub }: { title: React.ReactNode; sub?: React.ReactNode }) {
-  return (
-    <div className="mx-auto mb-12 max-w-[760px] text-center md:mb-14">
-      <h2 className="font-display text-[clamp(32px,4.4vw,52px)] font-semibold leading-[1.08] tracking-[-0.03em] text-ink text-balance">
-        {title}
-      </h2>
-      {sub ? (
-        <p className="mx-auto mt-4 max-w-[56ch] text-[17px] leading-relaxed text-muted text-balance">{sub}</p>
-      ) : null}
-    </div>
-  );
-}
-
-/** Hand-drawn stroke under a highlighted word. */
-function Underlined({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="relative inline-block text-blue">
-      {children}
-      <svg
-        viewBox="0 0 300 16"
-        preserveAspectRatio="none"
-        className="absolute -bottom-[0.14em] left-[2%] h-[0.16em] w-[96%] text-blue"
-        aria-hidden
-      >
-        <path d="M3 11C60 5 150 2 297 8" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
-      </svg>
-    </span>
-  );
-}
-
-function Arrow() {
-  return (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M5 12h14M13 6l6 6-6 6" />
-    </svg>
   );
 }
 
@@ -395,29 +342,7 @@ function Faq() {
   return (
     <section id="faq" className={`${wrap} scroll-mt-28 pt-28 md:pt-36`}>
       <Heading title="Frequently asked questions" />
-      <div className="mx-auto max-w-[820px] divide-y divide-line border-y border-line">
-        {FAQ.map(([q, a]) => (
-          <details key={q} className="group py-5">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-6 font-display text-[17px] font-semibold text-ink [&::-webkit-details-marker]:hidden">
-              {q}
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                className="shrink-0 text-muted transition-transform duration-200 group-open:rotate-45"
-                aria-hidden
-              >
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-            </summary>
-            <p className="mt-3 max-w-[68ch] text-[15px] leading-relaxed text-muted">{a}</p>
-          </details>
-        ))}
-      </div>
+      <FaqList items={FAQ} />
     </section>
   );
 }
@@ -429,51 +354,17 @@ function ClosingCta() {
   const creators = audience === "creators";
   return (
     <section className={`${wrap} py-28 md:py-36`}>
-      <div className="relative isolate overflow-hidden rounded-[32px] bg-[#2b59d9] px-7 py-14 shadow-[0_40px_100px_-40px_rgba(43,89,217,0.8)] md:px-14 md:py-20">
-        {/* brand shapes, echoing the logo's blocks */}
-        <span aria-hidden className="absolute -bottom-24 -left-16 -z-10 h-64 w-80 rotate-[-14deg] rounded-[64px] bg-[#d14a3e]" />
-        <span aria-hidden className="absolute -right-24 -top-28 -z-10 size-52 rounded-full bg-[#e3a72c] md:-right-20 md:-top-24 md:size-72" />
-        <span aria-hidden className="absolute -bottom-16 right-[30%] -z-10 hidden size-40 rotate-12 rounded-[40px] bg-[#e3a72c] md:block" />
-
-        <div className="grid grid-cols-[minmax(0,1fr)] items-center gap-12 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-          <Swap k={audience}>
-            <h2 className="max-w-[12ch] font-display text-[clamp(40px,6vw,76px)] font-semibold leading-[0.98] tracking-[-0.04em] text-white">
-              Ready to get started?
-            </h2>
-            <p className="mt-5 max-w-[40ch] text-[18px] leading-relaxed text-white/85">
-              {creators
-                ? "Plan next week in one sitting. Postbase shapes each post for every network and publishes it on time."
-                : "Connect your agent in a minute. It drafts and schedules, and you see every post in your calendar."}
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <a
-                href="/login"
-                className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 font-display text-[15px] font-semibold text-[#2b59d9] shadow-[0_12px_30px_-12px_rgba(0,0,0,0.45)] transition-transform hover:-translate-y-0.5"
-              >
-                Start your 7-day free trial
-                <Arrow />
-              </a>
-              <a
-                href={creators ? "#pricing" : "https://docs.postbase.so/mcp/connect"}
-                className="rounded-full px-5 py-3.5 font-display text-[15px] font-semibold text-white ring-1 ring-white/50 transition-colors hover:ring-white"
-              >
-                {creators ? "See pricing" : "Read the docs"}
-              </a>
-            </div>
-            <p className="mt-4 text-[13px] text-white/70">Cancel anytime · or self-host for free</p>
-          </Swap>
-
-          {/* floating pieces of the real app */}
-          <div>
-            <Swap k={audience}>
-              <Fit minWidth={480} height={430}>
-                <CtaCollage developers={!creators} />
-              </Fit>
-            </Swap>
-          </div>
-        </div>
-      </div>
+      <Swap k={audience}>
+        <CtaBand
+          developers={!creators}
+          body={
+            creators
+              ? "Plan next week in one sitting. Postbase shapes each post for every network and publishes it on time."
+              : "Connect your agent in a minute. It drafts and schedules, and you see every post in your calendar."
+          }
+          secondary={creators ? { label: "See pricing", href: "#pricing" } : { label: "Read the docs", href: "https://docs.postbase.so/mcp/connect" }}
+        />
+      </Swap>
     </section>
   );
 }
-

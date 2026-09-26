@@ -120,7 +120,7 @@ const REMOTE: Record<string, { language: string; code: string; instruction: stri
 };
 const LOOP_CLIENTS = ["claude", "claude-code", "cursor", "windsurf", "gemini"];
 
-function McpShot() {
+export function McpShot() {
   const [client, setClient] = useState("claude");
   const [ref] = useLoop<HTMLDivElement>(async (step) => {
     for (const c of LOOP_CLIENTS) {
@@ -193,7 +193,7 @@ const TOOLS = [
   { name: "cancel_post", desc: "Pull a scheduled post before it goes out." },
 ];
 
-function ToolsShot() {
+export function ToolsShot() {
   const [hot, setHot] = useState(1);
   const [ref] = useLoop<HTMLDivElement>(async (step) => {
     for (let i = 0; i < TOOLS.length; i++) {
@@ -294,7 +294,7 @@ const APPS: AppRow[] = [
   { name: "Cursor", sub: "Halden Coffee · connected 14 Sep 2026 · last used 22 Sep 2026" },
 ];
 
-function RevokeShot() {
+export function RevokeShot() {
   const [dialog, setDialog] = useState(false);
   const [revoked, setRevoked] = useState(false);
   const [pressed, setPressed] = useState(false);

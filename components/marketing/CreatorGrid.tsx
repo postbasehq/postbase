@@ -282,10 +282,16 @@ function MonthShot() {
 
 // ── AI agent: one sentence → a proposed post → scheduled ─────────────────
 
-const AGENT_PROMPT = "Announce our new Kochere roast on X, LinkedIn and Bluesky for Wednesday at noon.";
+const DEFAULT_PROMPT = "Announce our new Kochere roast on X, LinkedIn and Bluesky for Wednesday at noon.";
 type AgentPhase = "typing" | "channels" | "drafting" | "proposed" | "scheduled";
 
-function AgentShot() {
+/** The /agent chat. SEO pages pass their own prompt, channels and reply. */
+export function AgentShot({
+  prompt: AGENT_PROMPT = DEFAULT_PROMPT,
+  channels = ["x", "linkedin", "bluesky"],
+  reply = "Here's a post for all three, with a shorter cut for X. It's set for Wednesday at 12:00.",
+  when = "Wed 23 Sep, 12:00",
+}: { prompt?: string; channels?: string[]; reply?: string; when?: string } = {}) {
   const [typed, setTyped] = useState(AGENT_PROMPT.length);
   const [phase, setPhase] = useState<AgentPhase>("proposed");
   const [pressed, setPressed] = useState(false);
@@ -344,7 +350,7 @@ function AgentShot() {
         {done ? (
           <div className="swap-in flex flex-col gap-3">
             <p className="text-[15px] leading-relaxed text-ink">
-              Here&apos;s a post for all three, with a shorter cut for X. It&apos;s set for Wednesday at 12:00.
+              {reply}
             </p>
             {phase === "proposed" ? (
               <div style={BRAND_GLASS.style} className={`flex items-center gap-3.5 rounded-2xl px-4 py-3.5 ${BRAND_GLASS.className}`}>
@@ -352,13 +358,15 @@ function AgentShot() {
                   <div className="font-display text-[15px] font-semibold text-ink">Proposed post</div>
                   <div className="mt-1.5 flex items-center gap-2">
                     <span className="flex -space-x-1">
-                      {["x", "linkedin", "bluesky"].map((c) => (
+                      {channels.map((c) => (
                         <span key={c} className="rounded-full ring-2 ring-surface">
                           <BrandTile platform={c} size={20} radius={10} />
                         </span>
                       ))}
                     </span>
-                    <span className="text-[13px] text-muted">3 channels · Wed 23 Sep, 12:00</span>
+                    <span className="text-[13px] text-muted">
+                      {channels.length} channel{channels.length === 1 ? "" : "s"} · {when}
+                    </span>
                   </div>
                 </div>
                 <span

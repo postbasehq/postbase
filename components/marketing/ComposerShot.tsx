@@ -12,15 +12,17 @@ import { COFFEE } from "@/components/marketing/examples";
  * bar. It loops: a cursor opens each channel's tab and types that network's cut.
  */
 
-type Tab = "base" | "x" | "linkedin" | "bluesky";
+type Tab = string; // "base" or a channel's platform id
 
-const CHANNELS: { id: Exclude<Tab, "base">; limit: number }[] = [
+type Channel = { id: string; limit: number };
+
+const DEFAULT_CHANNELS: Channel[] = [
   { id: "x", limit: 280 },
   { id: "linkedin", limit: 3000 },
   { id: "bluesky", limit: 300 },
 ];
 
-const VARIANTS: Record<Exclude<Tab, "base">, string> = {
+const DEFAULT_VARIANTS: Record<string, string> = {
   x: "New on the shelf: Kochere, Ethiopia ☕️ Apricot, black tea and a little bergamot. 40 bags, roasted Monday.",
   linkedin:
     "We've added a new single origin: Kochere, from southern Ethiopia.\n\nIt's a washed, light roast with apricot, black tea and bergamot in the cup. We roast in small batches every Monday, so there are 40 bags this week.",
@@ -29,7 +31,20 @@ const VARIANTS: Record<Exclude<Tab, "base">, string> = {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export function ComposerShot() {
+/**
+ * `channels` / `variants` point the loop at other networks (the SEO pages focus
+ * one network); only channels with a variant get typed. `media` shows an
+ * attached video or images above the editor.
+ */
+export function ComposerShot({
+  channels: CHANNELS = DEFAULT_CHANNELS,
+  variants: VARIANTS = DEFAULT_VARIANTS,
+  media,
+}: {
+  channels?: Channel[];
+  variants?: Record<string, string>;
+  media?: "video" | "images";
+} = {}) {
   const rootRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Partial<Record<Tab, HTMLSpanElement | null>>>({});
   const [inView, setInView] = useState(false);
@@ -52,7 +67,7 @@ export function ComposerShot() {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setTyped({ ...VARIANTS });
-      setTab("x");
+      setTab(Object.keys(VARIANTS)[0] ?? "base");
       return;
     }
     if (!inView) return;
@@ -80,6 +95,7 @@ export function ComposerShot() {
           setCursor((c) => ({ ...c, visible: false }));
           await step(1400);
           for (const { id } of CHANNELS) {
+            if (!VARIANTS[id]) continue;
             aim(id);
             await step(750);
             setCursor((c) => ({ ...c, down: true }));
@@ -108,6 +124,8 @@ export function ComposerShot() {
     return () => {
       cancelled = true;
     };
+    // CHANNELS/VARIANTS are fixed per mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inView]);
 
   const channel = CHANNELS.find((c) => c.id === tab);
@@ -126,7 +144,7 @@ export function ComposerShot() {
                 <BrandTile platform={c.id} size={34} radius={17} />
               </span>
             ))}
-            {["instagram", "tiktok"].map((p) => (
+            {["instagram", "tiktok", "youtube", "x", "linkedin"].filter((p) => !CHANNELS.some((c) => c.id === p)).slice(0, 2).map((p) => (
               <span key={p} className="rounded-full opacity-45">
                 <BrandTile platform={p} size={34} radius={17} />
               </span>
@@ -163,11 +181,13 @@ export function ComposerShot() {
             ))}
           </div>
 
+          {media ? <MediaStrip kind={media} /> : null}
+
           {/* editor */}
           <div className="mt-4 rounded-xl border border-line bg-ground p-3.5">
             <p className="min-h-[120px] whitespace-pre-line text-[15px] leading-relaxed text-ink">
               {text}
-              {tab !== "base" && len < VARIANTS[tab].length ? (
+              {tab !== "base" && len < (VARIANTS[tab]?.length ?? 0) ? (
                 <span className="ml-px inline-block h-[1.1em] w-px translate-y-[3px] animate-pulse bg-ink" />
               ) : null}
             </p>
@@ -256,5 +276,34 @@ export function ComposerShot() {
         </svg>
       </div>
     </AppShell>
+  );
+}
+
+/** Attached media above the editor: a video, or a pair of images. Flat brand colours, no photos. */
+function MediaStrip({ kind }: { kind: "video" | "images" }) {
+  const tile = "relative grid h-[78px] place-items-center overflow-hidden rounded-xl ring-1 ring-black/5";
+  return (
+    <div className="mt-4 flex items-center gap-2.5">
+      {kind === "video" ? (
+        <div className={`${tile} w-[56px] bg-[#202124]`}>
+          <span className="absolute -bottom-3 -left-3 size-8 rounded-full bg-[#e3a72c]" aria-hidden />
+          <span className="absolute -right-2 -top-2 size-7 rounded-lg bg-[#d14a3e]" aria-hidden />
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" className="relative" aria-hidden>
+            <path d="M8 5v14l11-7z" />
+          </svg>
+          <span className="absolute bottom-1 right-1.5 font-mono text-[9px] font-semibold text-white">0:24</span>
+        </div>
+      ) : (
+        <>
+          <div className={`${tile} w-[78px] bg-[#e3a72c]`}>
+            <span className="absolute -bottom-4 -right-3 size-12 rounded-full bg-[#d14a3e]" aria-hidden />
+          </div>
+          <div className={`${tile} w-[78px] bg-[#2b59d9]`}>
+            <span className="absolute -left-3 -top-3 size-10 rotate-12 rounded-xl bg-[#e3a72c]" aria-hidden />
+          </div>
+        </>
+      )}
+      <span className="text-xs text-muted">{kind === "video" ? "pour-over.mp4 · 12.4 MB" : "2 images"}</span>
+    </div>
   );
 }

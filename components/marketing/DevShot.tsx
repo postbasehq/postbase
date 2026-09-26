@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/marketing/AppShell";
 import { ClientLogo } from "@/components/ClientLogo";
+import type { ClientSetup } from "@/lib/seo/clients";
 
 /*
  * Product shot of the real Developers page (components/DeveloperClient.tsx +
@@ -35,13 +36,32 @@ type Key = { label: string; hint: string; created: string; used: string };
 const START_KEYS: Key[] = [{ label: "Zapier workflow", hint: "pb_live_…9c1e", created: "02 Sep 2026", used: "22 Sep 2026" }];
 const NEW_KEY: Key = { label: "Claude on my laptop", hint: "pb_live_…4f2a", created: "23 Sep 2026", used: "never" };
 
-type App = { name: string; sub: string };
-const START_APPS: App[] = [{ name: "Cursor", sub: "Halden Coffee · connected 14 Sep 2026 · last used 22 Sep 2026" }];
-const NEW_APP: App = { name: "Claude", sub: "Halden Coffee · connected 23 Sep 2026 · last used 23 Sep 2026" };
+type App = { name: string; logo: string; sub: string };
+const CURSOR_APP: App = { name: "Cursor", logo: "cursor", sub: "Halden Coffee · connected 14 Sep 2026 · last used 22 Sep 2026" };
+const CLAUDE_APP: App = { name: "Claude", logo: "claude", sub: "Halden Coffee · connected 23 Sep 2026 · last used 23 Sep 2026" };
+
+const CLAUDE_SETUP: ClientSetup = {
+  language: "url",
+  code: MCP_URL,
+  instruction:
+    "In Claude: Settings → Connectors → Add custom connector, and paste this URL. You'll sign in to Postbase in a browser window — no API key.",
+  deeplink: "Add to Claude",
+};
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export function DevShot() {
+/**
+ * With `client`, the loop skips the API key and shows that client's connector
+ * setup and it signing in (the /ai/[slug] pages).
+ */
+export function DevShot({ client }: { client?: { logo: string; name: string; setup: ClientSetup } } = {}) {
+  const setup = client?.setup ?? CLAUDE_SETUP;
+  const selected = client?.logo ?? "claude";
+  const NEW_APP: App = client
+    ? { name: client.name, logo: client.logo, sub: "Halden Coffee · connected 23 Sep 2026 · last used 23 Sep 2026" }
+    : CLAUDE_APP;
+  const START_APPS: App[] = [client?.logo === "cursor" ? { ...CLAUDE_APP, sub: CURSOR_APP.sub } : CURSOR_APP];
+  const keysFirst = !client;
   const rootRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
   const refs = useRef<Record<string, HTMLElement | null>>({});
@@ -108,6 +128,25 @@ export function DevShot() {
     (async () => {
       try {
         for (;;) {
+          if (!keysFirst) {
+            // Client pages: start on the MCP setup, copy, then the app connects.
+            setApps(START_APPS);
+            setCopied(false);
+            setCursor((c) => ({ ...c, visible: false }));
+            scrollTo("mcp");
+            await step(1400);
+            aim("copy");
+            await step(750);
+            await click();
+            setCopied(true);
+            await step(1200);
+            setCursor((c) => ({ ...c, visible: false }));
+            scrollTo("apps");
+            await step(900);
+            setApps([NEW_APP, ...START_APPS]);
+            await step(3200);
+            continue;
+          }
           setLabel("");
           setGenerating(false);
           setRevealed(false);
@@ -167,6 +206,8 @@ export function DevShot() {
     return () => {
       cancelled = true;
     };
+    // The client is fixed per mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inView]);
 
   const card = "overflow-hidden rounded-2xl border border-line bg-surface shadow-sm";
@@ -308,7 +349,7 @@ export function DevShot() {
                     <p className="mb-2 text-xs font-semibold text-muted">Client</p>
                     <div className="flex flex-wrap gap-2">
                       {CLIENTS.map((c) => {
-                        const on = c.id === "claude";
+                        const on = c.id === selected;
                         return (
                           <span
                             key={c.id}
@@ -324,15 +365,14 @@ export function DevShot() {
                     </div>
                   </div>
                   <div>
-                    <p className="mb-2 text-xs font-semibold text-muted">
-                      In Claude: Settings → Connectors → Add custom connector, and paste this URL. You&apos;ll sign in to
-                      Postbase in a browser window — no API key.
-                    </p>
+                    <p className="mb-2 text-xs font-semibold text-muted">{setup.instruction}</p>
                     <div className="flex items-center gap-2 rounded-xl border border-line bg-ground py-2 pl-3.5 pr-2">
-                      <code className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-ink">{MCP_URL}</code>
-                      <span className="shrink-0 rounded-lg border border-line px-2.5 py-1 text-[12px] font-semibold text-blue-ink">
-                        Add to Claude
-                      </span>
+                      <code className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-ink">{setup.code}</code>
+                      {setup.deeplink ? (
+                        <span className="shrink-0 rounded-lg border border-line px-2.5 py-1 text-[12px] font-semibold text-blue-ink">
+                          {setup.deeplink}
+                        </span>
+                      ) : null}
                       <span
                         ref={reg("copy")}
                         className={`shrink-0 rounded-lg px-2.5 py-1 text-[12px] font-semibold transition-colors ${
@@ -358,10 +398,10 @@ export function DevShot() {
                   <div
                     key={a.name}
                     className={`flex items-center gap-3 px-5 py-3.5 ${i < apps.length - 1 ? "border-b border-line" : ""} ${
-                      a === NEW_APP ? "swap-in" : ""
+                      a.name === NEW_APP.name ? "swap-in" : ""
                     }`}
                   >
-                    <ClientLogo id={a.name === "Claude" ? "claude" : "cursor"} size={36} />
+                    <ClientLogo id={a.logo} size={36} />
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-ink">{a.name}</div>
                       <div className="mt-0.5 truncate text-xs text-muted">{a.sub}</div>

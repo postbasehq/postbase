@@ -9,6 +9,31 @@ const COLUMNS: { title: string; links: [string, string][] }[] = [
       ["Channels", "/#channels"],
       ["Pricing", "/#pricing"],
       ["FAQ", "/#faq"],
+      ["Compare", "/alternatives"],
+    ],
+  },
+  {
+    title: "Integrations",
+    links: [
+      ["X (Twitter)", "/integrations/x"],
+      ["LinkedIn", "/integrations/linkedin"],
+      ["Bluesky", "/integrations/bluesky"],
+      ["Mastodon", "/integrations/mastodon"],
+      ["TikTok", "/integrations/tiktok"],
+      ["YouTube", "/integrations/youtube"],
+      ["All integrations", "/integrations"],
+    ],
+  },
+  {
+    title: "AI tools",
+    links: [
+      ["Claude", "/ai/claude"],
+      ["Claude Code", "/ai/claude-code"],
+      ["Cursor", "/ai/cursor"],
+      ["VS Code", "/ai/vscode"],
+      ["Windsurf", "/ai/windsurf"],
+      ["Gemini CLI", "/ai/gemini-cli"],
+      ["All AI tools", "/ai"],
     ],
   },
   {
@@ -35,7 +60,7 @@ export function SiteFooter() {
   return (
     <footer className="pb-10 pt-14 text-[14px]">
       <div className="mx-auto max-w-[1180px] px-5 md:px-8">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
+        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-[1.4fr_repeat(5,1fr)]">
           <div>
             <Logo />
             <p className="mt-3 max-w-[32ch] text-muted">
@@ -66,7 +91,7 @@ export function SiteFooter() {
         <p className="mt-12 text-[12px] leading-relaxed text-muted">
           © {new Date().getFullYear()} Berkway Group Limited, trading as Postbase. Registered in England and Wales.
           Postbase is a publishing tool and is not affiliated with X, LinkedIn, Instagram, TikTok, YouTube, Bluesky or
-          Mastodon.
+          Mastodon, or with the AI tools and other companies named on this site. All trademarks belong to their owners.
         </p>
       </div>
     </footer>
