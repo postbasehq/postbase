@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { decryptJson, encryptJson } from "@/lib/crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { postThread, uploadMedia, refreshTokens, type XTokens } from "@/lib/platforms/x";
+import { postThread, uploadMedia, refreshTokens, X_MAX_IMAGES, type XTokens } from "@/lib/platforms/x";
 import {
   createCarouselContainer,
   createImageContainer,
@@ -120,7 +120,17 @@ async function publishToX(input: PublishInput): Promise<PublishResult> {
 
   const texts = [input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean);
   try {
-    // Upload any media first, then attach the ids to the lead tweet.
+    // X takes one video or up to 4 images per post — say so rather than
+    // surfacing X's cryptic "media ids are invalid".
+    const videos = input.media.filter((m) => m.type.startsWith("video/"));
+    if (videos.length > 0 && input.media.length > 1) {
+      return { ok: false, error: "X allows either one video or up to 4 images per post." };
+    }
+    if (input.media.length > X_MAX_IMAGES) {
+      return { ok: false, error: `X allows up to ${X_MAX_IMAGES} images per post.` };
+    }
+
+    // Upload any media first (videos in chunks), then attach the ids to the lead tweet.
     const mediaIds: string[] = [];
     for (const m of input.media) {
       const res = await fetch(m.url);

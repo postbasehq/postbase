@@ -123,30 +123,108 @@ export async function getMe(
   return { id: json.data.id, username: json.data.username, name: json.data.name, avatar_url, verified };
 }
 
-/** Upload media (image/video bytes) via the v2 endpoint. Returns a media id. Needs the media.write scope. */
+// X caps: one video (<=512MB) or up to 4 images per post.
+export const X_MAX_IMAGES = 4;
+export const X_MAX_VIDEO_BYTES = 512 * 1024 * 1024;
+// 1MB APPEND segments — the size Postiz runs in production against X's limits.
+const X_UPLOAD_CHUNK_SIZE = 1024 * 1024;
+// How long to wait for X to transcode an uploaded video before giving up. Nothing
+// is posted at upload time, so a timeout just fails the target for a later retry.
+const X_PROCESSING_MAX_WAIT_MS = 100_000;
+
+type ProcessingInfo = {
+  state: string; // pending | in_progress | succeeded | failed
+  check_after_secs?: number;
+  error?: { message?: string };
+};
+
+type MediaResponse = {
+  data?: { id?: string; processing_info?: ProcessingInfo };
+  id?: string;
+  media_id_string?: string;
+  detail?: string;
+  title?: string;
+  errors?: { message?: string }[];
+};
+
+async function mediaRequest(accessToken: string, url: string, init: RequestInit = {}): Promise<MediaResponse> {
+  const res = await fetch(url, {
+    ...init,
+    headers: { Authorization: `Bearer ${accessToken}`, ...(init.headers ?? {}) },
+  });
+  const text = await res.text();
+  const json = (text ? JSON.parse(text) : {}) as MediaResponse;
+  if (!res.ok) {
+    throw new Error(
+      json.errors?.[0]?.message ?? json.detail ?? json.title ?? `X media upload error ${res.status}`,
+    );
+  }
+  return json;
+}
+
+/** Upload an image via the v2 endpoint (one request). Returns a media id. Needs the media.write scope. */
 export async function uploadMedia(
   accessToken: string,
   bytes: ArrayBuffer,
   mimeType: string,
 ): Promise<string> {
-  const category = mimeType.startsWith("video/") ? "tweet_video" : "tweet_image";
+  if (mimeType.startsWith("video/")) return uploadVideo(accessToken, bytes, mimeType);
   const form = new FormData();
   form.append("media", new Blob([bytes], { type: mimeType }));
-  form.append("media_category", category);
-  const res = await fetch(MEDIA_UPLOAD_URL, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${accessToken}` },
-    body: form,
-  });
-  const json = (await res.json()) as {
-    data?: { id?: string };
-    id?: string;
-    media_id_string?: string;
-    detail?: string;
-    title?: string;
-  };
+  form.append("media_category", "tweet_image");
+  const json = await mediaRequest(accessToken, MEDIA_UPLOAD_URL, { method: "POST", body: form });
   const id = json.data?.id ?? json.id ?? json.media_id_string;
-  if (!res.ok || !id) throw new Error(json.detail ?? json.title ?? `X media upload error ${res.status}`);
+  if (!id) throw new Error("X media upload returned no id.");
+  return id;
+}
+
+/**
+ * Upload a video with X's chunked v2 flow — initialize, append 1MB segments,
+ * finalize — then wait for X to finish transcoding. The media id can't be
+ * attached to a post until processing succeeds.
+ */
+export async function uploadVideo(accessToken: string, bytes: ArrayBuffer, mimeType: string): Promise<string> {
+  const total = bytes.byteLength;
+  if (total > X_MAX_VIDEO_BYTES) throw new Error("X videos must be under 512MB.");
+
+  const init = await mediaRequest(accessToken, `${MEDIA_UPLOAD_URL}/initialize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ media_type: mimeType || "video/mp4", total_bytes: total, media_category: "tweet_video" }),
+  });
+  const id = init.data?.id;
+  if (!id) throw new Error("X video upload didn't return a media id.");
+
+  const segments = Math.ceil(total / X_UPLOAD_CHUNK_SIZE);
+  for (let i = 0; i < segments; i++) {
+    const chunk = bytes.slice(i * X_UPLOAD_CHUNK_SIZE, Math.min((i + 1) * X_UPLOAD_CHUNK_SIZE, total));
+    const form = new FormData();
+    form.append("segment_index", String(i));
+    form.append("media", new Blob([chunk], { type: "application/octet-stream" }));
+    await mediaRequest(accessToken, `${MEDIA_UPLOAD_URL}/${id}/append`, { method: "POST", body: form });
+  }
+
+  const finalize = await mediaRequest(accessToken, `${MEDIA_UPLOAD_URL}/${id}/finalize`, { method: "POST" });
+  let processing = finalize.data?.processing_info;
+
+  // No processing_info means the media is ready; otherwise poll at X's pace.
+  let waited = 0;
+  while (processing && processing.state !== "succeeded") {
+    if (processing.state === "failed") {
+      throw new Error(`X couldn't process the video${processing.error?.message ? `: ${processing.error.message}` : "."}`);
+    }
+    if (waited >= X_PROCESSING_MAX_WAIT_MS) {
+      throw new Error("X is still processing the video — it will be retried.");
+    }
+    const waitMs = Math.max(1, processing.check_after_secs ?? 2) * 1000;
+    await new Promise((r) => setTimeout(r, waitMs));
+    waited += waitMs;
+    const status = await mediaRequest(
+      accessToken,
+      `${MEDIA_UPLOAD_URL}?command=STATUS&media_id=${encodeURIComponent(id)}`,
+    );
+    processing = status.data?.processing_info;
+  }
   return id;
 }
 
