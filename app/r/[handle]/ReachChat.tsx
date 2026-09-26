@@ -68,6 +68,14 @@ export function ReachChat({
         }),
       });
       const data = await res.json();
+      if (res.status === 429) {
+        const text =
+          data?.reason === "conversation"
+            ? "That's a lot of questions for one chat — refresh to start a new one."
+            : "You're asking faster than I can keep up — try again in a minute.";
+        setTurns((t) => [...t, { role: "assistant", text }]);
+        return;
+      }
       if (!res.ok) throw new Error(data?.error ?? "error");
       conversationId.current = data.conversationId ?? conversationId.current;
       setTurns((t) => [

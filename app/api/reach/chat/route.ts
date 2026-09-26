@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { answerFollower } from "@/lib/reach/agent";
+import { clientKey, rateLimit } from "@/lib/rate-limit";
 import {
   getActiveCtas,
+  getConversation,
   getPublishedPage,
   logMessage,
   searchCorpus,
@@ -12,7 +14,21 @@ import {
  * Public follower chat endpoint for a Postbase Reach page. Anonymous: identified
  * only by handle + a client-generated session id. Retrieves the corpus, answers
  * with the Reach agent (cited / refusing), and logs both turns as intent data.
+ *
+ * Every question is a paid model call from an anonymous caller, so it's capped
+ * per IP (burst + daily), per page (daily budget) and per conversation.
  */
+const LIMITS = {
+  ipPerMinute: 8,
+  ipPerDay: 100,
+  pagePerDay: 1000,
+  turnsPerConversation: 30,
+};
+
+function limited(reason: string) {
+  return NextResponse.json({ error: "rate_limited", reason }, { status: 429 });
+}
+
 export async function POST(req: Request) {
   let body: { handle?: string; question?: string; sessionId?: string; conversationId?: string };
   try {
@@ -33,13 +49,23 @@ export async function POST(req: Request) {
   const page = await getPublishedPage(handle);
   if (!page) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
+  const sessionId = (body.sessionId ?? "").slice(0, 64) || "anon";
+  const existing = body.conversationId
+    ? await getConversation(page.id, body.conversationId, sessionId)
+    : null;
+  if (existing && existing.userTurns >= LIMITS.turnsPerConversation) return limited("conversation");
+
+  const ip = clientKey(req);
+  if (!(await rateLimit(`reach:ip:${ip}:m`, 60, LIMITS.ipPerMinute))) return limited("burst");
+  if (!(await rateLimit(`reach:ip:${ip}:d`, 86_400, LIMITS.ipPerDay))) return limited("daily");
+  if (!(await rateLimit(`reach:page:${page.id}:d`, 86_400, LIMITS.pagePerDay))) return limited("page");
+
   const [content, ctas] = await Promise.all([
     searchCorpus(page.id, question),
     getActiveCtas(page.id),
   ]);
 
-  const conversationId =
-    body.conversationId ?? (await startConversation(page.id, body.sessionId ?? "anon"));
+  const conversationId = existing?.id ?? (await startConversation(page.id, sessionId));
 
   await logMessage({ conversationId, role: "user", content: question });
 

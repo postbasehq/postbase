@@ -107,6 +107,33 @@ export async function startConversation(pageId: string, sessionId: string): Prom
   return (data as { id: string }).id;
 }
 
+/**
+ * Resume a follower's conversation only if it belongs to this page and session;
+ * otherwise null (the caller starts a fresh one). Stops a client from writing
+ * into someone else's conversation by passing its id.
+ */
+export async function getConversation(
+  pageId: string,
+  conversationId: string,
+  sessionId: string,
+): Promise<{ id: string; userTurns: number } | null> {
+  const db = createAdminClient();
+  const { data } = await db
+    .from("reach_conversations")
+    .select("id")
+    .eq("id", conversationId)
+    .eq("page_id", pageId)
+    .eq("session_id", sessionId)
+    .maybeSingle();
+  if (!data) return null;
+  const { count } = await db
+    .from("reach_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("conversation_id", conversationId)
+    .eq("role", "user");
+  return { id: data.id as string, userTurns: count ?? 0 };
+}
+
 /** Log one turn. Assistant turns carry the intent signal (answered/cited/cta). */
 export async function logMessage(row: {
   conversationId: string;
