@@ -20,6 +20,8 @@ export function ThemeToggle() {
   function toggle() {
     const next = !effectiveIsDark();
     document.documentElement.setAttribute("data-theme", next ? "dark" : "light");
+    // An explicit choice: stop the marketing pages forcing light over it.
+    document.documentElement.setAttribute("data-theme-user", "");
     setDark(next);
   }
 

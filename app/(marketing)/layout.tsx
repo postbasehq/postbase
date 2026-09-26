@@ -1,4 +1,12 @@
-/** Marketing pages share the site background; they follow the light/dark theme like the app. */
+import { MarketingTheme, MarketingThemeScript } from "@/components/marketing/MarketingTheme";
+
+/** Marketing pages share the site background. They open in light mode; the theme toggle can switch them to dark. */
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-dvh bg-ground text-ink">{children}</div>;
+  return (
+    <div className="min-h-dvh bg-ground text-ink">
+      <MarketingThemeScript />
+      <MarketingTheme />
+      {children}
+    </div>
+  );
 }
