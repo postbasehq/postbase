@@ -120,6 +120,7 @@ export async function atAgentLimit(db: SupabaseClient, orgId: string): Promise<b
 }
 
 /** Record one used agent message (service-role insert, so it can't be tampered with). */
-export async function recordAgentMessage(db: SupabaseClient, orgId: string): Promise<void> {
-  await db.from("agent_messages").insert({ org_id: orgId });
+export async function recordAgentMessage(db: SupabaseClient, orgId: string): Promise<string | null> {
+  const { data } = await db.from("agent_messages").insert({ org_id: orgId }).select("id").single();
+  return data?.id ?? null;
 }

@@ -21,7 +21,15 @@ export type RunOptions = {
   send: SendFn;
 };
 
-export type RunResult = { assistantText: string; latestProposal: PostProposal | null };
+/** Tokens used across every round of one agent turn (for cost logging). */
+export type TokenUsage = { input: number; output: number; cacheRead: number; cacheWrite: number };
+export const emptyUsage = (): TokenUsage => ({ input: 0, output: 0, cacheRead: 0, cacheWrite: 0 });
+
+export type RunResult = {
+  assistantText: string;
+  latestProposal: PostProposal | null;
+  usage: TokenUsage;
+};
 
 /** Run a tool, merge attachments into any proposal, emit its events. */
 export async function execAgentTool(

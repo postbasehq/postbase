@@ -333,6 +333,7 @@ export default async function QueuePage({
                           <>
                             <PostStatsButton
                               iconOnly
+                              postId={p.id}
                               thread={[p.body, ...(p.thread_tail ?? [])]}
                               media={(p.media ?? []).map((mm) => ({ url: mm.storage_url, type: mm.type }))}
                               publishedAt={p.scheduled_at}

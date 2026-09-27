@@ -94,6 +94,11 @@ and must keep them confidential. We may apply rate limits and may revoke keys fo
   calculates and collects any sales tax, VAT or GST due where you live, and issues your
   receipts. Your purchase is also subject to Stripe's terms shown at checkout. Prices are
   shown excluding tax; any tax due is added at checkout.
+- **Fair use.** Posting is unlimited on paid plans for normal use by the people and
+  accounts on your plan. Some networks charge us for each API call (X, for example), so
+  if a workspace's usage is far beyond typical use (such as automated bulk posting),
+  we'll contact you first and may ask you to move to a larger plan or reduce usage.
+  AI features have the monthly allowances shown on your plan.
 - **Price changes** apply from your next renewal, with reasonable prior notice.
 - **Refunds.** Except where required by law, fees are non-refundable. As merchant of
   record, Stripe may also issue refunds in some cases, for example to resolve a billing

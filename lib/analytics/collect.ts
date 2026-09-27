@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decryptJson, encryptJson } from "@/lib/crypto";
-import { getTweetMetrics, refreshTokens as xRefresh } from "@/lib/platforms/x";
+import { getTweetMetrics, getTweetsMetrics, refreshTokens as xRefresh } from "@/lib/platforms/x";
 import { getMediaInsights, getPagePostMetrics } from "@/lib/platforms/meta";
 import { getSocialActions, refreshTokens as liRefresh } from "@/lib/platforms/linkedin";
 import {
@@ -16,8 +16,8 @@ import { getPostMetrics as mastoMetrics, type MastodonTokens } from "@/lib/platf
 
 /**
  * Metrics collector — refreshes normalized engagement metrics for recently
- * published targets, on a cadence, bounded to keep API reads (esp. X, which are
- * metered) cheap. Refreshes short-lived tokens (X/TikTok/LinkedIn) as needed.
+ * published targets, on a cadence. X is excluded: its reads are billed per
+ * tweet, so X stats are read on demand instead (see refreshXMetrics), like Postiz. Refreshes short-lived tokens (X/TikTok/LinkedIn) as needed.
  * Called by the cron poller alongside publishing; best-effort.
  */
 
@@ -137,9 +137,10 @@ export async function refreshMetrics(): Promise<{ refreshed: number }> {
   const { data } = await db
     .from("post_targets")
     .select(
-      "id, platform_post_id, metrics_updated_at, channels(id, platform, encrypted_tokens, token_expiry), posts!inner(scheduled_at)",
+      "id, platform_post_id, metrics_updated_at, channels!inner(id, platform, encrypted_tokens, token_expiry), posts!inner(scheduled_at)",
     )
     .eq("status", "published")
+    .neq("channels.platform", "x")
     .not("platform_post_id", "is", null)
     .gte("posts.scheduled_at", sinceIso)
     .or(`metrics_updated_at.is.null,metrics_updated_at.lt.${candidateIso}`)
@@ -188,4 +189,69 @@ export async function refreshMetrics(): Promise<{ refreshed: number }> {
   }
 
   return { refreshed };
+}
+
+// X stats are cached this long before a view triggers another (billed) read.
+const X_CACHE_MS = 60 * 60_000;
+const X_MAX_PER_CALL = 100;
+
+export function xAnalyticsEnabled(): boolean {
+  return !process.env.DISABLE_X_ANALYTICS;
+}
+
+/**
+ * On-demand X metrics: refresh this org's published X targets whose stats are
+ * older than an hour, only when someone is looking (a post's stats, or the
+ * analytics page). Optionally limited to one post. Returns rows refreshed.
+ */
+export async function refreshXMetrics(orgId: string, postId?: string): Promise<number> {
+  if (!xAnalyticsEnabled()) return 0;
+  const db = createAdminClient();
+  const staleIso = new Date(Date.now() - X_CACHE_MS).toISOString();
+  let q = db
+    .from("post_targets")
+    .select(
+      "id, platform_post_id, channels!inner(id, platform, encrypted_tokens, token_expiry), posts!inner(id, org_id, scheduled_at)",
+    )
+    .eq("status", "published")
+    .eq("channels.platform", "x")
+    .eq("posts.org_id", orgId)
+    .not("platform_post_id", "is", null)
+    .or(`metrics_updated_at.is.null,metrics_updated_at.lt.${staleIso}`)
+    .order("metrics_updated_at", { ascending: true, nullsFirst: true })
+    .limit(X_MAX_PER_CALL);
+  if (postId) q = q.eq("posts.id", postId);
+  const { data } = await q;
+  const rows = (data ?? []) as unknown as (Row & { platform_post_id: string })[];
+  if (rows.length === 0) return 0;
+
+  // One batched request per channel (tokens are per account).
+  const byChannel = new Map<string, { ch: Channel; rows: typeof rows }>();
+  for (const r of rows) {
+    if (!r.channels?.encrypted_tokens) continue;
+    const entry = byChannel.get(r.channels.id) ?? { ch: r.channels, rows: [] };
+    entry.rows.push(r);
+    byChannel.set(r.channels.id, entry);
+  }
+
+  const now = new Date().toISOString();
+  let refreshed = 0;
+  for (const { ch, rows: chRows } of byChannel.values()) {
+    try {
+      const token = await ensureToken(db, ch, decryptJson<Tokens>(ch.encrypted_tokens!));
+      const metrics = await getTweetsMetrics(token, chRows.map((r) => r.platform_post_id));
+      for (const r of chRows) {
+        const m = metrics[r.platform_post_id];
+        await db
+          .from("post_targets")
+          .update(m ? { metrics: m, metrics_updated_at: now } : { metrics_updated_at: now })
+          .eq("id", r.id);
+        if (m) refreshed++;
+      }
+    } catch {
+      // Token or API trouble: mark checked so a page reload doesn't retry immediately.
+      await db.from("post_targets").update({ metrics_updated_at: now }).in("id", chRows.map((r) => r.id));
+    }
+  }
+  return refreshed;
 }

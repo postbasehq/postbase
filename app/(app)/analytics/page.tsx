@@ -1,3 +1,5 @@
+import { getCurrentOrgId } from "@/lib/org";
+import { refreshXMetrics } from "@/lib/analytics/collect";
 import { createClient } from "@/lib/supabase/server";
 import { BrandTile, BRANDS } from "@/components/BrandTile";
 import { AnalyticsTable, type AnalyticsRow } from "@/components/AnalyticsTable";
@@ -42,6 +44,9 @@ type Post = {
 };
 
 export default async function AnalyticsPage() {
+  // X stats are read on demand (billed per tweet): refresh any over an hour old.
+  const orgId = await getCurrentOrgId();
+  if (orgId) await refreshXMetrics(orgId).catch(() => 0);
   const supabase = await createClient();
   const { data } = await supabase
     .from("posts")

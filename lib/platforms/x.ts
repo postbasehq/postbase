@@ -283,6 +283,39 @@ export async function getTweetMetrics(
   };
 }
 
+/**
+ * Metrics for up to 100 tweets in one request (X bills per tweet returned, so
+ * batching saves round trips, not money). Missing/deleted tweets are omitted.
+ */
+export async function getTweetsMetrics(
+  accessToken: string,
+  tweetIds: string[],
+): Promise<Record<string, Record<string, number>>> {
+  const out: Record<string, Record<string, number>> = {};
+  for (let i = 0; i < tweetIds.length; i += 100) {
+    const ids = tweetIds.slice(i, i + 100).join(",");
+    const res = await fetch(`${API}/tweets?ids=${ids}&tweet.fields=public_metrics`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const json = (await res.json()) as {
+      data?: { id: string; public_metrics?: Record<string, number | undefined> }[];
+      detail?: string;
+    };
+    if (!res.ok) throw new Error(json.detail ?? `X metrics error ${res.status}`);
+    for (const t of json.data ?? []) {
+      const m = t.public_metrics ?? {};
+      out[t.id] = {
+        impressions: m.impression_count ?? 0,
+        likes: m.like_count ?? 0,
+        comments: m.reply_count ?? 0,
+        shares: (m.retweet_count ?? 0) + (m.quote_count ?? 0),
+        saves: m.bookmark_count ?? 0,
+      };
+    }
+  }
+  return out;
+}
+
 /** Post a thread as a reply chain; media (if any) attaches to the first tweet. */
 export async function postThread(
   accessToken: string,

@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { AGENT_TOOLS, type PostProposal } from "@/lib/agent/tools";
 import { MAX_TOOL_ROUNDS } from "@/lib/agent/config";
-import { execAgentTool, type RunOptions, type RunResult } from "@/lib/agent/run-shared";
+import { emptyUsage, execAgentTool, type RunOptions, type RunResult } from "@/lib/agent/run-shared";
 
 /** GPT tool-calling loop: mirrors the Anthropic runner over the OpenAI API. */
 export async function runOpenAI(opts: RunOptions): Promise<RunResult> {
@@ -33,6 +33,7 @@ export async function runOpenAI(opts: RunOptions): Promise<RunResult> {
 
   let assistantText = "";
   let latestProposal: PostProposal | null = null;
+  const usage = emptyUsage();
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
     const stream = await openai.chat.completions.create({
@@ -40,11 +41,19 @@ export async function runOpenAI(opts: RunOptions): Promise<RunResult> {
       messages,
       tools,
       stream: true,
+      stream_options: { include_usage: true },
     });
 
     let content = "";
     const calls: Record<number, { id: string; name: string; args: string }> = {};
     for await (const chunk of stream) {
+      if (chunk.usage) {
+        // OpenAI caches automatically; cached tokens are a subset of prompt tokens.
+        const cached = chunk.usage.prompt_tokens_details?.cached_tokens ?? 0;
+        usage.input += chunk.usage.prompt_tokens - cached;
+        usage.cacheRead += cached;
+        usage.output += chunk.usage.completion_tokens;
+      }
       const delta = chunk.choices[0]?.delta;
       if (delta?.content) {
         content += delta.content;
@@ -92,5 +101,5 @@ export async function runOpenAI(opts: RunOptions): Promise<RunResult> {
     }
   }
 
-  return { assistantText, latestProposal };
+  return { assistantText, latestProposal, usage };
 }

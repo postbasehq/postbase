@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { atAgentLimit, recordAgentMessage, aiUsage } from "@/lib/billing-guard";
 import { higgsfieldConfigured } from "@/lib/higgsfield";
 import { systemPrompt } from "@/lib/agent/config";
-import { getModel, DEFAULT_MODEL_ID } from "@/lib/agent/models";
+import { getModel, DEFAULT_MODEL_ID, estimateCostUsd } from "@/lib/agent/models";
 import { runAnthropic } from "@/lib/agent/run-anthropic";
 import { runOpenAI } from "@/lib/agent/run-openai";
 import type { PostProposal } from "@/lib/agent/tools";
@@ -83,7 +83,7 @@ export async function POST(req: Request) {
       { status: 429, headers: { "Content-Type": "application/json" } },
     );
   }
-  await recordAgentMessage(admin, orgId);
+  const usageRowId = await recordAgentMessage(admin, orgId);
 
   // Resolve (or create) the conversation, then persist the user message.
   let title = "New chat";
@@ -147,6 +147,22 @@ export async function POST(req: Request) {
         });
         assistantText = result.assistantText;
         latestProposal = result.latestProposal;
+        // Log tokens + estimated cost on this message's usage row (best effort).
+        if (usageRowId) {
+          const u = result.usage;
+          void admin
+            .from("agent_messages")
+            .update({
+              model: model.id,
+              input_tokens: u.input,
+              output_tokens: u.output,
+              cache_read_tokens: u.cacheRead,
+              cache_write_tokens: u.cacheWrite,
+              cost_usd: estimateCostUsd(model.id, u),
+            })
+            .eq("id", usageRowId)
+            .then(() => undefined, () => undefined);
+        }
 
         send({ type: "done" });
       } catch (e) {

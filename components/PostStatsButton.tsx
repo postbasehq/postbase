@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { refreshPostStats } from "@/app/(app)/stats-actions";
 import { Modal } from "@/components/Modal";
 import { BrandTile } from "@/components/BrandTile";
 import { PostPreview } from "@/components/PostPreview";
@@ -64,6 +66,7 @@ function postUrl(platform: string, handle: string | null, id: string | null): st
 const TITLE_ID = "post-stats-title";
 
 export function PostStatsButton({
+  postId,
   thread,
   media,
   publishedAt,
@@ -71,6 +74,8 @@ export function PostStatsButton({
   className,
   iconOnly = false,
 }: {
+  /** When set, opening the modal refreshes this post's X stats (read on demand). */
+  postId?: string;
   thread: string[];
   media: { url: string; type: string }[];
   publishedAt: string | null;
@@ -79,6 +84,7 @@ export function PostStatsButton({
   /** Render the trigger as an analytics icon (queue actions column). */
   iconOnly?: boolean;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const delivered = targets.filter(isDelivered);
@@ -102,6 +108,11 @@ export function PostStatsButton({
         onClick={() => {
           setActive(0);
           setOpen(true);
+          if (postId && targets.some((t) => t.platform === "x" && isDelivered(t))) {
+            void refreshPostStats(postId).then((r) => {
+              if (r.refreshed > 0) router.refresh();
+            });
+          }
         }}
         className={
           className ??

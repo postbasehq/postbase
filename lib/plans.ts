@@ -1,7 +1,8 @@
 /**
- * Cloud plans (see planning docs/PRICING.md). Borrowed from Postiz / Post Bridge,
- * anchored at $29, no agency tier. X is BYOK on every plan, so posting is ~free to
- * us and margins stay high — plans scale by channels/seats/features, not usage.
+ * Cloud plans, anchored on Postiz ($29 for 5 channels). Postbase pays X per API
+ * call (posts $0.015, or $0.20 with a link; reads $0.005), so X stats are read
+ * only on demand (lib/analytics/collect.ts) and X posting is covered by fair use.
+ * AI generation and agent messages are capped per plan because they cost per use.
  */
 
 export type PlanId = "trial" | "creator" | "team" | "growth";
@@ -20,30 +21,33 @@ export type Plan = {
 };
 
 // Monthly AI generation quota by plan (composer image/video generation).
+// In line with Postiz (20 / 100 / 300 at the same price points).
 export const AI_IMAGE_LIMIT: Record<PlanId, number> = {
-  trial: 10,
-  creator: 50,
-  team: 200,
-  growth: 500,
+  trial: 5,
+  creator: 20,
+  team: 100,
+  growth: 300,
 };
 // Video is ~10-50x the per-unit cost of an image, so quotas stay conservative
 // to protect margin (see AI pricing notes).
 export const AI_VIDEO_LIMIT: Record<PlanId, number> = {
-  trial: 2,
-  creator: 5,
-  team: 15,
-  growth: 40,
+  trial: 1,
+  creator: 3,
+  team: 10,
+  growth: 30,
 };
 
 // Monthly AI-agent message quota by plan. Each user turn in the /agent chat
 // costs one message (a turn may fan out to several tool calls). Kept generous
 // on paid plans but capped so a runaway session can't rack up an open-ended
 // model bill; the trial gets a taste.
+// With prompt caching a message costs roughly $0.01–0.04 on Sonnet 5; real
+// per-message cost is logged on agent_messages.cost_usd.
 export const AGENT_MESSAGE_LIMIT: Record<PlanId, number> = {
   trial: 25,
-  creator: 300,
-  team: 1000,
-  growth: 3000,
+  creator: 150,
+  team: 500,
+  growth: 1500,
 };
 
 /** The AI-quota feature line for a plan, derived from the limits (single source). */
