@@ -768,6 +768,7 @@ export function PostForm({
                   channelId={tiktokChannel.id}
                   channelHandle={tiktokChannel.handle}
                   isPhoto={tiktokPhotoOnly}
+                  videoUrl={media.find((m) => m.type.startsWith("video/"))?.url ?? null}
                   initial={{
                     privacy: initial?.tiktokPrivacy,
                     ...(initial?.tiktokOptions ?? {}),

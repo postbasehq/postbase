@@ -43,6 +43,12 @@ const PRIVACY_LABEL: Record<string, string> = {
   SELF_ONLY: "Only me",
 };
 
+function formatSec(sec: number): string {
+  const s = Math.round(sec);
+  const m = Math.floor(s / 60);
+  return m ? `${m}:${String(s % 60).padStart(2, "0")}` : `${s}s`;
+}
+
 const MUSIC_URL = "https://www.tiktok.com/legal/page/global/music-usage-confirmation/en";
 const BC_POLICY_URL = "https://www.tiktok.com/legal/page/global/bc-policy/en";
 
@@ -50,12 +56,14 @@ export function TikTokSettings({
   channelId,
   channelHandle,
   isPhoto,
+  videoUrl,
   initial,
   onValidChange,
 }: {
   channelId: string | null;
   channelHandle: string | null;
   isPhoto: boolean;
+  videoUrl?: string | null;
   initial?: TikTokInitial;
   onValidChange: (valid: boolean) => void;
 }) {
@@ -126,13 +134,32 @@ export function TikTokSettings({
     };
   }, [channelId]);
 
+  // Read the attached video's length so we can hold it to this creator's limit
+  // (TikTok rejects longer videos only after upload, so catch it here).
+  const [videoSec, setVideoSec] = useState<number | null>(null);
+  useEffect(() => {
+    setVideoSec(null);
+    if (!videoUrl || isPhoto) return;
+    const v = document.createElement("video");
+    v.preload = "metadata";
+    v.onloadedmetadata = () => setVideoSec(Number.isFinite(v.duration) ? v.duration : null);
+    v.src = videoUrl;
+    return () => {
+      v.onloadedmetadata = null;
+      v.removeAttribute("src");
+      v.load();
+    };
+  }, [videoUrl, isPhoto]);
+  const maxSec = info?.maxDurationSec ?? null;
+  const tooLong = videoSec != null && maxSec != null && videoSec > maxSec + 0.5;
+
   // Branded content can't be private — drop SELF_ONLY as an option when it's on.
   const brandedPrivate = disclose && brandedContent && privacy === "SELF_ONLY";
   const discloseIncomplete = disclose && !yourBrand && !brandedContent;
 
   const valid = !channelId
     ? true
-    : Boolean(info) && privacy !== "" && !discloseIncomplete && !brandedPrivate;
+    : Boolean(info) && privacy !== "" && !discloseIncomplete && !brandedPrivate && !tooLong;
 
   useEffect(() => {
     onValidChange(valid);
@@ -184,6 +211,13 @@ export function TikTokSettings({
                 ) : null}
               </div>
             </div>
+          ) : null}
+
+          {tooLong ? (
+            <p className="text-xs font-medium text-[#d14a3e]">
+              This video is {formatSec(videoSec!)} long. Your TikTok account can post videos up to{" "}
+              {formatSec(maxSec!)}, so trim it before scheduling.
+            </p>
           ) : null}
 
           {/* Privacy — custom dropdown */}

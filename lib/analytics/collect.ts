@@ -4,7 +4,12 @@ import { decryptJson, encryptJson } from "@/lib/crypto";
 import { getTweetMetrics, refreshTokens as xRefresh } from "@/lib/platforms/x";
 import { getMediaInsights, getPagePostMetrics } from "@/lib/platforms/meta";
 import { getSocialActions, refreshTokens as liRefresh } from "@/lib/platforms/linkedin";
-import { getVideoMetrics, refreshTokens as ttRefresh } from "@/lib/platforms/tiktok";
+import {
+  fetchPublishStatus,
+  getVideoMetrics,
+  isTikTokPublishId,
+  refreshTokens as ttRefresh,
+} from "@/lib/platforms/tiktok";
 import { getVideoStats, refreshTokens as ytRefresh } from "@/lib/platforms/youtube";
 import { getPostMetrics as bskyMetrics, type BlueskyTokens } from "@/lib/platforms/bluesky";
 import { getPostMetrics as mastoMetrics, type MastodonTokens } from "@/lib/platforms/mastodon";
@@ -156,7 +161,23 @@ export async function refreshMetrics(): Promise<{ refreshed: number }> {
     try {
       const tokens = decryptJson<Tokens>(ch.encrypted_tokens);
       const token = await ensureToken(db, ch, tokens);
-      const metrics = await fetchMetrics(ch.platform, token, r.platform_post_id, tokens);
+      let postId = r.platform_post_id;
+      // TikTok: publishing stores the publish id when the video was still
+      // processing; swap it for the real video id once TikTok reports one.
+      if (ch.platform === "tiktok" && isTikTokPublishId(postId)) {
+        const st = await fetchPublishStatus(token, postId);
+        if (st.status === "FAILED") {
+          await db
+            .from("post_targets")
+            .update({ error: `TikTok publish failed: ${st.failReason ?? "unknown"}`, metrics_updated_at: now })
+            .eq("id", r.id);
+          continue;
+        }
+        if (!st.postId) throw new Error("TikTok post still processing");
+        postId = st.postId;
+        await db.from("post_targets").update({ platform_post_id: postId }).eq("id", r.id);
+      }
+      const metrics = await fetchMetrics(ch.platform, token, postId, tokens);
       await db.from("post_targets").update({ metrics, metrics_updated_at: now }).eq("id", r.id);
       refreshed++;
     } catch {

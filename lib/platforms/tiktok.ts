@@ -308,34 +308,48 @@ export async function initPhotoPost(
   return data.publish_id;
 }
 
+/** One status check for a publish job. `postId` is set once the post is public. */
+export async function fetchPublishStatus(
+  accessToken: string,
+  publishId: string,
+): Promise<{ status: string; postId?: string; failReason?: string }> {
+  const data = await tiktokJson<{
+    status: string;
+    fail_reason?: string;
+    publicaly_available_post_id?: (string | number)[];
+  }>(`${API}/post/publish/status/fetch/`, {
+    method: "POST",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify({ publish_id: publishId }),
+  });
+  const id = data.publicaly_available_post_id?.[0];
+  return { status: data.status, postId: id != null ? String(id) : undefined, failReason: data.fail_reason };
+}
+
+/** TikTok video ids are numeric; anything else we stored is still a publish id. */
+export function isTikTokPublishId(id: string): boolean {
+  return !/^\d+$/.test(id);
+}
+
 /**
- * Poll a publish job until it completes. Returns the final status and, when
- * available, the published post id (used later to read metrics).
+ * Poll a publish job briefly. TikTok often takes minutes to process a video,
+ * and the cron request can't wait that long, so this gives up after ~15s and
+ * the metrics collector resolves the publish id to the video id later.
  */
 export async function waitForPublish(
   accessToken: string,
   publishId: string,
-  { tries = 20, delayMs = 3000 }: { tries?: number; delayMs?: number } = {},
+  { tries = 5, delayMs = 3000 }: { tries?: number; delayMs?: number } = {},
 ): Promise<{ status: string; postId?: string }> {
   for (let i = 0; i < tries; i++) {
-    const data = await tiktokJson<{
-      status: string;
-      fail_reason?: string;
-      publicaly_available_post_id?: string[];
-    }>(`${API}/post/publish/status/fetch/`, {
-      method: "POST",
-      headers: authHeaders(accessToken),
-      body: JSON.stringify({ publish_id: publishId }),
-    });
-    if (data.status === "PUBLISH_COMPLETE") {
-      return { status: data.status, postId: data.publicaly_available_post_id?.[0] };
-    }
+    const data = await fetchPublishStatus(accessToken, publishId);
+    if (data.status === "PUBLISH_COMPLETE" && data.postId) return { status: data.status, postId: data.postId };
     if (data.status === "FAILED") {
-      throw new Error(`TikTok publish failed: ${data.fail_reason ?? "unknown"}`);
+      throw new Error(`TikTok publish failed: ${data.failReason ?? "unknown"}`);
     }
     await new Promise((r) => setTimeout(r, delayMs));
   }
-  // Still processing — TikTok will finish server-side; treat as accepted.
+  // Still processing (or complete but not yet public) — TikTok finishes server-side.
   return { status: "PROCESSING" };
 }
 
