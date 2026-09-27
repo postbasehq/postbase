@@ -5,7 +5,7 @@ import { type TikTokInitial } from "@/components/TikTokSettings";
 import { type YouTubePrivacy } from "@/components/YouTubeSettings";
 import { higgsfieldConfigured } from "@/lib/higgsfield";
 import { getCurrentOrgId } from "@/lib/org";
-import { aiUsage } from "@/lib/billing-guard";
+import { aiUsage, hasAccess } from "@/lib/billing-guard";
 import { updatePost } from "../../actions";
 
 export default async function EditPostPage({
@@ -79,6 +79,10 @@ export default async function EditPostPage({
   const variants: Record<string, string> = {};
   for (const t of targets) if (t.variant_body) variants[t.channel_id] = t.variant_body;
 
+  // Without a plan the composer still works for drafts; scheduling is gated.
+  const accessOrgId = await getCurrentOrgId();
+  const canSchedule = accessOrgId ? await hasAccess(supabase, accessOrgId) : true;
+
   const aiEnabled = higgsfieldConfigured();
   let aiRemaining: { image: number; video: number } | undefined;
   if (aiEnabled) {
@@ -103,6 +107,7 @@ export default async function EditPostPage({
         currentDraftId={post.id}
         aiEnabled={aiEnabled}
         aiRemaining={aiRemaining}
+        canSchedule={canSchedule}
         initial={{
           id: post.id,
           thread: [post.body, ...((post.thread_tail as string[] | null) ?? [])],

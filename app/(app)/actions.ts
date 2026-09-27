@@ -568,6 +568,7 @@ export async function generateAiImage(
   if (!clean) return { ok: false, error: "Enter a prompt to generate an image." };
   const ratio = isAspectRatio(aspectRatio) ? aspectRatio : "1:1";
 
+  if (!(await hasAccess(supabase, orgId))) return { ok: false, error: NO_PLAN_MESSAGE };
   if (await atAiLimit(supabase, orgId, "image")) {
     return { ok: false, error: "You've used all your AI images for this month. Upgrade your plan for more." };
   }
@@ -614,6 +615,7 @@ export async function startAiVideo(
   if (!clean && !imageUrl) return { ok: false, error: "Enter a prompt (or pick an image to animate)." };
   const ratio = isAspectRatio(aspectRatio) ? aspectRatio : "9:16";
 
+  if (!(await hasAccess(supabase, orgId))) return { ok: false, error: NO_PLAN_MESSAGE };
   if (await atAiLimit(supabase, orgId, "video")) {
     return { ok: false, error: "You've used all your AI videos for this month. Upgrade your plan for more." };
   }

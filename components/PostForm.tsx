@@ -152,6 +152,8 @@ type PostFormProps = {
   channels: Channel[];
   action: (formData: FormData) => Promise<void>;
   submitLabel: string;
+  /** False when the workspace has no plan: drafts save, scheduling prompts a trial. */
+  canSchedule?: boolean;
   /** Prefill the schedule field with a local wall-clock time (YYYY-MM-DDTHH:MM). */
   defaultScheduleLocal?: string;
   /** Reusable assets from the media library, for the "Pick from library" picker. */
@@ -190,6 +192,7 @@ function utcToLocalInput(utc?: string | null): string {
 }
 
 export function PostForm({
+  canSchedule = true,
   channels,
   action,
   submitLabel,
@@ -338,7 +341,8 @@ export function PostForm({
   const youtubeChannel = selectedChannels.find((c) => c.platform === "youtube") ?? null;
   const tiktokPhotoOnly = hasMedia && !hasVideo;
   // TikTok settings must be complete before scheduling (not required for drafts).
-  const canSubmit = !bodyEmpty && (isDraft || (!hasBlocking && tiktokValid));
+  const needsPlan = !isDraft && !canSchedule;
+  const canSubmit = !bodyEmpty && (isDraft || (!hasBlocking && tiktokValid && canSchedule));
   // Not ready to publish if a platform check fails OR the TikTok settings are
   // incomplete — keep the status indicator consistent with the disabled button.
   const notReady = hasBlocking || !tiktokValid;
@@ -500,6 +504,20 @@ export function PostForm({
 
   return (
     <form action={action} className="mt-6 flex flex-col gap-4 pb-24">
+      {!canSchedule ? (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-line bg-surface-2 px-4 py-3 text-sm">
+          <span className="text-ink">
+            <span className="font-semibold">Write and save drafts for free.</span>{" "}
+            <span className="text-muted">Start your 7-day trial to schedule and publish them.</span>
+          </span>
+          <Link
+            href="/billing"
+            className="ml-auto rounded-full bg-blue px-4 py-1.5 font-display text-xs font-semibold text-on-blue shadow-sm"
+          >
+            Start free trial
+          </Link>
+        </div>
+      ) : null}
       {initial?.id ? <input type="hidden" name="post_id" value={initial.id} /> : null}
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -980,7 +998,15 @@ export function PostForm({
         ) : null}
 
         <div className="ml-auto flex items-center gap-3">
-          {bodyEmpty ? (
+          {needsPlan ? (
+            <span className="text-xs text-muted">
+              Scheduling starts with your free trial.{" "}
+              <Link href="/billing" className="font-semibold text-blue-ink hover:underline">
+                Start 7-day trial
+              </Link>{" "}
+              or clear the time to save a draft.
+            </span>
+          ) : bodyEmpty ? (
             <span className="hidden text-xs text-muted sm:inline">Write something to continue.</span>
           ) : notReady && !isDraft ? (
             <span className="hidden text-xs text-terra sm:inline">

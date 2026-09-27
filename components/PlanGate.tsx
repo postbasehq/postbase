@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// Reachable without a plan: pick one, connect channels, manage the team.
-const OPEN_PREFIXES = ["/billing", "/channels", "/team", "/settings"];
+// Reachable without a plan: pick one, connect channels, manage the team, and
+// write drafts (the composer only blocks scheduling until a trial starts).
+const OPEN_PREFIXES = ["/billing", "/channels", "/team", "/settings", "/composer", "/drafts"];
 
 /**
  * Shown in place of the page when the workspace has no active plan (billing

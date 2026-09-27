@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PostForm } from "@/components/PostForm";
 import { higgsfieldConfigured } from "@/lib/higgsfield";
 import { getCurrentOrgId } from "@/lib/org";
-import { aiUsage } from "@/lib/billing-guard";
+import { aiUsage, hasAccess } from "@/lib/billing-guard";
 import { createPost } from "../actions";
 import { type TikTokInitial } from "@/components/TikTokSettings";
 import { type YouTubePrivacy } from "@/components/YouTubeSettings";
@@ -89,6 +89,10 @@ export default async function ComposerPage({
     };
   });
 
+  // Without a plan the composer still works for drafts; scheduling is gated.
+  const accessOrgId = await getCurrentOrgId();
+  const canSchedule = accessOrgId ? await hasAccess(supabase, accessOrgId) : true;
+
   const aiEnabled = higgsfieldConfigured();
   let aiRemaining: { image: number; video: number } | undefined;
   if (aiEnabled) {
@@ -115,6 +119,7 @@ export default async function ComposerPage({
         initial={republish}
         aiEnabled={aiEnabled}
         aiRemaining={aiRemaining}
+        canSchedule={canSchedule}
       />
     </div>
   );
