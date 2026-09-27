@@ -4,13 +4,16 @@ import { higgsfieldConfigured } from "@/lib/higgsfield";
 import { getCurrentOrgId } from "@/lib/org";
 import { aiUsage } from "@/lib/billing-guard";
 import { createPost } from "../actions";
+import { type TikTokInitial } from "@/components/TikTokSettings";
+
+type PostFormInitial = NonNullable<React.ComponentProps<typeof PostForm>["initial"]>;
 
 export default async function ComposerPage({
   searchParams,
 }: {
-  searchParams: Promise<{ at?: string; media?: string }>;
+  searchParams: Promise<{ at?: string; media?: string; from?: string }>;
 }) {
-  const { at, media: mediaId } = await searchParams;
+  const { at, media: mediaId, from } = await searchParams;
   // Accept a local wall-clock prefill from the calendar (YYYY-MM-DDTHH:MM).
   const defaultScheduleLocal = at && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(at) ? at : undefined;
 
@@ -26,6 +29,35 @@ export default async function ComposerPage({
       .maybeSingle();
     if (m) prefillMedia = [{ url: m.url, type: m.type }];
   }
+  // "Republish" from the queue: copy an existing post (any status) into a new,
+  // unsaved one: text, thread, channels, per-channel versions, media and
+  // settings. No id, so saving creates a new post and never edits the original.
+  // The time is left empty for the user to pick. RLS scopes it to the org.
+  let republish: PostFormInitial | undefined;
+  if (from) {
+    const { data: src } = await supabase
+      .from("posts")
+      .select("body, thread_tail, tiktok_privacy_level, tiktok_options, repeat_every, post_targets(channel_id, variant_body)")
+      .eq("id", from)
+      .maybeSingle();
+    if (src) {
+      const { data: srcMedia } = await supabase.from("media").select("storage_url, type").eq("post_id", from);
+      const targets = (src.post_targets ?? []) as { channel_id: string; variant_body: string | null }[];
+      const variants: Record<string, string> = {};
+      for (const t of targets) if (t.variant_body) variants[t.channel_id] = t.variant_body;
+      republish = {
+        thread: [src.body ?? "", ...((src.thread_tail as string[] | null) ?? [])],
+        scheduledAt: null,
+        channelIds: targets.map((t) => t.channel_id),
+        variants,
+        media: (srcMedia ?? []).map((m) => ({ url: m.storage_url, type: m.type })),
+        tiktokPrivacy: (src.tiktok_privacy_level as string | null) ?? undefined,
+        tiktokOptions: (src.tiktok_options as TikTokInitial | null) ?? null,
+        repeatEvery: (src.repeat_every as string | null) ?? null,
+      };
+    }
+  }
+
   const { data: channels } = await supabase
     .from("channels")
     .select("id, platform, handle, display_name, avatar_url, verified")
@@ -67,6 +99,9 @@ export default async function ComposerPage({
 
   return (
     <div>
+      {republish ? (
+        <p className="text-sm text-muted">Republishing a copy. Pick a new time; the original post isn&apos;t changed.</p>
+      ) : null}
       <PostForm
         channels={channels ?? []}
         action={createPost}
@@ -75,6 +110,7 @@ export default async function ComposerPage({
         libraryItems={library ?? []}
         drafts={drafts}
         prefillMedia={prefillMedia}
+        initial={republish}
         aiEnabled={aiEnabled}
         aiRemaining={aiRemaining}
       />

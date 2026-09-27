@@ -166,7 +166,8 @@ type PostFormProps = {
   /** Remaining AI generations this month (per plan quota). */
   aiRemaining?: { image: number; video: number };
   initial?: {
-    id: string;
+    /** Omit to prefill a brand-new post (republish) instead of editing one. */
+    id?: string;
     thread: string[];
     scheduledAt: string | null;
     channelIds: string[];
@@ -496,7 +497,7 @@ export function PostForm({
 
   return (
     <form action={action} className="mt-6 flex flex-col gap-4 pb-24">
-      {initial ? <input type="hidden" name="post_id" value={initial.id} /> : null}
+      {initial?.id ? <input type="hidden" name="post_id" value={initial.id} /> : null}
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
         {/* ── Compose ──────────────────────────────────────────── */}
@@ -912,7 +913,7 @@ export function PostForm({
         <div className="mx-auto flex w-full max-w-[1248px] flex-wrap items-center gap-x-4 gap-y-3 px-6 py-3.5">
         <DateTimePicker value={scheduleLocal} onChange={setScheduleLocal} timeZone={tz} />
 
-        {initial && scheduleLocal ? (
+        {initial?.id && scheduleLocal ? (
           <button
             type="button"
             onClick={() => setScheduleLocal("")}

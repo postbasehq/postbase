@@ -69,12 +69,15 @@ export function PostStatsButton({
   publishedAt,
   targets,
   className,
+  iconOnly = false,
 }: {
   thread: string[];
   media: { url: string; type: string }[];
   publishedAt: string | null;
   targets: Target[];
   className?: string;
+  /** Render the trigger as an analytics icon (queue actions column). */
+  iconOnly?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -104,8 +107,17 @@ export function PostStatsButton({
           className ??
           "rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-ink transition-colors hover:border-blue hover:bg-surface-2"
         }
+        aria-label={iconOnly ? "View stats" : undefined}
+        title={iconOnly ? "Stats" : undefined}
       >
-        Stats
+        {iconOnly ? (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M3 3v18h18" />
+            <path d="M7 16v-4M12 16V8M17 16v-7" />
+          </svg>
+        ) : (
+          "Stats"
+        )}
       </button>
 
       <Modal open={open} onClose={() => setOpen(false)} labelledBy={TITLE_ID} size="xl">

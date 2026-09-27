@@ -230,6 +230,8 @@ export default async function QueuePage({
               </div>
 
               {rows.map((p) => {
+                const iconBtn =
+                  "grid size-8 shrink-0 place-items-center rounded-lg border border-line text-ink transition-colors hover:border-blue hover:bg-surface-2";
                 const s = STATUS[p.status] ?? STATUS.draft;
                 const targets = p.post_targets ?? [];
                 const failed = targets.filter((t) => t.status === "failed" && !t.next_attempt_at);
@@ -328,21 +330,33 @@ export default async function QueuePage({
                             Edit
                           </Link>
                         ) : targets.some((t) => t.status === "published" || t.platform_post_id) ? (
-                          <PostStatsButton
-                            thread={[p.body, ...(p.thread_tail ?? [])]}
-                            media={(p.media ?? []).map((mm) => ({ url: mm.storage_url, type: mm.type }))}
-                            publishedAt={p.scheduled_at}
-                            targets={targets.map((t) => ({
-                              id: t.id,
-                              platform: t.channels?.platform ?? "",
-                              handle: t.channels?.handle ?? null,
-                              status: t.status,
-                              platform_post_id: t.platform_post_id,
-                              metrics: t.metrics,
-                              metricsUpdatedAt: t.metrics_updated_at,
-                            }))}
-                            className="flex-1 rounded-lg border border-line px-2.5 py-1.5 text-center text-xs font-semibold text-ink transition-colors hover:border-blue hover:bg-surface-2"
-                          />
+                          <>
+                            <PostStatsButton
+                              iconOnly
+                              thread={[p.body, ...(p.thread_tail ?? [])]}
+                              media={(p.media ?? []).map((mm) => ({ url: mm.storage_url, type: mm.type }))}
+                              publishedAt={p.scheduled_at}
+                              targets={targets.map((t) => ({
+                                id: t.id,
+                                platform: t.channels?.platform ?? "",
+                                handle: t.channels?.handle ?? null,
+                                status: t.status,
+                                platform_post_id: t.platform_post_id,
+                                metrics: t.metrics,
+                                metricsUpdatedAt: t.metrics_updated_at,
+                              }))}
+                              className={iconBtn}
+                            />
+                            {/* Republish: a new post pre-filled from this one */}
+                            <Link href={`/composer?from=${p.id}`} className={iconBtn} aria-label="Republish" title="Republish">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                                <path d="m2 9 3-3 3 3" />
+                                <path d="M13 18H7a2 2 0 0 1-2-2V6" />
+                                <path d="m22 15-3 3-3-3" />
+                                <path d="M11 6h6a2 2 0 0 1 2 2v10" />
+                              </svg>
+                            </Link>
+                          </>
                         ) : null}
                         {p.status !== "publishing" ? (
                           <span className="ml-auto shrink-0">
