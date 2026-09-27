@@ -13,7 +13,6 @@ import { NotificationBell, type Notice } from "@/components/NotificationBell";
 import { OrgSwitcher } from "@/components/OrgSwitcher";
 import { TimezoneSync } from "@/components/TimezoneSync";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
-import { PreviewBanner } from "@/components/PreviewBanner";
 import { PlanGate } from "@/components/PlanGate";
 import { orgHasAccess, type OrgAccessRow } from "@/lib/billing-guard";
 import { createClient } from "@/lib/supabase/server";
@@ -94,7 +93,6 @@ export default async function AppLayout({
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <PreviewBanner />
       <div
         className="flex min-h-0 flex-1 overflow-hidden"
         style={{
