@@ -92,8 +92,9 @@ and must keep them confidential. We may apply rate limits and may revoke keys fo
 - **Payments.** Subscriptions are sold through Stripe Managed Payments, so Stripe acts
   as the merchant of record (reseller) for your purchase: it processes the payment,
   calculates and collects any sales tax, VAT or GST due where you live, and issues your
-  receipts. Your purchase is also subject to Stripe's terms shown at checkout. Prices are
-  shown excluding tax; any tax due is added at checkout.
+  receipts. Your purchase is also subject to Stripe's terms shown at checkout. Prices
+  include any sales tax, VAT or GST due, so the price shown is the price you pay (checkout
+  may show it converted to your local currency).
 - **Fair use.** Posting is unlimited on paid plans for normal use by the people and
   accounts on your plan. Some networks charge us for each API call (X, for example), so
   if a workspace's usage is far beyond typical use (such as automated bulk posting),
