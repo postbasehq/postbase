@@ -89,11 +89,15 @@ and must keep them confidential. We may apply rate limits and may revoke keys fo
   subscription begins and renews automatically each billing period at the then-current
   price. You can cancel any time; cancellation takes effect at the end of the current paid
   period.
-- **Payments** are processed by our payment processor, Stripe. Prices are exclusive
-  of taxes unless stated; you are responsible for applicable taxes.
+- **Payments.** Subscriptions are sold through Stripe Managed Payments, so Stripe acts
+  as the merchant of record (reseller) for your purchase: it processes the payment,
+  calculates and collects any sales tax, VAT or GST due where you live, and issues your
+  receipts. Your purchase is also subject to Stripe's terms shown at checkout. Prices are
+  shown excluding tax; any tax due is added at checkout.
 - **Price changes** apply from your next renewal, with reasonable prior notice.
-- **Refunds.** Except where required by law [or under any money-back guarantee we
-  expressly offer], fees are non-refundable. Nothing in these Terms removes any statutory
+- **Refunds.** Except where required by law, fees are non-refundable. As merchant of
+  record, Stripe may also issue refunds in some cases, for example to resolve a billing
+  dispute. Nothing in these Terms removes any statutory
   rights you have as a consumer.
 
 ## 10. Open source and self-hosting

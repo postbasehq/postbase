@@ -44,7 +44,9 @@ own privacy policies.
   are encrypted at rest.**
 - **Content** — the posts, captions, and media you create, schedule, or publish through
   the Service, and their scheduling metadata.
-- **Payment data** — handled by our payment processor, Stripe. We do **not**
+- **Payment data** — handled by Stripe, which sells subscriptions on our behalf as
+  merchant of record (Stripe Managed Payments) and uses your billing name and address
+  to calculate tax. We do **not**
   store your full card number; we retain limited billing details (e.g. plan, last four
   digits, billing country) as returned by the processor.
 - **Communications** — messages you send us (support, feedback).
@@ -72,7 +74,8 @@ We share personal data with vetted service providers who process it on our behal
 - **Supabase** — database, authentication (including sign-in emails), and file/media storage.
 - **Vercel** — application hosting, scheduled publishing, and privacy-friendly site analytics.
 - **Cloudflare (R2)** — storage for files you upload to your media library.
-- **Stripe** — payment processing.
+- **Stripe** — payment processing, and merchant of record for subscriptions (tax
+  calculation, receipts, fraud prevention and billing disputes).
 - **Anthropic and OpenAI** — AI models that power the Postbase agent, when you use it.
 - **Higgsfield** — AI image and video generation, when you use it.
 - **Google (Google Analytics)** — website analytics, only if you accept analytics cookies.

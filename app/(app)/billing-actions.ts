@@ -1,7 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { getStripe, stripeConfigured, billingUrls } from "@/lib/stripe";
+import type Stripe from "stripe";
+import { getStripe, stripeConfigured, billingUrls, managedPayments } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentOrgId } from "@/lib/org";
@@ -57,7 +58,11 @@ export async function startCheckout(formData: FormData) {
   // The 7-day trial is once per workspace: no trial if it has ever subscribed.
   const previous = await getStripe().subscriptions.list({ customer, status: "all", limit: 1 });
   const trial = previous.data.length === 0 ? { trial_period_days: 7 } : {};
-  const session = await getStripe().checkout.sessions.create({
+  // Managed Payments: Stripe is merchant of record (tax/VAT, fraud, disputes).
+  // Needs API >= 2025-03-31.basil and an eligible tax code on each product; the
+  // v18 SDK types predate the param, hence the cast.
+  const params: Stripe.Checkout.SessionCreateParams & { managed_payments?: { enabled: boolean } } = {
+    ...(managedPayments() ? { managed_payments: { enabled: true } } : {}),
     mode: "subscription",
     customer,
     line_items: [{ price, quantity: 1 }],
@@ -65,7 +70,8 @@ export async function startCheckout(formData: FormData) {
     success_url: billingUrls.success,
     cancel_url: billingUrls.cancel,
     allow_promotion_codes: true,
-  });
+  };
+  const session = await getStripe().checkout.sessions.create(params);
   if (!session.url) throw new Error("Couldn’t start checkout.");
   redirect(session.url);
 }

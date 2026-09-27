@@ -26,12 +26,16 @@ export async function POST(request: Request) {
   async function syncSubscription(sub: Stripe.Subscription) {
     const orgId = sub.metadata?.org_id;
     const customer = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
-    const price = sub.items.data[0]?.price?.id;
+    const item = sub.items.data[0];
+    const price = item?.price?.id;
     const plan = planForPrice(price);
     const update: Record<string, unknown> = {
       stripe_subscription_id: sub.id,
       subscription_status: sub.status,
-      current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+      // Since API 2025-03-31.basil the billing period lives on the subscription item.
+      current_period_end: item?.current_period_end
+        ? new Date(item.current_period_end * 1000).toISOString()
+        : null,
     };
     if (plan) update.plan = plan;
     else console.error(`[stripe] unknown price ${price} on subscription ${sub.id}; plan not updated`);

@@ -10,7 +10,7 @@ export function getStripe(): Stripe {
   if (!client) {
     const key = process.env.STRIPE_SECRET_KEY;
     if (!key) throw new Error("STRIPE_SECRET_KEY is not set.");
-    client = new Stripe(key, { apiVersion: "2025-02-24.acacia", typescript: true });
+    client = new Stripe(key, { apiVersion: "2025-08-27.basil", typescript: true });
   }
   return client;
 }
@@ -25,3 +25,11 @@ export const billingUrls = {
   cancel: `${APP_URL}/billing?checkout=cancelled`,
   return: `${APP_URL}/billing`,
 };
+
+/**
+ * Checkout uses Managed Payments (Stripe as merchant of record) unless
+ * STRIPE_MANAGED_PAYMENTS=off — an escape hatch if the account loses eligibility.
+ */
+export function managedPayments(): boolean {
+  return process.env.STRIPE_MANAGED_PAYMENTS?.trim().toLowerCase() !== "off";
+}

@@ -31,6 +31,10 @@ export default function PricingPage() {
           <PlanPicker />
         </div>
 
+        <p className="mt-4 text-center text-xs text-muted">
+          Prices in US dollars, excluding any sales tax or VAT, which is added at checkout.
+        </p>
+
         <p className="mx-auto mt-10 max-w-[640px] text-center text-sm text-muted">
           Prefer to self-host? Postbase is open source — run it yourself for free. Hosted cloud
           is the paid, managed option.
