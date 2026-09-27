@@ -188,7 +188,7 @@ const MONTH_POSTS: MonthPost[] = [
 ];
 const NEW_MONTH_POST: MonthPost = { day: 25, time: "16:00", text: "Launch week recap", chans: ["x", "linkedin", "bluesky"], status: "scheduled" };
 
-function MonthShot() {
+export function MonthShot() {
   const [added, setAdded] = useState(true);
   const [out, setOut] = useState(true);
   const [ref] = useLoop<HTMLDivElement>(async (step) => {
@@ -400,7 +400,7 @@ export function AgentShot({
 
 // ── Media library ────────────────────────────────────────────────────────
 
-function MediaShot() {
+export function MediaShot() {
   const [progress, setProgress] = useState(72);
   const [done, setDone] = useState(false);
   const [ref] = useLoop<HTMLDivElement>(async (step) => {
@@ -479,7 +479,7 @@ const Q_STATUS: Record<QStatus, { cls: string; dot: string; label: string }> = {
 };
 const Q_COLS = "grid grid-cols-[130px_minmax(0,1fr)_90px_90px_110px]";
 
-function QueueShot() {
+export function QueueShot() {
   const [first, setFirst] = useState<QStatus>("published");
   const [ref] = useLoop<HTMLDivElement>(async (step) => {
     setFirst("scheduled");
@@ -583,7 +583,7 @@ const BY_PLATFORM: [string, string, number][] = [
 ];
 const fmtNum = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(Math.round(n)));
 
-function AnalyticsShot() {
+export function AnalyticsShot() {
   const [t, setT] = useState(1);
   const [ref] = useLoop<HTMLDivElement>(async (step) => {
     setT(0);

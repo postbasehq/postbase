@@ -6,6 +6,7 @@ import { ClientLogo } from "@/components/ClientLogo";
 import { pageMeta } from "@/lib/site";
 import { CLIENTS, clientBySlug } from "@/lib/seo/clients";
 import { LIVE_NETWORKS } from "@/lib/seo/networks";
+import { COMBO_CLIENTS, COMBO_NETWORKS } from "@/lib/seo/combos";
 import { CtaBand, FaqList, Underlined, wrap } from "@/components/marketing/ui";
 import { CodeBlock, Eyebrow, LinkCards, Prompts, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
 import { ClientSetupDemo, ClientTiles } from "@/components/marketing/seo/demos";
@@ -73,7 +74,14 @@ export default async function AiClientPage({ params }: { params: Promise<{ slug:
 
         <section className={section}>
           <SectionHead title={`Networks ${c.name} can post to`} sub="Any account you've connected in Postbase." />
-          <LinkCards items={LIVE_NETWORKS.map((n) => ({ href: `/integrations/${n.slug}`, title: n.name, brand: n.id, body: n.blurb }))} />
+          <LinkCards
+            items={LIVE_NETWORKS.map((n) => {
+              const combo = (COMBO_CLIENTS as readonly string[]).includes(c.slug) && (COMBO_NETWORKS as readonly string[]).includes(n.slug);
+              return combo
+                ? { href: `/ai/${c.slug}/${n.slug}`, title: `${c.name} + ${n.name}`, brand: n.id, body: `How to post to ${n.name} from ${c.name}.` }
+                : { href: `/integrations/${n.slug}`, title: n.name, brand: n.id, body: n.blurb };
+            })}
+          />
         </section>
 
         <section className={section}>

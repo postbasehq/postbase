@@ -47,7 +47,7 @@ export default async function AlternativePage({ params }: { params: Promise<{ sl
           <SectionHead title={`Postbase vs ${c.name} at a glance`} sub={c.them} />
           <Comparison c={c} />
           <p className="mt-4 text-center text-[12.5px] text-muted">
-            {c.name} details from their official pages, checked {CHECKED}. Plans change, so check{" "}
+            {c.name} details from their official pages, checked {c.checked ?? CHECKED}. Plans change, so check{" "}
             {c.sources.map((s, i) => (
               <span key={s.url}>
                 {i > 0 ? (i === c.sources.length - 1 ? " and " : ", ") : null}

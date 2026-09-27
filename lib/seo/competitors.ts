@@ -35,6 +35,8 @@ export type Competitor = {
   switchSteps: { title: string; body: string }[];
   faqs: [string, string][];
   sources: { label: string; url: string }[];
+  /** When this competitor's facts were checked, if not CHECKED. */
+  checked?: string;
 };
 
 const SWITCH = (name: string) => [
@@ -283,6 +285,305 @@ export const COMPETITORS: Competitor[] = [
       { label: "Ayrshare pricing", url: "https://www.ayrshare.com/pricing/" },
       { label: "Ayrshare supported networks", url: "https://www.ayrshare.com/docs/introduction" },
       { label: "Ayrshare MCP server", url: "https://www.ayrshare.com/docs/additional/mcp-server" },
+    ],
+  },
+  {
+    slug: "hypefury",
+    name: "Hypefury",
+    checked: "27 September 2026",
+    metaTitle: "Hypefury alternative that still posts to X",
+    metaDescription:
+      "Hypefury no longer supports X. Postbase schedules X posts and threads, plus LinkedIn, Bluesky, Mastodon, TikTok and YouTube, with an AI agent and an MCP server.",
+    h1: ["A Hypefury alternative that", "still posts to X"],
+    sub: "Hypefury has dropped X. Postbase schedules X posts and threads alongside LinkedIn, Bluesky and Mastodon, from one calendar.",
+    them: "Hypefury is a scheduler for solo creators, known for auto-plugs, auto-DMs and AI that writes in your own voice.",
+    chooseUs: [
+      "You post to X. Hypefury's pricing page says it no longer supports X.",
+      "You want YouTube as well as short-form networks, all on one calendar.",
+      "You want an API and an MCP server for Claude and Cursor, or to self-host.",
+    ],
+    chooseThem: [
+      "You don't need X and want monetisation automation like auto-plugs and auto-DMs.",
+      "You only post to one network and want the $6/month single-channel plan.",
+      "You want AI trained on your own past posts.",
+    ],
+    rows: [
+      { label: "Starting price", key: "price", them: "$6/month for one channel, or $19/month for all channels" },
+      { label: "Free plan", key: "free", them: "No: a 7-day trial" },
+      { label: "Networks", key: "networks", them: "Bluesky, Threads, LinkedIn, Instagram, TikTok, Mastodon. No X or YouTube" },
+      { label: "MCP server", key: "mcp", them: "None found" },
+      { label: "Public API", key: "api", them: "None found" },
+      { label: "Open source", key: "oss", them: "No" },
+    ],
+    switchSteps: SWITCH("Hypefury"),
+    faqs: [
+      [
+        "Does Hypefury still support X?",
+        "Hypefury's pricing page says it no longer supports X. Postbase does: posts, threads of up to 25 posts, images and video.",
+      ],
+      [
+        "Can Postbase schedule X threads?",
+        "Yes. Add posts to a thread in the composer and Postbase publishes them as a chain of replies at the time you pick.",
+      ],
+      [
+        "Does Postbase have auto-plugs or auto-DMs?",
+        "No. Postbase focuses on writing, scheduling and publishing. If those automations are central to how you grow, Hypefury is the better fit on the networks it supports.",
+      ],
+    ],
+    sources: [
+      { label: "Hypefury pricing", url: "https://hypefury.com/pricing/" },
+      { label: "Hypefury", url: "https://hypefury.com/" },
+    ],
+  },
+  {
+    slug: "later",
+    name: "Later",
+    checked: "27 September 2026",
+    metaTitle: "Later alternative for X, Bluesky, Mastodon and AI agents",
+    metaDescription:
+      "Comparing Postbase and Later: networks (X, Bluesky and Mastodon vs Instagram and Pinterest), post limits, API and MCP, and open source. When each one is the better pick.",
+    h1: ["A Later alternative for", "text and threads"],
+    sub: "Later is built around Instagram and TikTok. Postbase covers X, Bluesky, Mastodon and LinkedIn as well, with unlimited posts and an AI agent.",
+    them: "Later is a visual planner for Instagram-, TikTok- and Pinterest-first brands, with an influencer marketing product alongside.",
+    chooseUs: [
+      "You post to X, Bluesky or Mastodon. Later doesn't support them.",
+      "You want unlimited posts rather than a monthly cap per profile.",
+      "You want an API or an MCP server so Claude or your own code can post.",
+    ],
+    chooseThem: [
+      "Instagram, Pinterest or Snapchat is your main channel. Postbase is waiting on Meta's app review for Instagram.",
+      "You want a visual grid planner for Instagram.",
+      "You run influencer campaigns and want them in the same tool.",
+    ],
+    rows: [
+      { label: "Starting price", key: "price", them: "$25/month (Starter), or $18.75/month billed yearly" },
+      { label: "Free plan", key: "free", them: "No: a 14-day trial" },
+      { label: "How pricing scales", key: "scaling", them: "By social sets and users. Starter allows 30 posts per profile per month" },
+      { label: "Networks", key: "networks", them: "Instagram, Facebook, TikTok, Threads, YouTube, Pinterest, LinkedIn, Snapchat. No X, Bluesky or Mastodon" },
+      { label: "MCP server", key: "mcp", them: "None found" },
+      { label: "Public API", key: "api", them: "No public posting API" },
+      { label: "Open source", key: "oss", them: "No" },
+    ],
+    switchSteps: SWITCH("Later"),
+    faqs: [
+      [
+        "Does Postbase support Instagram like Later?",
+        "Not yet. Instagram, Facebook and Threads are waiting on Meta's app review. If Instagram is your main channel today, Later is the better pick.",
+      ],
+      [
+        "Is there a post limit on Postbase?",
+        "No. Every Postbase plan includes unlimited posts. Later's Starter plan allows 30 posts per profile per month.",
+      ],
+      [
+        "Can I use both?",
+        "Yes. Some people keep Later for Instagram and use Postbase for X, LinkedIn, Bluesky and Mastodon.",
+      ],
+    ],
+    sources: [
+      { label: "Later pricing", url: "https://later.com/pricing/" },
+      { label: "Later help centre", url: "https://help.later.com/hc/en-us/articles/360059362253" },
+    ],
+  },
+  {
+    slug: "sprout-social",
+    name: "Sprout Social",
+    checked: "27 September 2026",
+    metaTitle: "Sprout Social alternative: scheduling from $29/month",
+    metaDescription:
+      "Comparing Postbase and Sprout Social: price per seat vs per plan, networks, API access, MCP for Claude and ChatGPT, and open source. When each one is the better pick.",
+    h1: ["A lighter", "Sprout Social alternative"],
+    sub: "Sprout Social is a full suite priced per seat. If you mainly need scheduling, Postbase does it from $29 a month, with an API and MCP server on every plan.",
+    them: "Sprout Social is an enterprise-grade suite for social teams: publishing, a unified inbox, listening and reporting.",
+    chooseUs: [
+      "You mainly need scheduling and a calendar, and don't want to pay per seat.",
+      "You want an API on every plan, and an MCP server that works with Claude.",
+      "You post to Mastodon, or want to self-host.",
+    ],
+    chooseThem: [
+      "You need a unified inbox, social listening and advanced reporting.",
+      "You need Instagram, Facebook, Threads or Pinterest today.",
+      "Your team needs enterprise approvals and support.",
+    ],
+    rows: [
+      { label: "Starting price", key: "price", them: "$99 per seat per month (Essentials), or $79 billed yearly" },
+      { label: "Free plan", key: "free", them: "No: a 30-day trial" },
+      { label: "How pricing scales", key: "scaling", them: "Per seat. Essentials includes 5 social profiles" },
+      { label: "Networks", key: "networks", them: "X, LinkedIn, Bluesky, TikTok, YouTube, Instagram, Threads, Facebook, Pinterest, Google Business Profile" },
+      { label: "MCP server", key: "mcp", them: "Yes, documented for ChatGPT only" },
+      { label: "Public API", key: "api", them: "Only on the Advanced ($399 per seat) and Enterprise plans" },
+      { label: "Open source", key: "oss", them: "No" },
+    ],
+    switchSteps: SWITCH("Sprout Social"),
+    faqs: [
+      [
+        "Is Postbase a full Sprout Social replacement?",
+        "For scheduling and publishing, yes. Postbase doesn't have a unified inbox or social listening, so if your team relies on those, Sprout is the better fit.",
+      ],
+      [
+        "Does Postbase work with Claude?",
+        "Yes. Add the Postbase MCP server to Claude, Claude Code, Cursor and other tools. Sprout documents its MCP server for ChatGPT.",
+      ],
+      [
+        "How does the price compare for a team of three?",
+        "Sprout Essentials is $99 per seat per month, so three people is $297/month. Postbase's Team plan is $39/month for 15 channels with team seats.",
+      ],
+    ],
+    sources: [
+      { label: "Sprout Social pricing", url: "https://sproutsocial.com/pricing/" },
+      { label: "Sprout ChatGPT connection", url: "https://support.sproutsocial.com/hc/en-us/articles/41236268336653-ChatGPT-Connection-Overview-and-Setup" },
+    ],
+  },
+  {
+    slug: "publer",
+    name: "Publer",
+    checked: "27 September 2026",
+    metaTitle: "Publer alternative with an API and MCP on every plan",
+    metaDescription:
+      "Comparing Postbase and Publer: per-account vs flat pricing, networks, API and MCP access, and open source. An honest look at when each one is the better pick.",
+    h1: ["A Publer alternative with", "an API on every plan"],
+    sub: "Publer keeps its API and MCP server for Business customers. Postbase includes both on every plan, is open source, and has an AI agent built in.",
+    them: "Publer is a budget-friendly scheduler for small businesses and agencies, with per-account pricing and a long list of networks.",
+    chooseUs: [
+      "You want the API and MCP server without moving to a business plan.",
+      "You want to self-host, or read the code that posts for you.",
+      "You want a flat price as you add accounts: 15 channels for $39/month.",
+    ],
+    chooseThem: [
+      "You only need a few accounts and want the lowest price, or a free plan.",
+      "You need Instagram, Facebook, Pinterest, Threads, Telegram or WordPress today.",
+      "You want to post to LinkedIn company pages or Facebook groups.",
+    ],
+    rows: [
+      { label: "Starting price", key: "price", them: "From $5 per account per month (Professional)" },
+      { label: "Free plan", key: "free", them: "Yes: 3 accounts (not X), 10 scheduled posts each" },
+      { label: "How pricing scales", key: "scaling", them: "Per account and per extra member" },
+      {
+        label: "Networks",
+        key: "networks",
+        them: "X, LinkedIn, Bluesky, Mastodon, TikTok, YouTube, Instagram, Facebook, Threads, Pinterest, Google Business, Telegram, WordPress",
+      },
+      { label: "MCP server", key: "mcp", them: "Business and Enterprise plans only" },
+      { label: "Public API", key: "api", them: "Business and Enterprise plans only" },
+      { label: "Open source", key: "oss", them: "No" },
+    ],
+    switchSteps: SWITCH("Publer"),
+    faqs: [
+      [
+        "Is Postbase cheaper than Publer?",
+        "For a few accounts, no: Publer starts at $5 per account and has a free plan. Postbase's flat plans work out cheaper as you add accounts, and include the API and MCP server on every plan.",
+      ],
+      [
+        "Can I post to X on Publer's free plan?",
+        "Publer's free plan excludes X. Postbase supports X on every plan.",
+      ],
+      [
+        "Can Claude post through Postbase?",
+        "Yes. Add the Postbase MCP server to Claude, Claude Code, Cursor, VS Code, Windsurf or Gemini CLI on any plan.",
+      ],
+    ],
+    sources: [
+      { label: "Publer plans and pricing", url: "https://publer.com/help/en/article/what-are-publers-plans-and-pricing-15h4yqh/" },
+      { label: "Publer supported networks", url: "https://publer.com/help/en/article/what-social-networks-are-supported-npoun1/" },
+      { label: "Publer API docs", url: "https://publer.com/docs" },
+    ],
+  },
+  {
+    slug: "socialbee",
+    name: "SocialBee",
+    checked: "27 September 2026",
+    metaTitle: "SocialBee alternative with an API, MCP and Mastodon",
+    metaDescription:
+      "Comparing Postbase and SocialBee: the same $29 starting price, but an API, an MCP server for AI agents, Mastodon support and open source. When each one is the better pick.",
+    h1: ["A SocialBee alternative for", "AI agents"],
+    sub: "Same starting price, different strengths: Postbase adds an API, an MCP server for Claude and Cursor, Mastodon, and open source.",
+    them: "SocialBee is a scheduler for small businesses built around content categories and evergreen recycling, with an AI copilot.",
+    chooseUs: [
+      "You want Claude, Cursor or your own code to post for you. SocialBee has no public API.",
+      "You post to Mastodon.",
+      "You want team seats without paying per user: Team is $39/month for 15 channels.",
+    ],
+    chooseThem: [
+      "You rely on category-based evergreen recycling to keep queues full.",
+      "You need Instagram, Facebook, Pinterest or Threads today.",
+      "You want Canva built into the composer.",
+    ],
+    rows: [
+      { label: "Starting price", key: "price", them: "$29/month for 5 profiles (Bootstrap)" },
+      { label: "Free plan", key: "free", them: "No: a 14-day trial" },
+      { label: "How pricing scales", key: "scaling", them: "Tiers by profile count; extra users $10/month each" },
+      { label: "Networks", key: "networks", them: "X, LinkedIn, Bluesky, TikTok, YouTube, Instagram, Facebook, Threads, Pinterest, Google Business. No Mastodon" },
+      { label: "MCP server", key: "mcp", them: "None found" },
+      { label: "Public API", key: "api", them: "Not yet: on SocialBee's long-term roadmap" },
+      { label: "Open source", key: "oss", them: "No" },
+    ],
+    switchSteps: SWITCH("SocialBee"),
+    faqs: [
+      [
+        "Does Postbase recycle evergreen posts?",
+        "Postbase can repeat a post on a schedule you choose. It doesn't have SocialBee's category-based queues.",
+      ],
+      [
+        "Can I automate posting from other tools?",
+        "Yes. Postbase has a REST API and an MCP server on every plan, so Zapier-style workflows, scripts and AI agents can create posts.",
+      ],
+      [
+        "Is the price the same?",
+        "Both start at $29/month for 5 channels. Postbase's Team plan adds team seats and 15 channels for $39/month.",
+      ],
+    ],
+    sources: [
+      { label: "SocialBee pricing", url: "https://socialbee.com/pricing/" },
+      { label: "SocialBee help centre", url: "https://help.socialbee.com/hc/en-us/articles/29979123668375" },
+    ],
+  },
+  {
+    slug: "post-bridge",
+    name: "Post Bridge",
+    checked: "27 September 2026",
+    metaTitle: "Post Bridge alternative: open source, with Mastodon",
+    metaDescription:
+      "Comparing Postbase and Post Bridge: price, networks (including Mastodon), MCP and API, open source, and the built-in AI agent. When each one is the better pick.",
+    h1: ["An open-source", "Post Bridge alternative"],
+    sub: "Both schedule to the big networks with an API and MCP server included. Postbase is open source, supports Mastodon, and has an AI agent built in.",
+    them: "Post Bridge is a simple, high-volume scheduler for creators and short-form video accounts, with an API and MCP server on its current plans.",
+    chooseUs: [
+      "You want to self-host, or read the code that posts for you.",
+      "You post to Mastodon.",
+      "You want an AI agent inside the app, as well as the MCP server.",
+    ],
+    chooseThem: [
+      "You need Instagram, Facebook, Threads or Pinterest today.",
+      "You post short-form video at volume to many accounts and want bulk video scheduling.",
+      "You want one-click connectors from the Claude and ChatGPT directories.",
+    ],
+    rows: [
+      { label: "Starting price", key: "price", them: "$39/month for 15 accounts (Marketer)" },
+      { label: "Free plan", key: "free", them: "No: a 7-day trial" },
+      { label: "How pricing scales", key: "scaling", them: "Tiers by account count, then $1 per extra account on Operator" },
+      { label: "Networks", key: "networks", them: "X, LinkedIn, Bluesky, TikTok, YouTube, Instagram, Facebook, Threads, Pinterest, Google Business. No Mastodon" },
+      { label: "MCP server", key: "mcp", them: "Yes, with sign-in, listed for Claude and ChatGPT" },
+      { label: "Public API", key: "api", them: "Yes, on current plans" },
+      { label: "Open source", key: "oss", them: "No" },
+    ],
+    switchSteps: SWITCH("Post Bridge"),
+    faqs: [
+      [
+        "How do the prices compare?",
+        "Post Bridge's Marketer plan is $39/month for 15 accounts. Postbase's Team plan is also $39/month for 15 channels, with team seats, and Creator is $29/month for 5.",
+      ],
+      [
+        "Do both work with Claude?",
+        "Yes, both have an MCP server that signs in with OAuth. Postbase also has an agent built into the app.",
+      ],
+      [
+        "Can I self-host Postbase?",
+        "Yes. Postbase is open source; run it on your own servers with your own platform API keys.",
+      ],
+    ],
+    sources: [
+      { label: "Post Bridge pricing", url: "https://www.post-bridge.com/pricing" },
+      { label: "Post Bridge for agents", url: "https://www.post-bridge.com/agents" },
+      { label: "Post Bridge API", url: "https://support.post-bridge.com/api/post-bridge-api-overview-access-and-pricing" },
     ],
   },
 ];

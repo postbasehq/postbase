@@ -82,7 +82,7 @@ export function SectionHead({ title, sub }: { title: React.ReactNode; sub?: Reac
 /** "What Postbase supports on X": label/value cards. */
 export function Facts({ items }: { items: { label: string; value: string }[] }) {
   return (
-    <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <dl className={`grid gap-4 sm:grid-cols-2 ${items.length === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
       {items.map((f) => (
         <div key={f.label} className={`${card} p-6`}>
           <dt className="font-display text-[12px] font-semibold uppercase tracking-[0.08em] text-blue-ink">{f.label}</dt>

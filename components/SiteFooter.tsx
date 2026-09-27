@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { Logo } from "./Logo";
+import { BrandTile } from "./BrandTile";
+import { ClientLogo } from "./ClientLogo";
 
-const COLUMNS: { title: string; links: [string, string][] }[] = [
+/** Optional icon before a link: a network tile ("brand:x"), an AI tool logo ("client:claude") or an arrow. */
+type Icon = `brand:${string}` | `client:${string}` | "arrow";
+
+const COLUMNS: { title: string; links: [string, string, Icon?][] }[] = [
   {
     title: "Product",
     links: [
@@ -9,6 +14,10 @@ const COLUMNS: { title: string; links: [string, string][] }[] = [
       ["Channels", "/#channels"],
       ["Pricing", "/#pricing"],
       ["FAQ", "/#faq"],
+      ["For creators", "/for/creators"],
+      ["For founders", "/for/founders"],
+      ["For agencies", "/for/agencies"],
+      ["For small businesses", "/for/small-businesses"],
       ["Compare", "/alternatives"],
       ["Blog", "/blog"],
       ["Free tools", "/tools"],
@@ -17,25 +26,25 @@ const COLUMNS: { title: string; links: [string, string][] }[] = [
   {
     title: "Integrations",
     links: [
-      ["X (Twitter)", "/integrations/x"],
-      ["LinkedIn", "/integrations/linkedin"],
-      ["Bluesky", "/integrations/bluesky"],
-      ["Mastodon", "/integrations/mastodon"],
-      ["TikTok", "/integrations/tiktok"],
-      ["YouTube", "/integrations/youtube"],
-      ["All integrations", "/integrations"],
+      ["X (Twitter)", "/integrations/x", "brand:x"],
+      ["LinkedIn", "/integrations/linkedin", "brand:linkedin"],
+      ["Bluesky", "/integrations/bluesky", "brand:bluesky"],
+      ["Mastodon", "/integrations/mastodon", "brand:mastodon"],
+      ["TikTok", "/integrations/tiktok", "brand:tiktok"],
+      ["YouTube", "/integrations/youtube", "brand:youtube"],
+      ["All integrations", "/integrations", "arrow"],
     ],
   },
   {
     title: "AI tools",
     links: [
-      ["Claude", "/ai/claude"],
-      ["Claude Code", "/ai/claude-code"],
-      ["Cursor", "/ai/cursor"],
-      ["VS Code", "/ai/vscode"],
-      ["Windsurf", "/ai/windsurf"],
-      ["Gemini CLI", "/ai/gemini-cli"],
-      ["All AI tools", "/ai"],
+      ["Claude", "/ai/claude", "client:claude"],
+      ["Claude Code", "/ai/claude-code", "client:claude-code"],
+      ["Cursor", "/ai/cursor", "client:cursor"],
+      ["VS Code", "/ai/vscode", "client:vscode"],
+      ["Windsurf", "/ai/windsurf", "client:windsurf"],
+      ["Gemini CLI", "/ai/gemini-cli", "client:gemini"],
+      ["All AI tools", "/ai", "arrow"],
     ],
   },
   {
@@ -73,19 +82,28 @@ export function SiteFooter() {
             <div key={c.title}>
               <div className="font-display text-[14px] font-semibold text-ink">{c.title}</div>
               <ul className="mt-3 flex flex-col gap-2.5">
-                {c.links.map(([label, href]) => (
-                  <li key={label}>
-                    {href.startsWith("/") && !href.includes("#") && !href.includes("?") ? (
-                      <Link href={href} className="text-muted transition-colors hover:text-ink">
-                        {label}
-                      </Link>
-                    ) : (
-                      <a href={href} className="text-muted transition-colors hover:text-ink">
-                        {label}
-                      </a>
-                    )}
-                  </li>
-                ))}
+                {c.links.map(([label, href, icon]) => {
+                  const cls = `text-muted transition-colors hover:text-ink ${icon ? "inline-flex items-center gap-2.5 whitespace-nowrap" : ""}`;
+                  const inner = (
+                    <>
+                      {icon ? <LinkIcon icon={icon} /> : null}
+                      {label}
+                    </>
+                  );
+                  return (
+                    <li key={label}>
+                      {href.startsWith("/") && !href.includes("#") && !href.includes("?") ? (
+                        <Link href={href} className={cls}>
+                          {inner}
+                        </Link>
+                      ) : (
+                        <a href={href} className={cls}>
+                          {inner}
+                        </a>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ))}
@@ -98,4 +116,18 @@ export function SiteFooter() {
       </div>
     </footer>
   );
+}
+
+function LinkIcon({ icon }: { icon: Icon }) {
+  if (icon === "arrow") {
+    return (
+      <span className="grid size-[18px] place-items-center" aria-hidden>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M5 12h14M13 6l6 6-6 6" />
+        </svg>
+      </span>
+    );
+  }
+  const [kind, id] = icon.split(":");
+  return kind === "brand" ? <BrandTile platform={id} size={18} radius={5} /> : <ClientLogo id={id} size={18} />;
 }

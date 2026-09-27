@@ -4,6 +4,8 @@ import { LIVE_NETWORKS } from "@/lib/seo/networks";
 import { CLIENTS } from "@/lib/seo/clients";
 import { COMPETITORS } from "@/lib/seo/competitors";
 import { listPosts } from "@/lib/blog";
+import { PERSONAS } from "@/lib/seo/personas";
+import { ALL_COMBOS } from "@/lib/seo/combos";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
@@ -21,6 +23,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...LIVE_NETWORKS.map((n) => page(`/integrations/${n.slug}`, 0.8, "monthly")),
     page("/ai", 0.8, "monthly"),
     ...CLIENTS.map((c) => page(`/ai/${c.slug}`, 0.8, "monthly")),
+    ...ALL_COMBOS.map((c) => page(`/ai/${c.client}/${c.network}`, 0.7, "monthly")),
+    ...PERSONAS.map((p) => page(`/for/${p.slug}`, 0.8, "monthly")),
     page("/alternatives", 0.6, "monthly"),
     ...COMPETITORS.map((c) => page(`/alternatives/${c.slug}`, 0.7, "monthly")),
     page("/tools", 0.6, "monthly"),

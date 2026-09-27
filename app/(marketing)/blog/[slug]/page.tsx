@@ -8,11 +8,9 @@ import { BrandTile } from "@/components/BrandTile";
 import { ClientLogo } from "@/components/ClientLogo";
 import { SITE_NAME, SITE_URL, pageMeta } from "@/lib/site";
 import { formatDate, getPost, listPosts } from "@/lib/blog";
-import { LIVE_NETWORKS } from "@/lib/seo/networks";
-import { CLIENTS } from "@/lib/seo/clients";
-import { COMPETITORS } from "@/lib/seo/competitors";
 import { Breadcrumbs, CtaBand, wrap } from "@/components/marketing/ui";
-import { LinkCards, SectionHead, section, type LinkCard } from "@/components/marketing/seo/sections";
+import { LinkCards, SectionHead, section } from "@/components/marketing/seo/sections";
+import { relatedCards } from "@/lib/seo/related";
 import { CategoryPill, PostCard } from "@/components/marketing/blog/PostCard";
 import { Demo } from "@/components/marketing/blog/Demo";
 
@@ -34,30 +32,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-/** Turn a related path into a card, using the SEO page data for its title and icon. */
-function relatedCard(href: string): LinkCard | null {
-  const [, kind, slug] = href.split("/");
-  if (kind === "integrations") {
-    const n = LIVE_NETWORKS.find((x) => x.slug === slug);
-    return n ? { href, title: n.eyebrow, brand: n.id, body: n.blurb } : null;
-  }
-  if (kind === "ai") {
-    const c = CLIENTS.find((x) => x.slug === slug);
-    return c ? { href, title: c.eyebrow, client: c.logo, body: c.metaDescription.split(". ")[0] + "." } : null;
-  }
-  if (kind === "alternatives") {
-    const c = COMPETITORS.find((x) => x.slug === slug);
-    return c ? { href, title: `Postbase vs ${c.name}`, body: c.them } : null;
-  }
-  return null;
-}
-
 export default async function BlogPost({ params }: { params: Promise<{ slug: string }> }) {
   const post = getPost((await params).slug);
   if (!post) notFound();
   const path = `/blog/${post.slug}`;
   const trail = [{ label: "Home", href: "/" }, { label: "Blog", href: "/blog" }, { label: post.title }];
-  const related = post.related.map(relatedCard).filter((c): c is LinkCard => !!c);
+  const related = relatedCards(post.related);
   const more = listPosts()
     .filter((p) => p.slug !== post.slug)
     .sort((a, b) => Number(b.category === post.category) - Number(a.category === post.category))

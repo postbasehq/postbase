@@ -63,3 +63,4 @@ pnpm-debug.log*
 Thumbs.db
 Desktop.ini
 .next-verify/
+.next-preview/
