@@ -35,7 +35,7 @@ const TOOLS = [
     title: "Create or schedule a post",
     annotations: { title: "Create or schedule a post", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     description:
-      "Create a draft, or schedule a post or thread, on one or more connected channels. It appears on the user's Postbase calendar and publishes at `scheduled_at` via each network's official API. Provide `body` for a single post or `thread` for several posts; the same text goes to every channel in the call, so call once per network for different wording. Limits per post: X 280 (links count 23), Bluesky 300, Mastodon 500, LinkedIn 3,000. Threads publish as reply chains on X, Bluesky and Mastodon; on LinkedIn the extra parts become the first comment. Text only: TikTok and YouTube need a video, so save a draft for those and the user adds media in Postbase. For a relative time (\"in 10 minutes\", \"in 2 hours\") use `schedule_in_minutes`, since the server knows the current time. Omit both to save a draft. Docs: https://docs.postbase.so/mcp/tools",
+      "Create a draft, or schedule a post or thread, on one or more connected channels. You don't need to know the current time: for relative times (\"in 10 minutes\", \"in 2 hours\") pass `schedule_in_minutes` and the server works out the time, so never ask the user what time it is. The post appears on the user's Postbase calendar and publishes at `scheduled_at` via each network's official API. Provide `body` for a single post or `thread` for several posts; the same text goes to every channel in the call, so call once per network for different wording. Limits per post: X 280 (links count 23), Bluesky 300, Mastodon 500, LinkedIn 3,000. Threads publish as reply chains on X, Bluesky and Mastodon; on LinkedIn the extra parts become the first comment. Text only: TikTok and YouTube need a video, so save a draft for those and the user adds media in Postbase. Omit `scheduled_at` and `schedule_in_minutes` to save a draft. Docs: https://docs.postbase.so/mcp/tools",
     inputSchema: {
       type: "object",
       properties: {
@@ -90,6 +90,10 @@ const TOOLS = [
     },
   },
 ];
+
+// Clients often have no clock, so point them at relative scheduling and give them the time.
+const INSTRUCTIONS =
+  "Postbase schedules social posts. To schedule relative to now (\"in 10 minutes\", \"in an hour\"), call create_post with schedule_in_minutes; the server works out the time, so don't ask the user what time it is. Every tool result also includes the current server time (UTC).";
 
 type Args = Record<string, unknown>;
 const asStringArray = (v: unknown): string[] =>
@@ -146,6 +150,7 @@ async function handleRpc(orgId: string, msg: {
           typeof params?.protocolVersion === "string" ? params.protocolVersion : PROTOCOL_VERSION,
         capabilities: { tools: {} },
         serverInfo: SERVER_INFO,
+        instructions: INSTRUCTIONS,
       });
     case "notifications/initialized":
     case "notifications/cancelled":
@@ -160,7 +165,10 @@ async function handleRpc(orgId: string, msg: {
       try {
         const out = await runTool(orgId, name, args);
         return rpcResult(id, {
-          content: [{ type: "text", text: JSON.stringify(out, null, 2) }],
+          content: [
+            { type: "text", text: JSON.stringify(out, null, 2) },
+            { type: "text", text: `Current server time: ${new Date().toISOString()} (UTC)` },
+          ],
         });
       } catch (e) {
         return rpcResult(id, {
