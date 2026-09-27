@@ -18,7 +18,14 @@ const nextConfig: NextConfig = {
   // (RFC 8414 / 9728) via rewrites. The protected-resource doc also answers any
   // resource-suffixed path that MCP clients probe.
   async rewrites() {
-    return [
+    // mcp.postbase.so serves the MCP server at /mcp (and /). beforeFiles so
+    // "/" on that host doesn't hit the marketing homepage.
+    const mcpHost = [{ type: "host" as const, value: process.env.MCP_HOST || "mcp.postbase.so" }];
+    const beforeFiles = [
+      { source: "/mcp", has: mcpHost, destination: "/api/mcp" },
+      { source: "/", has: mcpHost, destination: "/api/mcp" },
+    ];
+    return { beforeFiles, afterFiles: [
       {
         source: "/.well-known/oauth-authorization-server",
         destination: "/well-known/oauth-authorization-server",
@@ -35,7 +42,7 @@ const nextConfig: NextConfig = {
         source: "/.well-known/oauth-protected-resource/:path*",
         destination: "/well-known/oauth-protected-resource",
       },
-    ];
+    ], fallback: [] };
   },
 };
 

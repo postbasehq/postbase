@@ -21,6 +21,32 @@ export function mcpResourceUrl(): string {
   return `${issuer()}/api/mcp`;
 }
 
+/**
+ * The MCP server also answers at its own host, https://mcp.postbase.so/mcp
+ * (rewritten to /api/mcp in next.config). A client's resource must match the
+ * URL it connected to, so metadata is host-aware. The authorization server
+ * stays on the main origin either way.
+ */
+export const MCP_HOST = process.env.MCP_HOST || "mcp.postbase.so";
+
+function requestHost(req: Request): string {
+  return (req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "").split(",")[0].trim().toLowerCase();
+}
+
+export function isMcpHost(req: Request): boolean {
+  return requestHost(req) === MCP_HOST;
+}
+
+/** The MCP resource URL for the host this request came in on. */
+export function mcpResourceUrlFor(req: Request): string {
+  return isMcpHost(req) ? `https://${MCP_HOST}/mcp` : mcpResourceUrl();
+}
+
+/** Where this host serves its protected-resource metadata. */
+export function resourceMetadataUrlFor(req: Request): string {
+  return isMcpHost(req) ? `https://${MCP_HOST}/.well-known/oauth-protected-resource` : `${issuer()}/.well-known/oauth-protected-resource`;
+}
+
 const sha256 = (s: string) => crypto.createHash("sha256").update(s).digest("hex");
 
 /** base64url(sha256(x)) — the PKCE S256 transform. */

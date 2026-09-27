@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { issuer, mcpResourceUrl } from "@/lib/oauth";
+import { issuer, mcpResourceUrlFor } from "@/lib/oauth";
 
 // RFC 9728 — OAuth 2.0 Protected Resource Metadata. Tells MCP clients which
 // authorization server guards the MCP endpoint. Served for both the bare path
@@ -10,10 +10,10 @@ const cors = {
   "Access-Control-Allow-Headers": "*",
 };
 
-export function GET() {
+export function GET(req: Request) {
   return NextResponse.json(
     {
-      resource: mcpResourceUrl(),
+      resource: mcpResourceUrlFor(req),
       authorization_servers: [issuer()],
       scopes_supported: ["mcp"],
       bearer_methods_supported: ["header"],

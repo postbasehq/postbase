@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { authenticateApiKey } from "@/lib/api-auth";
-import { resolveAccessToken, mcpResourceUrl, issuer } from "@/lib/oauth";
+import { resolveAccessToken, resourceMetadataUrlFor } from "@/lib/oauth";
 import { listChannels, listPosts, createPost, cancelPost } from "@/lib/api-core";
 
 /**
@@ -11,7 +11,7 @@ import { listChannels, listPosts, createPost, cancelPost } from "@/lib/api-core"
  */
 
 const PROTOCOL_VERSION = "2025-06-18";
-const SERVER_INFO = { name: "postbase", version: "1.0.0" };
+const SERVER_INFO = { name: "postbase", title: "Postbase", version: "1.0.0" };
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -23,11 +23,16 @@ const cors = {
 const TOOLS = [
   {
     name: "list_channels",
+    title: "List channels",
+    // MCP tool annotations: lets clients (and directory review) tell reads from writes.
+    annotations: { title: "List channels", readOnlyHint: true, openWorldHint: false },
     description: "List the connected social accounts (channels) and their platforms.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
   {
     name: "create_post",
+    title: "Create or schedule a post",
+    annotations: { title: "Create or schedule a post", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     description:
       "Draft or schedule a post/thread. Provide `body` (single post) or `thread` (array of posts). Omit `scheduled_at` to save as a draft.",
     inputSchema: {
@@ -54,6 +59,8 @@ const TOOLS = [
   },
   {
     name: "list_scheduled",
+    title: "List scheduled posts",
+    annotations: { title: "List scheduled posts", readOnlyHint: true, openWorldHint: false },
     description: "List scheduled/queued posts (optionally filter by status).",
     inputSchema: {
       type: "object",
@@ -65,6 +72,8 @@ const TOOLS = [
   },
   {
     name: "cancel_post",
+    title: "Cancel a scheduled post",
+    annotations: { title: "Cancel a scheduled post", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description: "Cancel a scheduled post (reverts it to a draft) by its id.",
     inputSchema: {
       type: "object",
@@ -161,20 +170,20 @@ async function authorize(req: Request): Promise<{ orgId: string } | null> {
   return authenticateApiKey(req);
 }
 
-function unauthorized() {
+function unauthorized(req: Request) {
   return new NextResponse(JSON.stringify({ error: "unauthorized" }), {
     status: 401,
     headers: {
       ...cors,
       "Content-Type": "application/json",
-      "WWW-Authenticate": `Bearer resource_metadata="${issuer()}/.well-known/oauth-protected-resource"`,
+      "WWW-Authenticate": `Bearer resource_metadata="${resourceMetadataUrlFor(req)}"`,
     },
   });
 }
 
 export async function POST(req: Request) {
   const auth = await authorize(req);
-  if (!auth) return unauthorized();
+  if (!auth) return unauthorized(req);
 
   let payload: unknown;
   try {
@@ -201,7 +210,7 @@ export async function POST(req: Request) {
 // to upgrade — but it still needs auth discovery for unauthenticated probes.
 export async function GET(req: Request) {
   const auth = await authorize(req);
-  if (!auth) return unauthorized();
+  if (!auth) return unauthorized(req);
   return new NextResponse("Method Not Allowed", { status: 405, headers: cors });
 }
 
