@@ -17,28 +17,19 @@ export default function PricingPage() {
       <JsonLd description={metadata.description as string} />
       <SiteNav />
       <main className="mx-auto max-w-[1120px] px-6 py-16">
-        <div className="mx-auto max-w-[640px] text-center">
-          <h1 className="font-display text-4xl font-semibold tracking-[-0.02em]">
-            Let your AI post for you.
+        <div className="mx-auto max-w-[760px] text-center">
+          <h1 className="text-balance font-display text-4xl font-semibold tracking-[-0.02em] md:text-5xl">
+            Simple pricing, seven days free
           </h1>
-          <p className="mt-3 text-muted">
-            One rail for X, LinkedIn, TikTok, YouTube, Bluesky, and Mastodon — plus an MCP
-            server so your agent can publish too. Start with a 7-day free trial.
+          <p className="mx-auto mt-3 max-w-[620px] text-[16px] text-muted">
+            Every plan includes X, LinkedIn, TikTok, YouTube, Bluesky and Mastodon, the AI agent and
+            the MCP server. Pick by how many channels and people you need.
           </p>
         </div>
 
         <div className="mt-10">
-          <PlanPicker />
+          <PlanPicker showSelfHost />
         </div>
-
-        <p className="mt-4 text-center text-xs text-muted">
-          Prices in US dollars, including any sales tax or VAT. Checkout can show your local currency.
-        </p>
-
-        <p className="mx-auto mt-10 max-w-[640px] text-center text-sm text-muted">
-          Prefer to self-host? Postbase is open source — run it yourself for free. Hosted cloud
-          is the paid, managed option.
-        </p>
       </main>
       <SiteFooter />
     </>

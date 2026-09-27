@@ -12,8 +12,11 @@ export type Plan = {
   name: string;
   monthly: number; // USD/mo
   channels: number;
-  seats: number | "team";
+  seats: number;
   blurb: string;
+  /** Set when the card lists only what this plan adds ("Everything in Creator, plus"). */
+  inherits?: string;
+  /** Honest, shipped features only: every line must be true of the product today. */
   features: string[];
   // Stripe price ids (from env) for monthly / annual billing.
   priceMonthly?: string;
@@ -54,7 +57,10 @@ export const AGENT_MESSAGE_LIMIT: Record<PlanId, number> = {
 
 /** The AI-quota feature line for a plan, derived from the limits (single source). */
 export const aiFeature = (plan: PlanId): string =>
-  `${AI_IMAGE_LIMIT[plan]} AI images + ${AI_VIDEO_LIMIT[plan]} videos / mo`;
+  `${AI_IMAGE_LIMIT[plan]} AI images + ${AI_VIDEO_LIMIT[plan]} videos a month`;
+
+const agentFeature = (plan: PlanId): string =>
+  `AI agent: ${AGENT_MESSAGE_LIMIT[plan].toLocaleString("en-US")} messages a month`;
 
 export const PLANS: Record<Exclude<PlanId, "trial">, Plan> = {
   creator: {
@@ -64,7 +70,14 @@ export const PLANS: Record<Exclude<PlanId, "trial">, Plan> = {
     channels: 5,
     seats: 1,
     blurb: "For solo creators publishing everywhere.",
-    features: ["5 channels", "Unlimited posts", "All platforms", aiFeature("creator"), "MCP server", "Analytics", "Threads, media & calendar"],
+    features: [
+      "X, LinkedIn, TikTok, YouTube, Bluesky and Mastodon",
+      "Unlimited posts, threads and video",
+      "Calendar, drafts and analytics",
+      agentFeature("creator"),
+      aiFeature("creator"),
+      "MCP server and API",
+    ],
     priceMonthly: process.env.STRIPE_PRICE_CREATOR_MONTH,
     priceAnnual: process.env.STRIPE_PRICE_CREATOR_YEAR,
   },
@@ -73,9 +86,10 @@ export const PLANS: Record<Exclude<PlanId, "trial">, Plan> = {
     name: "Team",
     monthly: 39,
     channels: 15,
-    seats: "team",
+    seats: 5,
     blurb: "For creators with a small team.",
-    features: ["15 channels", "Team seats", "Bulk & video scheduling", aiFeature("team"), "Everything in Creator"],
+    inherits: "Everything in Creator, plus",
+    features: ["A shared workspace for up to 5 people", agentFeature("team"), aiFeature("team")],
     priceMonthly: process.env.STRIPE_PRICE_TEAM_MONTH,
     priceAnnual: process.env.STRIPE_PRICE_TEAM_YEAR,
   },
@@ -84,9 +98,10 @@ export const PLANS: Record<Exclude<PlanId, "trial">, Plan> = {
     name: "Pro",
     monthly: 59,
     channels: 50,
-    seats: "team",
+    seats: 15,
     blurb: "For power users running many accounts.",
-    features: ["50 channels", aiFeature("growth"), "Priority publishing", "Priority support", "Everything in Team"],
+    inherits: "Everything in Team, plus",
+    features: ["Up to 15 people", agentFeature("growth"), aiFeature("growth"), "Priority email support"],
     priceMonthly: process.env.STRIPE_PRICE_GROWTH_MONTH,
     priceAnnual: process.env.STRIPE_PRICE_GROWTH_YEAR,
   },

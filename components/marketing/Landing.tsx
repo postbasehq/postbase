@@ -12,7 +12,7 @@ import { DevGrid } from "@/components/marketing/DevGrid";
 import { HeroDecor } from "@/components/marketing/Decor";
 import { Fit } from "@/components/marketing/Fit";
 import { WhoFor as WhoForList } from "@/components/marketing/WhoFor";
-import { PLAN_ORDER, PLANS } from "@/lib/plans";
+import { PlanPicker } from "@/components/PlanPicker";
 import { FAQ } from "@/components/marketing/faq";
 import { Arrow, CtaBand, FaqList, Heading, Underlined, card, wrap } from "@/components/marketing/ui";
 
@@ -236,101 +236,13 @@ function Channels() {
 // ── Pricing ──────────────────────────────────────────────────────────────
 
 function Pricing() {
-  const [annual, setAnnual] = useState(false);
   return (
     <section id="pricing" className={`${wrap} scroll-mt-28 pt-28 md:pt-36`}>
       <Heading
         title="Simple pricing, seven days free"
-        sub="Every plan includes the MCP server and every network. Or run Postbase yourself for free."
+        sub="Every plan includes every network, the AI agent and the MCP server. Or run Postbase yourself for free."
       />
-      <div className="mb-8 flex justify-center">
-        <div className="inline-flex items-center gap-1 rounded-full border border-line bg-surface p-1 text-[14px] shadow-sm">
-          {[false, true].map((yr) => (
-            <button
-              key={String(yr)}
-              type="button"
-              onClick={() => setAnnual(yr)}
-              className={`rounded-full px-4 py-1.5 font-medium transition-colors ${
-                annual === yr ? "bg-blue text-on-blue" : "text-muted hover:text-ink"
-              }`}
-            >
-              {yr ? "Annual" : "Monthly"}
-              {yr ? <span className="ml-1.5 text-[12px] opacity-80">2 months free</span> : null}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="grid gap-4 md:grid-cols-3">
-        {PLAN_ORDER.map((id) => {
-          const p = PLANS[id];
-          const popular = id === "team";
-          const price = annual ? Math.round((p.monthly * 10) / 12) : p.monthly;
-          return (
-            <div key={id} className={`${card} flex flex-col p-6 ${popular ? "border-blue ring-1 ring-blue" : ""}`}>
-              <div className="flex items-center gap-2">
-                <span className="font-display text-[16px] font-semibold text-ink">{p.name}</span>
-                {popular ? (
-                  <span className="rounded-full bg-blue px-2 py-0.5 text-[11px] font-semibold text-on-blue">
-                    Popular
-                  </span>
-                ) : null}
-              </div>
-              <p className="mt-1 text-[14px] text-muted">{p.blurb}</p>
-              <div className="mt-5 flex items-end gap-1">
-                <span className="font-display text-[42px] font-semibold leading-none tracking-[-0.035em] text-ink">
-                  ${price}
-                </span>
-                <span className="pb-1 text-[14px] font-medium text-muted">/month</span>
-                {annual ? <span className="ml-auto pb-1 text-[12px] text-muted">billed yearly</span> : null}
-              </div>
-              <ul className="mb-7 mt-6 flex flex-col gap-2.5">
-                {p.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-[14px] text-ink">
-                    <svg
-                      className="mt-0.5 shrink-0 text-blue"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
-                    >
-                      <path d="m5 12 5 5L20 7" />
-                    </svg>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <a
-                href="/billing"
-                className={`mt-auto rounded-full px-4 py-2.5 text-center font-display text-[14px] font-semibold transition-colors ${
-                  popular ? "bg-blue text-on-blue shadow-sm" : "border border-line text-ink hover:border-ink"
-                }`}
-              >
-                Start 7-day trial
-              </a>
-            </div>
-          );
-        })}
-      </div>
-      <div className={`${card} mt-4 flex flex-wrap items-center gap-4 px-6 py-5`}>
-        <div>
-          <div className="font-display text-[16px] font-semibold text-ink">Self-host for free</div>
-          <p className="mt-0.5 text-[14px] text-muted">
-            The same product on your own servers, with your own platform API keys.
-          </p>
-        </div>
-        <a
-          href="https://github.com/postbasehq"
-          className="ml-auto rounded-full border border-line px-5 py-2.5 font-display text-[14px] font-semibold text-ink transition-colors hover:border-ink"
-        >
-          View on GitHub
-        </a>
-      </div>
-      <p className="mt-4 text-center text-[12.5px] text-muted">7-day free trial, card required. Cancel anytime.</p>
+      <PlanPicker showSelfHost />
     </section>
   );
 }

@@ -107,7 +107,7 @@ export default async function PersonaPage({ params }: { params: Promise<{ slug: 
               </ul>
             </div>
             <a
-              href="/login"
+              href={`/billing?plan=${plan.id}&interval=month`}
               className="shrink-0 rounded-full bg-blue px-6 py-3 text-center font-display text-[15px] font-semibold text-on-blue shadow-sm"
             >
               Start 7-day trial
