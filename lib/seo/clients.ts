@@ -5,7 +5,7 @@
  * (components/McpClientConfig.tsx); keep them in sync.
  */
 
-export const MCP_URL = "https://www.postbase.so/api/mcp";
+export const MCP_URL = "https://mcp.postbase.so/mcp";
 
 export type ClientSetup = {
   /** Label on the code block: "url" or "bash". */

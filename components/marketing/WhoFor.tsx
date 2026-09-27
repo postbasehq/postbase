@@ -483,7 +483,7 @@ export function TeamsScene() {
 
 // ── Developers: pick a client, Claude connects ───────────────────────────
 
-const MCP_URL = "https://www.postbase.so/api/mcp";
+const MCP_URL = "https://mcp.postbase.so/mcp";
 const DEV_CLIENTS: { id: string; name: string; code: string }[] = [
   { id: "claude", name: "Claude Desktop", code: MCP_URL },
   { id: "cursor", name: "Cursor", code: MCP_URL },

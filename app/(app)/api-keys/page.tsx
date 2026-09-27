@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { DeveloperClient } from "@/components/DeveloperClient";
-import { mcpResourceUrl, listConnectedApps } from "@/lib/oauth";
+import { publicMcpUrl, listConnectedApps } from "@/lib/oauth";
 
 export default async function DevelopersPage() {
   const supabase = await createClient();
@@ -25,7 +25,7 @@ export default async function DevelopersPage() {
       <div className="mt-6">
         <DeveloperClient
           keys={keys ?? []}
-          mcpUrl={mcpResourceUrl()}
+          mcpUrl={publicMcpUrl()}
           connectedApps={connectedApps}
         />
       </div>

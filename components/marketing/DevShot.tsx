@@ -13,7 +13,7 @@ import type { ClientSetup } from "@/lib/seo/clients";
  * connected app.
  */
 
-const MCP_URL = "https://www.postbase.so/api/mcp";
+const MCP_URL = "https://mcp.postbase.so/mcp";
 
 const CLIENTS = [
   { id: "claude", name: "Claude Desktop" },

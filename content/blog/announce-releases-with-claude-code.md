@@ -21,7 +21,7 @@ Create a Postbase account and connect the accounts you announce on, usually X, L
 Run this once in your terminal:
 
 ```bash
-claude mcp add --transport http postbase https://www.postbase.so/api/mcp
+claude mcp add --transport http postbase https://mcp.postbase.so/mcp
 ```
 
 The first time Claude Code uses the server, it opens a browser window so you can sign in to Postbase and pick a workspace. There's no API key to store.

@@ -29,7 +29,7 @@ X, LinkedIn, TikTok and YouTube use their own sign-in screens. Bluesky uses an a
 In Claude, open **Settings → Connectors → Add custom connector**. Name it Postbase and paste the server URL:
 
 ```
-https://www.postbase.so/api/mcp
+https://mcp.postbase.so/mcp
 ```
 
 You can also copy it from the **Developers** page in Postbase, which has setup instructions for each AI tool.

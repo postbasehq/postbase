@@ -37,6 +37,14 @@ export function isMcpHost(req: Request): boolean {
   return requestHost(req) === MCP_HOST;
 }
 
+/**
+ * The MCP URL to show people (Developers page, docs): the dedicated host in
+ * production, the app's own /api/mcp anywhere else (local dev, previews).
+ */
+export function publicMcpUrl(): string {
+  return /(^|\.)postbase\.so$/.test(new URL(issuer()).hostname) ? `https://${MCP_HOST}/mcp` : mcpResourceUrl();
+}
+
 /** The MCP resource URL for the host this request came in on. */
 export function mcpResourceUrlFor(req: Request): string {
   return isMcpHost(req) ? `https://${MCP_HOST}/mcp` : mcpResourceUrl();
