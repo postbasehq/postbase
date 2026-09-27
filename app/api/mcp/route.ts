@@ -35,7 +35,7 @@ const TOOLS = [
     title: "Create or schedule a post",
     annotations: { title: "Create or schedule a post", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     description:
-      "Create a draft, or schedule a post or thread, on one or more connected channels. It appears on the user's Postbase calendar and publishes at `scheduled_at` via each network's official API. Provide `body` for a single post or `thread` for several posts; the same text goes to every channel in the call, so call once per network for different wording. Limits per post: X 280 (links count 23), Bluesky 300, Mastodon 500, LinkedIn 3,000. Threads publish as reply chains on X, Bluesky and Mastodon; on LinkedIn the extra parts become the first comment. Text only: TikTok and YouTube need a video, so save a draft for those and the user adds media in Postbase. Omit `scheduled_at` to save a draft. Docs: https://docs.postbase.so/mcp/tools",
+      "Create a draft, or schedule a post or thread, on one or more connected channels. It appears on the user's Postbase calendar and publishes at `scheduled_at` via each network's official API. Provide `body` for a single post or `thread` for several posts; the same text goes to every channel in the call, so call once per network for different wording. Limits per post: X 280 (links count 23), Bluesky 300, Mastodon 500, LinkedIn 3,000. Threads publish as reply chains on X, Bluesky and Mastodon; on LinkedIn the extra parts become the first comment. Text only: TikTok and YouTube need a video, so save a draft for those and the user adds media in Postbase. For a relative time (\"in 10 minutes\", \"in 2 hours\") use `schedule_in_minutes`, since the server knows the current time. Omit both to save a draft. Docs: https://docs.postbase.so/mcp/tools",
     inputSchema: {
       type: "object",
       properties: {
@@ -53,6 +53,10 @@ const TOOLS = [
         scheduled_at: {
           type: "string",
           description: "When to publish, as ISO 8601 with a timezone offset (e.g. 2026-10-01T09:00:00+01:00). Omit to save a draft. Scheduling needs an active plan or trial.",
+        },
+        schedule_in_minutes: {
+          type: "number",
+          description: "Publish this many minutes from now (e.g. 10), measured on the server's clock. Use instead of `scheduled_at` for relative times.",
         },
       },
       additionalProperties: false,
@@ -91,6 +95,15 @@ type Args = Record<string, unknown>;
 const asStringArray = (v: unknown): string[] =>
   Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
 
+// A relative delay wins over an absolute time: clients often don't know the clock.
+function scheduledAtFrom(args: Args): string | null {
+  const mins = Number(args.schedule_in_minutes);
+  if (args.schedule_in_minutes != null && Number.isFinite(mins) && mins > 0) {
+    return new Date(Date.now() + mins * 60_000).toISOString();
+  }
+  return typeof args.scheduled_at === "string" ? args.scheduled_at : null;
+}
+
 async function runTool(orgId: string, name: string, args: Args): Promise<unknown> {
   switch (name) {
     case "list_channels":
@@ -102,7 +115,7 @@ async function runTool(orgId: string, name: string, args: Args): Promise<unknown
         body: typeof args.body === "string" ? args.body : "",
         thread: Array.isArray(args.thread) ? asStringArray(args.thread) : undefined,
         channelIds: asStringArray(args.channel_ids),
-        scheduledAt: typeof args.scheduled_at === "string" ? args.scheduled_at : null,
+        scheduledAt: scheduledAtFrom(args),
       });
     case "cancel_post": {
       const ok = await cancelPost(orgId, String(args.post_id ?? ""));
