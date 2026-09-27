@@ -1,0 +1,38 @@
+<!-- Subject: Confirm your email for Postbase -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>Confirm your email</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f5f7;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">One click to finish creating your Postbase account.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f7;">
+  <tr><td align="center" style="padding:40px 16px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border:1px solid #e4e6eb;border-radius:16px;">
+      <tr><td style="padding:32px 32px 0 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+          <td style="vertical-align:middle;"><img src="https://www.postbase.so/icon-192.png" width="32" height="32" alt="" style="display:block;border-radius:8px;"></td>
+          <td style="vertical-align:middle;padding-left:10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:18px;font-weight:700;color:#14161a;">Postbase</td>
+        </tr></table>
+      </td></tr>
+      <tr><td style="padding:28px 32px 8px 32px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+        <h1 style="margin:0 0 12px 0;font-size:22px;line-height:1.3;font-weight:700;color:#14161a;">Welcome to Postbase</h1>
+        <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#4a4f57;">Confirm your email address to finish creating your account. The link signs you straight in.</p>
+        <table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:999px;background:#2b59d9;">
+          <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:13px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:999px;">Confirm email and sign in</a>
+        </td></tr></table>
+        <p style="margin:24px 0 0 0;font-size:13px;line-height:1.6;color:#6b7079;">This link expires in 1 hour. If you didn't sign up for Postbase, you can ignore this email.</p>
+        <p style="margin:16px 0 0 0;font-size:12px;line-height:1.6;color:#8a8f98;word-break:break-all;">If the button doesn't work, paste this link into your browser:<br><a href="{{ .ConfirmationURL }}" style="color:#2b59d9;">{{ .ConfirmationURL }}</a></p>
+      </td></tr>
+      <tr><td style="padding:24px 32px 32px 32px;">
+        <hr style="border:none;border-top:1px solid #e4e6eb;margin:0 0 16px 0;">
+        <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:#8a8f98;">Postbase · Schedule posts everywhere, from one calendar or your AI.<br>Berkway Group Limited, 3rd Floor, 86-90 Paul Street, London, EC2A 4NE</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>

@@ -71,7 +71,8 @@ own privacy policies.
 
 We share personal data with vetted service providers who process it on our behalf:
 
-- **Supabase** — database, authentication (including sign-in emails), and file/media storage.
+- **Supabase** — database, authentication, and file/media storage.
+- **Resend** — delivery of account emails (sign-in links and email confirmations).
 - **Vercel** — application hosting, scheduled publishing, and privacy-friendly site analytics.
 - **Cloudflare (R2)** — storage for files you upload to your media library.
 - **Stripe** — payment processing, and merchant of record for subscriptions (tax
