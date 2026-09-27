@@ -59,9 +59,8 @@ export async function startCheckout(formData: FormData) {
   const previous = await getStripe().subscriptions.list({ customer, status: "all", limit: 1 });
   const trial = previous.data.length === 0 ? { trial_period_days: 7 } : {};
   // Managed Payments: Stripe is merchant of record (tax/VAT, fraud, disputes).
-  // Needs API >= 2025-03-31.basil and an eligible tax code on each product; the
-  // v18 SDK types predate the param, hence the cast.
-  const params: Stripe.Checkout.SessionCreateParams & { managed_payments?: { enabled: boolean } } = {
+  // Needs an eligible tax code on each product.
+  const params: Stripe.Checkout.SessionCreateParams = {
     ...(managedPayments() ? { managed_payments: { enabled: true } } : {}),
     mode: "subscription",
     customer,
