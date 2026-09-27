@@ -1,6 +1,6 @@
 ---
 title: The best open-source social media schedulers in 2026
-description: Six open-source, self-hostable social media schedulers compared on licence, networks, activity and hosted options, plus what self-hosting actually involves.
+description: Six open-source, self-hostable social media schedulers compared on licence, networks, activity and hosted options.
 date: 2026-09-28
 category: Guides
 related: /alternatives/buffer, /integrations/mastodon, /blog/best-buffer-alternatives

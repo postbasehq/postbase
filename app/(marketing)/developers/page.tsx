@@ -4,7 +4,7 @@ import { Landing } from "@/components/marketing/Landing";
 import { JsonLd } from "@/components/marketing/JsonLd";
 
 const DESCRIPTION =
-  "Let Claude, Cursor or your own code post to social media. Postbase has a hosted MCP server and a REST API for scheduling posts to X, LinkedIn, Instagram, TikTok, YouTube, Bluesky and Mastodon.";
+  "Let Claude, Cursor or your own code post to social media. A hosted MCP server and REST API for scheduling to X, LinkedIn, TikTok, YouTube and more.";
 
 export const metadata: Metadata = {
   title: "Social media API and MCP server for AI agents",

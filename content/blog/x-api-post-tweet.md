@@ -1,6 +1,7 @@
 ---
 title: How to post to X with the API in 2026: threads, media and pricing
-description: A working guide to posting on X with API v2, covering pay-per-use pricing, OAuth 2.0 scopes, creating posts and threads, uploading images and video, and counting characters the way X does.
+seo_title: How to post to X with the API in 2026
+description: Posting to X with API v2: pay-per-use pricing, OAuth 2.0 scopes, threads, image and video uploads, and counting characters the way X does.
 date: 2026-09-26
 category: Developers
 related: /integrations/x, /ai/claude-code

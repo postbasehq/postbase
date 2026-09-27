@@ -1,6 +1,6 @@
 ---
 title: How to schedule YouTube videos and Shorts
-description: How to schedule a YouTube video or Short in YouTube Studio, how time zones and rescheduling work, when to use a Premiere, and how to schedule the same video to YouTube and TikTok at once.
+description: How to schedule YouTube videos and Shorts in YouTube Studio, how time zones and rescheduling work, and how to post to YouTube and TikTok at once.
 date: 2026-09-27
 category: Guides
 related: /integrations/youtube, /integrations/tiktok, /blog/youtube-api-upload-video

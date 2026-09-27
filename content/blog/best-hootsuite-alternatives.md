@@ -1,6 +1,7 @@
 ---
 title: The best Hootsuite alternatives in 2026 (for teams that don't need the whole suite)
-description: Hootsuite starts at $99 per user per month. These eight alternatives cover scheduling, inboxes and AI for a fraction of that, with an honest take on when Hootsuite is still worth it.
+seo_title: The best Hootsuite alternatives in 2026
+description: Hootsuite starts at $99 per user per month. Eight alternatives for scheduling, inboxes and AI at a fraction of that, and when Hootsuite is worth it.
 date: 2026-09-28
 category: Guides
 related: /alternatives/hootsuite, /alternatives/sprout-social, /for/agencies

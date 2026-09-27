@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!p) return {};
   const meta = pageMeta(`/blog/${p.slug}`, { ownImage: true });
   return {
-    title: { absolute: `${p.title} · Postbase` },
+    title: { absolute: `${p.seoTitle} · Postbase` },
     description: p.description,
     ...meta,
     openGraph: { ...meta.openGraph, type: "article", publishedTime: p.date, modifiedTime: p.updated ?? p.date },

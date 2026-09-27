@@ -1,6 +1,6 @@
 ---
 title: The best MCP servers for social media in 2026
-description: Six MCP servers that let Claude, ChatGPT, Cursor and other AI tools post to social media, compared on networks, sign-in, price and what the agent can actually do.
+description: Six MCP servers that let Claude, ChatGPT and Cursor post to social media, compared on networks, sign-in, price and what the agent can do.
 date: 2026-09-26
 category: AI agents
 related: /ai/claude, /alternatives/buffer, /alternatives/ayrshare

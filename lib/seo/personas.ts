@@ -29,9 +29,8 @@ export const PERSONAS: Persona[] = [
   {
     slug: "creators",
     name: "Creators",
-    metaTitle: "Social media scheduler for creators: post everywhere from one draft",
-    metaDescription:
-      "Write once and post to X, LinkedIn, Bluesky, Mastodon, TikTok and YouTube, with a version for each network. Plan the month on one calendar and let the AI agent draft for you.",
+    metaTitle: "Social media scheduler for creators",
+    metaDescription: "Write once and post to X, LinkedIn, Bluesky, Mastodon, TikTok and YouTube, with a version for each network and the month on one calendar.",
     eyebrow: "Postbase for creators",
     h1: ["Post everywhere,", "write once"],
     sub: "Write one post, fit it to every network you're on, and plan the whole month on one calendar, so you spend your time making things instead of copying and pasting.",
@@ -108,9 +107,8 @@ export const PERSONAS: Persona[] = [
   {
     slug: "founders",
     name: "Founders",
-    metaTitle: "Social media for founders: let Claude post while you build",
-    metaDescription:
-      "Postbase lets founders turn launches and updates into posts for X, LinkedIn and Bluesky from Claude, Cursor or Claude Code, with every post on a calendar you can check.",
+    metaTitle: "Social media for founders: let Claude post",
+    metaDescription: "Turn launches and updates into posts for X, LinkedIn and Bluesky from Claude, Cursor or Claude Code, all on a calendar you can check.",
     eyebrow: "Postbase for founders",
     h1: ["Build in public", "without the busywork"],
     sub: "Connect Postbase to Claude, Claude Code or Cursor, and your launch notes turn into posts for every network, scheduled on a calendar you check once a week.",
@@ -187,9 +185,8 @@ export const PERSONAS: Persona[] = [
   {
     slug: "agencies",
     name: "Agencies",
-    metaTitle: "Social media scheduler for agencies: a workspace per client",
-    metaDescription:
-      "Give each client their own Postbase workspace with its own channels and team, plan every account on a calendar, and scale to 50 channels on a flat monthly price.",
+    metaTitle: "Social media scheduler for agencies",
+    metaDescription: "A Postbase workspace per client with its own channels and team, every account on a calendar, and up to 50 channels at a flat monthly price.",
     eyebrow: "Postbase for agencies",
     h1: ["Every client,", "one login"],
     sub: "Give each client their own workspace with its own channels and team, switch between them in one click, and pay a flat price per plan instead of per channel.",
@@ -267,8 +264,7 @@ export const PERSONAS: Persona[] = [
     slug: "small-businesses",
     name: "Small businesses",
     metaTitle: "Social media scheduling for small businesses",
-    metaDescription:
-      "Plan a month of posts in an afternoon. Postbase schedules to X, LinkedIn, Bluesky, TikTok and YouTube, writes drafts with AI, and tells you when anything needs attention.",
+    metaDescription: "Plan a month of posts in an afternoon. Schedule to X, LinkedIn, Bluesky, TikTok and YouTube, with AI drafts and on-time publishing.",
     eyebrow: "Postbase for small businesses",
     h1: ["A month of posts", "in an afternoon"],
     sub: "Write your posts in one sitting, let Postbase fit them to each network, and get back to running the business. Everything goes out on time without you.",

@@ -1,6 +1,6 @@
 ---
 title: Announce every release from Claude Code
-description: Set up Claude Code to read your changelog or commits, write the launch post for X, LinkedIn and Bluesky, and schedule it, with one command and a reusable slash command.
+description: Set up Claude Code to read your changelog, write launch posts for X, LinkedIn and Bluesky, and schedule them with a reusable slash command.
 date: 2026-09-24
 category: AI agents
 related: /ai/claude-code, /integrations/x, /integrations/bluesky

@@ -1,6 +1,7 @@
 ---
 title: How to upload videos to YouTube with the API (and why they come out private)
-description: A practical guide to uploading videos and Shorts with the YouTube Data API v3, covering OAuth scopes, resumable uploads, the new upload quota, the private-until-audited rule, and how Shorts are detected.
+seo_title: Upload videos to YouTube with the API
+description: Upload videos and Shorts with the YouTube Data API: OAuth scopes, resumable uploads, the new quota, and why unaudited apps' videos are private.
 date: 2026-09-23
 category: Developers
 related: /integrations/youtube, /integrations/tiktok

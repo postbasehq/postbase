@@ -1,6 +1,7 @@
 ---
 title: How to schedule LinkedIn posts (with and without a tool)
-description: LinkedIn has built-in scheduling up to three months ahead. Here's how to use it on desktop and mobile, what it can't do, and when a scheduling tool is worth it.
+seo_title: How to schedule LinkedIn posts
+description: LinkedIn has built-in scheduling up to 3 months ahead. How to use it on desktop and mobile, what it can't do, and when a tool is worth it.
 date: 2026-09-27
 category: Guides
 related: /integrations/linkedin, /ai/claude/linkedin, /tools/character-counter

@@ -10,10 +10,10 @@ import { PostCard } from "@/components/marketing/blog/PostCard";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 
 const DESCRIPTION =
-  "Guides to scheduling posts, connecting AI agents over MCP and posting through the X, LinkedIn, Bluesky, TikTok and YouTube APIs, from the team building Postbase.";
+  "Guides to scheduling posts, connecting AI agents over MCP, and posting through the X, LinkedIn, Bluesky, TikTok and YouTube APIs.";
 const TRAIL = [{ label: "Home", href: "/" }, { label: "Blog" }];
 
-export const metadata: Metadata = { title: "Blog", description: DESCRIPTION, ...pageMeta("/blog", { ownImage: true }) };
+export const metadata: Metadata = { title: "Blog: scheduling, AI agents and social APIs", description: DESCRIPTION, ...pageMeta("/blog", { ownImage: true }) };
 
 export default function BlogIndex() {
   const posts = listPosts();

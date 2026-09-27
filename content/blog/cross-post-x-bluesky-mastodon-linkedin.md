@@ -1,6 +1,7 @@
 ---
 title: How to cross-post to X, Bluesky, Mastodon and LinkedIn without it looking copy-pasted
-description: Posting the same thing everywhere is easy. Doing it well means a version for each network. Here's how to cross-post from one draft, with the limits and habits of each network.
+seo_title: Cross-post to X, Bluesky, Mastodon and LinkedIn
+description: One draft, a version per network: how to cross-post to X, Bluesky, Mastodon and LinkedIn with each network's limits and habits in mind.
 date: 2026-09-26
 category: Guides
 related: /integrations/bluesky, /integrations/mastodon, /tools/character-counter

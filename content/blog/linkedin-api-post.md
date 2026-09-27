@@ -1,6 +1,7 @@
 ---
 title: How to post to LinkedIn with the API: images, first comments and gotchas
-description: A practical guide to LinkedIn's Posts API, covering the Share on LinkedIn product, versioned headers, uploading images, adding a first comment, token expiry and the escaping rule that breaks most first attempts.
+seo_title: How to post to LinkedIn with the API
+description: LinkedIn's Posts API in practice: versioned headers, images, first comments, token expiry and the escaping rule that breaks most first attempts.
 date: 2026-09-25
 category: Developers
 related: /integrations/linkedin, /integrations/x

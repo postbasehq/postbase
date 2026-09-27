@@ -9,7 +9,7 @@ import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 const DESCRIPTION = "Free tools for posting to social media: a character counter and thread splitter, an image and video size guide, and an MCP config generator for AI tools.";
 const TRAIL = [{ label: "Home", href: "/" }, { label: "Tools" }];
 
-export const metadata: Metadata = { title: "Free tools", description: DESCRIPTION, ...pageMeta("/tools") };
+export const metadata: Metadata = { title: "Free social media tools", description: DESCRIPTION, ...pageMeta("/tools") };
 
 export default function ToolsPage() {
   return (

@@ -1,6 +1,7 @@
 ---
 title: "TikTok Content Posting API: how to post videos and pass the audit"
-description: What it takes to post to TikTok from your own app in 2026, covering Direct Post vs Upload, creator_info, video and photo uploads, the UX rules TikTok checks in its audit, and what unaudited apps can't do.
+seo_title: TikTok Content Posting API: post and pass the audit
+description: How to post to TikTok from your own app: Direct Post vs Upload, creator_info, video and photo uploads, and the UX rules TikTok's audit checks.
 date: 2026-09-26
 category: Developers
 related: /integrations/tiktok, /integrations/youtube

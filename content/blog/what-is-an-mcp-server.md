@@ -1,6 +1,7 @@
 ---
 title: What is an MCP server? A plain-English guide for marketers
-description: MCP lets AI tools like Claude and ChatGPT use your other software. Here's what an MCP server is, how it works, and what it means for social media, without the jargon.
+seo_title: What is an MCP server? A guide for marketers
+description: MCP lets AI tools like Claude and ChatGPT use your other software. What an MCP server is, how it works and what it means for social media.
 date: 2026-09-25
 category: AI agents
 related: /ai, /ai/claude

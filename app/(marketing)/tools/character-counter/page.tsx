@@ -8,9 +8,9 @@ import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 import { CharacterCounter } from "@/components/marketing/tools/CharacterCounter";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 
-const TITLE = "Character counter for X, Bluesky, LinkedIn, Threads and more";
+const TITLE = "Character counter for X, Bluesky and LinkedIn";
 const DESCRIPTION =
-  "Free character counter that counts the way each network does: X's weighted 280 (links count as 23, emoji as 2), Bluesky's 300, LinkedIn's 3,000 and more. Splits long text into a thread.";
+  "Count characters the way each network does: X's weighted 280 (links count 23, emoji 2), Bluesky's 300, LinkedIn's 3,000. Splits threads too.";
 const TRAIL = [{ label: "Home", href: "/" }, { label: "Tools", href: "/tools" }, { label: "Character counter" }];
 
 const FAQS: [string, string][] = [

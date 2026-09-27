@@ -6,7 +6,7 @@ import { renderLegal } from "@/lib/legal";
 export const metadata: Metadata = {
   title: "Privacy Policy",
   ...pageMeta("/privacy"),
-  description: "How Postbase (Berkway Group Limited) handles your data.",
+  description: "How Postbase (Berkway Group Limited) collects, uses and protects your data, including data from connected social accounts and YouTube.",
 };
 
 export default async function PrivacyPage() {

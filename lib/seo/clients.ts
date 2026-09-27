@@ -119,8 +119,7 @@ export const CLIENTS: AiClient[] = [
     name: "Claude Code",
     kind: "terminal",
     metaTitle: "Schedule social posts from Claude Code (MCP server)",
-    metaDescription:
-      "One command adds the Postbase MCP server to Claude Code. Announce releases, turn changelogs into threads and schedule posts to X, LinkedIn and Bluesky without leaving the terminal.",
+    metaDescription: "One command adds Postbase to Claude Code. Turn changelogs into launch posts and schedule them to X, LinkedIn and Bluesky from your terminal.",
     eyebrow: "Postbase for Claude Code",
     h1: ["Ship it, then", "announce it"],
     sub: "Add Postbase to Claude Code with one command. It can read your changelog or diff, write the launch post for each network and schedule it, right from your terminal.",
@@ -161,8 +160,7 @@ export const CLIENTS: AiClient[] = [
     name: "Cursor",
     kind: "editor",
     metaTitle: "Post to X, LinkedIn and Bluesky from Cursor (MCP)",
-    metaDescription:
-      "Add the Postbase MCP server to Cursor in one click. Let Cursor's agent write and schedule launch posts, changelog threads and updates across your social accounts.",
+    metaDescription: "Add the Postbase MCP server to Cursor in one click, and let its agent write and schedule launch posts and threads to your social accounts.",
     eyebrow: "Postbase for Cursor",
     h1: ["Post from", "your editor"],
     sub: "Add Postbase to Cursor and its agent can turn what you just built into posts for X, LinkedIn, Bluesky and more, then schedule them for the right time.",
@@ -199,7 +197,7 @@ export const CLIENTS: AiClient[] = [
     logo: "vscode",
     name: "VS Code",
     kind: "editor",
-    metaTitle: "Schedule social posts from VS Code with GitHub Copilot (MCP)",
+    metaTitle: "Schedule social posts from VS Code (Copilot MCP)",
     metaDescription:
       "Add the Postbase MCP server to VS Code with one command and let GitHub Copilot's agent draft and schedule posts to X, LinkedIn, Bluesky and Mastodon.",
     eyebrow: "Postbase for VS Code",

@@ -8,9 +8,9 @@ import { CtaBand, FaqList, wrap } from "@/components/marketing/ui";
 import { Eyebrow, LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 
-const TITLE = "MCP config generator for Claude, Cursor, VS Code and more";
+const TITLE = "MCP config generator for Claude, Cursor, VS Code";
 const DESCRIPTION =
-  "Get the exact MCP setup for Claude, Claude Code, Cursor, VS Code, Windsurf and Gemini CLI: a hosted URL with sign-in, or an npx config with an API key. Copy, paste, done.";
+  "The exact MCP setup for Claude, Claude Code, Cursor, VS Code, Windsurf and Gemini CLI: a hosted URL with sign-in, or npx with an API key.";
 const TRAIL = [{ label: "Home", href: "/" }, { label: "Tools", href: "/tools" }, { label: "MCP config generator" }];
 
 const FAQS: [string, string][] = [

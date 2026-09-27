@@ -10,9 +10,9 @@ import { SizeGuide } from "@/components/marketing/tools/SizeGuide";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 
 const PATH = "/tools/social-media-image-sizes";
-const TITLE = "Social media image and video sizes (2026 cheat sheet)";
+const TITLE = "Social media image and video sizes (2026)";
 const DESCRIPTION =
-  "Every image and video size for Instagram, TikTok, YouTube, X, LinkedIn, Facebook, Threads, Bluesky and Mastodon in one place, checked against each network's own guidance in September 2026.";
+  "Image and video sizes for Instagram, TikTok, YouTube, X, LinkedIn, Facebook, Threads, Bluesky and Mastodon, checked September 2026.";
 const TRAIL = [{ label: "Home", href: "/" }, { label: "Tools", href: "/tools" }, { label: "Image and video sizes" }];
 
 const FAQS: [string, string][] = [

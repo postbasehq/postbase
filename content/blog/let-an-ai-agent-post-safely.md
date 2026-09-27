@@ -1,6 +1,7 @@
 ---
 title: How to let an AI agent post for you without losing control
-description: Practical guardrails for letting Claude, ChatGPT or any AI agent post to your social accounts, from drafts-first rules to scoped access and one-click revoke.
+seo_title: How to let an AI agent post for you safely
+description: Guardrails for letting Claude, ChatGPT or any AI agent post to your social accounts: drafts first, scoped access and one-click revoke.
 date: 2026-09-23
 category: AI agents
 related: /ai, /ai/claude

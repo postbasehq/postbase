@@ -22,16 +22,15 @@ export function generateStaticParams() {
 
 type Params = Promise<{ slug: string; network: string }>;
 
-const titleFor = (client: string, network: string, what: string) =>
-  `Post to ${network} from ${client}: schedule ${what} with MCP`;
+const titleFor = (client: string, network: string) => `Post to ${network} from ${client} with MCP`;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug, network } = await params;
   const c = getCombo(slug, network);
   if (!c) return {};
   return {
-    title: { absolute: `${titleFor(c.client.name, c.network.name, c.notes.what)} · Postbase` },
-    description: `Connect ${c.client.name} to your ${c.network.name} account with the Postbase MCP server, then ask it to write and schedule ${c.notes.what}. Setup takes a minute, with no API key.`,
+    title: { absolute: `${titleFor(c.client.name, c.network.name)} · Postbase` },
+    description: `Connect ${c.client.name} to ${c.network.name} with the Postbase MCP server and schedule ${c.notes.what}. One-minute setup, no API key.`,
     ...pageMeta(`/ai/${slug}/${network}`, { ownImage: true }),
   };
 }
@@ -48,7 +47,7 @@ export default async function ComboPage({ params }: { params: Params }) {
     { label: client.name, href: `/ai/${client.slug}` },
     { label: n.name },
   ];
-  const title = titleFor(client.name, n.name, notes.what);
+  const title = titleFor(client.name, n.name);
   const description = `Connect ${client.name} to ${n.name} with the Postbase MCP server and schedule ${notes.what} from ${
     client.kind === "chat" ? "a chat" : client.kind === "terminal" ? "your terminal" : "your editor"
   }.`;

@@ -1,6 +1,7 @@
 ---
 title: Hypefury dropped X. Here's how to keep scheduling tweets and threads
-description: Hypefury's pricing page now says it no longer supports X. If you used it for tweets and threads, these are your options, and how to move your queue without posting anything twice.
+seo_title: Hypefury dropped X: how to keep scheduling tweets
+description: Hypefury no longer supports X. Your options for scheduling tweets and threads now, and how to move your queue without posting anything twice.
 date: 2026-09-27
 category: Guides
 related: /alternatives/hypefury, /integrations/x, /blog/how-to-schedule-tweets

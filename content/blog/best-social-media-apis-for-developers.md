@@ -1,6 +1,7 @@
 ---
 title: The best social media posting APIs for developers in 2026
-description: Unified APIs for posting to X, LinkedIn, TikTok, YouTube and more, compared on pricing model, networks, auth, MCP support and what they're built for, plus when to go direct to each network.
+seo_title: Best social media posting APIs in 2026
+description: Unified APIs for posting to X, LinkedIn, TikTok and YouTube compared on pricing, networks, auth and MCP, and when to use each network directly.
 date: 2026-09-28
 category: Developers
 related: /alternatives/ayrshare, /ai/claude-code, /blog/x-api-post-tweet

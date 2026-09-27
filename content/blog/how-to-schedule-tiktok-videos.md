@@ -1,6 +1,7 @@
 ---
 title: How to schedule TikTok videos (desktop, and from a tool)
-description: TikTok lets you schedule videos 15 minutes to 10 days ahead from a desktop browser. Here's how, the limits to know about, and how to schedule further ahead or alongside YouTube.
+seo_title: How to schedule TikTok videos
+description: TikTok lets you schedule videos 15 minutes to 10 days ahead from a desktop browser. Here's how, the limits, and how to plan further ahead.
 date: 2026-09-27
 category: Guides
 related: /integrations/tiktok, /integrations/youtube, /blog/tiktok-content-posting-api

@@ -9,9 +9,9 @@ import { ClientSetupDemo, ClientTiles } from "@/components/marketing/seo/demos";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 
-const TITLE = "Social media MCP server for Claude, Cursor and AI agents";
+const TITLE = "Social media MCP server for AI agents";
 const DESCRIPTION =
-  "Connect Claude, Claude Code, Cursor, VS Code, Windsurf or Gemini CLI to Postbase over MCP and let your AI schedule posts to X, LinkedIn, Bluesky and Mastodon.";
+  "Connect Claude, Claude Code, Cursor, VS Code, Windsurf or Gemini CLI to Postbase over MCP and let your AI schedule posts to X, LinkedIn and more.";
 const TRAIL = [{ label: "Home", href: "/" }, { label: "AI tools" }];
 
 export const metadata: Metadata = { title: TITLE, description: DESCRIPTION, ...pageMeta("/ai", { ownImage: true }) };

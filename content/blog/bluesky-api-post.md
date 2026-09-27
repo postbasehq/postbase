@@ -1,6 +1,7 @@
 ---
 title: How to post to Bluesky with the API: app passwords, links, images and threads
-description: A working guide to posting on Bluesky through the AT Protocol, covering sessions and app passwords (and when to use OAuth), clickable links with facets, image uploads and threads.
+seo_title: How to post to Bluesky with the API
+description: Post to Bluesky through the AT Protocol: app passwords and OAuth, clickable links with facets, image uploads and threads, with working code.
 date: 2026-09-24
 category: Developers
 related: /integrations/bluesky, /integrations/mastodon

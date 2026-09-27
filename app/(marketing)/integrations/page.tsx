@@ -14,7 +14,7 @@ const DESCRIPTION =
   "Schedule posts to X, LinkedIn, Bluesky, Mastodon, TikTok and YouTube from one calendar, and connect Claude, Cursor and other AI tools over MCP.";
 const TRAIL = [{ label: "Home", href: "/" }, { label: "Integrations" }];
 
-export const metadata: Metadata = { title: "Integrations", description: DESCRIPTION, ...pageMeta("/integrations", { ownImage: true }) };
+export const metadata: Metadata = { title: "Integrations: X, LinkedIn, TikTok, YouTube and more", description: DESCRIPTION, ...pageMeta("/integrations", { ownImage: true }) };
 
 export default function IntegrationsPage() {
   return (

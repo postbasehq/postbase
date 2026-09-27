@@ -1,6 +1,7 @@
 ---
 title: Automate social media posts with n8n (X, LinkedIn, Bluesky, Mastodon)
-description: Build n8n workflows that post to several networks at once through the Postbase API, from an RSS feed, a new blog post or a form, with a human able to check everything on a calendar before it goes out.
+seo_title: Automate social media posts with n8n
+description: Build n8n workflows that post to X, LinkedIn, Bluesky and Mastodon through the Postbase API, from RSS, a blog or a form, with drafts to review.
 date: 2026-09-27
 category: Developers
 related: /integrations/x, /integrations/linkedin, /blog/best-social-media-apis-for-developers

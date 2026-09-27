@@ -2,17 +2,19 @@ import { SiteNav } from "@/components/SiteNav";
 import { pageMeta } from "@/lib/site";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PlanPicker } from "@/components/PlanPicker";
+import { JsonLd } from "@/components/marketing/JsonLd";
 
 export const metadata = {
-  title: "Pricing",
+  title: "Pricing: plans from $29/month",
   description:
-    "Postbase plans start at $29/month with a 7-day free trial: every network, the MCP server and the API included. Or self-host the open-source version for free.",
+    "Postbase starts at $29/month with a 7-day free trial, including every network, the MCP server and the API. Or self-host it for free.",
   ...pageMeta("/pricing"),
 };
 
 export default function PricingPage() {
   return (
     <>
+      <JsonLd description={metadata.description as string} />
       <SiteNav />
       <main className="mx-auto max-w-[1120px] px-6 py-16">
         <div className="mx-auto max-w-[640px] text-center">

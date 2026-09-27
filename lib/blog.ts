@@ -13,6 +13,7 @@ import { marked } from "marked";
  *   updated: 2026-10-02        (optional)
  *   category: AI agents        (one of CATEGORIES)
  *   related: /ai/claude, /integrations/x   (optional, pages to link at the end)
+ *   seo_title: Shorter title for search results (optional; defaults to title)
  *   ---
  *
  * A line of the form `::demo name key=value …` drops an animated product shot
@@ -26,6 +27,8 @@ export type Category = (typeof CATEGORIES)[number];
 export type PostMeta = {
   slug: string;
   title: string;
+  /** Title for search results and the browser tab; the page headline stays `title`. */
+  seoTitle: string;
   description: string;
   date: string;
   updated?: string;
@@ -67,6 +70,7 @@ function parse(file: string): { meta: PostMeta; body: string } {
     meta: {
       slug: file.replace(/\.md$/, ""),
       title: fm.title,
+      seoTitle: fm.seo_title || fm.title,
       description: fm.description,
       date: fm.date,
       updated: fm.updated || undefined,
