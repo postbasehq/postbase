@@ -21,7 +21,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const c = clientBySlug((await params).slug);
   if (!c) return {};
-  return { title: { absolute: `${c.metaTitle} · Postbase` }, description: c.metaDescription, ...pageMeta(`/ai/${c.slug}`) };
+  return { title: { absolute: `${c.metaTitle} · Postbase` }, description: c.metaDescription, ...pageMeta(`/ai/${c.slug}`, { ownImage: true }) };
 }
 
 export default async function AiClientPage({ params }: { params: Promise<{ slug: string }> }) {

@@ -105,7 +105,8 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
         image_urls: {
           type: "array",
           items: { type: "string" },
-          description: "URLs of images to attach (e.g. from generate_image).",
+          description:
+            "Exact image URLs to attach, as returned by generate_image or listed in earlier messages. Never invent or shorten a URL; omit this if you don't have one.",
         },
         variants: {
           type: "object",
@@ -178,7 +179,9 @@ export async function runAgentTool(
       const res = await generateAiImage(str(input.prompt), str(input.aspect_ratio) || "1:1");
       return res.ok
         ? {
-            forModel: "Image generated and shown to the user. Do not include the URL in your reply.",
+            // The model needs the real URL to attach it with propose_post; it just
+            // mustn't paste it into the chat (the image is already shown).
+            forModel: `Image generated and shown to the user. Its URL is ${res.url} — use this exact URL in propose_post's image_urls to attach it. Do not include the URL in your reply.`,
             image: { url: res.url, type: res.type },
           }
         : {
@@ -189,7 +192,12 @@ export async function runAgentTool(
     case "propose_post": {
       const thread = asStringArray(input.thread);
       const body = str(input.body) || thread[0] || "";
-      const media = asStringArray(input.image_urls).map((url) => ({ url, type: "image/jpeg" }));
+      // Only images this workspace actually stored (AI-generated or uploaded in
+      // the agent). The model can't be trusted to pass a real URL: an invented
+      // value like "generated" used to reach the publisher and fail every target.
+      const requested = asStringArray(input.image_urls);
+      const media = requested.filter((url) => isOwnImageUrl(url, orgId)).map((url) => ({ url, type: "image/jpeg" }));
+      const dropped = requested.length - media.length;
       const channelIds = asStringArray(input.channel_ids);
       const variants: Record<string, string> = {};
       if (input.variants && typeof input.variants === "object" && !Array.isArray(input.variants)) {
@@ -210,7 +218,10 @@ export async function runAgentTool(
       }
       return {
         forModel:
-          "Draft shown to the user as a preview card. Tell them to review it and click Schedule (or ask you to change it). Do not claim it's scheduled.",
+          "Draft shown to the user as a preview card. Tell them to review it and click Schedule (or ask you to change it). Do not claim it's scheduled." +
+          (dropped > 0
+            ? ` ${dropped} image URL(s) were ignored because they weren't images from this workspace. If the user wanted an image attached, tell them to click "Use in a post" on the image, or add it in the composer.`
+            : ""),
         proposal,
       };
     }
@@ -222,5 +233,16 @@ export async function runAgentTool(
 
     default:
       return { forModel: `Unknown tool: ${name}` };
+  }
+}
+
+/** True for an https URL in this org's own post-media storage (AI images and agent uploads). */
+export function isOwnImageUrl(url: string, orgId: string): boolean {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "https:") return false;
+    return u.pathname.includes(`/post-media/ai/${orgId}/`) || u.pathname.includes(`/post-media/agent/${orgId}/`);
+  } catch {
+    return false;
   }
 }

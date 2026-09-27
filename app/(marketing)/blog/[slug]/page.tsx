@@ -23,7 +23,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const p = getPost((await params).slug);
   if (!p) return {};
-  const meta = pageMeta(`/blog/${p.slug}`);
+  const meta = pageMeta(`/blog/${p.slug}`, { ownImage: true });
   return {
     title: { absolute: `${p.title} · Postbase` },
     description: p.description,

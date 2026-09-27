@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return {
     title: { absolute: `${titleFor(c.client.name, c.network.name, c.notes.what)} · Postbase` },
     description: `Connect ${c.client.name} to your ${c.network.name} account with the Postbase MCP server, then ask it to write and schedule ${c.notes.what}. Setup takes a minute, with no API key.`,
-    ...pageMeta(`/ai/${slug}/${network}`),
+    ...pageMeta(`/ai/${slug}/${network}`, { ownImage: true }),
   };
 }
 

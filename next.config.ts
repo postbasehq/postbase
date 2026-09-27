@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
   // Keep sharp (native) external so its binaries are traced into the serverless
   // function that transcodes images for Instagram publishing.
   serverExternalPackages: ["sharp"],
+  // Share images for dynamic pages render on demand and read these at runtime
+  // (lib/og.tsx fonts + logo, lib/blog.ts posts), so make sure they're deployed.
+  outputFileTracingIncludes: {
+    "/**/*": ["./assets/fonts/**/*", "./public/postbase-icon.png", "./content/blog/**/*"],
+  },
   // Next's router ignores leading-dot folders, so the OAuth discovery documents
   // live under /well-known/* and are exposed at the real /.well-known/* paths
   // (RFC 8414 / 9728) via rewrites. The protected-resource doc also answers any

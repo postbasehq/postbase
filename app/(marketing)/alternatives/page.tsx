@@ -13,7 +13,7 @@ const DESCRIPTION =
   "Honest comparisons of Postbase with Buffer, Hootsuite, Sprout Social, Later, Typefully, Publer, SocialBee, Hypefury, Post Bridge and Ayrshare: pricing, networks, MCP and API, and open source.";
 const TRAIL = [{ label: "Home", href: "/" }, { label: "Alternatives" }];
 
-export const metadata: Metadata = { title: "Compare Postbase", description: DESCRIPTION, ...pageMeta("/alternatives") };
+export const metadata: Metadata = { title: "Compare Postbase", description: DESCRIPTION, ...pageMeta("/alternatives", { ownImage: true }) };
 
 export default function AlternativesPage() {
   return (

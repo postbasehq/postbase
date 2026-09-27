@@ -106,7 +106,12 @@ async function publishTarget(
 
   const body = target.variant_body ?? post.body ?? "";
   const threadTail = target.variant_body ? [] : (post.thread_tail ?? []);
-  const result = await publish({
+  // A media row without a real URL (e.g. an invented one from an old agent
+  // draft) can never publish; fail clearly instead of with fetch's parse error.
+  const brokenMedia = media.some((m) => !/^https?:\/\//i.test(m.url ?? ""));
+  const result = brokenMedia
+    ? { ok: false as const, error: "An attached image is missing. Open the post, remove the broken image and add it again." }
+    : await publish({
     platform: target.channels?.platform ?? "",
     body,
     threadTail,
@@ -129,7 +134,8 @@ async function publishTarget(
 
   // Failure: schedule a retry with backoff, or give up after MAX_ATTEMPTS.
   const attempts = (target.attempts ?? 0) + 1;
-  const canRetry = attempts < MAX_ATTEMPTS;
+  // Retrying can't fix a broken attachment, so don't.
+  const canRetry = attempts < MAX_ATTEMPTS && !brokenMedia;
   await db
     .from("post_targets")
     .update({

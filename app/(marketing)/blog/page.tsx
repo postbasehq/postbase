@@ -13,7 +13,7 @@ const DESCRIPTION =
   "Guides to scheduling posts, connecting AI agents over MCP and posting through the X, LinkedIn, Bluesky, TikTok and YouTube APIs, from the team building Postbase.";
 const TRAIL = [{ label: "Home", href: "/" }, { label: "Blog" }];
 
-export const metadata: Metadata = { title: "Blog", description: DESCRIPTION, ...pageMeta("/blog") };
+export const metadata: Metadata = { title: "Blog", description: DESCRIPTION, ...pageMeta("/blog", { ownImage: true }) };
 
 export default function BlogIndex() {
   const posts = listPosts();

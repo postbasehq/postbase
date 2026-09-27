@@ -345,9 +345,34 @@ export default async function QueuePage({
                       </div>
                     </div>
 
-                    {/* failed-delivery detail + retry */}
+                    {/* failed-delivery detail + retry, collapsed to one summary line */}
                     {failed.length > 0 ? (
-                      <div className="flex flex-col gap-1.5 border-t border-line/60 bg-terra/[0.04] px-4 py-2">
+                      <details className="group border-t border-line/60 bg-terra/[0.04]">
+                        <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2 text-xs [&::-webkit-details-marker]:hidden">
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="shrink-0 text-terra transition-transform group-open:rotate-90"
+                            aria-hidden
+                          >
+                            <path d="m9 6 6 6-6 6" />
+                          </svg>
+                          <span className="shrink-0 font-semibold text-terra">
+                            {failed.length} {failed.length === 1 ? "channel" : "channels"} failed
+                          </span>
+                          <span className="min-w-0 flex-1 truncate text-terra/80">
+                            {failed.map((t) => PLATFORM_LABEL[t.channels?.platform ?? ""] ?? t.channels?.platform).join(", ")}
+                          </span>
+                          <span className="shrink-0 font-semibold text-muted group-open:hidden">Show details</span>
+                          <span className="hidden shrink-0 font-semibold text-muted group-open:inline">Hide</span>
+                        </summary>
+                        <div className="flex flex-col gap-1.5 px-4 pb-2.5 pl-9">
                         {failed.map((t) => (
                           <div key={t.id} className="flex items-center gap-2 text-xs">
                             <span className="shrink-0 font-semibold text-terra">
@@ -364,7 +389,8 @@ export default async function QueuePage({
                             </form>
                           </div>
                         ))}
-                      </div>
+                        </div>
+                      </details>
                     ) : null}
                   </div>
                 );

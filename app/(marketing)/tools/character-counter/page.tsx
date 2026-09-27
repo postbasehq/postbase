@@ -39,7 +39,7 @@ const FAQS: [string, string][] = [
   ],
 ];
 
-export const metadata: Metadata = { title: TITLE, description: DESCRIPTION, ...pageMeta("/tools/character-counter") };
+export const metadata: Metadata = { title: TITLE, description: DESCRIPTION, ...pageMeta("/tools/character-counter", { ownImage: true }) };
 
 export default function CharacterCounterPage() {
   return (

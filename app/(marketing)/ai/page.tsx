@@ -13,7 +13,7 @@ const DESCRIPTION =
   "Connect Claude, Claude Code, Cursor, VS Code, Windsurf or Gemini CLI to Postbase over MCP and let your AI schedule posts to X, LinkedIn, Bluesky and Mastodon.";
 const TRAIL = [{ label: "Home", href: "/" }, { label: "AI tools" }];
 
-export const metadata: Metadata = { title: TITLE, description: DESCRIPTION, ...pageMeta("/ai") };
+export const metadata: Metadata = { title: TITLE, description: DESCRIPTION, ...pageMeta("/ai", { ownImage: true }) };
 
 const claude = CLIENTS[0];
 

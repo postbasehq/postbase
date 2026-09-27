@@ -23,7 +23,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const p = personaBySlug((await params).slug);
   if (!p) return {};
-  return { title: { absolute: `${p.metaTitle} · Postbase` }, description: p.metaDescription, ...pageMeta(`/for/${p.slug}`) };
+  return { title: { absolute: `${p.metaTitle} · Postbase` }, description: p.metaDescription, ...pageMeta(`/for/${p.slug}`, { ownImage: true }) };
 }
 
 function Hero({ hero }: { hero: Persona["hero"] }) {

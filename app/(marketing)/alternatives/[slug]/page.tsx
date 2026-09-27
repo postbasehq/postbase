@@ -18,7 +18,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const c = competitorBySlug((await params).slug);
   if (!c) return {};
-  return { title: { absolute: `${c.metaTitle} · Postbase` }, description: c.metaDescription, ...pageMeta(`/alternatives/${c.slug}`) };
+  return { title: { absolute: `${c.metaTitle} · Postbase` }, description: c.metaDescription, ...pageMeta(`/alternatives/${c.slug}`, { ownImage: true }) };
 }
 
 export default async function AlternativePage({ params }: { params: Promise<{ slug: string }> }) {

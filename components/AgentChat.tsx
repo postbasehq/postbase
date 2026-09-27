@@ -302,7 +302,12 @@ export function AgentChat({
       setBusy(true);
 
       const apiText = clean;
-      const history = messages.map((m) => ({ role: m.role, content: m.content }));
+      // Tool results aren't kept between turns, so tell the model which images
+      // earlier replies generated; otherwise it can't attach them later.
+      const history = messages.map((m) => ({
+        role: m.role,
+        content: m.images?.length ? `${m.content}\n\n[Images generated in this message: ${m.images.join(" ")}]` : m.content,
+      }));
       const userMsg: Msg = {
         id: uid(),
         role: "user",

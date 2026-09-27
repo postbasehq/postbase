@@ -20,7 +20,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const n = networkBySlug((await params).slug);
   if (!n) return {};
-  return { title: { absolute: `${n.metaTitle} · Postbase` }, description: n.metaDescription, ...pageMeta(`/integrations/${n.slug}`) };
+  return { title: { absolute: `${n.metaTitle} · Postbase` }, description: n.metaDescription, ...pageMeta(`/integrations/${n.slug}`, { ownImage: true }) };
 }
 
 export default async function IntegrationPage({ params }: { params: Promise<{ slug: string }> }) {

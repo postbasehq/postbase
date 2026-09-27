@@ -32,7 +32,7 @@ const FAQS: [string, string][] = [
   ],
 ];
 
-export const metadata: Metadata = { title: TITLE, description: DESCRIPTION, ...pageMeta("/tools/mcp-config") };
+export const metadata: Metadata = { title: TITLE, description: DESCRIPTION, ...pageMeta("/tools/mcp-config", { ownImage: true }) };
 
 export default function McpConfigPage() {
   return (

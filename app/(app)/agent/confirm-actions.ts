@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
 import { hasAccess, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
+import { isOwnImageUrl } from "@/lib/agent/tools";
 
 /**
  * Commits a post the agent proposed. This is the ONLY path that actually writes
@@ -81,7 +82,7 @@ export async function scheduleProposedPost(
   );
   if (targetErr) return { ok: false, error: targetErr.message };
 
-  const media = (proposal.media ?? []).filter((m) => m?.url);
+  const media = (proposal.media ?? []).filter((m) => m?.url && isOwnImageUrl(m.url, orgId));
   if (media.length > 0) {
     await supabase
       .from("media")

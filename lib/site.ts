@@ -15,11 +15,17 @@ const OG_IMAGE = {
  * Per-page canonical + social tags. Next replaces (not merges) a parent's
  * openGraph/twitter objects when a page sets its own, so every page gets the
  * full set here, pointing at its own URL.
+ *
+ * Pages with their own opengraph-image/twitter-image file pass
+ * `{ ownImage: true }`: an image set here would win over the file.
  */
-export function pageMeta(path: string): Pick<Metadata, "alternates" | "openGraph" | "twitter"> {
+export function pageMeta(
+  path: string,
+  { ownImage = false }: { ownImage?: boolean } = {},
+): Pick<Metadata, "alternates" | "openGraph" | "twitter"> {
   return {
     alternates: { canonical: path },
-    openGraph: { type: "website", siteName: SITE_NAME, locale: "en_GB", url: path, images: [OG_IMAGE] },
-    twitter: { card: "summary_large_image", site: "@postbasehq", images: [OG_IMAGE.url] },
+    openGraph: { type: "website", siteName: SITE_NAME, locale: "en_GB", url: path, ...(ownImage ? {} : { images: [OG_IMAGE] }) },
+    twitter: { card: "summary_large_image", site: "@postbasehq", ...(ownImage ? {} : { images: [OG_IMAGE.url] }) },
   };
 }
