@@ -44,7 +44,9 @@ export async function revokeAccess(token: string): Promise<void> {
 }
 
 export function defaultPrivacyStatus(): string {
-  return process.env.YOUTUBE_PRIVACY_STATUS ?? "private";
+  // Used only when a post has no visibility chosen (e.g. created over the API
+  // or MCP). Set YOUTUBE_PRIVACY_STATUS=private on test setups.
+  return process.env.YOUTUBE_PRIVACY_STATUS || "public";
 }
 
 export function authorizeUrl(state: string): string {

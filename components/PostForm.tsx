@@ -10,6 +10,7 @@ import { Modal } from "@/components/Modal";
 import { BrandTile } from "@/components/BrandTile";
 import { DateTimePicker } from "@/components/DateTimePicker";
 import { TikTokSettings, type TikTokInitial } from "@/components/TikTokSettings";
+import { YouTubeSettings, type YouTubePrivacy } from "@/components/YouTubeSettings";
 import { REPEAT_OPTIONS } from "@/lib/publish/repeat";
 import { ASPECT_RATIOS, type AspectRatio } from "@/lib/higgsfield";
 import { generateAiImage, startAiVideo, pollAiVideo } from "@/app/(app)/actions";
@@ -175,6 +176,7 @@ type PostFormProps = {
     media: Media[];
     tiktokPrivacy?: string;
     tiktokOptions?: TikTokInitial | null;
+    youtubePrivacy?: YouTubePrivacy | null;
     repeatEvery?: string | null;
   };
 };
@@ -333,6 +335,7 @@ export function PostForm({
   const bodyEmpty = cleanTweets.length === 0;
   // The first selected TikTok account drives the compliant TikTok settings.
   const tiktokChannel = selectedChannels.find((c) => c.platform === "tiktok") ?? null;
+  const youtubeChannel = selectedChannels.find((c) => c.platform === "youtube") ?? null;
   const tiktokPhotoOnly = hasMedia && !hasVideo;
   // TikTok settings must be complete before scheduling (not required for drafts).
   const canSubmit = !bodyEmpty && (isDraft || (!hasBlocking && tiktokValid));
@@ -774,7 +777,14 @@ export function PostForm({
               </div>
             ) : null}
 
-            {/* preflight — inline warnings */}
+            {/* YouTube settings (visibility) */}
+            {youtubeChannel ? (
+              <div className="pt-1">
+                <YouTubeSettings channelHandle={youtubeChannel.handle} initial={initial?.youtubePrivacy} />
+              </div>
+            ) : null}
+
+                        {/* preflight — inline warnings */}
             {selectedPlatforms.length > 0 && checks.some((c) => c.notes.length > 0) ? (
               <div className="flex flex-col gap-1.5 pt-1">
                 {checks

@@ -35,6 +35,12 @@ function parseTiktokPrivacy(formData: FormData): string | null {
   return TIKTOK_PRIVACY.includes(v) ? v : null;
 }
 
+/** Parse the YouTube visibility, or null if absent (no YouTube channel) / invalid. */
+function parseYoutubePrivacy(formData: FormData): string | null {
+  const v = String(formData.get("youtube_privacy") ?? "");
+  return ["public", "unlisted", "private"].includes(v) ? v : null;
+}
+
 /**
  * TikTok Direct Post options (interaction toggles + commercial disclosure),
  * required by TikTok's Content Sharing Guidelines. Null unless the composer
@@ -231,6 +237,7 @@ export async function createPost(formData: FormData) {
       scheduled_at: scheduledAt,
       status,
       tiktok_privacy_level: parseTiktokPrivacy(formData),
+      youtube_privacy: parseYoutubePrivacy(formData),
       tiktok_options: parseTiktokOptions(formData),
       repeat_every: parseRepeatEvery(formData, status === "scheduled"),
     })
@@ -320,6 +327,7 @@ export async function updatePost(formData: FormData) {
       scheduled_at: scheduledAt,
       status,
       tiktok_privacy_level: parseTiktokPrivacy(formData),
+      youtube_privacy: parseYoutubePrivacy(formData),
       tiktok_options: parseTiktokOptions(formData),
       repeat_every: parseRepeatEvery(formData, status === "scheduled"),
       // Editing re-arms the repeat: a rescheduled post hasn't published yet.

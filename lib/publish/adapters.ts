@@ -75,6 +75,8 @@ export type PublishInput = {
   encryptedTokens: string | null;
   tokenExpiry: string | null;
   tiktokPrivacyLevel?: string | null;
+  /** YouTube visibility chosen in the composer; null → server default. */
+  youtubePrivacy?: string | null;
   tiktokOptions?: TikTokPostOptions | null;
 };
 
@@ -438,7 +440,7 @@ async function publishToYouTube(input: PublishInput): Promise<PublishResult> {
     const id = await ytUploadVideo(tokens.access_token, bytes, {
       title,
       description,
-      privacy: defaultPrivacyStatus(),
+      privacy: input.youtubePrivacy || defaultPrivacyStatus(),
       mimeType: video.type,
     });
     return { ok: true, platformPostId: id };
