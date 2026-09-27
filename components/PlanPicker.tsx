@@ -11,11 +11,16 @@ import { SubmitButton } from "@/components/SubmitButton";
 export function PlanPicker({
   action,
   currentPlan,
+  initialInterval = "month",
+  chosenPlan,
 }: {
   action?: (formData: FormData) => Promise<void>;
   currentPlan?: string | null;
+  initialInterval?: "month" | "year";
+  /** Plan picked on the pricing page before sign-in; featured on the billing page. */
+  chosenPlan?: string | null;
 }) {
-  const [interval, setInterval] = useState<"month" | "year">("month");
+  const [interval, setInterval] = useState<"month" | "year">(initialInterval);
 
   return (
     <div className="flex flex-col gap-5">
@@ -40,7 +45,9 @@ export function PlanPicker({
           const p = PLANS[id];
           const price = interval === "year" ? Math.round((p.monthly * 10) / 12) : p.monthly;
           const isCurrent = currentPlan === id;
-          const featured = id === "team";
+          // The plan picked on the pricing page, if any; otherwise Team is featured.
+          const chosen = chosenPlan != null && chosenPlan in PLANS ? chosenPlan : null;
+          const featured = chosen ? id === chosen : id === "team";
           return (
             <div
               key={id}
@@ -53,7 +60,7 @@ export function PlanPicker({
                   <h3 className="font-display text-lg font-semibold">{p.name}</h3>
                   {featured ? (
                     <span className="rounded-full bg-blue-soft px-2 py-0.5 text-[11px] font-semibold text-blue-ink">
-                      Popular
+                      {chosen ? "Your pick" : "Popular"}
                     </span>
                   ) : null}
                 </div>
@@ -94,7 +101,7 @@ export function PlanPicker({
                   </form>
                 ) : (
                   <a
-                    href="/billing"
+                    href={`/billing?plan=${id}&interval=${interval}`}
                     className={`block w-full rounded-full px-4 py-2.5 text-center font-display text-sm font-semibold shadow-sm ${
                       featured ? "bg-blue text-on-blue" : "border border-line text-blue-ink hover:bg-surface-2"
                     }`}

@@ -16,7 +16,16 @@ async function ensureCustomer(orgId: string, email: string): Promise<string> {
     .select("stripe_customer_id, name")
     .eq("id", orgId)
     .single();
-  if (org?.stripe_customer_id) return org.stripe_customer_id;
+  if (org?.stripe_customer_id) {
+    // A customer saved under different keys (sandbox vs live) or deleted in
+    // Stripe can't be used; drop it and create a fresh one.
+    try {
+      const existing = await getStripe().customers.retrieve(org.stripe_customer_id);
+      if (!("deleted" in existing && existing.deleted)) return org.stripe_customer_id;
+    } catch (e) {
+      if ((e as { code?: string }).code !== "resource_missing") throw e;
+    }
+  }
 
   const customer = await getStripe().customers.create({
     email,
@@ -89,9 +98,19 @@ export async function openPortal() {
     .single();
   if (!org?.stripe_customer_id) redirect("/billing");
 
-  const session = await getStripe().billingPortal.sessions.create({
-    customer: org.stripe_customer_id,
-    return_url: billingUrls.return,
-  });
-  redirect(session.url);
+  let url: string;
+  try {
+    const session = await getStripe().billingPortal.sessions.create({
+      customer: org.stripe_customer_id,
+      return_url: billingUrls.return,
+    });
+    url = session.url;
+  } catch (e) {
+    // Stale customer (sandbox id under live keys, or deleted): forget it so the
+    // next checkout creates a real one.
+    if ((e as { code?: string }).code !== "resource_missing") throw e;
+    await db.from("orgs").update({ stripe_customer_id: null }).eq("id", orgId);
+    redirect("/billing");
+  }
+  redirect(url);
 }

@@ -15,16 +15,16 @@ const STATUS_LABEL: Record<string, string> = {
 export default async function BillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkout?: string }>;
+  searchParams: Promise<{ checkout?: string; plan?: string; interval?: string }>;
 }) {
-  const { checkout } = await searchParams;
+  const { checkout, plan: chosenPlan, interval } = await searchParams;
   const orgId = await getCurrentOrgId();
 
   const db = createAdminClient();
   const { data: org } = orgId
     ? await db
         .from("orgs")
-        .select("plan, subscription_status, current_period_end, stripe_customer_id")
+        .select("plan, subscription_status, current_period_end, stripe_customer_id, stripe_subscription_id, comped")
         .eq("id", orgId)
         .single()
     : { data: null };
@@ -39,7 +39,12 @@ export default async function BillingPage({
         year: "numeric",
       })
     : null;
-  const planName = plan !== "trial" ? PLANS[plan as Exclude<PlanId, "trial">]?.name : "No plan";
+  const comped = Boolean(org?.comped) && !active;
+  const planName = comped
+    ? "Complimentary"
+    : plan !== "trial"
+      ? PLANS[plan as Exclude<PlanId, "trial">]?.name
+      : "No plan";
 
   return (
     <div>
@@ -65,11 +70,11 @@ export default async function BillingPage({
           <div className="text-xs font-medium text-muted">Status</div>
           <span
             className={`inline-flex items-center gap-1.5 text-sm font-medium ${
-              active ? "text-green" : "text-muted"
+              active || comped ? "text-green" : "text-muted"
             }`}
           >
-            <span className={`size-2 rounded-full ${active ? "bg-green" : "bg-muted"}`} />
-            {status ? (STATUS_LABEL[status] ?? status) : "Not subscribed"}
+            <span className={`size-2 rounded-full ${active || comped ? "bg-green" : "bg-muted"}`} />
+            {comped ? "Full access, no billing" : status ? (STATUS_LABEL[status] ?? status) : "Not subscribed"}
           </span>
         </div>
         {periodEnd ? (
@@ -80,7 +85,7 @@ export default async function BillingPage({
             <div className="text-sm">{periodEnd}</div>
           </div>
         ) : null}
-        {org?.stripe_customer_id ? (
+        {org?.stripe_customer_id && org?.stripe_subscription_id ? (
           <form action={openPortal} className="ml-auto">
             <SubmitButton
               pendingLabel="Opening…"
@@ -94,7 +99,12 @@ export default async function BillingPage({
 
       {/* plans */}
       <div className="mt-8">
-        <PlanPicker action={startCheckout} currentPlan={plan} />
+        <PlanPicker
+          action={startCheckout}
+          currentPlan={active ? plan : null}
+          chosenPlan={chosenPlan ?? null}
+          initialInterval={interval === "year" ? "year" : "month"}
+        />
       </div>
     </div>
   );

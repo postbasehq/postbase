@@ -35,11 +35,17 @@ export async function updateSession(request: NextRequest) {
 
   // Defense-in-depth: the (app) layout also guards these, but block unauthenticated
   // access to every app route at the edge too.
-  const protectedPrefixes = ["/queue", "/composer", "/channels", "/api-keys", "/calendar"];
+  const protectedPrefixes = [
+    "/agent", "/analytics", "/api-keys", "/billing", "/calendar", "/channels",
+    "/composer", "/drafts", "/media", "/queue", "/settings", "/team",
+  ];
   const path = request.nextUrl.pathname;
   if (!user && protectedPrefixes.some((p) => path === p || path.startsWith(`${p}/`))) {
+    // Send them back where they were going after sign-in (e.g. pricing →
+    // /billing?plan=team), via the login page's ?next= handling.
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
+    redirectUrl.search = `?next=${encodeURIComponent(path + request.nextUrl.search)}`;
     return NextResponse.redirect(redirectUrl);
   }
 
