@@ -30,6 +30,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page("/tools", 0.6, "monthly"),
     page("/tools/character-counter", 0.8, "monthly"),
     page("/tools/mcp-config", 0.7, "monthly"),
+    page("/tools/social-media-image-sizes", 0.8, "monthly"),
     page("/blog", 0.8, "weekly"),
     ...listPosts().map((p) => ({ ...page(`/blog/${p.slug}`, 0.7, "monthly"), lastModified: new Date(p.updated ?? p.date) })),
     page("/login", 0.5, "yearly"),

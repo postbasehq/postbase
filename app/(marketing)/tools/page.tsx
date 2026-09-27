@@ -6,7 +6,7 @@ import { CtaBand, wrap } from "@/components/marketing/ui";
 import { Eyebrow, LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 
-const DESCRIPTION = "Free tools for posting to social media: a character counter and thread splitter, and an MCP config generator for AI tools.";
+const DESCRIPTION = "Free tools for posting to social media: a character counter and thread splitter, an image and video size guide, and an MCP config generator for AI tools.";
 const TRAIL = [{ label: "Home", href: "/" }, { label: "Tools" }];
 
 export const metadata: Metadata = { title: "Free tools", description: DESCRIPTION, ...pageMeta("/tools") };
@@ -27,6 +27,12 @@ export default function ToolsPage() {
                 title: "Character counter",
                 brand: "x",
                 body: "Counts your post the way X, Bluesky, LinkedIn and others do, and splits long text into a thread.",
+              },
+              {
+                href: "/tools/social-media-image-sizes",
+                title: "Image and video sizes",
+                brand: "instagram",
+                body: "Every size, ratio and limit for nine networks, checked September 2026.",
               },
               {
                 href: "/tools/mcp-config",

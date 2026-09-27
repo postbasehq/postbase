@@ -11,6 +11,12 @@ const TOOLS: Record<string, LinkCard> = {
     brand: "x",
     body: "Counts your post the way X, Bluesky, LinkedIn and others do, and splits long text into a thread.",
   },
+  "/tools/social-media-image-sizes": {
+    href: "/tools/social-media-image-sizes",
+    title: "Image and video sizes",
+    brand: "instagram",
+    body: "Every size, ratio and limit for nine networks, checked September 2026.",
+  },
   "/tools/mcp-config": {
     href: "/tools/mcp-config",
     title: "MCP config generator",
