@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "./Logo";
+import { OpenSourceBanner } from "./OpenSourceBanner";
 import { ThemeToggle } from "./ThemeToggle";
 import { GitHubButton } from "./GitHubButton";
 import { BrandTile } from "./BrandTile";
@@ -16,6 +17,7 @@ const LINKS = [
 export function SiteNav() {
   return (
     <div className="sticky top-0 z-50">
+      <OpenSourceBanner />
       <nav className="bg-ground/85 backdrop-blur-md backdrop-saturate-150">
         <div className="mx-auto flex h-16 max-w-[1180px] items-center gap-4 px-5 md:gap-6 md:px-8">
           <div className="flex items-center gap-7">
