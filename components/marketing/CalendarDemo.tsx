@@ -314,7 +314,6 @@ export function CalendarDemo({
                           {pad(ev.hour)}:{pad(ev.minute)}
                         </span>
                         <span className="truncate">{ev.post.body}</span>
-                        {showAgent && ev.agent ? <span className="ml-auto shrink-0 font-mono text-[9px] text-muted">MCP</span> : null}
                       </button>
                     );
                   })}

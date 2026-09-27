@@ -48,7 +48,7 @@ YouTube Studio is all you need if YouTube is your only channel. A tool starts to
 
 1. **Connect YouTube** on the Channels page. You sign in on Google's own screen.
 2. **Add the video once** in the composer and pick YouTube, and TikTok too if you like.
-3. **Write the post.** The start of it becomes the YouTube title (up to 100 characters) and the full text becomes the description. Open the TikTok tab to write a different caption there.
+3. **Write the post.** The first line becomes the YouTube title (up to 100 characters) and the full text becomes the description. Open the TikTok tab to write a different caption there.
 4. **Choose the visibility** in the YouTube settings: Public, Unlisted or Private.
 5. **Pick a time** and schedule it.
 

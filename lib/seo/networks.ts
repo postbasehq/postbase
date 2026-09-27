@@ -359,7 +359,7 @@ export const NETWORKS: Network[] = [
     blurb: "Videos and Shorts with a title and description.",
     facts: [
       { label: "Format", value: "Video uploads, including Shorts" },
-      { label: "Title", value: "The first 100 characters of your post" },
+      { label: "Title", value: "The first line of your post, up to 100 characters" },
       { label: "Description", value: "Up to 5,000 characters" },
       { label: "Visibility", value: "Public, Unlisted or Private, chosen per video" },
     ],
@@ -381,7 +381,7 @@ export const NETWORKS: Network[] = [
       CONNECT_OAUTH("YouTube"),
       {
         title: "Upload and describe",
-        body: "Add your video in the composer and write the post. The start of it becomes the video title and the full text becomes the description.",
+        body: "Add your video in the composer. The first line of your post becomes the title and the full text becomes the description.",
       },
       SCHEDULE_STEP,
     ],
@@ -392,7 +392,7 @@ export const NETWORKS: Network[] = [
       ],
       [
         "How does Postbase set the video title?",
-        "The first 100 characters of your post become the title, and the full text becomes the description. Keep the opening line short and it works as a title on its own.",
+        "The first line of your post becomes the title (up to 100 characters), and the full text becomes the description.",
       ],
       [
         "Can I upload a video as Unlisted?",

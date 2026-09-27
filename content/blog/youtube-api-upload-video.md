@@ -113,4 +113,4 @@ If you need more, you can request a quota increase, which also goes through the 
 
 ## Or skip the plumbing
 
-Postbase uploads to YouTube for you: connect a channel once, add the video in the composer, and the start of your post becomes the title and the full text the description. You can post the same video to [TikTok](/integrations/tiktok) at the same time. See [YouTube scheduling in Postbase](/integrations/youtube).
+Postbase uploads to YouTube for you: connect a channel once, add the video in the composer, and the first line of your post becomes the title and the full text the description. You can post the same video to [TikTok](/integrations/tiktok) at the same time. See [YouTube scheduling in Postbase](/integrations/youtube).

@@ -44,7 +44,7 @@ export function DevGrid() {
         layout="side"
         label="Calendar"
         title="Every agent post lands in your calendar"
-        body="Posts your agent schedules sit next to yours, marked MCP. Review, edit or cancel them before they go out."
+        body="Posts your agent schedules sit on the same calendar as yours. Review, edit or cancel them before they go out."
       >
         <div className="h-[560px] w-[900px] overflow-hidden rounded-2xl shadow-[0_30px_70px_-30px_rgba(0,0,0,0.55)]">
           <CalendarDemo productShot sidebar={false} showAgent />

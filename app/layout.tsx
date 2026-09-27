@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     template: "%s · Postbase",
   },
   description:
-    "Schedule and publish to X, LinkedIn, Instagram, TikTok, YouTube, Bluesky and Mastodon from one calendar. Open source, with an MCP server so AI agents can post for you.",
+    "Schedule and publish to X, LinkedIn, TikTok, YouTube, Bluesky and Mastodon from one calendar. Open source, with an MCP server so AI agents can post for you.",
   applicationName: "Postbase",
   keywords: [
     "social media scheduler",

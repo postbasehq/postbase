@@ -430,8 +430,12 @@ async function publishToYouTube(input: PublishInput): Promise<PublishResult> {
   const video = input.media.find((m) => m.type.startsWith("video/"));
   if (!video) return { ok: false, error: "YouTube posts need a video." };
 
-  const description = [input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean).join("\n\n");
-  const title = (input.body.trim() || "Postbase upload").slice(0, 100);
+  // YouTube rejects "<" and ">" in titles and descriptions. The title is the
+  // post's first line (max 100 chars); the full text becomes the description.
+  const clean = (t: string) => t.replace(/[<>]/g, "");
+  const description = clean([input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean).join("\n\n"));
+  const firstLine = input.body.split("\n").map((l) => l.trim()).find(Boolean) ?? "";
+  const title = Array.from(clean(firstLine) || "Postbase upload").slice(0, 100).join("").trim();
 
   try {
     const res = await fetch(video.url);
