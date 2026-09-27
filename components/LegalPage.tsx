@@ -14,7 +14,7 @@ export function LegalPage({ doc, current, summary }: { doc: LegalDoc; current: "
   return (
     <>
       <SiteNav />
-      <header className="mx-auto max-w-[1180px] px-5 pb-10 pt-14 md:px-8 md:pt-20">
+      <header className="mx-auto max-w-[1180px] px-5 pb-10 pt-6 md:px-8 md:pt-8">
         <div className="inline-flex items-center gap-1 rounded-full border border-line bg-surface p-1 shadow-sm">
           {DOCS.map((d) => (
             <Link
