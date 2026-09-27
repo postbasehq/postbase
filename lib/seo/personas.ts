@@ -239,7 +239,7 @@ export const PERSONAS: Persona[] = [
       },
     ],
     plan: "team",
-    planWhy: "15 channels and team seats for $39/month. Growth goes to 50 channels for $59/month.",
+    planWhy: "15 channels and team seats for $39/month. Pro goes to 50 channels for $59/month.",
     faqs: [
       [
         "Can I keep clients separate?",
@@ -255,7 +255,7 @@ export const PERSONAS: Persona[] = [
       ],
       [
         "How is pricing different from per-channel tools?",
-        "Postbase plans are a flat monthly price: Team is $39/month for 15 channels, and Growth is $59/month for 50. Per-channel tools charge for every account you add.",
+        "Postbase plans are a flat monthly price: Team is $39/month for 15 channels, and Pro is $59/month for 50. Per-channel tools charge for every account you add.",
       ],
     ],
     related: ["/alternatives/hootsuite", "/alternatives/buffer", "/integrations/linkedin"],
