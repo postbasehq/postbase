@@ -13,6 +13,7 @@ import { Eyebrow, LinkCards, SectionHead, SeoHero, section } from "@/components/
 import { CalendarHeroDemo, ClientSetupDemo, NetworkComposerDemo } from "@/components/marketing/seo/demos";
 import { FeatureTiles } from "@/components/marketing/seo/FeatureTiles";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
+import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 
 export const dynamicParams = false;
 
@@ -128,6 +129,8 @@ export default async function PersonaPage({ params }: { params: Promise<{ slug: 
             ]}
           />
         </section>
+
+        <RelatedPosts path={path} />
 
         <section className={`${wrap} py-24 md:py-32`}>
           <CtaBand body={p.sub} secondary={{ label: "See pricing", href: "/pricing" }} developers={p.hero.kind === "client"} />

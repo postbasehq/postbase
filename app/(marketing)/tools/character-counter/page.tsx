@@ -6,6 +6,7 @@ import { CtaBand, FaqList, wrap } from "@/components/marketing/ui";
 import { Eyebrow, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 import { CharacterCounter } from "@/components/marketing/tools/CharacterCounter";
+import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 
 const TITLE = "Character counter for X, Bluesky, LinkedIn, Threads and more";
 const DESCRIPTION =
@@ -96,6 +97,8 @@ export default function CharacterCounterPage() {
           <SectionHead title="Frequently asked questions" />
           <FaqList items={FAQS} />
         </section>
+
+        <RelatedPosts path={"/tools/character-counter"} />
 
         <section className={`${wrap} py-24 md:py-32`}>
           <CtaBand

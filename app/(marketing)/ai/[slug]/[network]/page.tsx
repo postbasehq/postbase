@@ -12,6 +12,7 @@ import { CtaBand, FaqList, card, wrap } from "@/components/marketing/ui";
 import { CodeBlock, Eyebrow, Facts, LinkCards, Prompts, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
 import { ClientSetupDemo } from "@/components/marketing/seo/demos";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
+import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 
 export const dynamicParams = false;
 
@@ -151,6 +152,8 @@ export default async function ComboPage({ params }: { params: Params }) {
             ]}
           />
         </section>
+
+        <RelatedPosts path={path} />
 
         <section className={`${wrap} py-24 md:py-32`}>
           <CtaBand

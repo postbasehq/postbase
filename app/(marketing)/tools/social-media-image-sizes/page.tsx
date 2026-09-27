@@ -7,6 +7,7 @@ import { CtaBand, FaqList, wrap } from "@/components/marketing/ui";
 import { Eyebrow, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 import { SizeGuide } from "@/components/marketing/tools/SizeGuide";
+import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 
 const PATH = "/tools/social-media-image-sizes";
 const TITLE = "Social media image and video sizes (2026 cheat sheet)";
@@ -70,6 +71,8 @@ export default function ImageSizesPage() {
           <SectionHead title="Frequently asked questions" />
           <FaqList items={FAQS} />
         </section>
+
+        <RelatedPosts path={PATH} />
 
         <section className={`${wrap} py-24 md:py-32`}>
           <CtaBand

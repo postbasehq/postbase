@@ -7,6 +7,7 @@ import { CtaBand, wrap } from "@/components/marketing/ui";
 import { Eyebrow, LinkCards, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
 import { ClientSetupDemo, ClientTiles } from "@/components/marketing/seo/demos";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
+import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 
 const TITLE = "Social media MCP server for Claude, Cursor and AI agents";
 const DESCRIPTION =
@@ -63,6 +64,8 @@ export default function AiPage() {
           <SectionHead title="You stay in control" />
           <ClientTiles name="Your agent" />
         </section>
+
+        <RelatedPosts path={"/ai"} />
 
         <section className={`${wrap} py-24 md:py-32`}>
           <CtaBand

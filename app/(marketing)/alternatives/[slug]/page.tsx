@@ -8,6 +8,7 @@ import { CtaBand, FaqList, card, wrap } from "@/components/marketing/ui";
 import { Eyebrow, LinkCards, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
 import { AlternativeTiles, CalendarHeroDemo } from "@/components/marketing/seo/demos";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
+import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 
 export const dynamicParams = false;
 
@@ -93,6 +94,8 @@ export default async function AlternativePage({ params }: { params: Promise<{ sl
             }))}
           />
         </section>
+
+        <RelatedPosts path={path} />
 
         <section className={`${wrap} py-24 md:py-32`}>
           <CtaBand

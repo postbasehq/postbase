@@ -10,6 +10,7 @@ import { CtaBand, FaqList, Underlined, card, wrap } from "@/components/marketing
 import { Eyebrow, Facts, LinkCards, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
 import { NetworkComposerDemo, NetworkTiles } from "@/components/marketing/seo/demos";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
+import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 
 export const dynamicParams = false;
 
@@ -109,6 +110,8 @@ export default async function IntegrationPage({ params }: { params: Promise<{ sl
             }))}
           />
         </section>
+
+        <RelatedPosts path={path} />
 
         <section className={`${wrap} py-24 md:py-32`}>
           <CtaBand

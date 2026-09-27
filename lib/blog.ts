@@ -140,3 +140,10 @@ export function getPost(slug: string): Post | null {
 
 export const formatDate = (iso: string) =>
   new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+
+/** Posts that list `path` in their `related` front matter, newest first. */
+export function postsLinkingTo(path: string, limit = 3): PostMeta[] {
+  return listPosts()
+    .filter((p) => p.related.includes(path))
+    .slice(0, limit);
+}
