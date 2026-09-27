@@ -38,8 +38,9 @@ export function BlueskyForm({
         <div className="text-[13px] font-semibold">To connect Bluesky:</div>
         <ol className="mt-1.5 flex flex-col gap-1 text-xs text-muted">
           <li>
-            <span className="font-semibold text-ink">1.</span> Open your Bluesky App Passwords and
-            click <span className="font-medium text-ink">Add App Password</span>
+            <span className="font-semibold text-ink">1.</span> On Bluesky (web), go to{" "}
+            <span className="font-medium text-ink">Settings → Privacy and security → App passwords</span> and click{" "}
+            <span className="font-medium text-ink">Add App Password</span>
           </li>
           <li>
             <span className="font-semibold text-ink">2.</span> Copy the generated password (
