@@ -366,7 +366,7 @@ export const NETWORKS: Network[] = [
       { label: "Format", value: "Video uploads, including Shorts" },
       { label: "Title", value: "The first 100 characters of your post" },
       { label: "Description", value: "Up to 5,000 characters" },
-      { label: "Upload", value: "Through YouTube's official Data API" },
+      { label: "Visibility", value: "Public, Unlisted or Private, chosen per video" },
     ],
     demo: {
       text: "How we brew the Kochere at home\n\nV60, 15g coffee, 250g water at 94°C, 2:45 total. Swirl, don't stir.",
@@ -398,6 +398,10 @@ export const NETWORKS: Network[] = [
       [
         "How does Postbase set the video title?",
         "The first 100 characters of your post become the title, and the full text becomes the description. Keep the opening line short and it works as a title on its own.",
+      ],
+      [
+        "Can I upload a video as Unlisted?",
+        "Yes. The YouTube settings in the composer let you pick Public, Unlisted or Private for each video.",
       ],
       [
         "Can I post the same video to YouTube and TikTok?",
