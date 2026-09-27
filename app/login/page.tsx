@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { createClient } from "@/lib/supabase/client";
+import { Analytics } from "@/components/Analytics";
+import { track } from "@/lib/analytics";
 
 const RESEND_SECONDS = 30;
 
@@ -41,6 +43,7 @@ export default function LoginPage() {
   async function oauth(provider: "google" | "github") {
     setError(null);
     setOauthBusy(provider);
+    track("generate_lead", { method: provider });
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
@@ -70,6 +73,7 @@ export default function LoginPage() {
       });
       if (error) setError(error.message);
       else {
+        track("generate_lead", { method: "email" });
         setSent(true);
         setCooldown(RESEND_SECONDS);
       }
@@ -89,6 +93,8 @@ export default function LoginPage() {
     "flex h-12 items-center justify-center gap-2.5 rounded-full border border-line bg-surface px-5 text-[15px] font-semibold text-ink shadow-sm transition hover:border-ink/30 hover:shadow disabled:opacity-60";
 
   return (
+    <>
+    <Analytics />
     <AuthShell
       tone="blue"
       scene="creators"
@@ -200,6 +206,7 @@ export default function LoginPage() {
         </div>
       )}
     </AuthShell>
+    </>
   );
 }
 

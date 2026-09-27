@@ -7,7 +7,7 @@
 
 # Privacy Policy
 
-**Last updated: 27 September 2026**
+**Last updated: 28 September 2026**
 
 This Privacy Policy explains how **Berkway Group Limited** ("Berkway", "we", "us"),
 trading as **Postbase**, collects, uses, and protects personal data when you use the
@@ -75,6 +75,7 @@ We share personal data with vetted service providers who process it on our behal
 - **Stripe** — payment processing.
 - **Anthropic and OpenAI** — AI models that power the Postbase agent, when you use it.
 - **Higgsfield** — AI image and video generation, when you use it.
+- **Google (Google Analytics)** — website analytics, only if you accept analytics cookies.
 
 When you instruct the Service to publish, we transmit your content and use your stored
 tokens to send it to the **social platform(s) you selected** (such as X, LinkedIn, Bluesky,
@@ -144,9 +145,15 @@ You also have the right to complain to the UK Information Commissioner's Office 
 
 ## 10. Cookies
 
-We use only cookies that are strictly necessary to run the Service (e.g. to keep you
-signed in). If we ever introduce analytics or non-essential cookies, we will ask for your
-consent first.
+We use cookies that are strictly necessary to run the Service (for example, to keep you
+signed in). These don't need your consent.
+
+On our website (postbase.so and its sign-in page) we'd also like to use **Google Analytics**
+cookies, to understand which pages are useful and how visitors find us. These are only set
+if you click **Accept** on our cookie banner; if you decline or ignore it, Google Analytics
+isn't loaded at all. You can change your choice at any time with the **Cookie settings**
+link at the bottom of every page. We don't use advertising cookies, and Google Analytics
+isn't used inside the Postbase app.
 
 ## 11. Children
 

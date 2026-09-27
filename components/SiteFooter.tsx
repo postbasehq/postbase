@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Logo } from "./Logo";
 import { BrandTile } from "./BrandTile";
 import { ClientLogo } from "./ClientLogo";
+import { CookieSettingsLink } from "./Analytics";
 
 /** Optional icon before a link: a network tile ("brand:x"), an AI tool logo ("client:claude") or an arrow. */
 type Icon = `brand:${string}` | `client:${string}` | "arrow";
@@ -108,7 +109,10 @@ export function SiteFooter() {
             </div>
           ))}
         </div>
-        <p className="mt-12 text-[12px] leading-relaxed text-muted">
+        <div className="mt-12">
+          <CookieSettingsLink className="text-[12px] font-medium text-muted underline underline-offset-2 transition-colors hover:text-ink" />
+        </div>
+        <p className="mt-3 text-[12px] leading-relaxed text-muted">
           © {new Date().getFullYear()} Berkway Group Limited, trading as Postbase. Registered in England and Wales.
           Postbase is a publishing tool and is not affiliated with X, LinkedIn, Instagram, TikTok, YouTube, Bluesky or
           Mastodon, or with the AI tools and other companies named on this site. All trademarks belong to their owners.
