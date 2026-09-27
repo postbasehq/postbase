@@ -7,7 +7,7 @@
 
 # Privacy Policy
 
-**Last updated: 10 September 2026**
+**Last updated: 27 September 2026**
 
 This Privacy Policy explains how **Berkway Group Limited** ("Berkway", "we", "us"),
 trading as **Postbase**, collects, uses, and protects personal data when you use the
@@ -19,10 +19,9 @@ Berkway Group Limited is the data controller for personal data processed through
 hosted Service.
 
 - **Company:** Berkway Group Limited, a company registered in England and Wales.
-- **Company number:** [company number]
-- **Registered office:** [registered office address]
+- **Company number:** 16591862
+- **Registered office:** 3rd Floor, 86-90 Paul Street, London, EC2A 4NE
 - **Contact:** team@postbase.so
-- **ICO registration:** [ICO registration reference]
 
 If you run your **own self-hosted instance** of the open-source Postbase software, this
 policy does **not** apply to that instance — see section 12.
@@ -45,7 +44,7 @@ own privacy policies.
   are encrypted at rest.**
 - **Content** — the posts, captions, and media you create, schedule, or publish through
   the Service, and their scheduling metadata.
-- **Payment data** — handled by our payment processor ([e.g. Stripe]). We do **not**
+- **Payment data** — handled by our payment processor, Stripe. We do **not**
   store your full card number; we retain limited billing details (e.g. plan, last four
   digits, billing country) as returned by the processor.
 - **Communications** — messages you send us (support, feedback).
@@ -70,18 +69,46 @@ own privacy policies.
 
 We share personal data with vetted service providers who process it on our behalf:
 
-- **Supabase** — database, authentication, and file/media storage.
-- **Vercel** — application hosting.
-- **Inngest** — scheduled job execution (running your posts at their scheduled time).
-- **[Payment processor, e.g. Stripe]** — payment processing.
-- **[Email provider, e.g. Resend]** — transactional and notification email.
+- **Supabase** — database, authentication (including sign-in emails), and file/media storage.
+- **Vercel** — application hosting, scheduled publishing, and privacy-friendly site analytics.
+- **Cloudflare (R2)** — storage for files you upload to your media library.
+- **Stripe** — payment processing.
+- **Anthropic and OpenAI** — AI models that power the Postbase agent, when you use it.
+- **Higgsfield** — AI image and video generation, when you use it.
 
 When you instruct the Service to publish, we transmit your content and use your stored
-tokens to send it to the **social platform(s) you selected** (X, LinkedIn, Instagram).
-Those platforms then process it under their own terms.
+tokens to send it to the **social platform(s) you selected** (such as X, LinkedIn, Bluesky,
+Mastodon, TikTok and YouTube). Those platforms then process it under their own terms.
 
 We do not sell your personal data. We may disclose data if required by law or to protect
 our rights, users, or the public.
+
+## 5a. Google and YouTube data
+
+If you connect a YouTube channel, Postbase uses YouTube API Services. With your permission
+we access:
+
+- **YouTube upload access** (`youtube.upload`) — to upload the videos you schedule in
+  Postbase to your channel, at the time you choose, with the title, description and
+  visibility you set. We don't upload anything you haven't scheduled.
+- **YouTube read-only access** (`youtube.readonly`) — to show which channel is connected
+  (its name and avatar), and to show the view, like and comment counts of videos
+  published through Postbase in your analytics. We don't read anything else.
+
+We store the connected channel's identifier and name, and the OAuth tokens (encrypted at
+rest). We don't sell this data, use it for advertising, or share it with anyone except as
+needed to provide these features. Postbase's use and transfer of information received from
+Google APIs will adhere to the
+[Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy),
+including the Limited Use requirements.
+
+By connecting YouTube you also agree to the
+[YouTube Terms of Service](https://www.youtube.com/t/terms), and Google's handling of your
+data is covered by the [Google Privacy Policy](https://policies.google.com/privacy).
+
+You can revoke Postbase's access at any time by disconnecting the channel in Postbase,
+which deletes our stored tokens, or from your Google account's security settings at
+[myaccount.google.com/permissions](https://myaccount.google.com/permissions).
 
 ## 6. International transfers
 
@@ -93,7 +120,7 @@ Transfer Agreement / Addendum or the EU Standard Contractual Clauses.
 
 We keep personal data for as long as your account is active and as needed to provide the
 Service. When you delete a connected channel we delete its stored tokens. When you close
-your account we delete or anonymise your personal data within [30–90] days, except where
+your account we delete or anonymise your personal data within 90 days, except where
 we must retain records to meet legal, tax, or security obligations.
 
 ## 8. Security

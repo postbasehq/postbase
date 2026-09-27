@@ -7,11 +7,11 @@
 
 # Terms of Service
 
-**Last updated: 10 September 2026**
+**Last updated: 27 September 2026**
 
 These Terms of Service ("Terms") are a legal agreement between you and
 **Berkway Group Limited** ("Berkway", "we", "us"), a company registered in England and
-Wales (company number [company number], registered office [registered office address]),
+Wales (company number 16591862, registered office 3rd Floor, 86-90 Paul Street, London, EC2A 4NE),
 trading as **Postbase**, and govern your use of the hosted Postbase service at
 **postbase.so** (the "Service"). By creating an account or using the Service you agree to
 these Terms.
@@ -20,7 +20,7 @@ these Terms.
 
 - **Service** — the hosted Postbase cloud product at postbase.so.
 - **Self-Hosted Software** — the open-source Postbase software you may run yourself.
-- **Channel** — a social account (e.g. X, LinkedIn, Instagram) you connect.
+- **Channel** — a social account (e.g. X, LinkedIn, YouTube) you connect.
 - **Content** — posts, captions, media, and other material you create, schedule, or
   publish through the Service.
 
@@ -49,6 +49,10 @@ your instruction. Your use of each Channel is also subject to **that platform's 
 and policies**. The platforms are independent of us: their APIs, availability, rules, and
 pricing can change or fail, and **we are not responsible for platform outages, rejections,
 account restrictions, or changes** that affect publishing.
+
+If you connect a YouTube channel, you also agree to be bound by the
+[YouTube Terms of Service](https://www.youtube.com/t/terms). Postbase uses YouTube API
+Services; see our [Privacy Policy](/privacy) for how we handle YouTube data.
 
 ## 6. Your Content
 
@@ -85,7 +89,7 @@ and must keep them confidential. We may apply rate limits and may revoke keys fo
   subscription begins and renews automatically each billing period at the then-current
   price. You can cancel any time; cancellation takes effect at the end of the current paid
   period.
-- **Payments** are processed by our payment processor ([e.g. Stripe]). Prices are exclusive
+- **Payments** are processed by our payment processor, Stripe. Prices are exclusive
   of taxes unless stated; you are responsible for applicable taxes.
 - **Price changes** apply from your next renewal, with reasonable prior notice.
 - **Refunds.** Except where required by law [or under any money-back guarantee we
@@ -95,7 +99,7 @@ and must keep them confidential. We may apply rate limits and may revoke keys fo
 ## 10. Open source and self-hosting
 
 The Self-Hosted Software is provided separately under its own open-source licence
-([AGPL-3.0]), which governs your use of that software. These Terms govern only the hosted
+(AGPL-3.0), which governs your use of that software. These Terms govern only the hosted
 Service. When you self-host, you operate the software yourself, supply your own platform
 API keys, and are responsible for your own deployment.
 
