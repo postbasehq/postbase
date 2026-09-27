@@ -41,8 +41,10 @@ export const AI_VIDEO_LIMIT: Record<PlanId, number> = {
 // costs one message (a turn may fan out to several tool calls). Kept generous
 // on paid plans but capped so a runaway session can't rack up an open-ended
 // model bill; the trial gets a taste.
-// With prompt caching a message costs roughly $0.01–0.04 on Sonnet 5; real
-// per-message cost is logged on agent_messages.cost_usd.
+// Measured on Sonnet 5 with prompt caching: ~$0.002 (a lookup) to ~$0.006 (draft
+// + schedule) per message, so even Growth's full quota is ~$9/month. Sonnet beats
+// Haiku 4.5 on cost here: our ~5k-token prompt is below Haiku's cache minimum.
+// Real per-message cost is logged on agent_messages.cost_usd.
 export const AGENT_MESSAGE_LIMIT: Record<PlanId, number> = {
   trial: 25,
   creator: 150,
