@@ -4,6 +4,7 @@ import { getTimeZone, formatInTz } from "@/lib/tz";
 import { SubmitButton } from "@/components/SubmitButton";
 import { BrandTile } from "@/components/BrandTile";
 import { QueueControls } from "@/components/QueueControls";
+import { AutoRefresh } from "@/components/AutoRefresh";
 import { DeletePostButton } from "@/components/DeletePostButton";
 import { PostStatsButton } from "@/components/PostStatsButton";
 import { retryTarget, deletePost } from "../actions";
@@ -137,6 +138,15 @@ export default async function QueuePage({
   const { data: posts, count } = await query.range(from, from + PAGE_SIZE - 1);
 
   const rows = (posts ?? []) as unknown as PostRow[];
+  // Poll quickly while anything on this page is sending, retrying, or due
+  // within the next 15 minutes (or overdue), so statuses update on their own.
+  const soon = Date.now() + 15 * 60_000;
+  const inFlight = rows.some(
+    (p) =>
+      p.status === "publishing" ||
+      (p.status === "scheduled" && p.scheduled_at != null && Date.parse(p.scheduled_at) <= soon) ||
+      (p.post_targets ?? []).some((t) => t.status === "failed" && t.next_attempt_at),
+  );
   const total = count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const page = Math.min(requested, totalPages);
@@ -159,6 +169,7 @@ export default async function QueuePage({
     <div className="mx-auto max-w-[1200px]">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <QueueControls channels={channelOptions} />
+        <AutoRefresh active={inFlight} />
         <div className="ml-auto flex items-center gap-1 rounded-full bg-surface-2 p-1">
           {FILTERS.map((f) => {
             const active = status === f.key;
@@ -383,7 +394,7 @@ export default async function QueuePage({
                             </span>
                             <form action={retryTarget} className="shrink-0">
                               <input type="hidden" name="target_id" value={t.id} />
-                              <SubmitButton className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-semibold text-ink hover:bg-surface-2 disabled:opacity-50">
+                              <SubmitButton className="text-xs font-semibold text-blue-ink transition-colors hover:text-ink disabled:opacity-50">
                                 Retry
                               </SubmitButton>
                             </form>

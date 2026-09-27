@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { AutoRefresh } from "@/components/AutoRefresh";
 import { disconnectChannel } from "../actions";
 import { getTimeZone, formatInTz, localDateKey, localHM } from "@/lib/tz";
 import {
@@ -178,8 +179,16 @@ export default async function CalendarPage({
     });
   }
 
+  // Poll quickly while a post in range is sending or due within 15 minutes
+  // (or overdue), so pills flip to published on their own.
+  const soon = Date.now() + 15 * 60_000;
+  const inFlight = ((data ?? []) as unknown as Row[]).some(
+    (p) => p.status === "publishing" || (p.status === "scheduled" && Date.parse(p.scheduled_at) <= soon),
+  );
+
   return (
     <div className="h-full">
+      <AutoRefresh active={inFlight} />
       <CalendarView
         view={view}
         anchor={anchor}
