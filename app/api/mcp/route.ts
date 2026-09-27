@@ -26,7 +26,8 @@ const TOOLS = [
     title: "List channels",
     // MCP tool annotations: lets clients (and directory review) tell reads from writes.
     annotations: { title: "List channels", readOnlyHint: true, openWorldHint: false },
-    description: "List the connected social accounts (channels) and their platforms.",
+    description:
+      "List the social accounts (channels) connected to this Postbase workspace: id, platform (x, linkedin, bluesky, mastodon, tiktok, youtube), handle and status. Use the ids with create_post. Docs: https://docs.postbase.so/mcp/tools",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
   {
@@ -34,24 +35,24 @@ const TOOLS = [
     title: "Create or schedule a post",
     annotations: { title: "Create or schedule a post", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     description:
-      "Draft or schedule a post/thread. Provide `body` (single post) or `thread` (array of posts). Omit `scheduled_at` to save as a draft.",
+      "Create a draft, or schedule a post or thread, on one or more connected channels. It appears on the user's Postbase calendar and publishes at `scheduled_at` via each network's official API. Provide `body` for a single post or `thread` for several posts; the same text goes to every channel in the call, so call once per network for different wording. Limits per post: X 280 (links count 23), Bluesky 300, Mastodon 500, LinkedIn 3,000. Threads publish as reply chains on X, Bluesky and Mastodon; on LinkedIn the extra parts become the first comment. Text only: TikTok and YouTube need a video, so save a draft for those and the user adds media in Postbase. Omit `scheduled_at` to save a draft. Docs: https://docs.postbase.so/mcp/tools",
     inputSchema: {
       type: "object",
       properties: {
-        body: { type: "string", description: "The post text (for a single post)." },
+        body: { type: "string", description: "The post text, for a single post. Use `thread` instead for several posts." },
         thread: {
           type: "array",
           items: { type: "string" },
-          description: "Multiple posts to publish as a thread.",
+          description: "Several posts to publish as a thread, in order (each within the network's character limit).",
         },
         channel_ids: {
           type: "array",
           items: { type: "string" },
-          description: "Channel ids to publish to (from list_channels).",
+          description: "Ids of the channels to publish to, from list_channels.",
         },
         scheduled_at: {
           type: "string",
-          description: "ISO 8601 time to publish. Omit or null to save as a draft.",
+          description: "When to publish, as ISO 8601 with a timezone offset (e.g. 2026-10-01T09:00:00+01:00). Omit to save a draft. Scheduling needs an active plan or trial.",
         },
       },
       additionalProperties: false,
@@ -61,11 +62,12 @@ const TOOLS = [
     name: "list_scheduled",
     title: "List scheduled posts",
     annotations: { title: "List scheduled posts", readOnlyHint: true, openWorldHint: false },
-    description: "List scheduled/queued posts (optionally filter by status).",
+    description:
+      "List posts in this workspace with their text, time and channels. Defaults to scheduled posts; pass `status` to see drafts, published or failed posts instead. Docs: https://docs.postbase.so/mcp/tools",
     inputSchema: {
       type: "object",
       properties: {
-        status: { type: "string", description: "Filter by status, e.g. scheduled or draft." },
+        status: { type: "string", description: "One of scheduled (default), draft, published or failed." },
       },
       additionalProperties: false,
     },
@@ -74,7 +76,8 @@ const TOOLS = [
     name: "cancel_post",
     title: "Cancel a scheduled post",
     annotations: { title: "Cancel a scheduled post", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-    description: "Cancel a scheduled post (reverts it to a draft) by its id.",
+    description:
+      "Cancel a scheduled post before it publishes. The post goes back to being a draft, so nothing is deleted and it can be rescheduled in Postbase. Get the id from list_scheduled. Docs: https://docs.postbase.so/mcp/tools",
     inputSchema: {
       type: "object",
       properties: { post_id: { type: "string", description: "The post id to cancel." } },
