@@ -2,11 +2,13 @@
  * YouTube (Google OAuth 2.0) + Data API v3 video upload.
  *
  * YouTube is video-only — publishing uploads a video with a title/description.
- * Unverified apps have uploads locked to PRIVATE and limited to test users until
- * the app passes Google's OAuth verification.
+ * The app passed Google's OAuth verification for youtube.upload and
+ * youtube.readonly (2026-09-28); changing the consent screen or scopes needs a
+ * new verification.
  *
  * Requires YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_CALLBACK_URL
- * (+ optional YOUTUBE_PRIVACY_STATUS, default "private").
+ * (+ optional YOUTUBE_PRIVACY_STATUS, default "public"; each post can also
+ * choose its own visibility).
  */
 
 const AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth";

@@ -161,6 +161,11 @@ export default async function AnalyticsPage() {
         <AnalyticsTable rows={rows} />
       </div>
 
+      <p className="mt-4 text-center text-xs text-muted">
+        Totals and per-platform figures are calculated by Postbase from each network&apos;s own
+        counts; they aren&apos;t figures published by the networks themselves.
+      </p>
+
       {!hasAny && posts.length > 0 ? (
         <p className="mt-4 text-center text-xs text-muted">
           Metrics refresh within a few minutes of publishing, then periodically. Coverage varies:

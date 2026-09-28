@@ -100,8 +100,10 @@ we access:
   (its name and avatar), and to show the view, like and comment counts of videos
   published through Postbase in your analytics. We don't read anything else.
 
-We store the connected channel's identifier and name, and the OAuth tokens (encrypted at
-rest). We don't sell this data, use it for advertising, or share it with anyone except as
+We store the connected channel's identifier and name, the OAuth tokens (encrypted at
+rest), and the public view, like and comment counts of videos published through Postbase,
+which we keep for up to 36 months to show in your analytics. Disconnecting the channel
+deletes all of this. We don't sell this data, use it for advertising, or share it with anyone except as
 needed to provide these features. Postbase's use and transfer of information received from
 Google APIs will adhere to the
 [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy),
