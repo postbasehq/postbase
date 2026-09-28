@@ -5,6 +5,7 @@ import { BrandTile } from "@/components/BrandTile";
 import { ClientLogo } from "@/components/ClientLogo";
 import { useAudience, type Audience } from "@/components/marketing/Audience";
 import { Fit } from "@/components/marketing/Fit";
+import { LogoMark } from "@/components/marketing/Decor";
 import { useLoop } from "@/components/marketing/Mocks";
 
 /*
@@ -26,7 +27,7 @@ type Persona = {
   title: string;
   body: string;
   color: string;
-  /** Colours of the two logo-block shapes behind the scene. */
+  /** Colours of the two Postbase marks behind the scene. */
   shapes: [string, string];
   audience?: Audience;
   cta?: string;
@@ -166,16 +167,9 @@ export function WhoFor() {
 
       {/* scene */}
       <div className="relative isolate overflow-hidden rounded-[28px] transition-colors duration-500" style={{ backgroundColor: p.color }}>
-        <span
-          aria-hidden
-          className="absolute -right-16 -top-20 -z-10 size-56 rounded-full transition-colors duration-500"
-          style={{ backgroundColor: p.shapes[0] }}
-        />
-        <span
-          aria-hidden
-          className="absolute -bottom-20 -left-12 -z-10 h-44 w-64 rotate-[-14deg] rounded-[48px] transition-colors duration-500"
-          style={{ backgroundColor: p.shapes[1] }}
-        />
+        {/* Postbase marks flush with the card's edges, in this audience's colours */}
+        <LogoMark color={p.shapes[0]} edge="top" className="absolute left-8 top-0 -z-10 w-[150px]" />
+        <LogoMark color={p.shapes[1]} edge="right" className="absolute right-0 top-[165px] -z-10 w-[120px] -scale-y-100" />
         <Fit minWidth={540} height={480}>
           <div key={p.id} className="swap-in relative h-full">
             {p.panel()}

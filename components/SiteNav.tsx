@@ -8,7 +8,7 @@ import { NETWORKS } from "@/lib/seo/networks";
 
 const BEFORE = [{ href: "/#features", label: "Features" }];
 const LINKS = [
-  { href: "/#pricing", label: "Pricing" },
+  { href: "/pricing", label: "Pricing" },
   { href: "/blog", label: "Blog" },
   { href: "https://docs.postbase.so", label: "Docs" },
 ];

@@ -13,7 +13,7 @@ const COLUMNS: { title: string; links: [string, string, Icon?][] }[] = [
     links: [
       ["Features", "/#features"],
       ["Channels", "/#channels"],
-      ["Pricing", "/#pricing"],
+      ["Pricing", "/pricing"],
       ["FAQ", "/#faq"],
       ["For creators", "/for/creators"],
       ["For founders", "/for/founders"],
