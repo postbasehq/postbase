@@ -23,7 +23,7 @@ type Kind = "oauth" | "bluesky" | "mastodon";
  * BrandTile's BRANDS map. Facebook is intentionally omitted: Page publishing is
  * built but parked behind Meta App Review.
  */
-const PLATFORMS: { id: string; kind: Kind; desc: string; note?: string }[] = [
+const PLATFORMS: { id: string; kind: Kind; desc: string; note?: string; access?: string[] }[] = [
   { id: "x", kind: "oauth", desc: "Publish posts and threads to your X account." },
   {
     id: "instagram",
@@ -42,7 +42,8 @@ const PLATFORMS: { id: string; kind: Kind; desc: string; note?: string }[] = [
     id: "youtube",
     kind: "oauth",
     desc: "Upload videos to your channel.",
-    note: "Every YouTube post needs a video attached.",
+    note: "Video uploads only.",
+    access: ["Upload videos to your channel", "Set thumbnails on the videos you post", "See your channel name and your videos' stats"],
   },
   { id: "bluesky", kind: "bluesky", desc: "Connect with your handle and an app password." },
   { id: "mastodon", kind: "mastodon", desc: "Connect any instance — approve on your server." },
@@ -369,6 +370,21 @@ export function ChannelsBoard({
                   Postbase only asks for the access it needs to publish your posts and show
                   their stats. You can disconnect any time.
                 </p>
+                {current.access ? (
+                  <div className="mt-3 rounded-xl bg-surface-2 px-3.5 py-3 text-[13px]">
+                    <div className="font-semibold text-ink">Postbase will be able to:</div>
+                    <ul className="mt-1.5 flex flex-col gap-1 text-muted">
+                      {current.access.map((a) => (
+                        <li key={a} className="flex items-start gap-2">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2b59d9" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0" aria-hidden>
+                            <path d="M20 6 9 17l-5-5" />
+                          </svg>
+                          {a}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
                 {current.note ? (
                   <p className="mt-3 rounded-xl bg-surface-2 px-3.5 py-3 text-[13px] text-muted">
                     {current.note}
