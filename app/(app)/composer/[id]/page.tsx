@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PostForm } from "@/components/PostForm";
 import { type TikTokInitial } from "@/components/TikTokSettings";
 import { type YouTubePrivacy } from "@/components/YouTubeSettings";
+import type { YouTubePostOptions } from "@/lib/platforms/youtube";
 import { higgsfieldConfigured } from "@/lib/higgsfield";
 import { getCurrentOrgId } from "@/lib/org";
 import { aiUsage, hasAccess } from "@/lib/billing-guard";
@@ -19,7 +20,7 @@ export default async function EditPostPage({
   const { data: post } = await supabase
     .from("posts")
     .select(
-      "id, body, thread_tail, scheduled_at, status, tiktok_privacy_level, tiktok_options, youtube_privacy, repeat_every, post_targets(channel_id, variant_body, status, platform_post_id)",
+      "id, body, thread_tail, scheduled_at, status, tiktok_privacy_level, tiktok_options, youtube_privacy, youtube_options, repeat_every, post_targets(channel_id, variant_body, status, platform_post_id)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -118,6 +119,7 @@ export default async function EditPostPage({
           tiktokPrivacy: (post.tiktok_privacy_level as string | null) ?? undefined,
           tiktokOptions: (post.tiktok_options as TikTokInitial | null) ?? null,
           youtubePrivacy: (post.youtube_privacy as YouTubePrivacy | null) ?? null,
+          youtubeOptions: (post.youtube_options as YouTubePostOptions | null) ?? null,
           repeatEvery: (post.repeat_every as string | null) ?? null,
         }}
       />

@@ -15,10 +15,21 @@ const AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const API = "https://www.googleapis.com/youtube/v3";
 const UPLOAD_URL = "https://www.googleapis.com/upload/youtube/v3/videos";
+const THUMBNAIL_URL = "https://www.googleapis.com/upload/youtube/v3/thumbnails/set";
 const SCOPES = [
   "https://www.googleapis.com/auth/youtube.upload",
   "https://www.googleapis.com/auth/youtube.readonly",
 ];
+
+/** Per-post YouTube details from the composer (posts.youtube_options). */
+export type YouTubePostOptions = {
+  /** Video title; falls back to the post's first line. Max 100 characters. */
+  title?: string;
+  /** Custom thumbnail (JPG or PNG, up to 2 MB), set after the upload. */
+  thumbnailUrl?: string;
+  /** The audience declaration YouTube requires on every upload. */
+  madeForKids?: boolean;
+};
 
 export type YouTubeTokens = {
   access_token: string;
@@ -133,7 +144,7 @@ export async function getChannel(
 export async function uploadVideo(
   accessToken: string,
   bytes: ArrayBuffer,
-  meta: { title: string; description: string; privacy: string; mimeType?: string },
+  meta: { title: string; description: string; privacy: string; madeForKids?: boolean; mimeType?: string },
 ): Promise<string> {
   const mime = meta.mimeType || "video/*";
   const init = await fetch(`${UPLOAD_URL}?uploadType=resumable&part=snippet,status`, {
@@ -146,7 +157,7 @@ export async function uploadVideo(
     },
     body: JSON.stringify({
       snippet: { title: meta.title, description: meta.description },
-      status: { privacyStatus: meta.privacy, selfDeclaredMadeForKids: false },
+      status: { privacyStatus: meta.privacy, selfDeclaredMadeForKids: meta.madeForKids ?? false },
     }),
   });
   if (!init.ok) {
@@ -164,6 +175,28 @@ export async function uploadVideo(
   const json = (await put.json()) as { id?: string; error?: { message?: string } };
   if (!put.ok || !json.id) throw new Error(json.error?.message ?? `YouTube upload failed (${put.status})`);
   return json.id;
+}
+
+/** Set a custom thumbnail on an uploaded video (thumbnails.set). YouTube only
+ *  allows this on channels that have verified a phone number. */
+export async function setThumbnail(
+  accessToken: string,
+  videoId: string,
+  bytes: ArrayBuffer,
+  mimeType: string,
+): Promise<void> {
+  const res = await fetch(`${THUMBNAIL_URL}?videoId=${encodeURIComponent(videoId)}&uploadType=media`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": mimeType },
+    body: bytes,
+  });
+  if (res.ok) return;
+  const err = (await res.json().catch(() => ({}))) as { error?: { message?: string; errors?: { reason?: string }[] } };
+  const reason = err.error?.errors?.[0]?.reason;
+  if (res.status === 403 || reason === "forbidden") {
+    throw new Error("YouTube didn't accept the custom thumbnail. Verify your channel at youtube.com/verify to use custom thumbnails.");
+  }
+  throw new Error(err.error?.message ?? `Setting the thumbnail failed (${res.status})`);
 }
 
 /** Public video statistics (normalized). */

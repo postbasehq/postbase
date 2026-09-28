@@ -37,7 +37,9 @@ import {
 import {
   uploadVideo as ytUploadVideo,
   refreshTokens as ytRefreshTokens,
+  setThumbnail as ytSetThumbnail,
   defaultPrivacyStatus,
+  type YouTubePostOptions,
   type YouTubeTokens,
 } from "@/lib/platforms/youtube";
 import {
@@ -77,11 +79,13 @@ export type PublishInput = {
   tiktokPrivacyLevel?: string | null;
   /** YouTube visibility chosen in the composer; null → server default. */
   youtubePrivacy?: string | null;
+  /** YouTube title, thumbnail and audience chosen in the composer. */
+  youtubeOptions?: YouTubePostOptions | null;
   tiktokOptions?: TikTokPostOptions | null;
 };
 
 export type PublishResult =
-  | { ok: true; platformPostId: string }
+  | { ok: true; platformPostId: string; warning?: string }
   | { ok: false; error: string };
 
 function isExpiring(iso: string | null): boolean {
@@ -431,11 +435,13 @@ async function publishToYouTube(input: PublishInput): Promise<PublishResult> {
   if (!video) return { ok: false, error: "YouTube posts need a video." };
 
   // YouTube rejects "<" and ">" in titles and descriptions. The title is the
-  // post's first line (max 100 chars); the full text becomes the description.
+  // one set in the composer, else the post's first line (max 100 chars); the
+  // post text becomes the description.
+  const opts = input.youtubeOptions ?? {};
   const clean = (t: string) => t.replace(/[<>]/g, "");
   const description = clean([input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean).join("\n\n"));
   const firstLine = input.body.split("\n").map((l) => l.trim()).find(Boolean) ?? "";
-  const title = Array.from(clean(firstLine) || "Postbase upload").slice(0, 100).join("").trim();
+  const title = Array.from(clean(opts.title?.trim() || firstLine) || "Postbase upload").slice(0, 100).join("").trim();
 
   try {
     const res = await fetch(video.url);
@@ -445,9 +451,23 @@ async function publishToYouTube(input: PublishInput): Promise<PublishResult> {
       title,
       description,
       privacy: input.youtubePrivacy || defaultPrivacyStatus(),
+      madeForKids: opts.madeForKids === true,
       mimeType: video.type,
     });
-    return { ok: true, platformPostId: id };
+    // The video is live at this point, so a thumbnail problem is a warning,
+    // not a failure (retrying would upload the video twice).
+    let warning: string | undefined;
+    if (opts.thumbnailUrl) {
+      try {
+        const img = await fetch(opts.thumbnailUrl);
+        if (!img.ok) throw new Error(`Couldn't fetch the thumbnail (${img.status})`);
+        const type = img.headers.get("content-type")?.split(";")[0] || "image/jpeg";
+        await ytSetThumbnail(tokens.access_token, id, await img.arrayBuffer(), type);
+      } catch (e) {
+        warning = e instanceof Error ? e.message : "Setting the thumbnail failed.";
+      }
+    }
+    return { ok: true, platformPostId: id, warning };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "YouTube publish failed." };
   }

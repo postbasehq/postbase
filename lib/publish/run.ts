@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { publish } from "@/lib/publish/adapters";
 import type { TikTokPostOptions } from "@/lib/platforms/tiktok";
+import type { YouTubePostOptions } from "@/lib/platforms/youtube";
 import { isRepeatEvery, nextOccurrence } from "@/lib/publish/repeat";
 import { NO_PLAN_MESSAGE, orgHasAccess, type OrgAccessRow } from "@/lib/billing-guard";
 
@@ -28,6 +29,7 @@ type PostRow = {
   thread_tail: string[] | null;
   tiktok_privacy_level: string | null;
   youtube_privacy: string | null;
+  youtube_options: YouTubePostOptions | null;
   tiktok_options: TikTokPostOptions | null;
 };
 type MediaItem = { url: string; type: string };
@@ -42,7 +44,7 @@ const STUCK_AFTER_MS = 10 * 60_000;
 const START_BUDGET_MS = 180_000;
 const INTERRUPTED_ERROR =
   "Publishing was interrupted before we could confirm it went out. Check the channel — if the post isn't there, hit Retry.";
-const POST_COLUMNS = "id, org_id, body, thread_tail, tiktok_privacy_level, tiktok_options, youtube_privacy";
+const POST_COLUMNS = "id, org_id, body, thread_tail, tiktok_privacy_level, tiktok_options, youtube_privacy, youtube_options";
 // How many times to try a target before giving up.
 const MAX_ATTEMPTS = 4;
 
@@ -123,13 +125,15 @@ async function publishTarget(
     tokenExpiry: target.channels?.token_expiry ?? null,
     tiktokPrivacyLevel: post.tiktok_privacy_level,
     youtubePrivacy: post.youtube_privacy,
+    youtubeOptions: post.youtube_options,
     tiktokOptions: post.tiktok_options,
   });
 
   if (result.ok) {
+    // A warning (e.g. a thumbnail YouTube refused) is kept on the target for support.
     await db
       .from("post_targets")
-      .update({ status: "published", platform_post_id: result.platformPostId, error: null, next_attempt_at: null })
+      .update({ status: "published", platform_post_id: result.platformPostId, error: result.warning ?? null, next_attempt_at: null })
       .eq("id", target.id);
     return true;
   }
@@ -187,7 +191,7 @@ async function spawnRepeatIfDue(db: Db, postId: string): Promise<void> {
     .eq("status", "published")
     .eq("repeat_next_spawned", false)
     .not("repeat_every", "is", null)
-    .select("org_id, author_id, body, thread_tail, tiktok_privacy_level, tiktok_options, youtube_privacy, scheduled_at, repeat_every")
+    .select("org_id, author_id, body, thread_tail, tiktok_privacy_level, tiktok_options, youtube_privacy, youtube_options, scheduled_at, repeat_every")
     .maybeSingle();
   if (!origin || !isRepeatEvery(origin.repeat_every)) return;
 
@@ -205,6 +209,7 @@ async function spawnRepeatIfDue(db: Db, postId: string): Promise<void> {
       tiktok_privacy_level: origin.tiktok_privacy_level,
       tiktok_options: origin.tiktok_options,
       youtube_privacy: origin.youtube_privacy,
+      youtube_options: origin.youtube_options,
       repeat_every: origin.repeat_every,
     })
     .select("id")

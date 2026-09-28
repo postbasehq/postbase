@@ -8,7 +8,11 @@ import { getCurrentOrgId } from "@/lib/org";
 import { encryptJson, decryptJson } from "@/lib/crypto";
 import { revokeAccess as revokeTikTokAccess, type TikTokTokens } from "@/lib/platforms/tiktok";
 import { revokeAccess as revokeXAccess, type XTokens } from "@/lib/platforms/x";
-import { revokeAccess as revokeYouTubeAccess, type YouTubeTokens } from "@/lib/platforms/youtube";
+import {
+  revokeAccess as revokeYouTubeAccess,
+  type YouTubePostOptions,
+  type YouTubeTokens,
+} from "@/lib/platforms/youtube";
 import { revokeAccess as revokeMetaAccess, type MetaTokens } from "@/lib/platforms/meta";
 import { atChannelLimit, atAiLimit, hasAccess, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
 import { connectBluesky } from "@/lib/platforms/bluesky";
@@ -39,6 +43,20 @@ function parseTiktokPrivacy(formData: FormData): string | null {
 function parseYoutubePrivacy(formData: FormData): string | null {
   const v = String(formData.get("youtube_privacy") ?? "");
   return ["public", "unlisted", "private"].includes(v) ? v : null;
+}
+
+/** Parse the YouTube title / thumbnail / audience, or null if the composer
+ *  didn't emit them (no YouTube channel selected). */
+function parseYoutubeOptions(formData: FormData): YouTubePostOptions | null {
+  if (formData.get("youtube_privacy") == null) return null;
+  const title = String(formData.get("youtube_title") ?? "").trim().slice(0, 100);
+  const thumb = String(formData.get("youtube_thumbnail_url") ?? "");
+  return {
+    ...(title ? { title } : {}),
+    // Only our own storage: the publisher fetches this URL server-side.
+    ...(thumb.startsWith(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/`) ? { thumbnailUrl: thumb } : {}),
+    madeForKids: formData.get("youtube_made_for_kids") === "true",
+  };
 }
 
 /**
@@ -238,6 +256,7 @@ export async function createPost(formData: FormData) {
       status,
       tiktok_privacy_level: parseTiktokPrivacy(formData),
       youtube_privacy: parseYoutubePrivacy(formData),
+      youtube_options: parseYoutubeOptions(formData),
       tiktok_options: parseTiktokOptions(formData),
       repeat_every: parseRepeatEvery(formData, status === "scheduled"),
     })
@@ -328,6 +347,7 @@ export async function updatePost(formData: FormData) {
       status,
       tiktok_privacy_level: parseTiktokPrivacy(formData),
       youtube_privacy: parseYoutubePrivacy(formData),
+      youtube_options: parseYoutubeOptions(formData),
       tiktok_options: parseTiktokOptions(formData),
       repeat_every: parseRepeatEvery(formData, status === "scheduled"),
       // Editing re-arms the repeat: a rescheduled post hasn't published yet.

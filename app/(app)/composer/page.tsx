@@ -6,6 +6,7 @@ import { aiUsage, hasAccess } from "@/lib/billing-guard";
 import { createPost } from "../actions";
 import { type TikTokInitial } from "@/components/TikTokSettings";
 import { type YouTubePrivacy } from "@/components/YouTubeSettings";
+import type { YouTubePostOptions } from "@/lib/platforms/youtube";
 
 type PostFormInitial = NonNullable<React.ComponentProps<typeof PostForm>["initial"]>;
 
@@ -38,7 +39,7 @@ export default async function ComposerPage({
   if (from) {
     const { data: src } = await supabase
       .from("posts")
-      .select("body, thread_tail, tiktok_privacy_level, tiktok_options, youtube_privacy, repeat_every, post_targets(channel_id, variant_body)")
+      .select("body, thread_tail, tiktok_privacy_level, tiktok_options, youtube_privacy, youtube_options, repeat_every, post_targets(channel_id, variant_body)")
       .eq("id", from)
       .maybeSingle();
     if (src) {
@@ -55,6 +56,7 @@ export default async function ComposerPage({
         tiktokPrivacy: (src.tiktok_privacy_level as string | null) ?? undefined,
         tiktokOptions: (src.tiktok_options as TikTokInitial | null) ?? null,
         youtubePrivacy: (src.youtube_privacy as YouTubePrivacy | null) ?? null,
+        youtubeOptions: (src.youtube_options as YouTubePostOptions | null) ?? null,
         repeatEvery: (src.repeat_every as string | null) ?? null,
       };
     }

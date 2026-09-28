@@ -11,6 +11,7 @@ import { BrandTile } from "@/components/BrandTile";
 import { DateTimePicker } from "@/components/DateTimePicker";
 import { TikTokSettings, type TikTokInitial } from "@/components/TikTokSettings";
 import { YouTubeSettings, type YouTubePrivacy } from "@/components/YouTubeSettings";
+import type { YouTubePostOptions } from "@/lib/platforms/youtube";
 import { REPEAT_OPTIONS } from "@/lib/publish/repeat";
 import { ASPECT_RATIOS, type AspectRatio } from "@/lib/higgsfield";
 import { generateAiImage, startAiVideo, pollAiVideo } from "@/app/(app)/actions";
@@ -179,6 +180,7 @@ type PostFormProps = {
     tiktokPrivacy?: string;
     tiktokOptions?: TikTokInitial | null;
     youtubePrivacy?: YouTubePrivacy | null;
+    youtubeOptions?: YouTubePostOptions | null;
     repeatEvery?: string | null;
   };
 };
@@ -796,10 +798,15 @@ export function PostForm({
               </div>
             ) : null}
 
-            {/* YouTube settings (visibility) */}
+            {/* YouTube settings (title, thumbnail, visibility, audience) */}
             {youtubeChannel ? (
               <div className="pt-1">
-                <YouTubeSettings channelHandle={youtubeChannel.handle} initial={initial?.youtubePrivacy} />
+                <YouTubeSettings
+                  channelHandle={youtubeChannel.handle}
+                  initial={initial?.youtubePrivacy}
+                  initialOptions={initial?.youtubeOptions}
+                  fallbackTitle={cleanTweets[0]?.split("\n").map((l) => l.trim()).find(Boolean) ?? ""}
+                />
               </div>
             ) : null}
 
