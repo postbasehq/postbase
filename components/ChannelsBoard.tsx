@@ -42,7 +42,7 @@ const PLATFORMS: { id: string; kind: Kind; desc: string; note?: string }[] = [
     id: "youtube",
     kind: "oauth",
     desc: "Upload videos to your channel.",
-    note: "Video uploads only.",
+    note: "Every YouTube post needs a video attached.",
   },
   { id: "bluesky", kind: "bluesky", desc: "Connect with your handle and an app password." },
   { id: "mastodon", kind: "mastodon", desc: "Connect any instance — approve on your server." },

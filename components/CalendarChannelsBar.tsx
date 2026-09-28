@@ -28,7 +28,7 @@ const PLATFORMS: { id: string; kind: Kind; desc: string; note?: string }[] = [
     desc: "Post videos or photo carousels.",
     note: "Video and photo posts only — TikTok doesn’t allow text-only posts.",
   },
-  { id: "youtube", kind: "oauth", desc: "Upload videos to your channel.", note: "Video uploads only." },
+  { id: "youtube", kind: "oauth", desc: "Upload videos to your channel.", note: "Every YouTube post needs a video attached." },
   { id: "bluesky", kind: "bluesky", desc: "Connect with your handle and an app password." },
   { id: "mastodon", kind: "mastodon", desc: "Connect any instance — approve on your server." },
 ];
