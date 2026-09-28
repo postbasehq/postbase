@@ -94,6 +94,8 @@ export function WhoFor() {
     setCycle((c) => c + 1);
   };
   const p = PERSONAS[active];
+  const [marks, setMarks] = useState<[Mark, Mark] | null>(null);
+  useEffect(() => setMarks(randomMarks()), [active]);
 
   return (
     <div
@@ -168,8 +170,15 @@ export function WhoFor() {
       {/* scene */}
       <div className="relative isolate overflow-hidden rounded-[28px] transition-colors duration-500" style={{ backgroundColor: p.color }}>
         {/* Postbase marks flush with the card's edges, in this audience's colours */}
-        <LogoMark color={p.shapes[0]} edge="top" className="absolute left-8 top-0 -z-10 w-[150px]" />
-        <LogoMark color={p.shapes[1]} edge="right" className="absolute right-0 top-[165px] -z-10 w-[120px] -scale-y-100" />
+        {marks?.map((m, i) => (
+          <LogoMark
+            key={`${p.id}-${i}`}
+            color={p.shapes[i]}
+            edge={m.edge}
+            style={m.style}
+            className={`absolute -z-10 ${m.cls}`}
+          />
+        ))}
         <Fit minWidth={540} height={480}>
           <div key={p.id} className="swap-in relative h-full">
             {p.panel()}
@@ -180,6 +189,39 @@ export function WhoFor() {
       <style>{`@keyframes who-progress{from{width:0%}to{width:100%}}`}</style>
     </div>
   );
+}
+
+// The two Postbase marks behind the scene get a fresh random layout each time an
+// audience comes up: one on the top or bottom edge, one on the left or right
+// edge, with random offsets, sizes and flips (flat side always on a card edge).
+type Mark = { edge: "top" | "left" | "right"; style: React.CSSProperties; cls: string };
+const rand = (min: number, max: number) => min + Math.random() * (max - min);
+
+function randomMarks(): [Mark, Mark] {
+  // Mark 1: hangs from the top or rises from the bottom (a flipped top mark).
+  const bottom = Math.random() < 0.5;
+  const fromLeft = Math.random() < 0.5;
+  const along: Mark = {
+    edge: "top",
+    style: {
+      width: Math.round(rand(200, 260)),
+      [bottom ? "bottom" : "top"]: 0,
+      [fromLeft ? "left" : "right"]: `${Math.round(rand(6, 45))}%`,
+    },
+    cls: `${bottom ? "-scale-y-100" : ""} ${Math.random() < 0.5 ? "-scale-x-100" : ""}`,
+  };
+  // Mark 2: flush with the left or right edge, somewhere down the side.
+  const right = Math.random() < 0.5;
+  const side: Mark = {
+    edge: right ? "right" : "left",
+    style: {
+      width: Math.round(rand(150, 200)),
+      [right ? "right" : "left"]: 0,
+      top: `${Math.round(rand(4, 40))}%`,
+    },
+    cls: Math.random() < 0.5 ? "-scale-y-100" : "",
+  };
+  return [along, side];
 }
 
 // ── Shared scene pieces ──────────────────────────────────────────────────

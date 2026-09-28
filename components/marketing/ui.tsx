@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Fit } from "@/components/marketing/Fit";
 import { CtaCollage } from "@/components/marketing/CtaCollage";
+import { LogoMark } from "@/components/marketing/Decor";
 
 /*
  * Building blocks shared by the homepage and the SEO pages (integrations, AI
@@ -96,10 +97,10 @@ export function CtaBand({
 }) {
   return (
     <div className="relative isolate overflow-hidden rounded-[32px] bg-[#2b59d9] px-7 py-14 shadow-[0_40px_100px_-40px_rgba(43,89,217,0.8)] md:px-14 md:py-20">
-      {/* brand shapes, echoing the logo's blocks */}
-      <span aria-hidden className="absolute -bottom-24 -left-16 -z-10 h-64 w-80 rotate-[-14deg] rounded-[64px] bg-[#d14a3e]" />
-      <span aria-hidden className="absolute -right-24 -top-28 -z-10 size-52 rounded-full bg-[#e3a72c] md:-right-20 md:-top-24 md:size-72" />
-      <span aria-hidden className="absolute -bottom-16 right-[30%] -z-10 hidden size-40 rotate-12 rounded-[40px] bg-[#e3a72c] md:block" />
+      {/* Postbase marks, flat sides flush with the band's edges */}
+      <LogoMark color="#e3a72c" edge="top" className="absolute right-[6%] top-0 -z-10 hidden w-[280px] -scale-x-100 md:block" />
+      <LogoMark color="#d14a3e" edge="right" className="absolute bottom-[6%] right-0 -z-10 w-[140px] -scale-y-100 md:w-[190px]" />
+      <LogoMark color="#e3a72c" edge="top" className="absolute bottom-0 left-[8%] -z-10 w-[150px] -scale-y-100 md:left-auto md:right-[34%] md:w-[170px]" />
 
       <div className="grid grid-cols-[minmax(0,1fr)] items-center gap-12 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div>

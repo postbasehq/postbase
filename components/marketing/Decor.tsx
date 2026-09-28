@@ -82,10 +82,12 @@ export function LogoMark({
   color,
   edge = "top",
   className = "",
+  style,
 }: {
   color: string;
   edge?: "top" | "left" | "right";
   className?: string;
+  style?: React.CSSProperties;
 }) {
   // Native shape: 301 x 227 with the flat edge along the top (y = 0).
   const t =
@@ -95,7 +97,7 @@ export function LogoMark({
         ? { box: "0 0 227 301", m: "matrix(0 1 -1 0 227 0)" } // flat edge on x = 227
         : { box: "0 0 301 227", m: undefined };
   return (
-    <svg viewBox={t.box} className={className} aria-hidden>
+    <svg viewBox={t.box} className={className} style={style} aria-hidden>
       <g transform={t.m}>
         <path d="M0 0H150V152A75 75 0 0 1 0 152Z" fill={color} />
         <path d="M150 0H301A75 75 0 0 1 151 0Z" fill={color} />
