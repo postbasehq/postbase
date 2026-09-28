@@ -1,5 +1,5 @@
--- Fixed-window rate limiting for public/abusable endpoints (Reach chat first;
--- reusable for the API/MCP). Service-role only: RLS on with no policies, and
+-- Fixed-window rate limiting for public/abusable endpoints (first used by a
+-- public chat endpoint; reusable for the API/MCP). Service-role only: RLS on with no policies, and
 -- the increment function is not executable by anon/authenticated.
 create table if not exists rate_limits (
   key          text not null,
