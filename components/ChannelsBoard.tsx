@@ -366,7 +366,8 @@ export function ChannelsBoard({
               <div className="mt-4">
                 <p className="text-sm text-muted">
                   You’ll be sent to {BRANDS[current.id]?.label} to sign in and approve access.
-                  Postbase only requests permission to publish posts — nothing else.
+                  Postbase only asks for the access it needs to publish your posts and show
+                  their stats. You can disconnect any time.
                 </p>
                 {current.note ? (
                   <p className="mt-3 rounded-xl bg-surface-2 px-3.5 py-3 text-[13px] text-muted">
