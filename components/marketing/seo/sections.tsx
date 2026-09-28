@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { BrandTile } from "@/components/BrandTile";
-import { ClientLogo } from "@/components/ClientLogo";
+import { BRANDS } from "@/components/BrandTile";
+import { LOGOS } from "@/components/ClientLogo";
 import { Breadcrumbs, PrimaryButton, SecondaryButton, Underlined, card, wrap } from "@/components/marketing/ui";
 
 /*
@@ -150,45 +150,82 @@ export function CodeBlock({ language, code, caption }: { language: string; code:
 
 export type LinkCard = { href: string; title: string; body: string; brand?: string; client?: string; soon?: boolean };
 
-/** Grid of links to sibling pages (other networks, other clients). */
+// Near-black logos use the text colour instead, so they flip to white in dark mode.
+const DARK = new Set(["#000000", "#0b100f"]);
+
+/** A network or AI-tool logo, drawn large (no tile) in its brand colour. */
+function BigLogo({ brand, client, size }: { brand?: string; client?: string; size: number }) {
+  const b = brand ? BRANDS[brand] : undefined;
+  const c = client ? LOGOS[client] : undefined;
+  const path = b?.path ?? c?.path;
+  if (!path) return null;
+  const color = b?.bg ?? c?.color ?? "#000000";
+  const gradient = color.startsWith("linear-gradient");
+  const ink = DARK.has(color.toLowerCase());
+  const gid = `g-${brand ?? client}`;
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={b?.viewBox ?? "0 0 24 24"}
+      aria-hidden
+      className={ink ? "text-ink" : undefined}
+      fill={gradient ? `url(#${gid})` : ink ? "currentColor" : color}
+    >
+      {gradient ? (
+        // Instagram's gradient, rebuilt for SVG.
+        <defs>
+          <linearGradient id={gid} x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0" stopColor="#feda75" />
+            <stop offset="0.25" stopColor="#fa7e1e" />
+            <stop offset="0.5" stopColor="#d62976" />
+            <stop offset="0.75" stopColor="#962fbf" />
+            <stop offset="1" stopColor="#4f5bd5" />
+          </linearGradient>
+        </defs>
+      ) : null}
+      <path d={path} />
+    </svg>
+  );
+}
+
+/**
+ * Grid of links to sibling pages (other networks, other AI tools). Each card
+ * has its logo drawn large, cropped by the card's bottom-right corner; on hover
+ * it slides further in and straightens.
+ */
 export function LinkCards({ items }: { items: LinkCard[] }) {
   return (
     <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((l) => {
         const inner = (
           <>
-            <div className="flex items-center gap-3">
-              {l.brand ? <BrandTile platform={l.brand} size={40} radius={11} /> : null}
-              {l.client ? <ClientLogo id={l.client} size={40} /> : null}
-              <span className="font-display text-[18px] font-semibold tracking-[-0.01em] text-ink">{l.title}</span>
-              {l.soon ? (
-                <span className="ml-auto rounded-full bg-surface-2 px-2.5 py-1 text-[11px] font-semibold text-muted">Coming soon</span>
-              ) : (
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="ml-auto text-muted transition-transform group-hover:translate-x-0.5 group-hover:text-ink"
-                  aria-hidden
-                >
-                  <path d="M5 12h14M13 6l6 6-6 6" />
-                </svg>
-              )}
+            <div
+              className="pointer-events-none absolute -bottom-6 -right-5 origin-bottom-right -rotate-12 scale-[0.8] transition-transform sm:scale-100 duration-500 ease-out group-hover:-translate-x-3 group-hover:-translate-y-3 group-hover:rotate-0"
+              aria-hidden
+            >
+              <BigLogo brand={l.brand} client={l.client} size={130} />
             </div>
-            <p className="mt-3 text-[15px] leading-relaxed text-muted">{l.body}</p>
+            <div className="relative max-w-[calc(100%-108px)]">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-display text-[19px] font-semibold tracking-[-0.01em] text-ink">{l.title}</span>
+                {l.soon ? (
+                  <span className="rounded-full border border-line px-2.5 py-0.5 text-[11px] font-semibold text-muted">
+                    Coming soon
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-2 text-[15px] leading-relaxed text-muted">{l.body}</p>
+            </div>
           </>
         );
+        const cls = `${card} relative block h-full min-h-[130px] overflow-hidden p-6 sm:min-h-[170px]`;
         return (
           <li key={l.href}>
             {l.soon ? (
-              <div className={`${card} h-full p-6 opacity-70`}>{inner}</div>
+              <div className={`${cls} opacity-70`}>{inner}</div>
             ) : (
-              <Link href={l.href} className={`${card} group block h-full p-6 transition-colors hover:border-ink`}>
+              <Link href={l.href} className={`${cls} group transition-colors hover:border-ink`}>
                 {inner}
               </Link>
             )}
