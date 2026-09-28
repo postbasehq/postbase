@@ -80,6 +80,7 @@ type TokenResponse = {
   access_token?: string;
   refresh_token?: string;
   expires_in?: number;
+  scope?: string;
   error?: string;
   error_description?: string;
 };
@@ -95,6 +96,14 @@ async function tokenRequest(body: URLSearchParams): Promise<TokenResponse> {
     throw new Error(json.error_description ?? json.error ?? `Google token error ${res.status}`);
   }
   return json;
+}
+
+/** True when every scope Postbase needs was granted (Google's consent screen
+ *  lets users untick individual scopes). */
+export function hasRequiredScopes(granted: string | undefined): boolean {
+  if (!granted) return true; // older responses omit it; the API calls will tell
+  const set = new Set(granted.split(" "));
+  return SCOPES.every((s) => set.has(s));
 }
 
 export function exchangeCode(code: string): Promise<TokenResponse> {

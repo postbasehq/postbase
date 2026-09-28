@@ -26,6 +26,11 @@ const ERRORS: Record<string, string> = {
   tt_connect_failed: "Connecting TikTok failed — please try again.",
   yt_not_configured: "YouTube isn’t configured on this server yet (missing Google app keys).",
   yt_connect_failed: "Connecting YouTube failed — please try again.",
+  yt_denied: "YouTube access wasn’t granted. Approve the permissions on Google’s screen to connect.",
+  yt_no_channel:
+    "That Google account has no YouTube channel. Create one at youtube.com (or pick the Brand Account that owns it), then reconnect.",
+  yt_quota: "YouTube’s daily API limit has been reached. Please try again after midnight Pacific time.",
+  yt_scopes: "Postbase needs both YouTube permissions. Reconnect and leave every box ticked on Google’s screen.",
   fb_not_configured: "Facebook isn’t configured on this server yet (missing Meta app keys).",
   fb_connect_failed: "Connecting Facebook failed — please try again.",
   fb_no_page: "No Facebook Page found on your account. Create a Page, then reconnect.",

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
 import { atChannelLimit } from "@/lib/billing-guard";
 import { encryptJson } from "@/lib/crypto";
-import { exchangeCode, getChannel, type YouTubeTokens } from "@/lib/platforms/youtube";
+import { exchangeCode, getChannel, hasRequiredScopes, type YouTubeTokens } from "@/lib/platforms/youtube";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -23,7 +23,11 @@ export async function GET(request: Request) {
     return res;
   };
 
-  if (searchParams.get("error")) return fail("yt_connect_failed");
+  const googleError = searchParams.get("error");
+  if (googleError) {
+    console.error("[youtube callback] Google returned error:", googleError);
+    return fail(googleError === "access_denied" ? "yt_denied" : "yt_connect_failed");
+  }
   if (!code || !state || state !== savedState) return fail("oauth_state");
 
   const supabase = await createClient();
@@ -37,6 +41,10 @@ export async function GET(request: Request) {
 
   try {
     const token = await exchangeCode(code);
+    if (!hasRequiredScopes(token.scope)) {
+      console.error("[youtube callback] missing scopes, granted:", token.scope);
+      return fail("yt_scopes");
+    }
     const channel = await getChannel(token.access_token!);
 
     const tokens: YouTubeTokens = {
@@ -71,8 +79,16 @@ export async function GET(request: Request) {
     const { error } = existing
       ? await supabase.from("channels").update(fields).eq("id", existing.id)
       : await supabase.from("channels").insert({ org_id: orgId, platform: "youtube", handle, ...fields });
-    if (error) return fail("save_failed");
-  } catch {
+    if (error) {
+      console.error("[youtube callback] save failed:", error.message);
+      return fail("save_failed");
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[youtube callback] connect failed:", msg);
+    if (/no youtube channel/i.test(msg)) return fail("yt_no_channel");
+    if (/quota/i.test(msg)) return fail("yt_quota");
+    if (/scope|insufficient/i.test(msg)) return fail("yt_scopes");
     return fail("yt_connect_failed");
   }
 
