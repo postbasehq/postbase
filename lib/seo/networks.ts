@@ -6,6 +6,21 @@
  * no page until they are.
  */
 
+/** Which slice of product UI a fact card shows (see components/marketing/seo/FactUI). */
+export type FactUi =
+  | { kind: "count"; used: number; limit: number; what?: string }
+  | { kind: "thread"; parts: number }
+  | { kind: "firstComment" }
+  | { kind: "images"; count: number }
+  | { kind: "media" }
+  | { kind: "video" }
+  | { kind: "account" }
+  | { kind: "networks" }
+  | { kind: "visibility" }
+  | { kind: "toggles"; items: string[] }
+  | { kind: "server" }
+  | { kind: "password" };
+
 export type Network = {
   slug: string;
   /** BrandTile id. */
@@ -23,7 +38,8 @@ export type Network = {
   sub: string;
   /** Short line for hub cards. */
   blurb: string;
-  facts: { label: string; value: string }[];
+  /** `stat` is the short, big line on the fact card ("280", "App password"). */
+  facts: { label: string; value: string; stat?: string; ui?: FactUi }[];
   /** The composer shot: this network's cut of the example post, plus media. */
   demo: { text: string; media?: "video" | "images" };
   /** Tile copy: calendar, agent, and the network-specific feature. */
@@ -67,10 +83,10 @@ export const NETWORKS: Network[] = [
     sub: "Write a post or a thread once, fit it to X's 280 characters, and schedule it next to everything else you're posting this week.",
     blurb: "Tweets and threads up to 25 posts, with images and video.",
     facts: [
-      { label: "Characters", value: "280 per post, counted live as you type" },
-      { label: "Threads", value: "Up to 25 posts, published in order as replies" },
-      { label: "Media", value: "Images and video, uploaded through X's API" },
-      { label: "Also posts to", value: "LinkedIn, Bluesky and Mastodon from the same draft" },
+      { label: "Characters", stat: "280", ui: { kind: "count", used: 247, limit: 280 }, value: "Per post, counted live as you type, with links counted as 23" },
+      { label: "Threads", stat: "25 posts", ui: { kind: "thread", parts: 3 }, value: "Per thread, published in order as replies" },
+      { label: "Media", stat: "Images + video", ui: { kind: "media" }, value: "Uploaded through X's official API" },
+      { label: "Also posts to", stat: "3 more networks", ui: { kind: "networks" }, value: "LinkedIn, Bluesky and Mastodon, from the same draft" },
     ],
     demo: {
       text: "New on the shelf: Kochere, Ethiopia ☕️ Apricot, black tea and a little bergamot. 40 bags, roasted Monday.",
@@ -124,10 +140,10 @@ export const NETWORKS: Network[] = [
     sub: "Write the long version for LinkedIn and the short one for everywhere else in one go, then schedule the week from a single calendar.",
     blurb: "Posts up to 3,000 characters with images and a first comment.",
     facts: [
-      { label: "Characters", value: "3,000 per post, counted live as you type" },
-      { label: "First comment", value: "Extra parts publish as the first comment under your post" },
-      { label: "Images", value: "Up to 20 images per post" },
-      { label: "Accounts", value: "Your personal LinkedIn profile" },
+      { label: "Characters", stat: "3,000", ui: { kind: "count", used: 1842, limit: 3000 }, value: "Per post, counted live as you type" },
+      { label: "First comment", stat: "Built in", ui: { kind: "firstComment" }, value: "Extra parts publish as the first comment under your post" },
+      { label: "Images", stat: "20 images", ui: { kind: "images", count: 20 }, value: "Attached to a single post" },
+      { label: "Accounts", stat: "Personal profile", ui: { kind: "account" }, value: "Posts go out from your own account. Company pages aren't supported yet" },
     ],
     demo: {
       text:
@@ -183,10 +199,10 @@ export const NETWORKS: Network[] = [
     sub: "Bluesky has no built-in scheduling. Postbase adds it: write a post or a thread, pick a time, and it goes out while you're doing something else.",
     blurb: "Posts and threads up to 300 characters, with up to 4 images.",
     facts: [
-      { label: "Characters", value: "300 per post, counted live as you type" },
-      { label: "Threads", value: "Chain posts into a thread, published in order" },
-      { label: "Images", value: "Up to 4 per post, resized to fit Bluesky's limits" },
-      { label: "Sign-in", value: "Connect with a Bluesky app password" },
+      { label: "Characters", stat: "300", ui: { kind: "count", used: 268, limit: 300 }, value: "Per post, counted live as you type" },
+      { label: "Threads", stat: "Threads", ui: { kind: "thread", parts: 3 }, value: "Chain posts together, published in order" },
+      { label: "Images", stat: "4 images", ui: { kind: "images", count: 4 }, value: "Per post, resized to fit Bluesky's limits" },
+      { label: "Sign-in", stat: "App password", ui: { kind: "password" }, value: "Create one in Bluesky's Privacy and security settings" },
     ],
     demo: {
       text: "Kochere, Ethiopia just landed ☕️ Washed, light roast, tastes like apricot and black tea. 40 bags this week.",
@@ -243,10 +259,10 @@ export const NETWORKS: Network[] = [
     sub: "Connect any Mastodon server with an access token, then schedule posts and threads alongside X, Bluesky and LinkedIn.",
     blurb: "Posts and threads on any instance, up to 500 characters.",
     facts: [
-      { label: "Characters", value: "500 per post (the default most instances use)" },
-      { label: "Threads", value: "Chain posts into a thread, published in order" },
-      { label: "Instances", value: "Any server: mastodon.social, fosstodon.org or your own" },
-      { label: "Sign-in", value: "An access token from your instance's settings" },
+      { label: "Characters", stat: "500", ui: { kind: "count", used: 412, limit: 500 }, value: "Per post, the default on most instances" },
+      { label: "Threads", stat: "Threads", ui: { kind: "thread", parts: 3 }, value: "Chain posts together, published in order" },
+      { label: "Instances", stat: "Any server", ui: { kind: "server" }, value: "mastodon.social, fosstodon.org or your own" },
+      { label: "Sign-in", stat: "Your server", ui: { kind: "account" }, value: "Enter your instance, then sign in there. No token to copy" },
     ],
     demo: {
       text:
@@ -300,10 +316,10 @@ export const NETWORKS: Network[] = [
     sub: "Upload your video once, write the caption, set who can see it, and schedule it next to the rest of your week.",
     blurb: "Videos and photo posts with captions and privacy settings.",
     facts: [
-      { label: "Formats", value: "Video, or a photo post with up to 35 images" },
-      { label: "Caption", value: "Up to 2,200 characters" },
-      { label: "Settings", value: "Privacy, comments, duet and stitch, per post" },
-      { label: "Disclosure", value: "Your brand / branded content labels built in" },
+      { label: "Formats", stat: "Video or photos", ui: { kind: "media" }, value: "Photo posts take up to 35 images" },
+      { label: "Caption", stat: "2,200", ui: { kind: "count", used: 1386, limit: 2200, what: "Caption" }, value: "Characters in the caption" },
+      { label: "Settings", stat: "Per post", ui: { kind: "toggles", items: ["Comments", "Duet", "Stitch"] }, value: "Privacy, comments, duet and stitch" },
+      { label: "Disclosure", stat: "Built in", ui: { kind: "toggles", items: ["Your brand", "Branded content"] }, value: "Your brand and branded content labels" },
     ],
     demo: {
       text: "Pour-over, the slow way ☕️ Kochere from Ethiopia: apricot, black tea, bergamot. 40 bags this week.",
@@ -358,10 +374,10 @@ export const NETWORKS: Network[] = [
     sub: "Upload the video once, write the title and description, and schedule it on the same calendar as your TikToks and posts.",
     blurb: "Videos and Shorts with a title and description.",
     facts: [
-      { label: "Format", value: "Video uploads, including Shorts" },
-      { label: "Title", value: "The first line of your post, up to 100 characters" },
-      { label: "Description", value: "Up to 5,000 characters" },
-      { label: "Visibility", value: "Public, Unlisted or Private, chosen per video" },
+      { label: "Format", stat: "Video + Shorts", ui: { kind: "video" }, value: "Uploaded straight to your channel" },
+      { label: "Title", stat: "100", ui: { kind: "count", used: 64, limit: 100, what: "Title" }, value: "Characters, taken from your post's first line" },
+      { label: "Description", stat: "5,000", ui: { kind: "count", used: 2310, limit: 5000, what: "Description" }, value: "Characters for the description" },
+      { label: "Visibility", stat: "3 options", ui: { kind: "visibility" }, value: "Public, Unlisted or Private, chosen per video" },
     ],
     demo: {
       text: "How we brew the Kochere at home\n\nV60, 15g coffee, 250g water at 94°C, 2:45 total. Swirl, don't stir.",

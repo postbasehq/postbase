@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { BRANDS } from "@/components/BrandTile";
 import { LOGOS } from "@/components/ClientLogo";
+import { FactUI } from "@/components/marketing/seo/FactUI";
+import type { FactUi } from "@/lib/seo/networks";
 import { Breadcrumbs, PrimaryButton, SecondaryButton, Underlined, card, wrap } from "@/components/marketing/ui";
 
 /*
@@ -80,16 +82,92 @@ export function SectionHead({ title, sub }: { title: React.ReactNode; sub?: Reac
 }
 
 /** "What Postbase supports on X": label/value cards. */
-export function Facts({ items }: { items: { label: string; value: string }[] }) {
+export function Facts({ items }: { items: { label: string; value: string; stat?: string }[] }) {
   return (
     <dl className={`grid gap-4 sm:grid-cols-2 ${items.length === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
       {items.map((f) => (
-        <div key={f.label} className={`${card} p-6`}>
-          <dt className="font-display text-[12px] font-semibold uppercase tracking-[0.08em] text-blue-ink">{f.label}</dt>
-          <dd className="mt-2.5 text-[16px] leading-snug text-ink">{f.value}</dd>
-        </div>
+        <FactCard key={f.label} fact={f} />
       ))}
     </dl>
+  );
+}
+
+/** One fact: small label, the key number or phrase big, the detail underneath. */
+function FactCard({ fact: f }: { fact: { label: string; value: string; stat?: string } }) {
+  return (
+    <div className={`${card} flex flex-col p-6`}>
+      <dt className="font-display text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">{f.label}</dt>
+      {f.stat ? (
+        <>
+          <dd className="mt-3 font-display text-[clamp(28px,3vw,38px)] font-semibold leading-none tracking-[-0.03em] text-ink">
+            {f.stat}
+          </dd>
+          <dd className="mt-2.5 text-[14px] leading-snug text-muted">{f.value}</dd>
+        </>
+      ) : (
+        <dd className="mt-2.5 text-[16px] leading-snug text-ink">{f.value}</dd>
+      )}
+    </div>
+  );
+}
+
+/**
+ * "What Postbase does on {network}": the network's standout feature on a tile in
+ * its brand colour (logo drawn large, cropped by the corner), beside its facts.
+ */
+export function NetworkFacts({
+  network,
+  facts,
+  special,
+}: {
+  network: string;
+  facts: { label: string; value: string; stat?: string; ui?: FactUi }[];
+  special: { label: string; title: string; body: string };
+}) {
+  const b = BRANDS[network];
+  const bg = b?.bg ?? "#2b59d9";
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="relative isolate flex min-h-[240px] flex-col overflow-hidden rounded-[24px] p-8 md:p-10" style={{ background: bg }}>
+        {b ? (
+          <svg
+            viewBox={b.viewBox ?? "0 0 24 24"}
+            aria-hidden
+            className="pointer-events-none absolute -bottom-14 -right-10 -z-10 w-[240px] -rotate-12 md:w-[320px]"
+            // A darker solid shade of the brand colour (lighter on black tiles),
+            // so the mark reads as texture and the white text stays legible.
+            style={{ fill: DARK.has(bg.toLowerCase()) ? "#2e3035" : `color-mix(in oklab, ${bg} 72%, #000)` }}
+          >
+            <path d={b.path} />
+          </svg>
+        ) : null}
+        <span className="self-start rounded-full bg-white px-3 py-1 font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-[#14161a]">
+          {special.label}
+        </span>
+        <h3 className="mt-5 max-w-[20ch] font-display text-[clamp(28px,3vw,40px)] font-semibold leading-[1.08] tracking-[-0.02em] text-white">
+          {special.title}
+        </h3>
+        <p className="mt-3 max-w-[52ch] text-[16px] leading-relaxed text-white/90">{special.body}</p>
+      </div>
+      <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {facts.map((f) => (
+          <div key={f.label} className={`${card} flex flex-col overflow-hidden`}>
+            <div className="flex min-h-[170px] items-center border-b border-line bg-surface-2 p-5">
+              <FactUI ui={f.ui} network={network} />
+            </div>
+            <div className="flex flex-1 flex-col p-6">
+              <dt className="font-display text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">{f.label}</dt>
+              {f.stat ? (
+                <dd className="mt-3 font-display text-[clamp(26px,2.4vw,34px)] font-semibold leading-none tracking-[-0.03em] text-ink">
+                  {f.stat}
+                </dd>
+              ) : null}
+              <dd className="mt-2.5 text-[14px] leading-snug text-muted">{f.value}</dd>
+            </div>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
 

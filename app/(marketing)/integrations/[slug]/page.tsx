@@ -7,7 +7,7 @@ import { pageMeta } from "@/lib/site";
 import { LIVE_NETWORKS, NETWORKS, networkBySlug } from "@/lib/seo/networks";
 import { CLIENTS } from "@/lib/seo/clients";
 import { CtaBand, FaqList, Underlined, card, wrap } from "@/components/marketing/ui";
-import { Eyebrow, Facts, LinkCards, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
+import { Eyebrow, NetworkFacts, LinkCards, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
 import { NetworkComposerDemo, NetworkTiles } from "@/components/marketing/seo/demos";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
@@ -49,16 +49,7 @@ export default async function IntegrationPage({ params }: { params: Promise<{ sl
 
         <section className={section}>
           <SectionHead title={`What Postbase does on ${n.name}`} />
-          <Facts items={n.facts} />
-          <div className={`${card} mt-4 flex flex-col gap-3 p-7 md:flex-row md:items-center md:gap-8`}>
-            <span className="self-start rounded-full bg-blue px-3 py-1 font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-on-blue md:self-center">
-              {n.tiles.special.label}
-            </span>
-            <div>
-              <h3 className="font-display text-[22px] font-semibold tracking-[-0.01em] text-ink">{n.tiles.special.title}</h3>
-              <p className="mt-1.5 max-w-[70ch] text-[15px] leading-relaxed text-muted">{n.tiles.special.body}</p>
-            </div>
-          </div>
+          <NetworkFacts network={n.id} facts={n.facts} special={n.tiles.special} />
         </section>
 
         <section className={section}>
