@@ -55,7 +55,7 @@ gtag('config', '${GA_ID}');`}
           role="dialog"
           aria-live="polite"
           aria-label="Cookie preferences"
-          className="fixed inset-x-3 bottom-3 z-[60] mx-auto max-w-[560px] rounded-2xl border border-line bg-surface p-4 shadow-[0_18px_50px_-18px_rgba(16,24,40,0.45)] sm:bottom-5"
+          className="fixed inset-x-3 bottom-3 z-[60] mx-auto max-w-[560px] print:hidden rounded-2xl border border-line bg-surface p-4 shadow-[0_18px_50px_-18px_rgba(16,24,40,0.45)] sm:bottom-5"
         >
           <p className="text-[14px] leading-relaxed text-ink">
             We&apos;d like to use Google Analytics cookies to see which pages people find useful. Nothing is set unless you
