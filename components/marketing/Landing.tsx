@@ -18,7 +18,16 @@ import { Arrow, CtaBand, FaqList, Heading, Underlined, card, wrap } from "@/comp
 
 const NETWORKS = ["x", "linkedin", "instagram", "tiktok", "youtube", "bluesky", "mastodon"];
 
-export function Landing({ initialAudience = "creators" }: { initialAudience?: Audience }) {
+export function Landing({
+  initialAudience = "creators",
+  networkCards,
+  aiToolCards,
+}: {
+  initialAudience?: Audience;
+  /** Server-rendered link cards (components/marketing/HomeCards). */
+  networkCards?: React.ReactNode;
+  aiToolCards?: React.ReactNode;
+}) {
   return (
     <AudienceProvider initial={initialAudience}>
       <SiteNav />
@@ -26,7 +35,8 @@ export function Landing({ initialAudience = "creators" }: { initialAudience?: Au
         <Hero />
         <WhoFor />
         <Features />
-        <Channels />
+        <Channels cards={networkCards} />
+        <AiTools cards={aiToolCards} />
         <Pricing />
         <Faq />
         <ClosingCta />
@@ -197,7 +207,7 @@ function Features() {
 
 // ── Channels ─────────────────────────────────────────────────────────────
 
-function Channels() {
+function Channels({ cards }: { cards?: React.ReactNode }) {
   // One run is the networks repeated to fill a wide screen; the track holds two
   // runs so shifting it by -50% loops seamlessly.
   const networks = [...NETWORKS, "facebook", "threads"];
@@ -229,6 +239,26 @@ function Channels() {
           ))}
         </div>
       </div>
+      {cards ? <div className={`${wrap} mt-12`}>{cards}</div> : null}
+    </section>
+  );
+}
+
+// ── AI tools ─────────────────────────────────────────────────────────────
+
+function AiTools({ cards }: { cards?: React.ReactNode }) {
+  if (!cards) return null;
+  return (
+    <section id="ai-tools" className={`${wrap} scroll-mt-28 pt-28 md:pt-36`}>
+      <Heading
+        title={
+          <>
+            Works with <Underlined>your AI tool</Underlined>
+          </>
+        }
+        sub="Add the Postbase MCP server and your AI tool can draft and schedule posts for you."
+      />
+      {cards}
     </section>
   );
 }

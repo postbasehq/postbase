@@ -27,6 +27,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...PERSONAS.map((p) => page(`/for/${p.slug}`, 0.8, "monthly")),
     page("/alternatives", 0.6, "monthly"),
     ...COMPETITORS.map((c) => page(`/alternatives/${c.slug}`, 0.7, "monthly")),
+    page("/contact", 0.5, "yearly"),
     page("/tools", 0.6, "monthly"),
     page("/tools/character-counter", 0.8, "monthly"),
     page("/tools/mcp-config", 0.7, "monthly"),

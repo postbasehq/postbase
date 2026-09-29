@@ -13,6 +13,8 @@ export type Persona = {
   eyebrow: string;
   h1: [string, string];
   sub: string;
+  /** One short line for the persona's card in "Related". */
+  blurb: string;
   /** Hero product shot. */
   hero: { kind: "composer"; network: string } | { kind: "client"; client: string } | { kind: "calendar" };
   frame: string;
@@ -34,6 +36,7 @@ export const PERSONAS: Persona[] = [
     eyebrow: "Postbase for creators",
     h1: ["Post everywhere,", "write once"],
     sub: "Write one post, fit it to every network you're on, and plan the whole month on one calendar, so you spend your time making things instead of copying and pasting.",
+    blurb: "Write once, fit it to every network and plan the month on one calendar.",
     hero: { kind: "composer", network: "x" },
     frame: "One draft, a version for every network",
     problems: [
@@ -112,6 +115,7 @@ export const PERSONAS: Persona[] = [
     eyebrow: "Postbase for founders",
     h1: ["Build in public", "without the busywork"],
     sub: "Connect Postbase to Claude, Claude Code or Cursor, and your launch notes turn into posts for every network, scheduled on a calendar you check once a week.",
+    blurb: "Turn launch notes into scheduled posts from Claude, Claude Code or Cursor.",
     hero: { kind: "client", client: "claude" },
     frame: "Connect Claude from the Developers page",
     problems: [
@@ -190,6 +194,7 @@ export const PERSONAS: Persona[] = [
     eyebrow: "Postbase for agencies",
     h1: ["Every client,", "one login"],
     sub: "Give each client their own workspace with its own channels and team, switch between them in one click, and pay a flat price per plan instead of per channel.",
+    blurb: "A workspace per client, one-click switching and a flat price per plan.",
     hero: { kind: "calendar" },
     frame: "Each client's week in its own calendar",
     problems: [
@@ -268,6 +273,7 @@ export const PERSONAS: Persona[] = [
     eyebrow: "Postbase for small businesses",
     h1: ["A month of posts", "in an afternoon"],
     sub: "Write your posts in one sitting, let Postbase fit them to each network, and get back to running the business. Everything goes out on time without you.",
+    blurb: "Write your posts in one sitting and they go out on time without you.",
     hero: { kind: "composer", network: "linkedin" },
     frame: "One post, fitted to each network",
     problems: [

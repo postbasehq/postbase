@@ -5,7 +5,7 @@ import { pageMeta } from "@/lib/site";
 import { NETWORKS } from "@/lib/seo/networks";
 import { CLIENTS } from "@/lib/seo/clients";
 import { CtaBand, wrap } from "@/components/marketing/ui";
-import { Eyebrow, LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
+import { LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
 import { CalendarHeroDemo } from "@/components/marketing/seo/demos";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 
@@ -24,7 +24,6 @@ export default function IntegrationsPage() {
       <main>
         <SeoHero
           trail={TRAIL}
-          eyebrow={<Eyebrow>Integrations</Eyebrow>}
           h1={["Every network,", "one calendar"]}
           sub="Connect your accounts once, then write, schedule and publish to all of them from the composer, the calendar or your AI agent."
           frame="Your whole week in one calendar"

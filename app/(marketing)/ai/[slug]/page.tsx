@@ -2,13 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { ClientLogo } from "@/components/ClientLogo";
 import { pageMeta } from "@/lib/site";
 import { CLIENTS, clientBySlug } from "@/lib/seo/clients";
 import { LIVE_NETWORKS } from "@/lib/seo/networks";
 import { COMBO_CLIENTS, COMBO_NETWORKS } from "@/lib/seo/combos";
 import { CtaBand, FaqList, Underlined, wrap } from "@/components/marketing/ui";
-import { CodeBlock, Eyebrow, LinkCards, Prompts, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
+import { CodeBlock, LinkCards, Prompts, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
 import { ClientSetupDemo, ClientTiles } from "@/components/marketing/seo/demos";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
@@ -38,8 +37,8 @@ export default async function AiClientPage({ params }: { params: Promise<{ slug:
       <main>
         <SeoHero
           trail={trail}
-          eyebrow={<Eyebrow icon={<ClientLogo id={c.logo} size={22} />}>{c.eyebrow}</Eyebrow>}
           h1={c.h1}
+          icons={c.h1Icon ? [{ before: c.h1Icon, client: c.logo }] : []}
           sub={c.sub}
           cta={{ label: "Connect in a minute", href: "/login" }}
           secondary={{ label: "Read the docs", href: "https://docs.postbase.so/mcp/connect" }}
@@ -97,7 +96,7 @@ export default async function AiClientPage({ params }: { params: Promise<{ slug:
               href: `/ai/${o.slug}`,
               title: o.name,
               client: o.logo,
-              body: o.metaDescription.split(". ")[0] + ".",
+              body: o.blurb,
             }))}
           />
         </section>

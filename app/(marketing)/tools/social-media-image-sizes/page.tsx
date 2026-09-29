@@ -4,7 +4,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { pageMeta } from "@/lib/site";
 import { SPECS } from "@/lib/seo/specs";
 import { CtaBand, FaqList, wrap } from "@/components/marketing/ui";
-import { Eyebrow, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
+import { SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 import { SizeGuide } from "@/components/marketing/tools/SizeGuide";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
@@ -48,7 +48,6 @@ export default function ImageSizesPage() {
       <main>
         <SeoHero
           trail={TRAIL}
-          eyebrow={<Eyebrow>Free tool</Eyebrow>}
           h1={["Social media image and", "video sizes"]}
           sub="Every size, ratio and limit for nine networks, checked against each network's own guidance in September 2026. Pick a network to see its specs."
           cta={{ label: "Schedule posts free for 7 days", href: "/login" }}

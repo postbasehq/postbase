@@ -5,7 +5,7 @@ import { McpClientConfig } from "@/components/McpClientConfig";
 import { pageMeta } from "@/lib/site";
 import { CLIENTS, MCP_URL } from "@/lib/seo/clients";
 import { CtaBand, FaqList, wrap } from "@/components/marketing/ui";
-import { Eyebrow, LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
+import { LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 
 const TITLE = "MCP config generator for Claude, Cursor, VS Code";
@@ -42,7 +42,6 @@ export default function McpConfigPage() {
       <main>
         <SeoHero
           trail={TRAIL}
-          eyebrow={<Eyebrow>Free tool</Eyebrow>}
           h1={["MCP config", "generator"]}
           sub="Pick your AI tool and get the exact setup for the Postbase MCP server. It's the same generator as the Developers page in the app."
           cta={{ label: "Get a free trial", href: "/login" }}
@@ -61,7 +60,7 @@ export default function McpConfigPage() {
         <section className={section}>
           <SectionHead title="Step-by-step guides" sub="Setup, example prompts and troubleshooting for each tool." />
           <LinkCards
-            items={CLIENTS.map((c) => ({ href: `/ai/${c.slug}`, title: c.eyebrow, client: c.logo, body: c.setup.instruction }))}
+            items={CLIENTS.map((c) => ({ href: `/ai/${c.slug}`, title: c.eyebrow, client: c.logo, body: c.blurb }))}
           />
         </section>
 

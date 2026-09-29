@@ -21,12 +21,16 @@ export type AiClient = {
   /** ClientLogo id. */
   logo: string;
   name: string;
+  /** One short line for link cards. */
+  blurb: string;
   /** Where the client runs, for copy: "chat app", "terminal", "editor". */
   kind: "chat" | "terminal" | "editor";
   metaTitle: string;
   metaDescription: string;
   eyebrow: string;
   h1: [string, string];
+  /** Word in the h1 the logo tile sits before. */
+  h1Icon?: string;
   sub: string;
   setup: ClientSetup;
   steps: { title: string; body: string }[];
@@ -68,12 +72,14 @@ export const CLIENTS: AiClient[] = [
     slug: "claude",
     logo: "claude",
     name: "Claude",
+    blurb: "Add Postbase as a connector and let Claude post.",
     kind: "chat",
     metaTitle: "Post to social media from Claude (MCP connector)",
     metaDescription:
       "Add Postbase to Claude as a custom connector and let Claude draft and schedule posts to X, LinkedIn, Bluesky and Mastodon. No API key, set up in a minute.",
     eyebrow: "Postbase for Claude",
     h1: ["Let Claude post to", "social media"],
+    h1Icon: "Claude",
     sub: "Add Postbase as a custom connector in Claude. Ask for a post in plain English and Claude writes it, fits it to each network and schedules it to the accounts you've connected.",
     setup: {
       language: "url",
@@ -117,11 +123,13 @@ export const CLIENTS: AiClient[] = [
     slug: "claude-code",
     logo: "claude-code",
     name: "Claude Code",
+    blurb: "One command, then post straight from your terminal.",
     kind: "terminal",
     metaTitle: "Schedule social posts from Claude Code (MCP server)",
     metaDescription: "One command adds Postbase to Claude Code. Turn changelogs into launch posts and schedule them to X, LinkedIn and Bluesky from your terminal.",
     eyebrow: "Postbase for Claude Code",
     h1: ["Ship it, then", "announce it"],
+    h1Icon: "announce",
     sub: "Add Postbase to Claude Code with one command. It can read your changelog or diff, write the launch post for each network and schedule it, right from your terminal.",
     setup: {
       language: "bash",
@@ -158,11 +166,13 @@ export const CLIENTS: AiClient[] = [
     slug: "cursor",
     logo: "cursor",
     name: "Cursor",
+    blurb: "Install in one click and post from Cursor's agent.",
     kind: "editor",
     metaTitle: "Post to X, LinkedIn and Bluesky from Cursor (MCP)",
     metaDescription: "Add the Postbase MCP server to Cursor in one click, and let its agent write and schedule launch posts and threads to your social accounts.",
     eyebrow: "Postbase for Cursor",
     h1: ["Post from", "your editor"],
+    h1Icon: "your",
     sub: "Add Postbase to Cursor and its agent can turn what you just built into posts for X, LinkedIn, Bluesky and more, then schedule them for the right time.",
     setup: {
       language: "url",
@@ -196,12 +206,14 @@ export const CLIENTS: AiClient[] = [
     slug: "vscode",
     logo: "vscode",
     name: "VS Code",
+    blurb: "Let GitHub Copilot draft and schedule your posts.",
     kind: "editor",
     metaTitle: "Schedule social posts from VS Code (Copilot MCP)",
     metaDescription:
       "Add the Postbase MCP server to VS Code with one command and let GitHub Copilot's agent draft and schedule posts to X, LinkedIn, Bluesky and Mastodon.",
     eyebrow: "Postbase for VS Code",
     h1: ["Let Copilot", "post for you"],
+    h1Icon: "Copilot",
     sub: "One command adds Postbase to VS Code. Copilot's agent can then write your release notes up as posts and schedule them to every network you use.",
     setup: {
       language: "bash",
@@ -228,12 +240,14 @@ export const CLIENTS: AiClient[] = [
     slug: "windsurf",
     logo: "windsurf",
     name: "Windsurf",
+    blurb: "Give Cascade a publish button for every network.",
     kind: "editor",
     metaTitle: "Post to social media from Windsurf (MCP server)",
     metaDescription:
       "Add the Postbase MCP server to Windsurf's Cascade agent and schedule posts to X, LinkedIn, Bluesky and more while you code.",
     eyebrow: "Postbase for Windsurf",
     h1: ["Give Cascade a", "publish button"],
+    h1Icon: "Cascade",
     sub: "Add Postbase as a remote MCP server in Windsurf. Cascade can draft posts from your work and schedule them to the networks you've connected.",
     setup: {
       language: "url",
@@ -259,12 +273,14 @@ export const CLIENTS: AiClient[] = [
     slug: "gemini-cli",
     logo: "gemini",
     name: "Gemini CLI",
+    blurb: "One command, then schedule posts from Gemini CLI.",
     kind: "terminal",
     metaTitle: "Schedule social posts from Gemini CLI (MCP server)",
     metaDescription:
       "Add the Postbase MCP server to Gemini CLI with one command. Draft and schedule posts to X, LinkedIn, Bluesky and Mastodon from your terminal.",
     eyebrow: "Postbase for Gemini CLI",
     h1: ["Post from", "the terminal"],
+    h1Icon: "the",
     sub: "One command adds Postbase to Gemini CLI. Ask it to announce a release or schedule a week of posts, and it handles each network's version for you.",
     setup: {
       language: "bash",

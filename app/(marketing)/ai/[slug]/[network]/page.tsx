@@ -2,14 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { BrandTile } from "@/components/BrandTile";
-import { ClientLogo } from "@/components/ClientLogo";
 import { pageMeta } from "@/lib/site";
 import { ALL_COMBOS, COMBO_CLIENTS, COMBO_NETWORKS, getCombo } from "@/lib/seo/combos";
 import { CLIENTS } from "@/lib/seo/clients";
 import { LIVE_NETWORKS } from "@/lib/seo/networks";
 import { CtaBand, FaqList, card, wrap } from "@/components/marketing/ui";
-import { CodeBlock, Eyebrow, Facts, LinkCards, Prompts, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
+import { CodeBlock, Facts, LinkCards, Prompts, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
 import { ClientSetupDemo } from "@/components/marketing/seo/demos";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
@@ -80,19 +78,8 @@ export default async function ComboPage({ params }: { params: Params }) {
       <main>
         <SeoHero
           trail={trail}
-          eyebrow={
-            <Eyebrow
-              icon={
-                <span className="flex items-center gap-1">
-                  <ClientLogo id={client.logo} size={22} />
-                  <BrandTile platform={n.id} size={22} radius={6} />
-                </span>
-              }
-            >
-              {client.name} + {n.name}
-            </Eyebrow>
-          }
           h1={[`Post to ${n.name} from`, client.name]}
+          icons={[{ before: n.name.split(" ")[0], brand: n.id }, { before: client.name.split(" ")[0], client: client.logo }]}
           sub={description + " No API key, and every post lands on a calendar you can check."}
           cta={{ label: "Connect in a minute", href: "/login" }}
           secondary={{ label: `All ${client.name} setup`, href: `/ai/${client.slug}` }}

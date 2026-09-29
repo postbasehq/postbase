@@ -68,157 +68,26 @@ export function PlanPicker({
   showSelfHost?: boolean;
 }) {
   const [interval, setInterval] = useState<Interval>(initialInterval);
-  const subscribed = Boolean(currentPlan);
   const chosen = chosenPlan != null && chosenPlan in PLANS ? chosenPlan : null;
-  const y = interval === "year";
-  // Accent classes (static strings so Tailwind generates them).
-  const accent = y
-    ? { fill: "bg-[#e3a72c] text-[#14161a]", edge: "border-[#e3a72c] ring-1 ring-[#e3a72c]" }
-    : { fill: "bg-[#2b59d9] text-white", edge: "border-[#2b59d9] ring-1 ring-[#2b59d9]" };
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex justify-center">
-        <div
-          role="radiogroup"
-          aria-label="Billing period"
-          className="inline-flex items-center gap-1 rounded-full border border-line bg-surface p-1 text-[14px] shadow-sm"
-        >
-          {(["month", "year"] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              role="radio"
-              aria-checked={interval === v}
-              onClick={() => setInterval(v)}
-              className={`rounded-full px-4 py-1.5 font-medium transition-colors ${
-                interval !== v
-                  ? "text-muted hover:text-ink"
-                  : v === "year"
-                    ? "bg-[#e3a72c] text-[#14161a]"
-                    : "bg-[#2b59d9] text-white"
-              }`}
-            >
-              {v === "month" ? "Monthly" : "Yearly"}
-              {v === "year" ? <span className="ml-1.5 text-[12px] opacity-80">2 months free</span> : null}
-            </button>
-          ))}
-        </div>
-      </div>
+      <IntervalToggle interval={interval} onChange={setInterval} />
 
       <div className="grid gap-4 md:grid-cols-3 md:py-3">
         {PLAN_ORDER.map((id) => {
-          const p = PLANS[id];
-          const isCurrent = currentPlan === id;
           const featured = chosen ? id === chosen : id === "team";
-          const perMonth = interval === "year" ? yearly(p.monthly) / 12 : p.monthly;
-          const billed =
-            interval === "year"
-              ? `${money(yearly(p.monthly))} billed yearly · save ${money(p.monthly * 2)}`
-              : "Billed monthly";
-          const cta = isCurrent ? "Current plan" : subscribed ? `Switch to ${p.name}` : "Start 7-day free trial";
-          const buttonCls = `block w-full rounded-full px-4 py-3 text-center font-display text-[14px] font-semibold transition-shadow disabled:cursor-default disabled:opacity-60 ${
-            featured
-              ? `${accent.fill} shadow-sm hover:shadow-md`
-              : "border border-[#e4e6eb] bg-white text-[#14161a] shadow-sm hover:border-[#14161a]"
-          }`;
-
           return (
-            <div
+            <PlanCard
               key={id}
-              className={`flex flex-col rounded-[22px] border bg-surface p-2 shadow-sm ${
-                featured ? `${accent.edge} md:-my-3 md:shadow-lg` : "border-line"
-              }`}
-            >
-              {/* Zone 1: who it's for, the price and the one action */}
-              <div
-                className={`relative isolate overflow-hidden rounded-2xl border border-line bg-surface-2 p-5 ${
-                  featured ? "md:py-7" : ""
-                }`}
-              >
-                {/* The Postbase mark hanging from the panel's top edge, barely there. */}
-                <LogoMark
-                  color="currentColor"
-                  className="pointer-events-none absolute -z-10 right-4 top-0 w-[220px] text-ink opacity-[0.06]"
-                />
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="font-display text-[20px] font-semibold text-ink">{p.name}</h3>
-                  {isCurrent ? (
-                    <span className="rounded-full border border-line bg-surface px-2.5 py-1 text-[11px] font-semibold text-ink">
-                      Your plan
-                    </span>
-                  ) : featured ? (
-                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${accent.fill}`}>
-                      {chosen ? "Your pick" : "Most popular"}
-                    </span>
-                  ) : null}
-                </div>
-                <p className="mt-1 text-[14px] text-muted">{p.blurb}</p>
-
-                <div className="mt-5 flex items-end gap-1">
-                  <span className="font-display text-[44px] font-semibold leading-none tracking-[-0.035em] text-ink">
-                    {money(perMonth)}
-                  </span>
-                  <span className="pb-1 text-[14px] font-medium text-muted">/month</span>
-                </div>
-                <p className="mt-1.5 text-[13px] text-muted">{billed}</p>
-
-                <div className="mt-5">
-                  {action ? (
-                    <form action={action}>
-                      <input type="hidden" name="plan" value={id} />
-                      <input type="hidden" name="interval" value={interval} />
-                      <SubmitButton disabled={isCurrent} pendingLabel="Opening checkout…" className={buttonCls}>
-                        {cta}
-                      </SubmitButton>
-                    </form>
-                  ) : (
-                    <a href={`/billing?plan=${id}&interval=${interval}`} className={buttonCls}>
-                      {cta}
-                    </a>
-                  )}
-                  {!subscribed ? (
-                    <p className="mt-2 text-center text-[12px] text-muted">
-                      $0 today, then{" "}
-                      {interval === "year" ? `${money(yearly(p.monthly))}/year` : `${money(p.monthly)}/month`}
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-
-              {/* Zone 2: the limits that decide the plan, then what's included */}
-              <div className="flex flex-1 flex-col px-4 pb-4 pt-5">
-                <div className="flex flex-col gap-2.5 text-[14px] text-ink">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-muted"><ChannelsIcon /></span>
-                    <span><span className="font-semibold">{p.channels}</span> social channels</span>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-muted"><PeopleIcon /></span>
-                    <span>
-                      <span className="font-semibold">{p.seats}</span> {p.seats === 1 ? "person" : "people"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="my-5 flex items-center gap-3">
-                  <span className="h-px flex-1 bg-line" />
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
-                    {p.inherits ? `${p.inherits.replace(", plus", "")} +` : "Included"}
-                  </span>
-                  <span className="h-px flex-1 bg-line" />
-                </div>
-
-                <ul className="flex flex-col gap-3">
-                  {p.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5 text-[14px] leading-snug text-ink">
-                      <Check yearly={y} />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+              id={id}
+              interval={interval}
+              featured={featured}
+              badge={featured ? (chosen ? "Your pick" : "Most popular") : undefined}
+              currentPlan={currentPlan}
+              action={action}
+              className={featured ? "md:-my-3" : ""}
+            />
           );
         })}
       </div>
@@ -229,6 +98,186 @@ export function PlanPicker({
       </p>
 
       {showSelfHost ? <SelfHostCard /> : null}
+    </div>
+  );
+}
+
+function IntervalToggle({ interval, onChange }: { interval: Interval; onChange: (v: Interval) => void }) {
+  return (
+    <div className="flex justify-center">
+      <div
+        role="radiogroup"
+        aria-label="Billing period"
+        className="inline-flex items-center gap-1 rounded-full border border-line bg-surface p-1 text-[14px] shadow-sm"
+      >
+        {(["month", "year"] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            role="radio"
+            aria-checked={interval === v}
+            onClick={() => onChange(v)}
+            className={`rounded-full px-4 py-1.5 font-medium transition-colors ${
+              interval !== v
+                ? "text-muted hover:text-ink"
+                : v === "year"
+                  ? "bg-[#e3a72c] text-[#14161a]"
+                  : "bg-[#2b59d9] text-white"
+            }`}
+          >
+            {v === "month" ? "Monthly" : "Yearly"}
+            {v === "year" ? <span className="ml-1.5 text-[12px] opacity-80">2 months free</span> : null}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** One recommended plan with its own Monthly/Yearly switch (persona pages). */
+export function RecommendedPlan({ id, badge }: { id: keyof typeof PLANS; badge: string }) {
+  const [interval, setInterval] = useState<Interval>("month");
+  return (
+    <div className="flex flex-col gap-6">
+      <IntervalToggle interval={interval} onChange={setInterval} />
+      <PlanCard id={id} interval={interval} featured badge={badge} className="mx-auto w-full max-w-[400px]" />
+    </div>
+  );
+}
+
+const accentFor = (y: boolean) =>
+  y
+    ? { fill: "bg-[#e3a72c] text-[#14161a]", edge: "border-[#e3a72c] ring-1 ring-[#e3a72c]" }
+    : { fill: "bg-[#2b59d9] text-white", edge: "border-[#2b59d9] ring-1 ring-[#2b59d9]" };
+
+/**
+ * One plan card. PlanPicker renders three; marketing pages can show a single
+ * recommended plan with it too (featured, with its own badge).
+ */
+export function PlanCard({
+  id,
+  interval = "month",
+  featured = false,
+  badge,
+  currentPlan,
+  action,
+  className = "",
+}: {
+  id: keyof typeof PLANS;
+  interval?: Interval;
+  featured?: boolean;
+  /** Pill next to the plan name when featured, e.g. "Most popular". */
+  badge?: string;
+  currentPlan?: string | null;
+  action?: (formData: FormData) => Promise<void>;
+  className?: string;
+}) {
+  const p = PLANS[id];
+  const y = interval === "year";
+  const accent = accentFor(y);
+  const subscribed = Boolean(currentPlan);
+  const isCurrent = currentPlan === id;
+  const perMonth = y ? yearly(p.monthly) / 12 : p.monthly;
+  const billed = y ? `${money(yearly(p.monthly))} billed yearly · save ${money(p.monthly * 2)}` : "Billed monthly";
+  const cta = isCurrent ? "Current plan" : subscribed ? `Switch to ${p.name}` : "Start 7-day free trial";
+  const buttonCls = `block w-full rounded-full px-4 py-3 text-center font-display text-[14px] font-semibold transition-shadow disabled:cursor-default disabled:opacity-60 ${
+    featured
+      ? `${accent.fill} shadow-sm hover:shadow-md`
+      : "border border-[#e4e6eb] bg-white text-[#14161a] shadow-sm hover:border-[#14161a]"
+  }`;
+
+  return (
+    <div
+      className={`flex flex-col rounded-[22px] border bg-surface p-2 shadow-sm ${className} ${
+        featured ? `${accent.edge} md:shadow-lg` : "border-line"
+      }`}
+    >
+      {/* Zone 1: who it's for, the price and the one action */}
+      <div
+        className={`relative isolate overflow-hidden rounded-2xl border border-line bg-surface-2 p-5 ${
+          featured ? "md:py-7" : ""
+        }`}
+      >
+        {/* The Postbase mark hanging from the panel's top edge, barely there. */}
+        <LogoMark
+          color="currentColor"
+          className="pointer-events-none absolute -z-10 right-4 top-0 w-[220px] text-ink opacity-[0.06]"
+        />
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="font-display text-[20px] font-semibold text-ink">{p.name}</h3>
+          {isCurrent ? (
+            <span className="rounded-full border border-line bg-surface px-2.5 py-1 text-[11px] font-semibold text-ink">
+              Your plan
+            </span>
+          ) : featured && badge ? (
+            <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${accent.fill}`}>{badge}</span>
+          ) : null}
+        </div>
+        <p className="mt-1 text-[14px] text-muted">{p.blurb}</p>
+
+        <div className="mt-5 flex items-end gap-1">
+          <span className="font-display text-[44px] font-semibold leading-none tracking-[-0.035em] text-ink">
+            {money(perMonth)}
+          </span>
+          <span className="pb-1 text-[14px] font-medium text-muted">/month</span>
+        </div>
+        <p className="mt-1.5 text-[13px] text-muted">{billed}</p>
+
+        <div className="mt-5">
+          {action ? (
+            <form action={action}>
+              <input type="hidden" name="plan" value={id} />
+              <input type="hidden" name="interval" value={interval} />
+              <SubmitButton disabled={isCurrent} pendingLabel="Opening checkout…" className={buttonCls}>
+                {cta}
+              </SubmitButton>
+            </form>
+          ) : (
+            <a href={`/billing?plan=${id}&interval=${interval}`} className={buttonCls}>
+              {cta}
+            </a>
+          )}
+          {!subscribed ? (
+            <p className="mt-2 text-center text-[12px] text-muted">
+              $0 today, then{" "}
+              {y ? `${money(yearly(p.monthly))}/year` : `${money(p.monthly)}/month`}
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Zone 2: the limits that decide the plan, then what's included */}
+      <div className="flex flex-1 flex-col px-4 pb-4 pt-5">
+        <div className="flex flex-col gap-2.5 text-[14px] text-ink">
+          <div className="flex items-center gap-2.5">
+            <span className="text-muted"><ChannelsIcon /></span>
+            <span><span className="font-semibold">{p.channels}</span> social channels</span>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <span className="text-muted"><PeopleIcon /></span>
+            <span>
+              <span className="font-semibold">{p.seats}</span> {p.seats === 1 ? "person" : "people"}
+            </span>
+          </div>
+        </div>
+
+        <div className="my-5 flex items-center gap-3">
+          <span className="h-px flex-1 bg-line" />
+          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
+            {p.inherits ? `${p.inherits.replace(", plus", "")} +` : "Included"}
+          </span>
+          <span className="h-px flex-1 bg-line" />
+        </div>
+
+        <ul className="flex flex-col gap-3">
+          {p.features.map((f) => (
+            <li key={f} className="flex items-start gap-2.5 text-[14px] leading-snug text-ink">
+              <Check yearly={y} />
+              {f}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

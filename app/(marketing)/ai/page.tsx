@@ -4,7 +4,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { pageMeta } from "@/lib/site";
 import { CLIENTS } from "@/lib/seo/clients";
 import { CtaBand, wrap } from "@/components/marketing/ui";
-import { Eyebrow, LinkCards, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
+import { LinkCards, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
 import { ClientSetupDemo, ClientTiles } from "@/components/marketing/seo/demos";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
@@ -26,7 +26,6 @@ export default function AiPage() {
       <main>
         <SeoHero
           trail={TRAIL}
-          eyebrow={<Eyebrow>MCP server</Eyebrow>}
           h1={["Let your AI post to", "social media"]}
           sub="Postbase has a hosted MCP server. Add it to the AI tool you already use, sign in, and ask it to schedule posts for you."
           cta={{ label: "Connect in a minute", href: "/login" }}
@@ -39,7 +38,7 @@ export default function AiPage() {
         <section className={section}>
           <SectionHead title="Pick your AI tool" sub="Each one takes about a minute to set up." />
           <LinkCards
-            items={CLIENTS.map((c) => ({ href: `/ai/${c.slug}`, title: c.name, client: c.logo, body: c.metaDescription.split(". ")[0] + "." }))}
+            items={CLIENTS.map((c) => ({ href: `/ai/${c.slug}`, title: c.name, client: c.logo, body: c.blurb }))}
           />
         </section>
 

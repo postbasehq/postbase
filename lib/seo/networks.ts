@@ -35,6 +35,8 @@ export type Network = {
   metaDescription: string;
   eyebrow: string;
   h1: [string, string];
+  /** Word in the h1 the logo tile sits before. */
+  h1Icon?: string;
   sub: string;
   /** Short line for hub cards. */
   blurb: string;
@@ -80,6 +82,7 @@ export const NETWORKS: Network[] = [
     metaDescription: "Schedule tweets and threads on X with images and video, alongside LinkedIn and Bluesky, or let Claude schedule them for you.",
     eyebrow: "X (Twitter) scheduler",
     h1: ["Schedule tweets and", "threads"],
+    h1Icon: "tweets",
     sub: "Write a post or a thread once, fit it to X's 280 characters, and schedule it next to everything else you're posting this week.",
     blurb: "Tweets and threads up to 25 posts, with images and video.",
     facts: [
@@ -137,8 +140,9 @@ export const NETWORKS: Network[] = [
     metaDescription: "Schedule LinkedIn posts with images and a first comment, plan the week on one calendar, or let Claude write and schedule them.",
     eyebrow: "LinkedIn post scheduler",
     h1: ["Schedule LinkedIn posts", "in minutes"],
+    h1Icon: "LinkedIn",
     sub: "Write the long version for LinkedIn and the short one for everywhere else in one go, then schedule the week from a single calendar.",
-    blurb: "Posts up to 3,000 characters with images and a first comment.",
+    blurb: "Posts up to 3,000 characters, with a first comment.",
     facts: [
       { label: "Characters", stat: "3,000", ui: { kind: "count", used: 1842, limit: 3000 }, value: "Per post, counted live as you type" },
       { label: "First comment", stat: "Built in", ui: { kind: "firstComment" }, value: "Extra parts publish as the first comment under your post" },
@@ -196,6 +200,7 @@ export const NETWORKS: Network[] = [
     metaDescription: "Bluesky has no built-in scheduling. Schedule Bluesky posts and threads with images, and cross-post to X and Mastodon from one draft.",
     eyebrow: "Bluesky scheduler",
     h1: ["Schedule posts to", "Bluesky"],
+    h1Icon: "Bluesky",
     sub: "Bluesky has no built-in scheduling. Postbase adds it: write a post or a thread, pick a time, and it goes out while you're doing something else.",
     blurb: "Posts and threads up to 300 characters, with up to 4 images.",
     facts: [
@@ -256,6 +261,7 @@ export const NETWORKS: Network[] = [
     metaDescription: "Schedule Mastodon posts and threads on any instance, and cross-post to X, Bluesky and LinkedIn from one draft.",
     eyebrow: "Mastodon scheduler",
     h1: ["Schedule posts on", "any instance"],
+    h1Icon: "any",
     sub: "Connect any Mastodon server with an access token, then schedule posts and threads alongside X, Bluesky and LinkedIn.",
     blurb: "Posts and threads on any instance, up to 500 characters.",
     facts: [
@@ -313,6 +319,7 @@ export const NETWORKS: Network[] = [
     metaDescription: "Schedule TikTok videos and photo posts from your computer, with captions, privacy and duet/stitch settings, next to YouTube and more.",
     eyebrow: "TikTok scheduler",
     h1: ["Schedule TikTok videos", "from desktop"],
+    h1Icon: "TikTok",
     sub: "Upload your video once, write the caption, set who can see it, and schedule it next to the rest of your week.",
     blurb: "Videos and photo posts with captions and privacy settings.",
     facts: [
@@ -371,6 +378,7 @@ export const NETWORKS: Network[] = [
       "Upload and schedule YouTube videos and Shorts with a title and description. Plan YouTube next to TikTok, X and LinkedIn on one calendar with Postbase.",
     eyebrow: "YouTube scheduler",
     h1: ["Schedule YouTube videos and", "Shorts"],
+    h1Icon: "YouTube",
     sub: "Upload the video once, write the title and description, and schedule it on the same calendar as your TikToks and posts.",
     blurb: "Videos and Shorts with a title and description.",
     facts: [

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/site";
 import { Landing } from "@/components/marketing/Landing";
+import { AiToolCards, NetworkCards } from "@/components/marketing/HomeCards";
 import { JsonLd } from "@/components/marketing/JsonLd";
 
 const DESCRIPTION =
@@ -16,7 +17,7 @@ export default function Home() {
   return (
     <>
       <JsonLd withFaq description={DESCRIPTION} />
-      <Landing initialAudience="creators" />
+      <Landing initialAudience="creators" networkCards={<NetworkCards />} aiToolCards={<AiToolCards />} />
     </>
   );
 }

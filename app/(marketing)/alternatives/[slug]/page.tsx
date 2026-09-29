@@ -5,7 +5,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { pageMeta } from "@/lib/site";
 import { CHECKED, COMPETITORS, US, competitorBySlug, type Competitor } from "@/lib/seo/competitors";
 import { CtaBand, FaqList, card, wrap } from "@/components/marketing/ui";
-import { Eyebrow, LinkCards, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
+import { LinkCards, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
 import { AlternativeTiles, CalendarHeroDemo } from "@/components/marketing/seo/demos";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
@@ -35,7 +35,6 @@ export default async function AlternativePage({ params }: { params: Promise<{ sl
       <main>
         <SeoHero
           trail={trail}
-          eyebrow={<Eyebrow>Postbase vs {c.name}</Eyebrow>}
           h1={c.h1}
           sub={c.sub}
           secondary={{ label: "See pricing", href: "/pricing" }}
@@ -90,7 +89,7 @@ export default async function AlternativePage({ params }: { params: Promise<{ sl
             items={COMPETITORS.filter((o) => o.slug !== c.slug).map((o) => ({
               href: `/alternatives/${o.slug}`,
               title: `Postbase vs ${o.name}`,
-              body: o.them,
+              body: o.blurb,
             }))}
           />
         </section>

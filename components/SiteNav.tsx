@@ -4,7 +4,9 @@ import { OpenSourceBanner } from "./OpenSourceBanner";
 import { ThemeToggle } from "./ThemeToggle";
 import { GitHubButton } from "./GitHubButton";
 import { BrandTile } from "./BrandTile";
+import { ClientLogo } from "./ClientLogo";
 import { NETWORKS } from "@/lib/seo/networks";
+import { CLIENTS } from "@/lib/seo/clients";
 
 const BEFORE = [{ href: "/#features", label: "Features" }];
 const LINKS = [
@@ -19,22 +21,22 @@ export function SiteNav() {
     <div className="sticky top-0 z-50">
       <OpenSourceBanner />
       <nav className="bg-ground/85 backdrop-blur-md backdrop-saturate-150">
-        <div className="mx-auto flex h-16 max-w-[1180px] items-center gap-4 px-5 md:gap-6 md:px-8">
-          <div className="flex items-center gap-7">
-            <Logo />
-            <div className="hidden gap-6 lg:flex">
-              {BEFORE.map((l) => (
-                <a key={l.label} href={l.href} className="text-[14px] font-medium text-muted transition-colors hover:text-ink">
-                  {l.label}
-                </a>
-              ))}
-              <IntegrationsMenu />
-              {LINKS.map((l) => (
-                <a key={l.label} href={l.href} className="text-[14px] font-medium text-muted transition-colors hover:text-ink">
-                  {l.label}
-                </a>
-              ))}
-            </div>
+        {/* Full width; on lg the links sit dead centre between logo and actions. */}
+        <div className="flex h-16 items-center gap-4 px-5 md:gap-6 md:px-8 lg:grid lg:grid-cols-[1fr_auto_1fr]">
+          <Logo />
+          <div className="hidden items-center gap-7 lg:flex">
+            {BEFORE.map((l) => (
+              <a key={l.label} href={l.href} className="text-[14px] font-medium text-muted transition-colors hover:text-ink">
+                {l.label}
+              </a>
+            ))}
+            <IntegrationsMenu />
+            <AiMenu />
+            {LINKS.map((l) => (
+              <a key={l.label} href={l.href} className="text-[14px] font-medium text-muted transition-colors hover:text-ink">
+                {l.label}
+              </a>
+            ))}
           </div>
           <div className="ml-auto flex items-center justify-end gap-3.5">
             <GitHubButton />
@@ -60,19 +62,18 @@ export function SiteNav() {
 }
 
 /**
- * "Integrations" dropdown: every network with its logo, linking to its page.
- * Opens on hover and on keyboard focus (CSS only, so the nav stays a server
- * component). Networks that aren't live yet are listed as coming soon.
+ * A nav link with a dropdown panel. Opens on hover and on keyboard focus (CSS
+ * only, so the nav stays a server component).
  */
-function IntegrationsMenu() {
+function NavMenu({ label, href, width, children }: { label: string; href: string; width: number; children: React.ReactNode }) {
   return (
     <div className="group relative">
       <Link
-        href="/integrations"
+        href={href}
         className="flex items-center gap-1 text-[14px] font-medium text-muted transition-colors hover:text-ink group-hover:text-ink group-focus-within:text-ink"
         aria-haspopup="true"
       >
-        Integrations
+        {label}
         <svg
           width="14"
           height="14"
@@ -91,43 +92,99 @@ function IntegrationsMenu() {
 
       {/* pt-4 bridges the gap so the menu stays open while the pointer moves down */}
       <div className="invisible absolute left-1/2 top-full z-50 -translate-x-1/2 pt-4 opacity-0 transition-[opacity,visibility] duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
-        <div className="w-[560px] rounded-[20px] border border-line bg-surface p-3 shadow-[0_24px_60px_-20px_rgba(16,24,40,0.35)]">
-          <ul className="grid grid-cols-3 gap-1">
-            {NETWORKS.map((n) => (
-              <li key={n.slug}>
-                {n.live ? (
-                  <Link
-                    href={`/integrations/${n.slug}`}
-                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium text-ink transition-colors hover:bg-surface-2"
-                  >
-                    <BrandTile platform={n.id} size={26} radius={7} />
-                    {n.name}
-                  </Link>
-                ) : (
-                  <span className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium text-muted">
-                    <span className="opacity-60">
-                      <BrandTile platform={n.id} size={26} radius={7} />
-                    </span>
-                    {n.name}
-                    <span className="ml-auto rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] font-semibold">Soon</span>
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-          <div className="mt-2 flex items-center justify-between border-t border-line px-3 pb-1 pt-3 text-[13px]">
-            <span className="text-muted">Plus Claude, Cursor and other AI tools over MCP.</span>
-            <span className="flex gap-4 font-semibold">
-              <Link href="/ai" className="text-blue-ink hover:underline">
-                AI tools
-              </Link>
-              <Link href="/integrations" className="text-blue-ink hover:underline">
-                All integrations
-              </Link>
-            </span>
-          </div>
+        <div
+          style={{ width }}
+          className="rounded-[20px] border border-line bg-surface p-3 shadow-[0_24px_60px_-20px_rgba(16,24,40,0.35)]"
+        >
+          {children}
         </div>
       </div>
     </div>
+  );
+}
+
+function MenuFooter({ note, links }: { note: string; links: { href: string; label: string }[] }) {
+  return (
+    <div className="mt-2 flex items-center justify-between border-t border-line px-3 pb-1 pt-3 text-[13px]">
+      <span className="text-muted">{note}</span>
+      <span className="flex gap-4 font-semibold">
+        {links.map((l) => (
+          <Link key={l.href} href={l.href} className="text-blue-ink hover:underline">
+            {l.label}
+          </Link>
+        ))}
+      </span>
+    </div>
+  );
+}
+
+/** "Integrations": every network with its logo; ones not live yet show as coming soon. */
+function IntegrationsMenu() {
+  return (
+    <NavMenu label="Integrations" href="/integrations" width={560}>
+      <ul className="grid grid-cols-3 gap-1">
+        {NETWORKS.map((n) => (
+          <li key={n.slug}>
+            {n.live ? (
+              <Link
+                href={`/integrations/${n.slug}`}
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium text-ink transition-colors hover:bg-surface-2"
+              >
+                <BrandTile platform={n.id} size={26} radius={7} />
+                {n.name}
+              </Link>
+            ) : (
+              <span className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium text-muted">
+                <span className="opacity-60">
+                  <BrandTile platform={n.id} size={26} radius={7} />
+                </span>
+                {n.name}
+                <span className="ml-auto rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] font-semibold">Soon</span>
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+      <MenuFooter
+        note="Plus Claude, Cursor and other AI tools over MCP."
+        links={[
+          { href: "/ai", label: "AI tools" },
+          { href: "/integrations", label: "All integrations" },
+        ]}
+      />
+    </NavMenu>
+  );
+}
+
+const KIND = { chat: "Chat app", terminal: "Terminal", editor: "Editor" } as const;
+
+/** "AI agents": every AI tool that can post through the Postbase MCP server. */
+function AiMenu() {
+  return (
+    <NavMenu label="AI agents" href="/ai" width={480}>
+      <ul className="grid grid-cols-2 gap-1">
+        {CLIENTS.map((c) => (
+          <li key={c.slug}>
+            <Link
+              href={`/ai/${c.slug}`}
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-surface-2"
+            >
+              <ClientLogo id={c.logo} size={26} />
+              <span className="leading-tight">
+                <span className="block text-[14px] font-medium text-ink">{c.name}</span>
+                <span className="block text-[12px] text-muted">{KIND[c.kind]}</span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <MenuFooter
+        note="Connect over MCP in a minute."
+        links={[
+          { href: "/tools/mcp-config", label: "Config generator" },
+          { href: "/ai", label: "How it works" },
+        ]}
+      />
+    </NavMenu>
   );
 }

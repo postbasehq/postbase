@@ -23,6 +23,8 @@ export type Row = { label: string; key: keyof typeof US; them: string };
 export type Competitor = {
   slug: string;
   name: string;
+  /** One short line for link cards. */
+  blurb: string;
   metaTitle: string;
   metaDescription: string;
   h1: [string, string];
@@ -58,6 +60,7 @@ export const COMPETITORS: Competitor[] = [
   {
     slug: "buffer",
     name: "Buffer",
+    blurb: "A simple scheduler with a free plan, priced per channel.",
     metaTitle: "Buffer alternative: open source, flat pricing",
     metaDescription:
       "Comparing Postbase and Buffer: pricing per plan vs per channel, networks, MCP and API, and open source. An honest look at when each one is the better pick.",
@@ -115,6 +118,7 @@ export const COMPETITORS: Competitor[] = [
   {
     slug: "hootsuite",
     name: "Hootsuite",
+    blurb: "A full social suite for larger teams, inbox included.",
     metaTitle: "Hootsuite alternative from $29/month",
     metaDescription: "Postbase vs Hootsuite: price, networks, API access, MCP and open source, and when you need Hootsuite versus a lighter scheduler.",
     h1: ["A lighter", "Hootsuite alternative"],
@@ -172,6 +176,7 @@ export const COMPETITORS: Competitor[] = [
   {
     slug: "typefully",
     name: "Typefully",
+    blurb: "A polished writing app for X and LinkedIn creators.",
     metaTitle: "Typefully alternative for TikTok, YouTube and threads",
     metaDescription:
       "Comparing Postbase and Typefully: networks (including TikTok and YouTube), billing, MCP and API, and open source. When each one is the better pick.",
@@ -224,6 +229,7 @@ export const COMPETITORS: Competitor[] = [
   {
     slug: "ayrshare",
     name: "Ayrshare",
+    blurb: "A social media API for apps that post for customers.",
     metaTitle: "Ayrshare alternative: API and MCP from $29/month",
     metaDescription: "Postbase vs Ayrshare for posting from code or AI agents: price, MCP sign-in, networks and open source. When each one is the better pick.",
     h1: ["An Ayrshare alternative for", "your own accounts"],
@@ -288,6 +294,7 @@ export const COMPETITORS: Competitor[] = [
   {
     slug: "hypefury",
     name: "Hypefury",
+    blurb: "A scheduler for solo creators, with auto-plugs and DMs.",
     checked: "27 September 2026",
     metaTitle: "Hypefury alternative that still posts to X",
     metaDescription: "Hypefury no longer supports X. Postbase schedules X posts and threads plus LinkedIn, Bluesky, TikTok and YouTube, with an MCP server.",
@@ -335,6 +342,7 @@ export const COMPETITORS: Competitor[] = [
   {
     slug: "later",
     name: "Later",
+    blurb: "A visual planner for Instagram-first and TikTok brands.",
     checked: "27 September 2026",
     metaTitle: "Later alternative for X, Bluesky and AI agents",
     metaDescription: "Comparing Postbase and Later: X, Bluesky and Mastodon vs Instagram and Pinterest, post limits, API and MCP. When each is the better pick.",
@@ -383,6 +391,7 @@ export const COMPETITORS: Competitor[] = [
   {
     slug: "sprout-social",
     name: "Sprout Social",
+    blurb: "An enterprise suite for social teams, with reporting.",
     checked: "27 September 2026",
     metaTitle: "Sprout Social alternative: scheduling from $29/month",
     metaDescription: "Postbase vs Sprout Social: per-seat vs flat pricing, networks, API access and MCP for Claude. When each one is the better pick.",
@@ -431,6 +440,7 @@ export const COMPETITORS: Competitor[] = [
   {
     slug: "publer",
     name: "Publer",
+    blurb: "A budget scheduler for small businesses and agencies.",
     checked: "27 September 2026",
     metaTitle: "Publer alternative with an API and MCP on every plan",
     metaDescription: "Postbase vs Publer: per-account vs flat pricing, networks, API and MCP access, and open source. When each one is the better pick.",
@@ -484,6 +494,7 @@ export const COMPETITORS: Competitor[] = [
   {
     slug: "socialbee",
     name: "SocialBee",
+    blurb: "A category-based scheduler with evergreen recycling.",
     checked: "27 September 2026",
     metaTitle: "SocialBee alternative with an API, MCP and Mastodon",
     metaDescription: "Postbase vs SocialBee: same $29 starting price, plus an API, an MCP server for AI agents, Mastodon and open source. When each is better.",
@@ -532,6 +543,7 @@ export const COMPETITORS: Competitor[] = [
   {
     slug: "post-bridge",
     name: "Post Bridge",
+    blurb: "A high-volume scheduler for short-form video accounts.",
     checked: "27 September 2026",
     metaTitle: "Post Bridge alternative: open source, with Mastodon",
     metaDescription: "Postbase vs Post Bridge: price, networks (including Mastodon), MCP and API, open source and the built-in agent. When each is better.",

@@ -61,7 +61,7 @@ const COLUMNS: { title: string; links: [string, string, Icon?][] }[] = [
     title: "Company",
     links: [
       ["X", "https://x.com/postbasehq"],
-      ["Contact", "mailto:team@postbase.so"],
+      ["Contact", "/contact"],
       ["Privacy", "/privacy"],
       ["Terms", "/terms"],
     ],
@@ -105,17 +105,19 @@ export function SiteFooter() {
                     </li>
                   );
                 })}
+                {/* Consent must stay as easy to change as it was to give, so it lives with the legal links. */}
+                {c.title === "Company" ? (
+                  <li>
+                    <CookieSettingsLink className="text-left text-muted transition-colors hover:text-ink" />
+                  </li>
+                ) : null}
               </ul>
             </div>
           ))}
         </div>
-        <div className="mt-12">
-          <CookieSettingsLink className="text-[12px] font-medium text-muted underline underline-offset-2 transition-colors hover:text-ink" />
-        </div>
-        <p className="mt-3 text-[12px] leading-relaxed text-muted">
-          © {new Date().getFullYear()} Berkway Group Limited, trading as Postbase. Registered in England and Wales.
-          Postbase is a publishing tool and is not affiliated with X, LinkedIn, Instagram, TikTok, YouTube, Bluesky or
-          Mastodon, or with the AI tools and other companies named on this site. All trademarks belong to their owners.
+        <p className="mt-12 text-[12px] leading-relaxed text-muted">
+          © {new Date().getFullYear()} Berkway Group Limited, trading as Postbase. Registered in England and Wales. Not
+          affiliated with the networks or AI tools named on this site.
         </p>
       </div>
     </footer>

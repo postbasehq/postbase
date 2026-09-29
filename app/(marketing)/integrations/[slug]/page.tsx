@@ -2,12 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { BrandTile } from "@/components/BrandTile";
 import { pageMeta } from "@/lib/site";
 import { LIVE_NETWORKS, NETWORKS, networkBySlug } from "@/lib/seo/networks";
 import { CLIENTS } from "@/lib/seo/clients";
 import { CtaBand, FaqList, Underlined, card, wrap } from "@/components/marketing/ui";
-import { Eyebrow, NetworkFacts, LinkCards, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
+import { NetworkFacts, LinkCards, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
 import { NetworkComposerDemo, NetworkTiles } from "@/components/marketing/seo/demos";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
@@ -38,8 +37,8 @@ export default async function IntegrationPage({ params }: { params: Promise<{ sl
       <main>
         <SeoHero
           trail={trail}
-          eyebrow={<Eyebrow icon={<BrandTile platform={n.id} size={22} radius={6} />}>{n.eyebrow}</Eyebrow>}
           h1={n.h1}
+          icons={n.h1Icon ? [{ before: n.h1Icon, brand: n.id }] : []}
           sub={n.sub}
           secondary={{ label: "See pricing", href: "/pricing" }}
           frame={`One draft, cut to fit ${n.name}`}

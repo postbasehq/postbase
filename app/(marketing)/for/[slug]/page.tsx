@@ -3,13 +3,13 @@ import { notFound } from "next/navigation";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { pageMeta } from "@/lib/site";
-import { PLANS } from "@/lib/plans";
+import { RecommendedPlan } from "@/components/PlanPicker";
 import { PERSONAS, personaBySlug, type Persona } from "@/lib/seo/personas";
 import { CLIENTS } from "@/lib/seo/clients";
 import { LIVE_NETWORKS } from "@/lib/seo/networks";
 import { relatedCards } from "@/lib/seo/related";
 import { CtaBand, FaqList, Underlined, card, wrap } from "@/components/marketing/ui";
-import { Eyebrow, LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
+import { LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
 import { CalendarHeroDemo, ClientSetupDemo, NetworkComposerDemo } from "@/components/marketing/seo/demos";
 import { FeatureTiles } from "@/components/marketing/seo/FeatureTiles";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
@@ -37,6 +37,7 @@ function Hero({ hero }: { hero: Persona["hero"] }) {
   return <NetworkComposerDemo network={n.id} text={n.demo.text} media={n.demo.media} />;
 }
 
+// Postbase blue, amber and red (solid, same in light and dark).
 const PROBLEM_TONES = ["#2b59d9", "#e3a72c", "#d14a3e"];
 
 export default async function PersonaPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -44,7 +45,6 @@ export default async function PersonaPage({ params }: { params: Promise<{ slug: 
   if (!p) notFound();
   const path = `/for/${p.slug}`;
   const trail = [{ label: "Home", href: "/" }, { label: p.eyebrow }];
-  const plan = PLANS[p.plan];
 
   return (
     <>
@@ -53,7 +53,6 @@ export default async function PersonaPage({ params }: { params: Promise<{ slug: 
       <main>
         <SeoHero
           trail={trail}
-          eyebrow={<Eyebrow>{p.eyebrow}</Eyebrow>}
           h1={p.h1}
           sub={p.sub}
           secondary={{ label: "See pricing", href: "/pricing" }}
@@ -87,32 +86,8 @@ export default async function PersonaPage({ params }: { params: Promise<{ slug: 
         </section>
 
         <section className={section}>
-          <SectionHead title="The plan we'd pick" />
-          <div className={`${card} mx-auto flex max-w-[820px] flex-col gap-6 p-7 md:flex-row md:items-center md:p-9`}>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-baseline gap-3">
-                <span className="font-display text-[24px] font-semibold text-ink">{plan.name}</span>
-                <span className="font-display text-[20px] font-semibold text-ink">
-                  ${plan.monthly}
-                  <span className="text-[14px] font-medium text-muted">/month</span>
-                </span>
-              </div>
-              <p className="mt-2 text-[15px] leading-relaxed text-muted">{p.planWhy}</p>
-              <ul className="mt-4 flex flex-wrap gap-2">
-                {plan.features.map((f) => (
-                  <li key={f} className="rounded-full bg-surface-2 px-3 py-1 text-[13px] font-medium text-ink">
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <a
-              href={`/billing?plan=${plan.id}&interval=month`}
-              className="shrink-0 rounded-full bg-blue px-6 py-3 text-center font-display text-[15px] font-semibold text-on-blue shadow-sm"
-            >
-              Start 7-day trial
-            </a>
-          </div>
+          <SectionHead title="The plan we'd pick" sub={p.planWhy} />
+          <RecommendedPlan id={p.plan} badge="Our pick" />
         </section>
 
         <section className={section}>
@@ -125,7 +100,7 @@ export default async function PersonaPage({ params }: { params: Promise<{ slug: 
           <LinkCards
             items={[
               ...relatedCards(p.related),
-              ...PERSONAS.filter((o) => o.slug !== p.slug).map((o) => ({ href: `/for/${o.slug}`, title: o.eyebrow, body: o.sub.split(". ")[0] + "." })),
+              ...PERSONAS.filter((o) => o.slug !== p.slug).map((o, i) => ({ href: `/for/${o.slug}`, title: o.eyebrow, body: o.blurb, mark: PROBLEM_TONES[i % 3] })),
             ]}
           />
         </section>

@@ -3,7 +3,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { pageMeta } from "@/lib/site";
 import { CtaBand, FaqList, wrap } from "@/components/marketing/ui";
-import { Eyebrow, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
+import { SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 import { CharacterCounter } from "@/components/marketing/tools/CharacterCounter";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
@@ -50,7 +50,6 @@ export default function CharacterCounterPage() {
       <main>
         <SeoHero
           trail={TRAIL}
-          eyebrow={<Eyebrow>Free tool</Eyebrow>}
           h1={["Social media", "character counter"]}
           sub="Counts your post the way each network does, not just letters, and splits long text into a thread that fits."
           cta={{ label: "Schedule posts free for 7 days", href: "/login" }}

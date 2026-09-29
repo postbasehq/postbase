@@ -3,7 +3,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { pageMeta } from "@/lib/site";
 import { CtaBand, wrap } from "@/components/marketing/ui";
-import { Eyebrow, LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
+import { LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 
 const DESCRIPTION = "Free tools for posting to social media: a character counter and thread splitter, an image and video size guide, and an MCP config generator for AI tools.";
@@ -17,7 +17,7 @@ export default function ToolsPage() {
       <SeoJsonLd path="/tools" name="Free tools" description={DESCRIPTION} trail={TRAIL} />
       <SiteNav />
       <main>
-        <SeoHero trail={TRAIL} eyebrow={<Eyebrow>Free tools</Eyebrow>} h1={["Free tools for", "posting"]} sub={DESCRIPTION} />
+        <SeoHero trail={TRAIL} h1={["Free tools for", "posting"]} sub={DESCRIPTION} />
         <section className={section}>
           <SectionHead title="Tools" />
           <LinkCards
@@ -26,19 +26,19 @@ export default function ToolsPage() {
                 href: "/tools/character-counter",
                 title: "Character counter",
                 brand: "x",
-                body: "Counts your post the way X, Bluesky, LinkedIn and others do, and splits long text into a thread.",
+                body: "Count a post per network and split it into a thread.",
               },
               {
                 href: "/tools/social-media-image-sizes",
                 title: "Image and video sizes",
                 brand: "instagram",
-                body: "Every size, ratio and limit for nine networks, checked September 2026.",
+                body: "Every image and video size for nine networks.",
               },
               {
                 href: "/tools/mcp-config",
                 title: "MCP config generator",
                 client: "claude",
-                body: "The exact MCP setup for Claude, Claude Code, Cursor, VS Code, Windsurf and Gemini CLI.",
+                body: "The exact MCP setup for your AI tool, ready to paste.",
               },
             ]}
           />

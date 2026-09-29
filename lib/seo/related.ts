@@ -9,19 +9,19 @@ const TOOLS: Record<string, LinkCard> = {
     href: "/tools/character-counter",
     title: "Character counter",
     brand: "x",
-    body: "Counts your post the way X, Bluesky, LinkedIn and others do, and splits long text into a thread.",
+    body: "Count a post per network and split it into a thread.",
   },
   "/tools/social-media-image-sizes": {
     href: "/tools/social-media-image-sizes",
     title: "Image and video sizes",
     brand: "instagram",
-    body: "Every size, ratio and limit for nine networks, checked September 2026.",
+    body: "Every image and video size for nine networks.",
   },
   "/tools/mcp-config": {
     href: "/tools/mcp-config",
     title: "MCP config generator",
     client: "claude",
-    body: "The exact MCP setup for Claude, Cursor, VS Code and more.",
+    body: "The exact MCP setup for your AI tool, ready to paste.",
   },
 };
 
@@ -34,11 +34,11 @@ export function relatedCard(href: string): LinkCard | null {
   }
   if (kind === "ai") {
     const c = CLIENTS.find((x) => x.slug === slug);
-    return c ? { href, title: c.eyebrow, client: c.logo, body: c.metaDescription.split(". ")[0] + "." } : null;
+    return c ? { href, title: c.eyebrow, client: c.logo, body: c.blurb } : null;
   }
   if (kind === "alternatives") {
     const c = COMPETITORS.find((x) => x.slug === slug);
-    return c ? { href, title: `Postbase vs ${c.name}`, body: c.them } : null;
+    return c ? { href, title: `Postbase vs ${c.name}`, body: c.blurb } : null;
   }
   if (kind === "blog") {
     const p = listPosts().find((x) => x.slug === slug);

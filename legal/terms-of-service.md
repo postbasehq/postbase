@@ -7,7 +7,7 @@
 
 # Terms of Service
 
-**Last updated: 27 September 2026**
+**Last updated: 29 September 2026**
 
 These Terms of Service ("Terms") are a legal agreement between you and
 **Berkway Group Limited** ("Berkway", "we", "us"), a company registered in England and
@@ -118,6 +118,11 @@ API keys, and are responsible for your own deployment.
 The Service, the Postbase name, logo, and brand are owned by Berkway. Except for the rights
 expressly granted to you, we reserve all rights. You may not use our brand without
 permission.
+
+Postbase is an independent publishing tool. It is not affiliated with, endorsed by or
+sponsored by X, LinkedIn, Instagram, TikTok, YouTube, Bluesky, Mastodon, the AI tools named
+on our site, or any other company we mention. Their names and logos are trademarks of their
+respective owners and are used only to show which services Postbase works with.
 
 ## 12. Disclaimers
 

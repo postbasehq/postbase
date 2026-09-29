@@ -694,10 +694,24 @@ export function CalendarView({
             <span className="truncate">{drag.post.body || "(empty)"}</span>
           </div>
           <div
-            className={`mt-1.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold shadow ${
+            className={`mt-1.5 flex w-max items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold shadow-md ${
               target?.valid ? "bg-[#2b59d9] text-white" : "bg-surface text-muted ring-1 ring-line"
             }`}
           >
+            {target?.valid ? (
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                {isRepost(drag.post.status) ? (
+                  <>
+                    <path d="m17 2 4 4-4 4" />
+                    <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+                    <path d="m7 22-4-4 4-4" />
+                    <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+                  </>
+                ) : (
+                  <path d="M5 12h14M13 6l6 6-6 6" />
+                )}
+              </svg>
+            ) : null}
             {target?.valid
               ? `${isRepost(drag.post.status) ? "Re-post on" : "Move to"} ${dropLabel(target)}`
               : target

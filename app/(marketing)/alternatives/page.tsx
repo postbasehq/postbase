@@ -4,7 +4,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { pageMeta } from "@/lib/site";
 import { COMPETITORS } from "@/lib/seo/competitors";
 import { CtaBand, wrap } from "@/components/marketing/ui";
-import { Eyebrow, LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
+import { LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
 import { AlternativeTiles, CalendarHeroDemo } from "@/components/marketing/seo/demos";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 
@@ -23,7 +23,6 @@ export default function AlternativesPage() {
       <main>
         <SeoHero
           trail={TRAIL}
-          eyebrow={<Eyebrow>Compare</Eyebrow>}
           h1={["How Postbase", "compares"]}
           sub="Side-by-side comparisons with the tools people usually look at, including when the other one is the better pick."
           frame="Your whole week in one calendar"
@@ -33,7 +32,7 @@ export default function AlternativesPage() {
 
         <section className={section}>
           <SectionHead title="Comparisons" />
-          <LinkCards items={COMPETITORS.map((c) => ({ href: `/alternatives/${c.slug}`, title: `Postbase vs ${c.name}`, body: c.them }))} />
+          <LinkCards items={COMPETITORS.map((c) => ({ href: `/alternatives/${c.slug}`, title: `Postbase vs ${c.name}`, body: c.blurb }))} />
         </section>
 
         <section className={section}>
