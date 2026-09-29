@@ -10,13 +10,15 @@ import { BRANDS } from "@/components/BrandTile";
  * tap to jump; it never starts on its own.
  */
 
-const H = 220; // canvas height in CSS px; width follows the container
-const GROUND = 190; // y of the ground line
+// Tall enough for the highest possible reach: top platform (85) + jump (~120) + double
+// jump (~70) + the runner and its ring (~38) = ~313px above the ground line.
+const H = 370; // canvas height in CSS px; width follows the container
+const GROUND = 340; // y of the ground line
 const RUNNER = 34; // runner size
 const RX = 48; // runner's fixed x
 const GRAVITY = 2400; // px/s²
 const JUMP = 760; // px/s: first jump (peaks ~120px up)
-const DOUBLE = 700; // px/s: the mid-air jump
+const DOUBLE = 580; // px/s: the mid-air jump (~70px more)
 const START_SPEED = 360; // px/s
 const MAX_SPEED = 900;
 const POWER_SECONDS = 10;
@@ -163,7 +165,7 @@ export function RunnerGame() {
         }
         g.nextPlatform -= dx;
         if (g.nextPlatform <= 0) {
-          const p = { x: W + 20, w: Math.round(rand(90, 180)), h: Math.round(rand(58, 92)), tone: TONES[g.toneIndex++ % 3] };
+          const p = { x: W + 20, w: Math.round(rand(90, 180)), h: Math.round(rand(58, 85)), tone: TONES[g.toneIndex++ % 3] };
           g.platforms.push(p);
           // Sometimes the power-up waits on top of (or just above) the platform.
           if (g.nextPower <= 0) {
@@ -194,6 +196,12 @@ export function RunnerGame() {
           g.grounded = true;
           g.jumps = 0;
         } else g.grounded = false;
+        // Ceiling: never let the icon leave the top of the canvas.
+        const ceiling = GROUND - RUNNER - 30;
+        if (g.y > ceiling) {
+          g.y = ceiling;
+          g.vy = Math.min(g.vy, 0);
+        }
         if (g.flip > 0) g.flip = Math.min(1, g.flip + dt / 0.42);
         if (g.flip >= 1) g.flip = 0;
 

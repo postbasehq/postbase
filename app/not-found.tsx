@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { RunnerGame } from "@/components/marketing/RunnerGame";
-import { PrimaryButton, SecondaryButton, card, wrap } from "@/components/marketing/ui";
+import { card, wrap } from "@/components/marketing/ui";
 
 export const metadata: Metadata = {
   title: "Page not found",
@@ -24,11 +24,6 @@ export default function NotFound() {
 
         <div className={`${card} mx-auto mt-10 max-w-[860px] p-5 text-left md:p-7`}>
           <RunnerGame />
-        </div>
-
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-          <PrimaryButton href="/">Back to the homepage</PrimaryButton>
-          <SecondaryButton href="/contact">Contact us</SecondaryButton>
         </div>
       </main>
       <SiteFooter />
