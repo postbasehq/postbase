@@ -5,6 +5,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { GitHubButton } from "./GitHubButton";
 import { BrandTile } from "./BrandTile";
 import { ClientLogo } from "./ClientLogo";
+import { NavAuthButtons } from "./NavAuthButtons";
 import { NETWORKS } from "@/lib/seo/networks";
 import { CLIENTS } from "@/lib/seo/clients";
 
@@ -45,19 +46,7 @@ export function SiteNav() {
               <GitHubButton />
             </span>
             <ThemeToggle />
-            <Link
-              href="/login"
-              className="hidden whitespace-nowrap rounded-full border border-line px-4 py-2 font-display text-[14px] font-semibold text-ink transition-colors hover:border-ink sm:inline"
-            >
-              Log in
-            </Link>
-            <Link
-              href="/login"
-              className="whitespace-nowrap rounded-full bg-blue px-4 py-2 font-display text-[14px] font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
-            >
-              <span className="sm:hidden">Try free</span>
-              <span className="hidden sm:inline">Start free trial</span>
-            </Link>
+            <NavAuthButtons />
           </div>
         </div>
       </nav>

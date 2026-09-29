@@ -16,22 +16,20 @@ import { ComposerShot } from "@/components/marketing/ComposerShot";
  */
 
 const TONES = {
-  blue: { bg: "#2b59d9", fg: "text-white", sub: "text-white/85", pill: "text-[#2b59d9]" },
-  amber: { bg: "#e3a72c", fg: "text-[#202124]", sub: "text-[#202124]/80", pill: "text-[#8a5a00]" },
-  red: { bg: "#d14a3e", fg: "text-white", sub: "text-white/85", pill: "text-[#d14a3e]" },
+  blue: { bg: "#2b59d9", fg: "text-white", sub: "text-white/85" },
+  amber: { bg: "#e3a72c", fg: "text-[#202124]", sub: "text-[#202124]/80" },
+  red: { bg: "#d14a3e", fg: "text-white", sub: "text-white/85" },
 } as const;
 type Tone = keyof typeof TONES;
 
 export const shot = "rounded-2xl bg-surface shadow-[0_30px_70px_-30px_rgba(0,0,0,0.55)] ring-1 ring-black/5";
 
+// `label` names the tile for the code (and screen readers); it isn't drawn.
 function Copy({ tone, label, title, body }: { tone: Tone; label: string; title: string; body: string }) {
   const t = TONES[tone];
   return (
-    <div>
-      <span className={`inline-block rounded-full bg-white px-3 py-1 font-display text-[11px] font-semibold uppercase tracking-[0.08em] ${t.pill}`}>
-        {label}
-      </span>
-      <h3 className={`mt-4 font-display text-[clamp(26px,2.6vw,34px)] font-semibold leading-[1.1] tracking-[-0.02em] ${t.fg}`}>
+    <div aria-label={label}>
+      <h3 className={`font-display text-[clamp(26px,2.6vw,34px)] font-semibold leading-[1.1] tracking-[-0.02em] ${t.fg}`}>
         {title}
       </h3>
       <p className={`mt-3 max-w-[42ch] text-[16px] leading-relaxed ${t.sub}`}>{body}</p>

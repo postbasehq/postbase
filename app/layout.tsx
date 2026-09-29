@@ -3,10 +3,12 @@ import { Plus_Jakarta_Sans, Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { SITE_URL } from "@/lib/site";
+import { ThemeScript } from "@/components/ThemeScript";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  // 800 is only for the footer wordmark.
+  weight: ["400", "500", "600", "800"],
   variable: "--font-jakarta",
   display: "swap",
 });
@@ -66,6 +68,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${jakarta.variable} ${inter.variable}`} suppressHydrationWarning>
+      <head>
+        <ThemeScript />
+      </head>
       <body>
         {children}
         <Analytics />

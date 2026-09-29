@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { THEME_KEY } from "./ThemeScript";
 
 function effectiveIsDark(): boolean {
   const current = document.documentElement.getAttribute("data-theme");
@@ -20,8 +21,11 @@ export function ThemeToggle() {
   function toggle() {
     const next = !effectiveIsDark();
     document.documentElement.setAttribute("data-theme", next ? "dark" : "light");
-    // An explicit choice: stop the marketing pages forcing light over it.
+    // An explicit choice: remember it over the dark default.
     document.documentElement.setAttribute("data-theme-user", "");
+    try {
+      localStorage.setItem(THEME_KEY, next ? "dark" : "light");
+    } catch {}
     setDark(next);
   }
 

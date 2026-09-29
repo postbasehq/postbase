@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ClientLogo } from "@/components/ClientLogo";
+import { BrandTile } from "@/components/BrandTile";
+import { GITHUB_PATH } from "@/components/PlanPicker";
 import { useLoop } from "@/components/marketing/Mocks";
 import { CalendarDemo } from "@/components/marketing/CalendarDemo";
 import { Tile, shot } from "@/components/marketing/CreatorGrid";
@@ -12,6 +14,248 @@ import { Tile, shot } from "@/components/marketing/CreatorGrid";
  * tools reference, the calendar with MCP posts, the API docs, and the connected
  * apps + revoke dialog.
  */
+
+/**
+ * "Which one do I use?" in one glance, above the developer tiles: MCP for AI
+ * clients working conversationally, REST for your own code calling directly.
+ * Solid brand panels like the tiles below: a big title, one high-contrast line
+ * and a small, accurate demo. Nothing decorative sits behind the text.
+ */
+export function McpOrRest() {
+  return (
+    <div className="mb-5 grid gap-5 lg:grid-cols-2">
+      {/* MCP: a request in chat, answered by a real tool call */}
+      <div className="flex flex-col rounded-[28px] bg-[#2b59d9] p-8 md:p-10">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h3 className="font-display text-[clamp(28px,2.8vw,36px)] font-semibold leading-[1.1] tracking-[-0.02em] text-white">MCP</h3>
+          {/* The AI tools that connect over MCP, as white tiles */}
+          <span className="flex items-center gap-2">
+            {/* Claude, then ChatGPT; Claude Code (CLIENTS[1]) shares Claude's mark, so it's skipped */}
+            {[CLIENTS[0], { id: "chatgpt", name: "ChatGPT" }, ...CLIENTS.slice(2)].map((c) => (
+              <span key={c.id} title={c.name} className="rounded-md shadow-[0_6px_16px_-8px_rgba(0,0,0,0.5)]">
+                <ClientLogo id={c.id} size={34} />
+              </span>
+            ))}
+          </span>
+        </div>
+        <p className="mt-3 max-w-[40ch] text-[18px] leading-relaxed text-white">
+          For when you want Claude, Cursor or another AI client to use Postbase conversationally.
+        </p>
+        <div className="h-7 shrink-0" aria-hidden />
+        <div className="mt-auto">
+          <ClaudeChatShot />
+        </div>
+      </div>
+
+      {/* Right column: REST on top, open source underneath. On lg it takes no height of its own
+          (absolutely filled), so the MCP card alone sets the row height and never grows. */}
+      <div className="lg:relative">
+      <div className="flex flex-col gap-5 lg:absolute lg:inset-0">
+      {/* REST: the actual request and response */}
+      <div className="flex flex-col rounded-[28px] bg-[#e3a72c] p-7 lg:flex-1">
+        <h3 className="font-display text-[clamp(26px,2.4vw,32px)] font-semibold leading-[1.1] tracking-[-0.02em] text-[#14161a]">REST API</h3>
+        <p className="mt-2 text-[16px] leading-relaxed text-[#14161a]">
+          For when you want your own scripts, apps, automations or cron jobs to call Postbase directly.
+        </p>
+        <div className="h-4 shrink-0" aria-hidden />
+        <div className="mt-auto overflow-hidden rounded-2xl bg-[#14161a] shadow-[0_24px_50px_-24px_rgba(0,0,0,0.6)]">
+          <pre className="overflow-x-auto px-4 py-3 font-mono text-[12px] leading-[1.7]" style={{ color: "#e8eaed" }}>
+            <span className="text-[#9aa0a6]">$ </span>curl -X POST https://www.postbase.so/api/v1/posts \{"\n"}
+            {"  "}-H <span className="text-[#f2c464]">&quot;Authorization: Bearer pb_live_…&quot;</span> \{"\n"}
+            {"  "}-d <span className="text-[#f2c464]">&apos;{"{"}&quot;body&quot;:&quot;We just launched&quot;,&quot;channel_ids&quot;:[…]{"}"}&apos;</span>
+            {"\n"}
+            <span className="text-[#7fcf8f]">201 Created</span>
+          </pre>
+        </div>
+      </div>
+
+      <OpenSourceCard />
+      </div>
+      </div>
+    </div>
+  );
+}
+
+/** The third option: read the code, or run it yourself. Live star count from the same endpoint as the nav. */
+function OpenSourceCard() {
+  const [stars, setStars] = useState<number | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/github/stars")
+      .then((r) => r.json())
+      .then((d: { stars: number | null }) => {
+        if (alive && typeof d.stars === "number") setStars(d.stars);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  return (
+    <div className="flex flex-col rounded-[28px] bg-[#d14a3e] p-7 lg:flex-1">
+      <h3 className="font-display text-[clamp(26px,2.4vw,32px)] font-semibold leading-[1.1] tracking-[-0.02em] text-white">Open source</h3>
+      <p className="mt-2 text-[16px] leading-relaxed text-white">Read the code that posts for you, or self-host it.</p>
+      <div className="h-4 shrink-0" aria-hidden />
+      <div className="mt-auto flex flex-wrap items-center gap-3 rounded-2xl bg-white p-3 pl-4 shadow-[0_24px_50px_-24px_rgba(0,0,0,0.6)]">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#14161a] text-white">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <path d={GITHUB_PATH} />
+          </svg>
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block whitespace-nowrap font-mono text-[12.5px] font-semibold text-[#14161a]">postbasehq/postbase</span>
+          <span className="flex items-center gap-2 text-[12px] text-[#5f6368]">
+            AGPL-3.0
+            {stars != null ? (
+              <span className="inline-flex items-center gap-1 font-semibold tabular-nums">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="#e3a72c" aria-hidden>
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
+                {stars}
+              </span>
+            ) : null}
+          </span>
+        </span>
+        <span className="flex gap-2">
+          <a
+            href="https://docs.postbase.so/self-hosting/installation"
+            className="rounded-full border border-[#e4e6eb] px-3 py-2 font-display text-[13px] font-semibold text-[#14161a] transition-colors hover:border-[#14161a]"
+          >
+            Self-host
+          </a>
+          <a
+            href="https://github.com/postbasehq/postbase"
+            className="rounded-full bg-[#14161a] px-3 py-2 font-display text-[13px] font-semibold text-white transition-shadow hover:shadow-md"
+          >
+            View on GitHub
+          </a>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+const ASK = "Schedule our launch post on X and LinkedIn for 9am tomorrow";
+const REPLY = "Done. Your launch post is scheduled for 9:00 tomorrow on X and LinkedIn, and it's in your Postbase calendar.";
+
+/**
+ * A Claude-style chat, animated: the request types into the composer, is sent,
+ * Postbase's tools run (list channels, then create the post), and the reply
+ * streams in. Reduced motion shows the finished conversation.
+ */
+function ClaudeChatShot() {
+  const [typed, setTyped] = useState("");
+  const [sent, setSent] = useState(false);
+  const [tools, setTools] = useState(0); // 0 none, 1 listing, 2 listed + creating, 3 both done
+  const [thinking, setThinking] = useState(false);
+  const [reply, setReply] = useState("");
+  const [ref, motion] = useLoop<HTMLDivElement>(async (step) => {
+    setTyped("");
+    setSent(false);
+    setTools(0);
+    setThinking(false);
+    setReply("");
+    await step(700);
+    for (let i = 1; i <= ASK.length; i++) {
+      setTyped(ASK.slice(0, i));
+      await step(28);
+    }
+    await step(350);
+    setSent(true);
+    setTyped("");
+    await step(500);
+    setThinking(true);
+    await step(700);
+    setTools(1);
+    await step(900);
+    setTools(2);
+    await step(1000);
+    setTools(3);
+    setThinking(false);
+    await step(300);
+    const words = REPLY.split(" ");
+    for (let i = 1; i <= words.length; i++) {
+      setReply(words.slice(0, i).join(" "));
+      await step(55);
+    }
+    await step(3200);
+  });
+
+  // Reduced motion: the finished conversation, still.
+  const still = !motion;
+  const show = {
+    sent: still || sent,
+    tools: still ? 3 : tools,
+    thinking: !still && thinking,
+    reply: still ? REPLY : reply,
+    typed: still ? "" : typed,
+  };
+
+  const tool = (label: string, state: "run" | "done") => (
+    <div className="flex items-center gap-2.5 text-[13px] text-[#a8a6a1]">
+      {state === "run" ? (
+        <span className="size-1.5 animate-pulse rounded-full bg-[#d97757]" aria-hidden />
+      ) : (
+        <span className="size-1.5 rounded-full bg-[#5f5d59]" aria-hidden />
+      )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/postbase-icon.png" alt="" className="size-4 rounded-[4px]" />
+      {label}
+    </div>
+  );
+
+  return (
+    <div
+      ref={ref}
+      className="flex h-[300px] flex-col overflow-hidden rounded-2xl bg-[#1f1f1e] shadow-[0_24px_50px_-24px_rgba(0,0,0,0.7)]"
+      aria-label="Claude scheduling a post with Postbase"
+    >
+      {/* Pinned to the bottom like a real chat: on narrow screens the oldest lines scroll off the top. */}
+      <div className="flex min-h-0 flex-1 flex-col justify-end gap-3 overflow-hidden px-4 pt-4">
+        {show.sent ? (
+          <p className="ml-auto max-w-[85%] rounded-2xl bg-[#2f2f2d] px-3.5 py-2 text-[13.5px] leading-snug text-[#ecebe8]">{ASK}</p>
+        ) : null}
+        {show.tools >= 1 ? tool("List channels", show.tools === 1 ? "run" : "done") : null}
+        {show.tools >= 2 ? tool("Create post", show.tools === 2 ? "run" : "done") : null}
+        {show.reply ? (
+          <p className="font-serif text-[14.5px] leading-relaxed text-[#ecebe8]" style={{ fontFamily: "ui-serif, Georgia, 'Times New Roman', serif" }}>
+            {show.reply}
+          </p>
+        ) : null}
+        {show.thinking || (show.sent && show.tools === 0) ? (
+          <span className="mt-1 w-fit animate-pulse">
+            <ClientLogo id="claude" size={22} bare />
+          </span>
+        ) : null}
+        {show.reply === REPLY ? (
+          <span className="flex items-center gap-1.5">
+            <BrandTile platform="x" size={20} radius={5} />
+            <BrandTile platform="linkedin" size={20} radius={5} />
+          </span>
+        ) : null}
+      </div>
+      {/* Composer */}
+      <div className="m-3 flex items-center gap-3 rounded-2xl border border-[#3a3a37] bg-[#262624] px-3.5 py-2.5">
+        <span className="text-[16px] leading-none text-[#a8a6a1]" aria-hidden>
+          +
+        </span>
+        <span className={`min-w-0 flex-1 truncate text-[13.5px] ${show.typed ? "text-[#ecebe8]" : "text-[#7c7a75]"}`}>
+          {show.typed || "Write a message…"}
+          {show.typed ? <span className="ml-px inline-block h-[14px] w-px translate-y-[2px] animate-pulse bg-[#ecebe8]" /> : null}
+        </span>
+        <span
+          className={`flex size-7 items-center justify-center rounded-lg transition-colors ${show.typed ? "bg-[#d97757] text-white" : "bg-[#3a3a37] text-[#7c7a75]"}`}
+          aria-hidden
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 19V5M5 12l7-7 7 7" />
+          </svg>
+        </span>
+      </div>
+    </div>
+  );
+}
 
 export function DevGrid() {
   return (
@@ -47,7 +291,7 @@ export function DevGrid() {
         body="Posts your agent schedules sit on the same calendar as yours. Review, edit or cancel them before they go out."
       >
         <div className="h-[560px] w-[900px] overflow-hidden rounded-2xl shadow-[0_30px_70px_-30px_rgba(0,0,0,0.55)]">
-          <CalendarDemo productShot sidebar={false} showAgent />
+          <CalendarDemo productShot sidebar={false} showAgent fromHour={11} />
         </div>
       </Tile>
       <Tile
@@ -63,14 +307,12 @@ export function DevGrid() {
       <Tile
         className="md:col-span-3"
         tone="blue"
-        layout="bottom"
+        layout="top"
         label="Access"
         title="Take access back in one click"
         body="Every app you've signed in from is listed on your Developers page. Revoke one and it's cut off immediately."
       >
-        <div className="pt-16">
-          <RevokeShot />
-        </div>
+        <RevokeShot />
       </Tile>
     </div>
   );
@@ -288,12 +530,18 @@ function DocsShot() {
 
 // ── Connected apps + revoke ──────────────────────────────────────────────
 
-type AppRow = { name: string; sub: string };
+type AppRow = { name: string; logo: string; sub: string };
 const APPS: AppRow[] = [
-  { name: "Claude", sub: "Halden Coffee · connected 23 Sep 2026 · last used 23 Sep 2026" },
-  { name: "Cursor", sub: "Halden Coffee · connected 14 Sep 2026 · last used 22 Sep 2026" },
+  { name: "Claude", logo: "claude", sub: "Halden Coffee · connected 23 Sep 2026 · last used 23 Sep 2026" },
+  { name: "Cursor", logo: "cursor", sub: "Halden Coffee · connected 14 Sep 2026 · last used 22 Sep 2026" },
+  { name: "ChatGPT", logo: "chatgpt", sub: "Halden Coffee · connected 18 Sep 2026 · last used 21 Sep 2026" },
 ];
 
+/**
+ * The Developers page's connected apps, as a fixed-size window: the revoke
+ * dialog opens centred inside it over a dimmed backdrop (never outside it),
+ * and the revoked row stays in place, greyed out, so nothing jumps.
+ */
 export function RevokeShot() {
   const [dialog, setDialog] = useState(false);
   const [revoked, setRevoked] = useState(false);
@@ -304,66 +552,60 @@ export function RevokeShot() {
     setPressed(false);
     await step(1600);
     setDialog(true);
-    await step(1700);
+    await step(1900);
     setPressed(true);
     await step(250);
     setDialog(false);
+    setPressed(false);
     setRevoked(true);
-    await step(2600);
+    await step(2800);
   });
-  const apps = revoked ? APPS.filter((a) => a.name !== "Cursor") : APPS;
   return (
-    <div ref={ref} className="relative w-[640px]">
-      <div className={`${shot} overflow-hidden`}>
-        <div className="border-b border-line px-5 py-4">
-          <div className="font-display text-[15px] font-semibold tracking-[-0.01em] text-ink">Connected apps</div>
-          <p className="mt-0.5 text-[13px] text-muted">Tools you&apos;ve signed in to Postbase from. Revoking cuts off their access immediately.</p>
-        </div>
-        {apps.map((a, i) => (
-          <div key={a.name} className={`flex items-center gap-3 px-5 py-3.5 ${i < apps.length - 1 ? "border-b border-line" : ""}`}>
-            <ClientLogo id={a.name === "Claude" ? "claude" : "cursor"} size={36} />
+    <div ref={ref} className={`${shot} relative h-[420px] w-[640px] overflow-hidden`}>
+      <div className="border-b border-line px-5 py-4">
+        <div className="font-display text-[15px] font-semibold tracking-[-0.01em] text-ink">Connected apps</div>
+        <p className="mt-0.5 text-[13px] text-muted">Tools you&apos;ve signed in to Postbase from. Revoking cuts off their access immediately.</p>
+      </div>
+      {APPS.map((a, i) => {
+        const gone = revoked && a.name === "Cursor";
+        return (
+          <div key={a.name} className={`flex items-center gap-3 px-5 py-3.5 transition-opacity duration-500 ${i < APPS.length - 1 ? "border-b border-line" : ""} ${gone ? "opacity-50" : ""}`}>
+            <ClientLogo id={a.logo} size={36} />
             <div className="min-w-0">
               <div className="text-sm font-semibold text-ink">{a.name}</div>
-              <div className="mt-0.5 truncate text-xs text-muted">{a.sub}</div>
+              <div className="mt-0.5 truncate text-xs text-muted">{gone ? "Access revoked just now" : a.sub}</div>
             </div>
             <span
               className={`ml-auto rounded-lg px-2.5 py-1.5 text-xs font-semibold ${
-                a.name === "Cursor" && dialog ? "bg-terra/10 text-terra" : "text-muted"
+                gone ? "text-muted" : a.name === "Cursor" && dialog ? "bg-[#fbe9e7] text-[#b3382d]" : "text-muted"
               }`}
             >
-              Revoke
+              {gone ? "Revoked" : "Revoke"}
             </span>
           </div>
-        ))}
-        {revoked ? (
-          <div className="swap-in border-t border-line px-5 py-3 text-[12.5px] text-muted">Cursor no longer has access to Halden Coffee.</div>
-        ) : null}
-      </div>
+        );
+      })}
 
-      {dialog ? (
-        <div
-          className="swap-in absolute left-24 top-6 w-[380px] rounded-2xl border border-line bg-surface p-6 shadow-lg"
-          style={{
-            backgroundImage: [
-              "radial-gradient(120% 100% at 0% 0%, #d14a3e33, transparent 60%)",
-              "radial-gradient(110% 90% at 100% 100%, #e3a72c2b, transparent 58%)",
-            ].join(","),
-          }}
-        >
+      {/* The dialog lives inside the window, over a dimmed backdrop. */}
+      <div
+        className={`absolute inset-0 flex items-center justify-center bg-[#14161a]/35 p-6 transition-opacity duration-300 ${dialog ? "opacity-100" : "pointer-events-none opacity-0"}`}
+        aria-hidden={!dialog}
+      >
+        <div className={`w-[360px] rounded-2xl border border-line bg-surface p-6 shadow-lg transition-transform duration-300 ${dialog ? "scale-100" : "scale-95"}`}>
           <div className="text-center">
-            <span className="mx-auto grid size-12 place-items-center rounded-full text-white" style={{ backgroundColor: "#d14a3e" }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <span className="mx-auto grid size-11 place-items-center rounded-full text-white" style={{ backgroundColor: "#d14a3e" }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <circle cx="12" cy="12" r="10" />
                 <path d="m4.9 4.9 14.2 14.2" />
               </svg>
             </span>
-            <div className="mt-4 font-display text-lg font-semibold tracking-[-0.01em] text-ink">Revoke Cursor?</div>
-            <p className="mx-auto mt-2 max-w-sm text-[13px] leading-relaxed text-muted">
-              Cursor will immediately lose access to the <b className="text-ink">Halden Coffee</b> workspace. Any agent using this connection stops
-              working until it&apos;s reconnected.
+            <div className="mt-3.5 font-display text-lg font-semibold tracking-[-0.01em] text-ink">Revoke Cursor?</div>
+            <p className="mx-auto mt-1.5 text-[13px] leading-relaxed text-muted">
+              Cursor will immediately lose access to <b className="text-ink">Halden Coffee</b>. Any agent using this connection stops working until
+              it&apos;s reconnected.
             </p>
           </div>
-          <div className="mt-6 flex gap-2.5">
+          <div className="mt-5 flex gap-2.5">
             <span className="flex-1 rounded-full border border-line px-4 py-2.5 text-center text-sm font-medium text-muted">Cancel</span>
             <span
               className={`flex-1 rounded-full bg-[#d14a3e] px-5 py-2.5 text-center font-display text-sm font-semibold text-white shadow-sm transition-transform ${
@@ -374,7 +616,7 @@ export function RevokeShot() {
             </span>
           </div>
         </div>
-      ) : null}
+      </div>
     </div>
   );
 }

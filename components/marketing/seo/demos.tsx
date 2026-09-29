@@ -133,14 +133,12 @@ export function ClientTiles({ name }: { name: string }) {
       <Tile
         className="md:col-span-3"
         tone="blue"
-        layout="bottom"
+        layout="top"
         label="Access"
         title="Take access back in one click"
         body={`${name} shows up under Connected apps on your Developers page. Revoke it and it's cut off immediately.`}
       >
-        <div className="pt-16">
-          <RevokeShot />
-        </div>
+        <RevokeShot />
       </Tile>
       <Tile
         className="md:col-span-5"
@@ -151,7 +149,7 @@ export function ClientTiles({ name }: { name: string }) {
         body="Agent posts sit next to yours. Review, edit or cancel them before they go out."
       >
         <div className="h-[560px] w-[900px] overflow-hidden rounded-2xl shadow-[0_30px_70px_-30px_rgba(0,0,0,0.55)]">
-          <CalendarDemo productShot sidebar={false} showAgent />
+          <CalendarDemo productShot sidebar={false} showAgent fromHour={11} />
         </div>
       </Tile>
     </div>
@@ -191,7 +189,7 @@ export function AlternativeTiles() {
         body="Posts you write and posts your agent schedules, across every network, in a month, week or day view."
       >
         <div className="h-[560px] w-[900px] overflow-hidden rounded-2xl shadow-[0_30px_70px_-30px_rgba(0,0,0,0.55)]">
-          <CalendarDemo productShot sidebar={false} showAgent />
+          <CalendarDemo productShot sidebar={false} showAgent fromHour={11} />
         </div>
       </Tile>
     </div>

@@ -25,6 +25,7 @@ export default function IntegrationsPage() {
         <SeoHero
           trail={TRAIL}
           h1={["Every network,", "one calendar"]}
+          icons={[{ before: "network,", brands: NETWORKS.map((n) => n.id) }]}
           sub="Connect your accounts once, then write, schedule and publish to all of them from the composer, the calendar or your AI agent."
           frame="Your whole week in one calendar"
         >

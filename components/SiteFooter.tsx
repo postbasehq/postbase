@@ -3,6 +3,7 @@ import { Logo } from "./Logo";
 import { BrandTile } from "./BrandTile";
 import { ClientLogo } from "./ClientLogo";
 import { CookieSettingsLink } from "./Analytics";
+import { FooterWordmark } from "./FooterWordmark";
 
 /** Optional icon before a link: a network tile ("brand:x"), an AI tool logo ("client:claude") or an arrow. */
 type Icon = `brand:${string}` | `client:${string}` | "arrow";
@@ -40,6 +41,7 @@ const COLUMNS: { title: string; links: [string, string, Icon?][] }[] = [
     title: "AI tools",
     links: [
       ["Claude", "/ai/claude", "client:claude"],
+      ["ChatGPT", "/ai/chatgpt", "client:chatgpt"],
       ["Claude Code", "/ai/claude-code", "client:claude-code"],
       ["Cursor", "/ai/cursor", "client:cursor"],
       ["VS Code", "/ai/vscode", "client:vscode"],
@@ -115,7 +117,11 @@ export function SiteFooter() {
             </div>
           ))}
         </div>
-        <p className="mt-12 text-[12px] leading-relaxed text-muted">
+        {/* The wordmark hangs from this rule, its letters cut flat against it. */}
+        <div className="mt-14 border-t border-line">
+          <FooterWordmark />
+        </div>
+        <p className="mt-10 text-[12px] leading-relaxed text-muted">
           © {new Date().getFullYear()} Berkway Group Limited, trading as Postbase. Registered in England and Wales. Not
           affiliated with the networks or AI tools named on this site.
         </p>

@@ -5,6 +5,7 @@ import { FactUI } from "@/components/marketing/seo/FactUI";
 import type { FactUi } from "@/lib/seo/networks";
 import { Breadcrumbs, PrimaryButton, SecondaryButton, Underlined, card, wrap } from "@/components/marketing/ui";
 import { LogoMark } from "@/components/marketing/Decor";
+import { CyclingLogos } from "@/components/marketing/seo/CyclingLogos";
 
 /*
  * Sections for the SEO landing pages (/integrations, /ai, /alternatives). One
@@ -16,19 +17,24 @@ import { LogoMark } from "@/components/marketing/Decor";
 export const section = `${wrap} pt-24 md:pt-32`;
 
 /** The brand logo in a small tilted white tile, sized to sit inside a heading. */
-function TitleTile({ brand, client, tilt }: { brand?: string; client?: string; tilt: number }) {
+function TitleTile({ brand, client, brands, tilt }: { brand?: string; client?: string; brands?: string[]; tilt: number }) {
   return (
     <span
       aria-hidden
       style={{ transform: `rotate(${tilt}deg)` }}
-      className="mx-[0.08em] inline-flex size-[0.92em] -translate-y-[0.06em] items-center justify-center rounded-[0.2em] border border-line bg-surface align-middle shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]"
+      className="mx-[0.08em] inline-flex size-[0.92em] -translate-y-[0.06em] items-center justify-center overflow-hidden rounded-[0.2em] border border-line bg-surface align-middle shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]"
     >
-      <BigLogo brand={brand} client={client} size="0.5em" />
+      {brands ? (
+        <CyclingLogos items={brands.map((b) => <BigLogo key={b} brand={b} size="0.5em" />)} />
+      ) : (
+        <BigLogo brand={brand} client={client} size="0.5em" />
+      )}
     </span>
   );
 }
 
-type HeroIcon = { before: string; brand?: string; client?: string };
+/** `brands` instead of `brand`/`client` makes the tile cycle through those logos. */
+type HeroIcon = { before: string; brand?: string; client?: string; brands?: string[] };
 
 /** Puts a logo tile before the first word of `text` that matches an icon. */
 function withIcons(text: string, icons: HeroIcon[], used: Set<HeroIcon>) {
@@ -42,7 +48,7 @@ function withIcons(text: string, icons: HeroIcon[], used: Set<HeroIcon>) {
       <span key={i}>
         {i ? " " : ""}
         <span className="whitespace-nowrap">
-          <TitleTile brand={icon.brand} client={icon.client} tilt={used.size % 2 ? 6 : -6} /> {w}
+          <TitleTile brand={icon.brand} client={icon.client} brands={icon.brands} tilt={used.size % 2 ? 6 : -6} /> {w}
         </span>
       </span>,
     ];
@@ -87,7 +93,7 @@ export function SeoHero({
               {first}{" "}
               {tail ? (
                 <span className="whitespace-nowrap">
-                  <TitleTile brand={tail.brand} client={tail.client} tilt={used.size % 2 ? -6 : 6} />{" "}
+                  <TitleTile brand={tail.brand} client={tail.client} brands={tail.brands} tilt={used.size % 2 ? -6 : 6} />{" "}
                   <Underlined>{h1[1]}</Underlined>
                 </span>
               ) : (

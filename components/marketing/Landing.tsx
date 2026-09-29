@@ -8,7 +8,7 @@ import { AudienceProvider, AudienceToggle, Swap, useAudience, type Audience } fr
 import { DevShot } from "@/components/marketing/DevShot";
 import { CalendarDemo } from "@/components/marketing/CalendarDemo";
 import { CreatorGrid } from "@/components/marketing/CreatorGrid";
-import { DevGrid } from "@/components/marketing/DevGrid";
+import { DevGrid, McpOrRest } from "@/components/marketing/DevGrid";
 import { HeroDecor } from "@/components/marketing/Decor";
 import { Fit } from "@/components/marketing/Fit";
 import { WhoFor as WhoForList } from "@/components/marketing/WhoFor";
@@ -95,7 +95,7 @@ const HERO: Record<
       </>
     ),
     sub: "Connect Claude, Cursor or your own code over MCP or the REST API. Every post your agent schedules lands in your calendar.",
-    cta: { label: "Get an API key", href: "/login" },
+    cta: { label: "Connect an agent", href: "/login" },
     frame: "Connect your agent from the Developers page",
   },
 };
@@ -200,7 +200,16 @@ function Features() {
             : "MCP for your AI tools, a REST API for everything else, and a calendar that shows what they did."
         }
       />
-      <Swap k={audience}>{creators ? <CreatorGrid /> : <DevGrid />}</Swap>
+      <Swap k={audience}>
+        {creators ? (
+          <CreatorGrid />
+        ) : (
+          <>
+            <McpOrRest />
+            <DevGrid />
+          </>
+        )}
+      </Swap>
     </section>
   );
 }

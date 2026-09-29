@@ -100,12 +100,17 @@ export function CalendarDemo({
   showAgent = false,
   productShot = false,
   sidebar = productShot,
+  fromHour = FIRST_HOUR,
 }: {
   showAgent?: boolean;
   productShot?: boolean;
   /** Show the app sidebar (defaults to on for the product shot). */
   sidebar?: boolean;
+  /** First hour row to show. Cropped frames start later so the animated
+   *  part of the week (12:00 to 15:00) is in view without scrolling. */
+  fromHour?: number;
 }) {
+  const hours = HOURS.filter((h) => h >= fromHour);
   const rootRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
   const [entered, setEntered] = useState(!productShot);
@@ -184,7 +189,7 @@ export function CalendarDemo({
     };
   }, [productShot, inView]);
 
-  const events = (added ? [...EVENTS, added] : EVENTS).map((e) => ({
+  const events = (added ? [...EVENTS, added] : EVENTS).filter((e) => e.hour >= fromHour).map((e) => ({
     ...e,
     day: moved[e.id]?.day ?? e.day,
     status: statusOf[e.id] ?? e.status,
@@ -263,7 +268,7 @@ export function CalendarDemo({
                 <div className="relative">
                   <div className="grid" style={{ gridTemplateColumns: `${GUTTER}px repeat(7, minmax(0, 1fr))` }}>
                     <div className="border-r border-line">
-                      {HOURS.map((h) => (
+                      {hours.map((h) => (
                         <div key={h} style={{ height: ROW }} className="relative">
                           <span className="absolute right-2 top-1 text-[11px] tabular-nums text-muted">{pad(h)}:00</span>
                         </div>
@@ -271,7 +276,7 @@ export function CalendarDemo({
                     </div>
                     {DAYS.map((d, day) => (
                       <div key={d.dow} className="border-r border-line last:border-r-0">
-                        {HOURS.map((h) => (
+                        {hours.map((h) => (
                           <div key={h} className="border-b border-line/60" style={{ height: ROW, ...(isPast(day, h) ? HATCH : null) }} />
                         ))}
                       </div>
@@ -293,7 +298,7 @@ export function CalendarDemo({
                         style={{
                           left: colLeft(ev.day),
                           width: colWidth,
-                          top: (ev.hour - FIRST_HOUR) * ROW + 4 + stack * (PILL_H + 4),
+                          top: (ev.hour - fromHour) * ROW + 4 + stack * (PILL_H + 4),
                           height: PILL_H,
                           opacity: entered ? 1 : 0,
                           transform: entered ? (isLifted ? "scale(1.06) rotate(-1.5deg)" : "none") : "translateY(6px) scale(0.97)",
@@ -328,7 +333,7 @@ export function CalendarDemo({
                       className="pointer-events-none absolute z-30 drop-shadow-md"
                       style={{
                         left: `calc(${colLeft(pointer.day)} + (100% - ${GUTTER}px) / 14)`,
-                        top: (pointer.hour - FIRST_HOUR) * ROW + 12,
+                        top: (pointer.hour - fromHour) * ROW + 12,
                         opacity: pointer.visible ? 1 : 0,
                         transition: "left 750ms cubic-bezier(0.3,0.7,0.2,1), top 750ms cubic-bezier(0.3,0.7,0.2,1), opacity 300ms ease",
                       }}
@@ -341,7 +346,7 @@ export function CalendarDemo({
             </div>
 
             {toast ? (
-              <div className="swap-in pointer-events-none absolute bottom-3 right-3 z-40 inline-flex items-center gap-2 rounded-full bg-ink px-3.5 py-2 text-[12px] font-medium text-surface shadow-lg">
+              <div className="swap-in pointer-events-none absolute bottom-3 left-1/2 z-40 inline-flex -translate-x-1/2 whitespace-nowrap items-center gap-2 rounded-full bg-ink px-3.5 py-2 text-[12px] font-medium text-surface shadow-lg">
                 <span className="flex size-4 items-center justify-center rounded-full bg-[#188038] text-[10px] font-bold text-white">✓</span>
                 {toast}
               </div>

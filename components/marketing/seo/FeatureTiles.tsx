@@ -22,7 +22,7 @@ const SHOTS: Record<ShotKey, { span: 2 | 3 | 5; layout: "top" | "bottom" | "side
   month: { span: 3, layout: "top", el: () => <MonthShot /> },
   mcp: { span: 3, layout: "top", el: () => <McpShot /> },
   queue: { span: 3, layout: "bottom", el: () => <div className="pt-16"><QueueShot /></div> },
-  revoke: { span: 3, layout: "bottom", el: () => <div className="pt-16"><RevokeShot /></div> },
+  revoke: { span: 3, layout: "top", el: () => <RevokeShot /> },
   agent: { span: 2, layout: "bottom", el: () => <div className="pt-16"><AgentShot /></div> },
   tools: { span: 2, layout: "bottom", el: () => <div className="pt-16"><ToolsShot /></div> },
   media: { span: 2, layout: "top", el: () => <MediaShot /> },
@@ -41,7 +41,7 @@ const SHOTS: Record<ShotKey, { span: 2 | 3 | 5; layout: "top" | "bottom" | "side
     layout: "side",
     el: () => (
       <div className={`h-[560px] w-[900px] ${box}`}>
-        <CalendarDemo productShot sidebar={false} showAgent />
+        <CalendarDemo productShot sidebar={false} showAgent fromHour={11} />
       </div>
     ),
   },

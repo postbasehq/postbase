@@ -120,6 +120,55 @@ export const CLIENTS: AiClient[] = [
     ],
   },
   {
+    slug: "chatgpt",
+    logo: "chatgpt",
+    name: "ChatGPT",
+    blurb: "Add Postbase as an MCP app and let ChatGPT post.",
+    kind: "chat",
+    metaTitle: "Post to social media from ChatGPT (MCP connector)",
+    metaDescription:
+      "Add Postbase to ChatGPT as a custom MCP app in developer mode and let ChatGPT draft and schedule posts to X, LinkedIn, Bluesky and Mastodon. No API key.",
+    eyebrow: "Postbase for ChatGPT",
+    h1: ["Let ChatGPT post to", "social media"],
+    h1Icon: "ChatGPT",
+    sub: "Add Postbase to ChatGPT as a custom MCP app. Ask for a post in plain English and ChatGPT writes it, fits it to each network and schedules it to the accounts you've connected.",
+    setup: {
+      language: "url",
+      code: MCP_URL,
+      instruction:
+        "In ChatGPT, turn on developer mode, create a custom MCP app with this URL and choose OAuth. You'll sign in to Postbase in a browser window — no API key.",
+    },
+    steps: [
+      {
+        title: "Add the app",
+        body: "In ChatGPT on the web, turn on developer mode in Settings, then create a custom MCP app. Name it Postbase, paste the server URL and choose OAuth.",
+      },
+      SIGN_IN_STEP,
+      ASK_STEP("ChatGPT"),
+    ],
+    prompts: [
+      "Turn this blog post into an X thread and a LinkedIn post, and schedule both for Tuesday at 9am.",
+      "What's scheduled for this week? Anything going out on Friday afternoon?",
+      "Write three Bluesky posts announcing our launch and space them a day apart.",
+      "Write a LinkedIn post about our hiring news and save it as a draft so I can add a photo.",
+    ],
+    faqs: [
+      [
+        "Which ChatGPT plans can add Postbase?",
+        "Custom MCP apps need ChatGPT's developer mode, which OpenAI offers on paid plans. Where exactly the setting lives changes from time to time, so check OpenAI's help article on developer mode if you can't find it.",
+      ],
+      [
+        "Can ChatGPT attach images or videos?",
+        "Not yet. The connection handles text posts and threads. For media, ask ChatGPT for a draft, then add the image or video in the Postbase composer and schedule it from there.",
+      ],
+      [
+        "Can ChatGPT post without asking me first?",
+        "ChatGPT asks you to confirm actions that change things, like scheduling a post. Everything it schedules also lands in your Postbase calendar, where you can edit or cancel it before it goes out.",
+      ],
+      ...COMMON_FAQS("ChatGPT"),
+    ],
+  },
+  {
     slug: "claude-code",
     logo: "claude-code",
     name: "Claude Code",
