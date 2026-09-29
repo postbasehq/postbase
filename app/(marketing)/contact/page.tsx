@@ -161,7 +161,7 @@ const shortDate = (d: string) => {
 
 /** X, GitHub and the blog as tiles, then the latest posts as a Postbase-style queue. */
 function FollowCard() {
-  const posts = listPosts().slice(0, 3);
+  const posts = listPosts().slice(0, 8);
   const glyph = (d: string) => (
     <svg viewBox="0 0 24 24" aria-hidden className="size-full" fill="currentColor">
       <path d={d} />
@@ -170,7 +170,8 @@ function FollowCard() {
   const channels = [
     { href: "https://x.com/postbasehq", label: "X", handle: "@postbasehq", bg: "#000000", mark: glyph(BRANDS.x.path) },
     { href: "https://github.com/postbasehq/postbase", label: "GitHub", handle: "postbasehq", bg: "#24292f", mark: glyph(GITHUB_PATH) },
-    { href: "/blog", label: "Blog", handle: "Guides and updates", bg: "#2b59d9", mark: <LogoMark color="#ffffff" className="size-full" /> },
+    // The Postbase mark isn't a glyph to crop: it hangs whole from the flat top edge, clear of the corner.
+    { href: "/blog", label: "Blog", handle: "Guides and updates", bg: "#2b59d9", mark: null },
   ];
   return (
     <div className={`${card} flex flex-col p-8`}>
@@ -193,19 +194,25 @@ function FollowCard() {
             >
               {c.mark}
             </span>
+            {c.mark === null ? (
+              <LogoMark color="#ffffff" className="pointer-events-none absolute right-5 top-0 -z-10 w-[46px]" />
+            ) : null}
             <span className="block font-display text-[14px] font-semibold">{c.label}</span>
             <span className="block truncate text-[12px] text-[#dde3ee]">{c.handle}</span>
           </a>
         ))}
       </div>
 
-      {/* The latest real posts, each filled with a brand colour and the Postbase mark cropped in its corner. */}
-      <ul className="mt-4 flex flex-1 flex-col gap-2">
+      {/* The latest real posts, each filled with a brand colour and the Postbase mark hanging from its top edge.
+          The list fills whatever height the Company card sets without adding to it: it's absolutely
+          positioned, and flex-wrap pushes any row that won't fit whole into a hidden second column. */}
+      <div className="relative mt-4 min-h-[196px] flex-1">
+      <ul className="absolute inset-0 flex flex-col flex-wrap gap-2 overflow-hidden">
         {posts.map((p, i) => {
           const tone = TONES[i % 3];
           const amber = tone === "#e3a72c";
           return (
-            <li key={p.slug}>
+            <li key={p.slug} className="w-full">
               <a
                 href={`/blog/${p.slug}`}
                 className="relative isolate block overflow-hidden rounded-2xl p-3 pr-16"
@@ -213,7 +220,7 @@ function FollowCard() {
               >
                 <LogoMark
                   color={amber ? "#14161a" : "#ffffff"}
-                  className="pointer-events-none absolute -right-1.5 -top-1.5 -z-10 w-[52px]"
+                  className="pointer-events-none absolute right-5 top-0 -z-10 w-[40px]"
                 />
                 <span className="block truncate text-[14px] font-medium">{p.title}</span>
                 <span className="block text-[12px]" style={{ color: amber ? "#3d3420" : "#dde3ee" }}>
@@ -224,6 +231,7 @@ function FollowCard() {
           );
         })}
       </ul>
+      </div>
     </div>
   );
 }
@@ -234,8 +242,8 @@ function CompanyCard() {
     <div className={`${card} flex flex-col p-8`}>
       <h2 className="font-display text-[22px] font-semibold tracking-[-0.01em] text-ink">Company details</h2>
       <p className="mt-2 text-[15px] leading-relaxed text-muted">
-        Postbase is a trading name of Berkway Group Limited, the holding company behind it. Your agreement for the
-        hosted service is with Berkway Group Limited.
+        Postbase is a trading name of Berkway, the holding company behind it. Your agreement for the
+        hosted service is with Berkway.
       </p>
 
       <div className="mt-6 flex flex-1 flex-col justify-center rounded-2xl border border-line bg-surface-2 p-4">
@@ -245,11 +253,27 @@ function CompanyCard() {
             {icon("M3 21h18M5 21V7l7-4 7 4v14M9 21v-4h6v4M9 10h.01M15 10h.01M9 14h.01M15 14h.01")}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block font-display text-[15px] font-semibold text-ink">Berkway Group Limited</span>
+            <span className="block font-display text-[15px] font-semibold text-ink">Berkway</span>
             <span className="block text-[12px] text-muted">Registered in England and Wales</span>
           </span>
           <span className="shrink-0 rounded-full bg-ink px-2.5 py-1 text-[11px] font-semibold text-surface">Holding company</span>
         </div>
+        {/* The registered details, as they appear in the Terms. */}
+        <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 rounded-xl border border-line bg-surface px-3.5 py-3 text-[13px]">
+          <dt className="text-muted">Company number</dt>
+          <dd className="font-medium tabular-nums text-ink">
+            <a
+              href="https://berkway.co.uk"
+              target="_blank"
+              rel="noreferrer"
+              className="underline decoration-line underline-offset-2 transition-colors hover:decoration-ink"
+            >
+              16591862
+            </a>
+          </dd>
+          <dt className="text-muted">Registered office</dt>
+          <dd className="font-medium text-ink">3rd Floor, 86-90 Paul Street, London, EC2A 4NE</dd>
+        </dl>
 
         {/* "trading as" link between the two */}
         <div className="flex items-center gap-3 py-1 pl-[34px]" aria-hidden>

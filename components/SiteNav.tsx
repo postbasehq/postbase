@@ -21,10 +21,11 @@ export function SiteNav() {
     <div className="sticky top-0 z-50">
       <OpenSourceBanner />
       <nav className="bg-ground/85 backdrop-blur-md backdrop-saturate-150">
-        {/* Full width; on lg the links sit dead centre between logo and actions. */}
-        <div className="flex h-16 items-center gap-4 px-5 md:gap-6 md:px-8 lg:grid lg:grid-cols-[1fr_auto_1fr]">
+        {/* Full width. On xl the links sit dead centre between logo and actions;
+            on lg there isn't room for that, so they follow the logo. */}
+        <div className="flex h-16 items-center gap-4 px-5 md:gap-6 md:px-8 xl:grid xl:grid-cols-[1fr_auto_1fr]">
           <Logo />
-          <div className="hidden items-center gap-7 lg:flex">
+          <div className="hidden items-center gap-5 whitespace-nowrap lg:flex xl:gap-7">
             {BEFORE.map((l) => (
               <a key={l.label} href={l.href} className="text-[14px] font-medium text-muted transition-colors hover:text-ink">
                 {l.label}
@@ -39,11 +40,14 @@ export function SiteNav() {
             ))}
           </div>
           <div className="ml-auto flex items-center justify-end gap-3.5">
-            <GitHubButton />
+            {/* Hidden on lg, where the nav links need the room. */}
+            <span className="lg:max-xl:hidden">
+              <GitHubButton />
+            </span>
             <ThemeToggle />
             <Link
               href="/login"
-              className="hidden rounded-full border border-line px-4 py-2 font-display text-[14px] font-semibold text-ink transition-colors hover:border-ink sm:inline"
+              className="hidden whitespace-nowrap rounded-full border border-line px-4 py-2 font-display text-[14px] font-semibold text-ink transition-colors hover:border-ink sm:inline"
             >
               Log in
             </Link>
