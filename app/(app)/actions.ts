@@ -17,6 +17,7 @@ import { revokeAccess as revokeMetaAccess, type MetaTokens } from "@/lib/platfor
 import { atChannelLimit, atAiLimit, hasAccess, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
 import { connectBluesky } from "@/lib/platforms/bluesky";
 import { isRepeatEvery } from "@/lib/publish/repeat";
+import { getTimeZone, zonedTimeToUtc } from "@/lib/tz";
 import {
   generateSoulImage,
   higgsfieldConfigured,
@@ -468,6 +469,137 @@ export async function cancelPost(formData: FormData) {
   await supabase.from("post_targets").update({ status: "draft" }).eq("post_id", postId);
 
   revalidatePath("/queue");
+}
+
+/**
+ * Move a scheduled post to a new local date and time (calendar drag and drop).
+ * Only a still-scheduled post can move, and only to a time in the future; the
+ * publisher picks posts up by scheduled_at, so nothing else needs changing.
+ */
+export async function reschedulePost(
+  postId: string,
+  dayKey: string,
+  hour: number,
+  minute: number,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (
+    !postId ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(dayKey) ||
+    !Number.isInteger(hour) || hour < 0 || hour > 23 ||
+    !Number.isInteger(minute) || minute < 0 || minute > 59
+  ) {
+    return { ok: false, error: "That isn't a valid time." };
+  }
+  const supabase = await createClient();
+  const orgId = await getCurrentOrgId();
+  if (!orgId) return { ok: false, error: "No workspace found for this user." };
+
+  const scheduledAt = zonedTimeToUtc(dayKey, hour, minute, await getTimeZone());
+  if (Date.parse(scheduledAt) <= Date.now()) return { ok: false, error: "That time has already passed." };
+  if (!(await hasAccess(supabase, orgId))) return { ok: false, error: NO_PLAN_MESSAGE };
+
+  // Scoped to the org and to posts that are still waiting, so a post the
+  // publisher has already picked up (or another tenant's post) never moves.
+  const { data: updated, error } = await supabase
+    .from("posts")
+    .update({ scheduled_at: scheduledAt })
+    .eq("id", postId)
+    .eq("org_id", orgId)
+    .eq("status", "scheduled")
+    .select("id");
+  if (error) return { ok: false, error: error.message };
+  if (!updated || updated.length === 0) {
+    return { ok: false, error: "This post can't be moved any more. It may already be publishing." };
+  }
+
+  revalidatePath("/calendar");
+  revalidatePath("/queue");
+  return { ok: true };
+}
+
+/**
+ * Re-post an already published post at a new local date and time (calendar drag
+ * and drop). Creates a scheduled copy with the same text, thread, channels,
+ * per-channel versions, media and network settings; the original is untouched.
+ * The copy doesn't repeat, even if the original did.
+ */
+export async function repostPost(
+  postId: string,
+  dayKey: string,
+  hour: number,
+  minute: number,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (
+    !postId ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(dayKey) ||
+    !Number.isInteger(hour) || hour < 0 || hour > 23 ||
+    !Number.isInteger(minute) || minute < 0 || minute > 59
+  ) {
+    return { ok: false, error: "That isn't a valid time." };
+  }
+  const supabase = await createClient();
+  const orgId = await getCurrentOrgId();
+  if (!orgId) return { ok: false, error: "No workspace found for this user." };
+
+  const scheduledAt = zonedTimeToUtc(dayKey, hour, minute, await getTimeZone());
+  if (Date.parse(scheduledAt) <= Date.now()) return { ok: false, error: "That time has already passed." };
+  if (!(await hasAccess(supabase, orgId))) return { ok: false, error: NO_PLAN_MESSAGE };
+
+  const { data: src } = await supabase
+    .from("posts")
+    .select("body, thread_tail, status, tiktok_privacy_level, tiktok_options, youtube_privacy, youtube_options, post_targets(channel_id, variant_body)")
+    .eq("id", postId)
+    .eq("org_id", orgId)
+    .maybeSingle();
+  if (!src) return { ok: false, error: "That post no longer exists." };
+  if (src.status !== "published") return { ok: false, error: "Only posts that have gone out can be re-posted." };
+  const targets = (src.post_targets ?? []) as { channel_id: string; variant_body: string | null }[];
+  if (targets.length === 0) return { ok: false, error: "This post has no channels to re-post to." };
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: copy, error } = await supabase
+    .from("posts")
+    .insert({
+      org_id: orgId,
+      author_id: user?.id ?? null,
+      body: src.body,
+      thread_tail: src.thread_tail ?? [],
+      scheduled_at: scheduledAt,
+      status: "scheduled",
+      tiktok_privacy_level: src.tiktok_privacy_level,
+      tiktok_options: src.tiktok_options,
+      youtube_privacy: src.youtube_privacy,
+      youtube_options: src.youtube_options,
+    })
+    .select("id")
+    .single();
+  if (error || !copy) return { ok: false, error: error?.message ?? "Couldn't create the copy." };
+
+  const { error: tErr } = await supabase.from("post_targets").insert(
+    targets.map((t) => ({
+      post_id: copy.id,
+      channel_id: t.channel_id,
+      variant_body: t.variant_body,
+      status: "scheduled",
+    })),
+  );
+  if (tErr) {
+    await supabase.from("posts").delete().eq("id", copy.id);
+    return { ok: false, error: tErr.message };
+  }
+
+  const { data: media } = await supabase.from("media").select("storage_url, type").eq("post_id", postId);
+  if (media && media.length > 0) {
+    await supabase
+      .from("media")
+      .insert(media.map((m) => ({ post_id: copy.id, storage_url: m.storage_url, type: m.type })));
+  }
+
+  revalidatePath("/calendar");
+  revalidatePath("/queue");
+  return { ok: true };
 }
 
 export async function deletePost(formData: FormData) {

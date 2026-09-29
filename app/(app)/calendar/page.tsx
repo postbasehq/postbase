@@ -120,7 +120,7 @@ export default async function CalendarPage({
   const supabase = await createClient();
   const { data } = await supabase
     .from("posts")
-    .select("id, body, scheduled_at, status, repeat_every, post_targets(channels(platform))")
+    .select("id, body, scheduled_at, status, repeat_every, post_targets(channels(platform)), media(storage_url, type)")
     .not("scheduled_at", "is", null)
     .gte("scheduled_at", `${addDays(firstKey, -1)}T00:00:00Z`)
     .lt("scheduled_at", `${addDays(lastKey, 2)}T00:00:00Z`)
@@ -156,6 +156,7 @@ export default async function CalendarPage({
     status: string;
     repeat_every: string | null;
     post_targets: { channels: { platform: string } | null }[] | null;
+    media: { storage_url: string | null; type: string | null }[] | null;
   };
 
   const posts: CalPost[] = [];
@@ -176,6 +177,11 @@ export default async function CalendarPage({
       minute,
       timeLabel: formatInTz(p.scheduled_at, tz, { hour: "2-digit", minute: "2-digit", hour12: false }),
       repeat: Boolean(p.repeat_every),
+      media: (() => {
+        const m = (p.media ?? []).find((x) => x.storage_url);
+        return m ? { url: m.storage_url!, type: m.type ?? "" } : undefined;
+      })(),
+      mediaCount: (p.media ?? []).filter((x) => x.storage_url).length,
     });
   }
 

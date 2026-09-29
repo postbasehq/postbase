@@ -36,3 +36,34 @@ export function localDateKey(iso: string, tz: string): string {
     return iso.slice(0, 10);
   }
 }
+
+/** Offset (ms) of a timezone from UTC at a given instant. */
+function tzOffsetMs(utcMs: number, tz: string): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(new Date(utcMs));
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
+  const asUtc = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"), get("second"));
+  return asUtc - utcMs;
+}
+
+/** The UTC ISO instant of a local wall-clock time (YYYY-MM-DD, hour, minute) in a
+ *  timezone. Re-checks the offset once so DST changeovers land correctly. */
+export function zonedTimeToUtc(dayKey: string, hour: number, minute: number, tz: string): string {
+  const [y, m, d] = dayKey.split("-").map(Number);
+  const wall = Date.UTC(y, m - 1, d, hour, minute);
+  try {
+    let utc = wall - tzOffsetMs(wall, tz);
+    utc = wall - tzOffsetMs(utc, tz);
+    return new Date(utc).toISOString();
+  } catch {
+    return new Date(wall).toISOString();
+  }
+}

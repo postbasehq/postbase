@@ -580,6 +580,26 @@ body {
   }
 }
 
+/* Calendar: the hover preview card popping in beside a post. */
+@keyframes pb-pop {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pb-pop {
+  animation: pb-pop 140ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pb-pop {
+    animation: none;
+  }
+}
+
 /* Marketing: gentle bob for the floating network tiles. */
 @keyframes float-y {
   0%,
