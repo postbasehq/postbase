@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, use
 import { useRouter } from "next/navigation";
 import { reschedulePost, repostPost } from "@/app/(app)/actions";
 import { Modal } from "@/components/Modal";
+import { LogoMark } from "@/components/marketing/Decor";
 
 // Layout effect on the client (avoids the SSR warning for a client component).
 const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -708,44 +709,98 @@ export function CalendarView({
 
       {hover && !drag ? <PostPreview post={hover.post} anchor={hover.rect} /> : null}
 
-      <Modal open={confirm !== null} onClose={() => setConfirm(null)} labelledBy="repost-title">
+      <Modal
+        open={confirm !== null}
+        onClose={() => setConfirm(null)}
+        labelledBy="repost-title"
+        panelClassName="relative isolate border border-line bg-surface shadow-[0_24px_64px_-16px_rgba(0,0,0,0.45)]"
+      >
         {confirm ? (
           <>
-            <h3 id="repost-title" className="font-display text-lg font-semibold tracking-[-0.01em] text-ink">
-              Do you want to re-post this?
-            </h3>
-            <p className="mt-2 text-sm text-muted">
-              This post has already gone out. A copy will be scheduled for{" "}
-              <span className="font-semibold text-ink">{dropLabel(confirm.target)}</span>
-              {confirm.post.platforms.length ? (
-                <> on {confirm.post.platforms.map((p) => PLATFORM_NAME[p] ?? p).join(", ")}</>
-              ) : null}
-              . The original stays where it is.
-            </p>
-            <div className="mt-4 rounded-xl border border-line bg-surface-2 px-3.5 py-3">
-              <div className="flex items-center gap-2">
-                <PlatformIcons platforms={confirm.post.platforms} status={confirm.post.status} />
-                <span className="text-[12px] tabular-nums text-muted">Originally {longDate(confirm.post.dayKey)} · {confirm.post.timeLabel}</span>
-              </div>
-              <p className="mt-1.5 line-clamp-3 whitespace-pre-line text-[13px] text-ink">{confirm.post.body || "(no text)"}</p>
-            </div>
-            {confirm.post.platforms.includes("x") ? (
-              <p className="mt-3 text-[12px] text-muted">
-                X may reject a post that&apos;s identical to a recent one. Edit the copy after scheduling if you want to change the wording.
+            {/* the Postbase mark, faint, hanging from the top edge */}
+            <LogoMark
+              color="currentColor"
+              edge="top"
+              className="pointer-events-none absolute right-6 top-0 -z-10 w-[190px] -scale-x-100 text-ink opacity-[0.06]"
+            />
+
+            <div className="px-6 pb-5 pt-6">
+              <span className="flex size-10 items-center justify-center rounded-xl bg-[#2b59d9] text-white shadow-sm">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="m17 2 4 4-4 4" />
+                  <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+                  <path d="m7 22-4-4 4-4" />
+                  <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+                </svg>
+              </span>
+              <h3
+                id="repost-title"
+                className="mt-4 font-display text-xl font-semibold tracking-[-0.02em] text-ink"
+              >
+                Do you want to re-post this?
+              </h3>
+              <p className="mt-1.5 text-balance text-sm leading-relaxed text-muted">
+                This post has already gone out. We&apos;ll schedule a copy and leave the original where it is.
               </p>
-            ) : null}
-            <div className="mt-5 flex justify-end gap-2.5">
+
+              {/* from → to */}
+              <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                <div className="rounded-xl border border-line px-3 py-2.5">
+                  <div className="text-[11px] font-medium uppercase tracking-[0.06em] text-muted">Went out</div>
+                  <div className="mt-0.5 text-[13px] font-semibold tabular-nums text-muted">
+                    {longDate(confirm.post.dayKey)} · {confirm.post.timeLabel}
+                  </div>
+                </div>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-muted" aria-hidden>
+                  <path d="M5 12h14M13 6l6 6-6 6" />
+                </svg>
+                <div className="rounded-xl border-2 border-[#2b59d9] px-3 py-2">
+                  <div className="text-[11px] font-medium uppercase tracking-[0.06em] text-[#2b59d9]">Re-post</div>
+                  <div className="mt-0.5 text-[13px] font-semibold tabular-nums text-ink">
+                    {longDate(confirm.target.dayKey)} · {pad(confirm.target.hour)}:{pad(confirm.target.minute)}
+                  </div>
+                </div>
+              </div>
+
+              {/* the post itself */}
+              <div className="mt-3 rounded-xl bg-surface-2 p-3.5">
+                <p className="line-clamp-4 whitespace-pre-line break-words text-[14px] leading-relaxed text-ink">
+                  {confirm.post.body || <span className="text-muted">No text</span>}
+                </p>
+                {confirm.post.platforms.length ? (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {confirm.post.platforms.map((p) => (
+                      <span
+                        key={p}
+                        className="flex items-center gap-1.5 rounded-full bg-surface py-0.5 pl-0.5 pr-2.5 text-[12px] font-medium text-ink"
+                      >
+                        <BrandTile platform={p} size={18} radius={9} />
+                        {PLATFORM_NAME[p] ?? p}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+
+              {confirm.post.platforms.includes("x") ? (
+                <p className="mt-3 text-balance text-[12px] leading-relaxed text-muted">
+                  X may reject a post that&apos;s identical to a recent one. You can edit the copy after it&apos;s scheduled.
+                </p>
+              ) : null}
+            </div>
+
+            <div className="flex justify-end gap-2.5 border-t border-line px-6 py-4">
               <button
                 type="button"
                 onClick={() => setConfirm(null)}
-                className="rounded-full border border-line px-4 py-2 font-display text-sm font-semibold text-ink transition-colors hover:bg-surface-2"
+                className="rounded-full border border-line px-5 py-2 font-display text-sm font-semibold text-ink transition-colors hover:bg-surface-2"
               >
                 No
               </button>
               <button
                 type="button"
                 onClick={confirmRepost}
-                className="rounded-full bg-[#2b59d9] px-4 py-2 font-display text-sm font-semibold text-white shadow-sm transition-shadow hover:shadow-md"
+                className="rounded-full bg-[#2b59d9] px-5 py-2 font-display text-sm font-semibold text-white shadow-sm transition-shadow hover:shadow-md"
               >
                 Yes, re-post
               </button>
