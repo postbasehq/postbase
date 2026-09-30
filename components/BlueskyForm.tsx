@@ -102,7 +102,7 @@ export function BlueskyForm({
       <p className="text-xs text-muted">
         This is an app-specific password, not your main Bluesky password. Revoke it anytime.
       </p>
-      {state?.error ? <p className="text-[13px] text-terra">{state.error}</p> : null}
+      {state?.error ? <p className="text-[13px] text-[#d14a3e]">{state.error}</p> : null}
 
       <div className="flex items-center gap-3 pt-1">
         <button

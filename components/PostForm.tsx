@@ -601,7 +601,9 @@ export function PostForm({
           {brokenSelected.length > 0 ? (
             <p className="mt-2 text-[12px] leading-snug text-muted">
               <span className="font-semibold text-[#d14a3e]">
-                {brokenSelected.map((c) => `${label(c.platform)}${c.handle ? ` ${c.handle}` : ""}`).join(", ")}{" "}
+                {new Intl.ListFormat("en", { type: "conjunction" }).format(
+                  brokenSelected.map((c) => `${label(c.platform)}${c.handle ? ` (${c.handle})` : ""}`),
+                )}{" "}
                 {brokenSelected.length === 1 ? "needs" : "need"} reconnecting.
               </span>{" "}
               Posts to {brokenSelected.length === 1 ? "it" : "them"} won’t go out until you{" "}
@@ -720,7 +722,7 @@ export function PostForm({
                 ))}
               </div>
             ) : null}
-            {uploadError ? <span className="text-xs text-terra">{uploadError}</span> : null}
+            {uploadError ? <span className="text-xs text-[#d14a3e]">{uploadError}</span> : null}
 
             {/* inline toolbar */}
             <div className="flex flex-wrap items-center gap-0.5">
@@ -844,11 +846,11 @@ export function PostForm({
                       <div
                         key={platform}
                         className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs ${
-                          hasError ? "bg-terra/10" : "bg-surface-2/60"
+                          hasError ? "border border-[#d14a3e] bg-surface-2/60" : "bg-surface-2/60"
                         }`}
                       >
                         {hasError ? (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-terra" aria-hidden>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[#d14a3e]" aria-hidden>
                             <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
                             <path d="M12 9v4M12 17h.01" />
                           </svg>
@@ -860,7 +862,7 @@ export function PostForm({
                         <span className="h-3 w-px shrink-0 bg-line" aria-hidden />
                         <span className="flex flex-col">
                           {notes.map((n, i) => (
-                            <span key={i} className={n.level === "error" ? "text-terra" : "text-muted"}>
+                            <span key={i} className={n.level === "error" ? "text-[#d14a3e]" : "text-muted"}>
                               {n.text}
                             </span>
                           ))}
@@ -1019,10 +1021,10 @@ export function PostForm({
         {selectedPlatforms.length > 0 ? (
           <span
             className={`inline-flex items-center gap-1.5 text-xs font-medium ${
-              notReady ? "text-terra" : "text-green"
+              notReady ? "text-[#d14a3e]" : "text-green"
             }`}
           >
-            <span className={`size-2 rounded-full ${notReady ? "bg-terra" : "bg-green"}`} />
+            <span className={`size-2 rounded-full ${notReady ? "bg-[#d14a3e]" : "bg-green"}`} />
             {notReady ? "Needs attention" : "Ready to publish"}
           </span>
         ) : null}
@@ -1039,7 +1041,7 @@ export function PostForm({
           ) : bodyEmpty ? (
             <span className="hidden text-xs text-muted sm:inline">Write something to continue.</span>
           ) : notReady && !isDraft ? (
-            <span className="hidden text-xs text-terra sm:inline">
+            <span className="hidden text-xs text-[#d14a3e] sm:inline">
               Fix the flagged channels, or clear the time to save a draft.
             </span>
           ) : null}
@@ -1118,7 +1120,7 @@ export function PostForm({
             </p>
 
             {aiLeft ? (
-              <p className={`mt-1 text-xs ${aiLeft[genMode] <= 0 ? "font-medium text-terra" : "text-muted"}`}>
+              <p className={`mt-1 text-xs ${aiLeft[genMode] <= 0 ? "font-medium text-[#d14a3e]" : "text-muted"}`}>
                 {aiLeft[genMode] <= 0
                   ? `No AI ${genMode}s left this month — upgrade your plan for more.`
                   : `${aiLeft[genMode]} ${genMode}${aiLeft[genMode] === 1 ? "" : "s"} left this month`}
@@ -1197,7 +1199,7 @@ export function PostForm({
             </div>
           </>
         )}
-        {genError ? <p className="mt-3 text-xs text-terra">{genError}</p> : null}
+        {genError ? <p className="mt-3 text-xs text-[#d14a3e]">{genError}</p> : null}
 
         <div className="mt-5 flex items-center justify-end gap-3">
           <button type="button" onClick={closeGen} className="text-sm font-medium text-muted hover:text-ink">
@@ -1518,7 +1520,7 @@ function ChannelVariantEditor({
       <div className="mt-1 flex items-center gap-3 text-xs">
         <span
           className={
-            atLimit ? "font-medium text-terra" : nearLimit ? "font-medium text-amber" : "text-muted"
+            atLimit ? "font-medium text-[#d14a3e]" : nearLimit ? "font-medium text-amber" : "text-muted"
           }
         >
           {len.toLocaleString()}
@@ -1683,7 +1685,7 @@ function ThreadItem({
         <div className="mt-1 flex items-center gap-3 text-xs">
           <span
             className={
-              atLimit ? "font-medium text-terra" : nearLimit ? "font-medium text-amber" : "text-muted"
+              atLimit ? "font-medium text-[#d14a3e]" : nearLimit ? "font-medium text-amber" : "text-muted"
             }
           >
             {len.toLocaleString()}

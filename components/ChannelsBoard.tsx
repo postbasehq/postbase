@@ -242,7 +242,7 @@ export function ChannelsBoard({
                 {issue ? (
                   <div className="mt-2 flex flex-wrap items-end gap-x-3 gap-y-2 border-t border-line/70 pt-2">
                     <div className="min-w-0 flex-1 text-[12px] leading-snug">
-                      <div className="font-semibold" style={{ color: issue === "reconnect" ? RED : AMBER }}>
+                      <div className="font-semibold" style={{ color: issue === "reconnect" ? RED : "var(--ink)" }}>
                         {issue === "reconnect"
                           ? "Posts to this account can’t go out"
                           : `Reconnect by ${formatReconnectBy(a.reconnectBy!)}`}

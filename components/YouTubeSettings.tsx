@@ -114,7 +114,7 @@ export function YouTubeSettings({
           <label htmlFor="youtube-title" className="text-xs font-medium text-muted">
             Title
           </label>
-          <span className={`text-xs tabular-nums ${title.length >= TITLE_MAX ? "text-terra" : "text-muted"}`}>
+          <span className={`text-xs tabular-nums ${title.length >= TITLE_MAX ? "text-[#d14a3e]" : "text-muted"}`}>
             {title.length}/{TITLE_MAX}
           </span>
         </div>
@@ -163,12 +163,12 @@ export function YouTubeSettings({
                 <button type="button" onClick={() => fileRef.current?.click()} className="font-semibold text-ink hover:underline">
                   Replace
                 </button>
-                <button type="button" onClick={() => setThumb(null)} className="font-semibold text-terra hover:underline">
+                <button type="button" onClick={() => setThumb(null)} className="font-semibold text-[#d14a3e] hover:underline">
                   Remove
                 </button>
               </span>
             ) : null}
-            {thumbError ? <span className="text-terra">{thumbError}</span> : null}
+            {thumbError ? <span className="text-[#d14a3e]">{thumbError}</span> : null}
           </div>
         </div>
         <input

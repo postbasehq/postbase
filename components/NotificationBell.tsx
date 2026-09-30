@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { formatReconnectBy } from "@/lib/channel-health";
+import { explainPostError } from "@/lib/post-errors";
 
 export type Notice = {
   id: string;
@@ -123,7 +124,7 @@ export function NotificationBell({
                           {c.health === "reconnect" ? `Reconnect ${label}` : `${label} expires soon`}
                         </span>
                       </div>
-                      <div className="mt-1 truncate pl-4 text-xs text-muted">
+                      <div className="mt-1 pl-4 text-xs leading-snug text-muted">
                         {c.name ? `${c.name} · ` : ""}
                         {c.health === "reconnect"
                           ? "Posts to this account can’t go out until it’s reconnected."
@@ -147,8 +148,8 @@ export function NotificationBell({
                     </div>
                     <div className="mt-1 truncate pl-4 text-xs text-muted">{n.body || "(no text)"}</div>
                     {n.error ? (
-                      <div className="mt-0.5 line-clamp-2 pl-4 text-xs" style={{ color: RED }}>
-                        {n.error}
+                      <div className="mt-0.5 line-clamp-3 pl-4 text-xs" style={{ color: RED }}>
+                        {explainPostError(n.error, n.platform).text}
                       </div>
                     ) : null}
                   </Link>

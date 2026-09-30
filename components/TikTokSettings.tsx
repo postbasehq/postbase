@@ -197,9 +197,19 @@ export function TikTokSettings({
         <p className="text-xs text-muted">Loading your TikTok account…</p>
       ) : loadError ? (
         <p className="text-xs text-[#d14a3e]">
-          {/spam_risk|reached_active_user_cap/.test(loadError)
-            ? "This TikTok account can’t post any more right now. Please try again later."
-            : "Couldn’t load your TikTok account. Reconnect TikTok in Channels and try again."}
+          {/spam_risk|reached_active_user_cap/.test(loadError) ? (
+            "This TikTok account can’t post any more right now. Please try again later."
+          ) : /reconnect_required/.test(loadError) ? (
+            <>
+              Your TikTok connection has expired.{" "}
+              <a href="/channels" className="font-semibold text-blue-ink hover:underline">
+                Reconnect it in Channels
+              </a>{" "}
+              to post.
+            </>
+          ) : (
+            "Couldn’t reach TikTok to load your account. Please try again in a moment."
+          )}
         </p>
       ) : (
         <>

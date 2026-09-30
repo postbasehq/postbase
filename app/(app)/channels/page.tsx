@@ -141,7 +141,7 @@ export default async function ChannelsPage({
         </div>
       ) : null}
       {error ? (
-        <div className="mt-5 rounded-xl bg-terra/12 px-4 py-3 text-sm text-terra">
+        <div className="mt-5 rounded-xl border border-[#d14a3e] bg-surface-2 px-4 py-3 text-sm text-[#d14a3e]">
           {ERRORS[error] ?? "Something went wrong."}
         </div>
       ) : null}

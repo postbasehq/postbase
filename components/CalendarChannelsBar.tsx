@@ -142,8 +142,13 @@ export function CalendarChannelsBar({
               <div className="mt-4 flex flex-col gap-2">
                 {accounts.map((a) => (
                   <div key={a.id} className="flex items-center gap-2.5 rounded-xl bg-surface-2 px-3 py-2">
-                    <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
-                      {a.handle ?? "Connected account"}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13px] font-medium">{a.handle ?? "Connected account"}</span>
+                      {a.status === "reconnect" ? (
+                        <span className="block text-[11px] leading-snug text-[#d14a3e]">
+                          Posts to this account can’t go out until it’s reconnected.
+                        </span>
+                      ) : null}
                     </span>
                     {a.status === "reconnect" ? (
                       <a
