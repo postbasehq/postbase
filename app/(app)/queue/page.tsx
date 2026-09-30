@@ -376,7 +376,19 @@ export default async function QueuePage({
                     </div>
 
                     {/* failed-delivery detail + retry, collapsed to one summary line */}
-                    <FailedDeliveries failed={failed} retry={retryTarget} />
+                    <FailedDeliveries
+                      failed={failed}
+                      retrying={targets
+                        .filter((t) => t.status === "failed" && t.next_attempt_at)
+                        .map((t) => ({
+                          ...t,
+                          nextLabel:
+                            Date.parse(t.next_attempt_at!) <= Date.now()
+                              ? null
+                              : formatInTz(t.next_attempt_at!, tz, { hour: "2-digit", minute: "2-digit" }),
+                        }))}
+                      retry={retryTarget}
+                    />
                   </div>
                 );
               })}
