@@ -4,37 +4,46 @@ description: "Postbase Cloud pricing, channels, seats, and AI quotas."
 ---
 
 Postbase Cloud is the hosted version at [postbase.so](https://www.postbase.so).
-Plans scale by channels, seats, and AI allowances. Posting is unlimited on every
-plan (subject to fair use).
+Plans scale by workspaces, channels, seats, and AI allowances. Posting is unlimited
+on every plan, subject to [fair use](https://www.postbase.so/terms).
 
 ## Plans
 
-| Plan | Price | Channels | Seats | AI images + videos / month | Agent messages / month |
-| ---- | ----- | -------- | ----- | -------------------------- | ---------------------- |
-| **Creator** | $29/mo | 5 | 1 | 20 + 3 | 150 |
-| **Team** | $39/mo | 15 | 5 | 100 + 10 | 500 |
-| **Pro** | $59/mo | 50 | 15 | 300 + 30 | 1,500 |
+| Plan | Price | Workspaces | Channels | Seats | AI images + videos / month | AI agent |
+| ---- | ----- | ---------- | -------- | ----- | -------------------------- | -------- |
+| **Creator** | $29/mo | 1 | 5 | 1 | 20 + 3 | Unlimited |
+| **Team** | $39/mo | 3 | 15 | 5 | 100 + 10 | Unlimited |
+| **Pro** | $59/mo | 5 | 50 | 15 | 300 + 30 | Unlimited |
+| **Agency** | $99/mo | 20 | 100 | 30 | 600 + 60 | Unlimited |
 
 Yearly billing is 10× the monthly price (two months free). Prices are in US
 dollars and include any sales tax or VAT.
 
-Every plan includes unlimited posts, all platforms, threads, media & calendar,
-the MCP server, and analytics.
+Every plan includes unlimited posts, the unlimited AI agent, all platforms,
+threads, media & calendar, the MCP server, and analytics.
 
 <Note>
   A **trial** gives you Creator-level access (5 channels, 1 seat) with a smaller
-  AI quota (5 images, 1 video and 25 agent messages) so you can try everything
-  before paying.
+  AI quota (5 images and 1 video) so you can try everything before paying.
 </Note>
 
 ## Limits
 
-- **Channels** — the number of connected accounts, per the table above.
-- **Seats** — org members (including pending invites): 1 on Creator, 5 on Team,
-  15 on Pro.
+Every limit is shared across the workspaces on your plan.
+
+- **Workspaces** — separate spaces for clients or brands, each with its own channels,
+  calendar, media and team. Create one from the workspace menu in the sidebar; it
+  shares the plan of the workspace you created it from.
+- **Channels** — the number of connected accounts across your workspaces, per the
+  table above.
+- **Seats** — people across your workspaces, including pending invites. Someone in
+  several of your workspaces counts once: 1 on Creator, 5 on Team, 15 on Pro and 30
+  on Agency.
 - **AI generations** — a monthly quota for [image and video generation](/ai/generate);
   images and videos are counted separately.
-- **Agent messages** — each message you send the Postbase agent in the app counts
-  as one, however many steps it takes.
+- **AI agent** — unlimited under fair use. A daily safety limit per workspace (well
+  above normal use, lower during the trial) stops scripts or runaway sessions; it
+  resets at midnight UTC. The usage ring in the agent chat shows your AI image and
+  video allowances.
 
 When you hit a limit, Postbase points you to upgrade in [Billing](/cloud/billing).

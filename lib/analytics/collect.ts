@@ -41,6 +41,7 @@ function isDue(scheduledAt: string | null, metricsAt: string | null): boolean {
 
 type Channel = {
   id: string;
+  org_id: string;
   platform: string;
   encrypted_tokens: string | null;
   token_expiry: string | null;
@@ -48,11 +49,43 @@ type Channel = {
 type Row = {
   id: string;
   platform_post_id: string | null;
+  metrics: Record<string, number> | null;
   metrics_updated_at: string | null;
   channels: Channel | null;
   posts: { scheduled_at: string | null } | null;
 };
 type Tokens = { access_token: string; refresh_token?: string };
+
+/** Same reading as last time? Key order can differ between API responses. */
+function sameMetrics(a: Record<string, number> | null, b: Record<string, number>): boolean {
+  if (!a) return false;
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  for (const k of keys) if ((a[k] ?? 0) !== (b[k] ?? 0)) return false;
+  return true;
+}
+
+/**
+ * Save a reading to the history (post_metric_snapshots), only when it changed,
+ * so a post that has stopped moving doesn't pile up identical rows. Best-effort:
+ * a failed insert never blocks the metrics refresh itself.
+ */
+async function recordSnapshot(
+  db: SupabaseClient,
+  r: { id: string; metrics: Record<string, number> | null; channels: Channel | null },
+  metrics: Record<string, number>,
+  at: string,
+) {
+  if (!r.channels || sameMetrics(r.metrics, metrics)) return;
+  const { error } = await db.from("post_metric_snapshots").insert({
+    org_id: r.channels.org_id,
+    target_id: r.id,
+    channel_id: r.channels.id,
+    platform: r.channels.platform,
+    captured_at: at,
+    metrics,
+  });
+  if (error) console.error("[metrics] snapshot insert failed", error.message);
+}
 
 function isExpiring(iso: string | null): boolean {
   return iso ? Date.now() >= Date.parse(iso) - 120_000 : false;
@@ -137,7 +170,7 @@ export async function refreshMetrics(): Promise<{ refreshed: number }> {
   const { data } = await db
     .from("post_targets")
     .select(
-      "id, platform_post_id, metrics_updated_at, channels!inner(id, platform, encrypted_tokens, token_expiry), posts!inner(scheduled_at)",
+      "id, platform_post_id, metrics, metrics_updated_at, channels!inner(id, org_id, platform, encrypted_tokens, token_expiry), posts!inner(scheduled_at)",
     )
     .eq("status", "published")
     .neq("channels.platform", "x")
@@ -180,6 +213,7 @@ export async function refreshMetrics(): Promise<{ refreshed: number }> {
       }
       const metrics = await fetchMetrics(ch.platform, token, postId, tokens);
       await db.from("post_targets").update({ metrics, metrics_updated_at: now }).eq("id", r.id);
+      await recordSnapshot(db, r, metrics, now);
       refreshed++;
     } catch {
       // Unavailable (missing scope, restricted API, expired token) — mark checked
@@ -211,7 +245,7 @@ export async function refreshXMetrics(orgId: string, postId?: string): Promise<n
   let q = db
     .from("post_targets")
     .select(
-      "id, platform_post_id, channels!inner(id, platform, encrypted_tokens, token_expiry), posts!inner(id, org_id, scheduled_at)",
+      "id, platform_post_id, metrics, channels!inner(id, org_id, platform, encrypted_tokens, token_expiry), posts!inner(id, org_id, scheduled_at)",
     )
     .eq("status", "published")
     .eq("channels.platform", "x")
@@ -246,7 +280,10 @@ export async function refreshXMetrics(orgId: string, postId?: string): Promise<n
           .from("post_targets")
           .update(m ? { metrics: m, metrics_updated_at: now } : { metrics_updated_at: now })
           .eq("id", r.id);
-        if (m) refreshed++;
+        if (m) {
+          await recordSnapshot(db, r, m, now);
+          refreshed++;
+        }
       }
     } catch {
       // Token or API trouble: mark checked so a page reload doesn't retry immediately.

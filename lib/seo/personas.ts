@@ -21,7 +21,7 @@ export type Persona = {
   problems: { title: string; body: string }[];
   features: Feature[];
   /** Plan id from lib/plans to recommend. */
-  plan: "creator" | "team" | "growth";
+  plan: "creator" | "team" | "growth" | "agency";
   planWhy: string;
   faqs: [string, string][];
   related: string[];
@@ -190,11 +190,11 @@ export const PERSONAS: Persona[] = [
     slug: "agencies",
     name: "Agencies",
     metaTitle: "Social media scheduler for agencies",
-    metaDescription: "A Postbase workspace per client with its own channels and team, every account on a calendar, and up to 50 channels at a flat monthly price.",
+    metaDescription: "A Postbase workspace per client with its own channels and team, up to 20 clients and 100 channels on one flat $99 monthly bill.",
     eyebrow: "Postbase for agencies",
     h1: ["Every client,", "one login"],
-    sub: "Give each client their own workspace with its own channels and team, switch between them in one click, and pay a flat price per plan instead of per channel.",
-    blurb: "A workspace per client, one-click switching and a flat price per plan.",
+    sub: "Give each client their own workspace with its own channels and team, switch between them in one click, and pay one flat bill for all of them instead of per channel.",
+    blurb: "A workspace per client, one-click switching and one bill for up to 20 clients.",
     hero: { kind: "calendar" },
     frame: "Each client's week in its own calendar",
     problems: [
@@ -243,12 +243,12 @@ export const PERSONAS: Persona[] = [
         body: "Engagement for every published post, by network, for each client.",
       },
     ],
-    plan: "team",
-    planWhy: "15 channels and team seats for $39/month. Pro goes to 50 channels for $59/month.",
+    plan: "agency",
+    planWhy: "20 client workspaces, 100 channels and 30 people for $99/month. Smaller? Pro covers 5 workspaces for $59/month.",
     faqs: [
       [
         "Can I keep clients separate?",
-        "Yes. Each workspace has its own channels, media, calendar and team, and you switch between them from the sidebar.",
+        "Yes. Each client gets a workspace with its own channels, media, calendar and team, and you switch between them from the sidebar. Create one from the workspace menu.",
       ],
       [
         "Can I add my team?",
@@ -260,7 +260,7 @@ export const PERSONAS: Persona[] = [
       ],
       [
         "How is pricing different from per-channel tools?",
-        "Postbase plans are a flat monthly price: Team is $39/month for 15 channels, and Pro is $59/month for 50. Per-channel tools charge for every account you add.",
+        "One flat monthly bill covers every workspace on the plan: Agency is $99/month for 20 workspaces and 100 channels, Pro is $59/month for 5 and 50. Channels and seats are shared across the workspaces, so you split them however your clients need. Per-channel tools charge for every account you add.",
       ],
     ],
     related: ["/alternatives/hootsuite", "/alternatives/buffer", "/integrations/linkedin"],

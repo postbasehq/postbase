@@ -233,6 +233,7 @@ export async function listConnectedApps(userId: string) {
   return rows.map((r) => ({
     id: r.id as string,
     appName: (nameByClient.get(r.client_id as string) as string) || "Connected app",
+    orgId: r.org_id as string,
     orgName: (nameByOrg.get(r.org_id as string) as string) || "—",
     createdAt: r.created_at as string,
     lastUsedAt: (r.last_used_at as string | null) ?? null,

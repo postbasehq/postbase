@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentOrgId } from "@/lib/org";
+import { getCurrentOrgId, scopeOrgId } from "@/lib/org";
 
 /**
  * Conversation-history actions for the /agent chat. All session-scoped — RLS on
@@ -24,6 +24,7 @@ export async function listConversations(): Promise<ConversationSummary[]> {
   const { data } = await supabase
     .from("agent_conversations")
     .select("id, title, updated_at")
+    .eq("org_id", await scopeOrgId())
     .order("updated_at", { ascending: false })
     .limit(100);
   return (data ?? []).map((c) => ({ id: c.id, title: c.title, updatedAt: c.updated_at }));

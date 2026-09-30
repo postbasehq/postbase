@@ -10,7 +10,7 @@ import { CompareTable, IncludedGrid, PricingFaq } from "@/components/marketing/P
 export const metadata = {
   title: "Pricing: plans from $29/month",
   description:
-    "Postbase starts at $29/month with a 7-day free trial, including every network, the MCP server and the API. Or self-host it for free.",
+    "Postbase starts at $29/month with a 7-day free trial, including every network, the MCP server and the API. Agencies get 20 client workspaces on one $99 bill. Or self-host it for free.",
   ...pageMeta("/pricing"),
 };
 
@@ -29,7 +29,7 @@ export default function PricingPage() {
               </h1>
               <p className="mx-auto mt-5 max-w-[56ch] text-balance text-[17px] leading-relaxed text-muted md:text-[19px]">
                 Every plan includes X, LinkedIn, TikTok, YouTube, Bluesky and Mastodon, the AI agent and
-                the MCP server. Pick by how many channels and people you need.
+                the MCP server. Pick by how many workspaces, channels and people you need.
               </p>
             </div>
 

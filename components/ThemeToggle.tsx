@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { THEME_KEY } from "./ThemeScript";
+import { THEME_KEY, applyTheme, readThemeChoice } from "@/lib/theme";
 
 function effectiveIsDark(): boolean {
   const current = document.documentElement.getAttribute("data-theme");
@@ -16,17 +16,27 @@ export function ThemeToggle() {
   useEffect(() => {
     setDark(effectiveIsDark());
     setMounted(true);
+    // Follow the page's actual theme, however it changes: this toggle, the
+    // Settings picker, another tab, or the OS setting under "Match system".
+    const sync = () => setDark(effectiveIsDark());
+    const observer = new MutationObserver(sync);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    media.addEventListener("change", sync);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === THEME_KEY) applyTheme(readThemeChoice());
+    };
+    window.addEventListener("storage", onStorage);
+    return () => {
+      observer.disconnect();
+      media.removeEventListener("change", sync);
+      window.removeEventListener("storage", onStorage);
+    };
   }, []);
 
   function toggle() {
-    const next = !effectiveIsDark();
-    document.documentElement.setAttribute("data-theme", next ? "dark" : "light");
     // An explicit choice: remember it over the dark default.
-    document.documentElement.setAttribute("data-theme-user", "");
-    try {
-      localStorage.setItem(THEME_KEY, next ? "dark" : "light");
-    } catch {}
-    setDark(next);
+    applyTheme(effectiveIsDark() ? "light" : "dark");
   }
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
+import { EmptyState } from "@/components/EmptyState";
 import { useRouter } from "next/navigation";
 import { reschedulePost, repostPost } from "@/app/(app)/actions";
 import { Modal } from "@/components/Modal";
@@ -1114,14 +1115,13 @@ function ListView({ posts, todayKey }: { posts: CalPost[]; todayKey: string }) {
 
   if (days.length === 0) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-        <p className="text-sm text-muted">Nothing scheduled.</p>
-        <Link
-          href="/composer"
-          className="rounded-full border border-line px-4 py-2 text-sm font-medium text-blue-ink hover:bg-surface-2"
-        >
-          Write a post
-        </Link>
+      <div className="flex h-full items-center justify-center">
+        <EmptyState
+          kind="calendar"
+          title="Nothing scheduled in this range"
+          body="Posts you schedule appear here in time order. Pick a time on the week view, or write one now."
+          primary={{ href: "/composer", label: "Write a post" }}
+        />
       </div>
     );
   }

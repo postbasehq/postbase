@@ -66,3 +66,15 @@ export async function getOrgRole(orgId: string): Promise<string | null> {
     .maybeSingle();
   return data?.role ?? null;
 }
+
+/** Matches no row. Filtering by it returns nothing rather than every workspace. */
+const NO_ORG = "00000000-0000-0000-0000-000000000000";
+
+/**
+ * The active workspace id to filter queries by. RLS alone returns rows from
+ * every workspace the user belongs to, so pages that list workspace data must
+ * filter by this as well. Never null: with no workspace, it matches nothing.
+ */
+export async function scopeOrgId(): Promise<string> {
+  return (await getCurrentOrgId()) ?? NO_ORG;
+}

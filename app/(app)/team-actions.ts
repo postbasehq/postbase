@@ -7,7 +7,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentOrgId, getOrgRole, ACTIVE_ORG_COOKIE } from "@/lib/org";
-import { SEAT_LIMIT, type PlanId } from "@/lib/plans";
+import { SEAT_LIMIT } from "@/lib/plans";
+import { seatUsage } from "@/lib/billing-guard";
 
 const COOKIE = { httpOnly: true, sameSite: "lax" as const, path: "/", maxAge: 60 * 60 * 24 * 365 };
 
@@ -20,18 +21,6 @@ async function requireManager(orgId: string) {
   }
 }
 
-/** Seats used = accepted members + still-pending invites. */
-async function seatUsage(db: Db, orgId: string): Promise<number> {
-  const [members, invites] = await Promise.all([
-    db.from("org_members").select("user_id", { count: "exact", head: true }).eq("org_id", orgId),
-    db
-      .from("org_invites")
-      .select("id", { count: "exact", head: true })
-      .eq("org_id", orgId)
-      .is("accepted_at", null),
-  ]);
-  return (members.count ?? 0) + (invites.count ?? 0);
-}
 
 /** Invite an email to the current org with a role. */
 export async function createInvite(formData: FormData) {
@@ -50,9 +39,9 @@ export async function createInvite(formData: FormData) {
   if (role !== "member" && role !== "admin") throw new Error("Pick a valid role.");
 
   const db = createAdminClient();
-  const { data: org } = await db.from("orgs").select("plan").eq("id", orgId).single();
-  const plan = (org?.plan ?? "trial") as PlanId;
-  if ((await seatUsage(db, orgId)) >= (SEAT_LIMIT[plan] ?? 1)) {
+  // Seats are shared across every workspace the plan covers.
+  const { used, group } = await seatUsage(orgId);
+  if (used >= (SEAT_LIMIT[group.plan] ?? 1)) {
     throw new Error("You’ve reached your plan’s seat limit. Upgrade in Billing to add more.");
   }
 
@@ -137,5 +126,7 @@ export async function setActiveOrg(formData: FormData) {
   const jar = await cookies();
   jar.set(ACTIVE_ORG_COOKIE, orgId, COOKIE);
   revalidatePath("/", "layout");
-  redirect("/queue");
+  // Optional same-site page to land on (e.g. /billing); anything else goes to the queue.
+  const next = String(formData.get("next") ?? "");
+  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/queue");
 }

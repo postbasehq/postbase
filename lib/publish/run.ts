@@ -3,7 +3,7 @@ import { publish } from "@/lib/publish/adapters";
 import type { TikTokPostOptions } from "@/lib/platforms/tiktok";
 import type { YouTubePostOptions } from "@/lib/platforms/youtube";
 import { isRepeatEvery, nextOccurrence } from "@/lib/publish/repeat";
-import { NO_PLAN_MESSAGE, orgHasAccess, type OrgAccessRow } from "@/lib/billing-guard";
+import { NO_PLAN_MESSAGE, accessRowFor, orgHasAccess } from "@/lib/billing-guard";
 
 type Db = ReturnType<typeof createAdminClient>;
 
@@ -324,12 +324,8 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
 
     const orgId = loaded.post.org_id;
     if (!access.has(orgId)) {
-      const { data: org } = await db
-        .from("orgs")
-        .select("subscription_status, comped")
-        .eq("id", orgId)
-        .maybeSingle();
-      access.set(orgId, orgHasAccess(org as OrgAccessRow | null));
+      // The plan may belong to the workspace this one is billed through.
+      access.set(orgId, orgHasAccess(await accessRowFor(orgId)));
     }
     if (!access.get(orgId)) {
       await db

@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentOrgId } from "@/lib/org";
 import { PLANS, planIsActive, priceId, type PlanId } from "@/lib/plans";
+import { billingGroup } from "@/lib/billing-guard";
 
 /** Get (or lazily create) the org's Stripe customer. */
 async function ensureCustomer(orgId: string, email: string): Promise<string> {
@@ -47,11 +48,14 @@ export async function startCheckout(formData: FormData) {
   if (!user?.email) throw new Error("Sign in to subscribe.");
   const orgId = await getCurrentOrgId();
   if (!orgId) throw new Error("No workspace found.");
+  // A workspace covered by another's plan never gets its own subscription.
+  const group = await billingGroup(orgId);
+  if (group.linked) throw new Error(`This workspace is on ${group.rootName}'s plan. Change the plan from ${group.rootName}.`);
 
   const plan = String(formData.get("plan") ?? "") as Exclude<PlanId, "trial">;
   const interval = String(formData.get("interval") ?? "month") === "year" ? "year" : "month";
   const price = priceId(plan, interval);
-  if (!PLANS[plan] || !price) throw new Error("That plan isn’t available.");
+  if (!PLANS[plan] || !price) throw new Error("That plan isn’t available yet.");
 
   // Already subscribed: plan changes go through the portal, never a second subscription.
   const { data: org } = await createAdminClient()
@@ -89,6 +93,7 @@ export async function openPortal() {
   if (!stripeConfigured()) throw new Error("Billing isn’t configured on this server yet.");
   const orgId = await getCurrentOrgId();
   if (!orgId) throw new Error("No workspace found.");
+  if ((await billingGroup(orgId)).linked) redirect("/billing");
 
   const db = createAdminClient();
   const { data: org } = await db

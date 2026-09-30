@@ -1,9 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  AGENT_MESSAGE_LIMIT,
+  AGENT_DAILY_CAP,
   AI_IMAGE_LIMIT,
   AI_VIDEO_LIMIT,
   CHANNEL_LIMIT,
+  WORKSPACE_LIMIT,
   planIsActive,
   type PlanId,
 } from "@/lib/plans";
@@ -22,6 +24,67 @@ export function billingEnforced(): boolean {
 
 export type OrgAccessRow = { subscription_status: string | null; comped: boolean | null };
 
+/**
+ * A plan covers several workspaces (lib/plans.ts WORKSPACE_LIMIT). The
+ * subscription sits on the workspace that bought it; workspaces created from it
+ * point to it via orgs.billing_org_id and share its plan, access and
+ * allowances. Everything below that asks "which plan?" or "how much is used?"
+ * goes through here.
+ *
+ * Uses the service role on purpose: someone invited only to a client workspace
+ * isn't a member of the billing workspace, but still needs its plan to apply.
+ */
+export type BillingGroup = {
+  /** The workspace that holds the subscription. */
+  rootId: string;
+  rootName: string;
+  /** Every workspace sharing the plan, the billing one first. */
+  orgIds: string[];
+  plan: PlanId;
+  subscription_status: string | null;
+  comped: boolean;
+  /** True when the workspace asked about is covered by another's plan. */
+  linked: boolean;
+};
+
+export async function billingGroup(orgId: string): Promise<BillingGroup> {
+  const db = createAdminClient();
+  const { data: self } = await db
+    .from("orgs")
+    .select("id, name, billing_org_id, plan, subscription_status, comped")
+    .eq("id", orgId)
+    .maybeSingle();
+  const rootId = (self?.billing_org_id as string | null) ?? orgId;
+  const [{ data: root }, { data: members }] = await Promise.all([
+    rootId === orgId
+      ? Promise.resolve({ data: self })
+      : db.from("orgs").select("id, name, plan, subscription_status, comped").eq("id", rootId).maybeSingle(),
+    db.from("orgs").select("id").eq("billing_org_id", rootId).order("created_at", { ascending: true }),
+  ]);
+  return {
+    rootId,
+    rootName: (root?.name as string) ?? "",
+    orgIds: [rootId, ...(members ?? []).map((m) => m.id as string)],
+    plan: ((root?.plan as PlanId | undefined) ?? "trial") as PlanId,
+    subscription_status: (root?.subscription_status as string | null) ?? null,
+    comped: Boolean(root?.comped),
+    linked: rootId !== orgId,
+  };
+}
+
+/** The plan's access row for a workspace: its own, or its billing workspace's. */
+export async function accessRowFor(orgId: string): Promise<OrgAccessRow> {
+  const g = await billingGroup(orgId);
+  return { subscription_status: g.subscription_status, comped: g.comped };
+}
+
+/** Workspaces used vs the plan's allowance, for the switcher and Billing. */
+export async function workspaceUsage(orgId: string) {
+  const g = await billingGroup(orgId);
+  const limit = WORKSPACE_LIMIT[g.plan] ?? 1;
+  return { plan: g.plan, used: g.orgIds.length, limit, group: g };
+}
+
 /** Whether an org may schedule, publish and use AI: a live subscription (incl. trialing) or comped. */
 export function orgHasAccess(org: OrgAccessRow | null | undefined): boolean {
   if (!billingEnforced()) return true;
@@ -29,14 +92,11 @@ export function orgHasAccess(org: OrgAccessRow | null | undefined): boolean {
   return Boolean(org.comped) || planIsActive(org.subscription_status);
 }
 
-export async function hasAccess(db: SupabaseClient, orgId: string): Promise<boolean> {
+// `db` is kept for call-site compatibility; the lookup always uses the service
+// role (see billingGroup).
+export async function hasAccess(_db: SupabaseClient, orgId: string): Promise<boolean> {
   if (!billingEnforced()) return true;
-  const { data: org } = await db
-    .from("orgs")
-    .select("subscription_status, comped")
-    .eq("id", orgId)
-    .maybeSingle();
-  return orgHasAccess(org);
+  return orgHasAccess(await accessRowFor(orgId));
 }
 
 export const NO_PLAN_MESSAGE =
@@ -46,14 +106,14 @@ export const NO_PLAN_MESSAGE =
  * Whether the org has hit its plan's channel allowance. Used to gate connecting
  * a NEW channel (reconnecting an existing one updates in place and is exempt).
  */
-export async function atChannelLimit(db: SupabaseClient, orgId: string): Promise<boolean> {
-  const { data: org } = await db.from("orgs").select("plan").eq("id", orgId).single();
-  const plan = (org?.plan ?? "trial") as PlanId;
-  const { count } = await db
+export async function atChannelLimit(_db: SupabaseClient, orgId: string): Promise<boolean> {
+  const g = await billingGroup(orgId);
+  // Counted across every workspace the plan covers.
+  const { count } = await createAdminClient()
     .from("channels")
     .select("id", { count: "exact", head: true })
-    .eq("org_id", orgId);
-  return (count ?? 0) >= (CHANNEL_LIMIT[plan] ?? CHANNEL_LIMIT.trial);
+    .in("org_id", g.orgIds);
+  return (count ?? 0) >= (CHANNEL_LIMIT[g.plan] ?? CHANNEL_LIMIT.trial);
 }
 
 export type AiKind = "image" | "video";
@@ -70,13 +130,15 @@ function monthStartIso(): string {
 }
 
 /** This month's AI generation usage vs the org's plan quota. */
-export async function aiUsage(db: SupabaseClient, orgId: string): Promise<AiUsage> {
-  const { data: org } = await db.from("orgs").select("plan").eq("id", orgId).single();
-  const plan = (org?.plan ?? "trial") as PlanId;
+export async function aiUsage(_db: SupabaseClient, orgId: string): Promise<AiUsage> {
+  const g = await billingGroup(orgId);
+  const plan = g.plan;
+  const db = createAdminClient();
   const since = monthStartIso();
+  // The monthly allowance is shared across the plan's workspaces.
   const [img, vid] = await Promise.all([
-    db.from("ai_generations").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("kind", "image").gte("created_at", since),
-    db.from("ai_generations").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("kind", "video").gte("created_at", since),
+    db.from("ai_generations").select("id", { count: "exact", head: true }).in("org_id", g.orgIds).eq("kind", "image").gte("created_at", since),
+    db.from("ai_generations").select("id", { count: "exact", head: true }).in("org_id", g.orgIds).eq("kind", "video").gte("created_at", since),
   ]);
   const imgLimit = AI_IMAGE_LIMIT[plan] ?? AI_IMAGE_LIMIT.trial;
   const vidLimit = AI_VIDEO_LIMIT[plan] ?? AI_VIDEO_LIMIT.trial;
@@ -96,31 +158,67 @@ export async function atAiLimit(db: SupabaseClient, orgId: string, kind: AiKind)
   return u[kind].remaining <= 0;
 }
 
-export type AgentUsage = { plan: PlanId; used: number; limit: number; remaining: number };
+export type AgentUsage = {
+  plan: PlanId;
+  /** Messages sent this month across the plan's workspaces (for display; not limited). */
+  month: number;
+  /** Messages sent today in this workspace, against the daily safety cap. */
+  today: number;
+  dailyCap: number;
+  remainingToday: number;
+};
 
-/** This month's AI-agent message usage vs the org's plan quota. */
-export async function agentUsage(db: SupabaseClient, orgId: string): Promise<AgentUsage> {
-  const { data: org } = await db.from("orgs").select("plan").eq("id", orgId).single();
-  const plan = (org?.plan ?? "trial") as PlanId;
-  const { count } = await db
-    .from("agent_messages")
-    .select("id", { count: "exact", head: true })
-    .eq("org_id", orgId)
-    .gte("created_at", monthStartIso());
-  const limit = AGENT_MESSAGE_LIMIT[plan] ?? AGENT_MESSAGE_LIMIT.trial;
-  const used = count ?? 0;
-  return { plan, used, limit, remaining: Math.max(0, limit - used) };
+/** Start (UTC) of today: when the daily safety cap resets. */
+function dayStartIso(): string {
+  const d = new Date();
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())).toISOString();
 }
 
-/** Whether the org has hit its monthly AI-agent message quota. */
+/**
+ * AI-agent usage. Messages are unlimited under fair use; the only limit is a
+ * daily safety cap per workspace (lib/plans.ts AGENT_DAILY_CAP).
+ */
+export async function agentUsage(_db: SupabaseClient, orgId: string): Promise<AgentUsage> {
+  const g = await billingGroup(orgId);
+  const db = createAdminClient();
+  const [{ count: month }, { count: today }] = await Promise.all([
+    db.from("agent_messages").select("id", { count: "exact", head: true }).in("org_id", g.orgIds).gte("created_at", monthStartIso()),
+    db.from("agent_messages").select("id", { count: "exact", head: true }).eq("org_id", orgId).gte("created_at", dayStartIso()),
+  ]);
+  const dailyCap = AGENT_DAILY_CAP[g.plan] ?? AGENT_DAILY_CAP.trial;
+  return {
+    plan: g.plan,
+    month: month ?? 0,
+    today: today ?? 0,
+    dailyCap,
+    remainingToday: Math.max(0, dailyCap - (today ?? 0)),
+  };
+}
+
+/** Whether the workspace has no access, or has hit today's safety cap. */
 export async function atAgentLimit(db: SupabaseClient, orgId: string): Promise<boolean> {
   if (!(await hasAccess(db, orgId))) return true;
-  const u = await agentUsage(db, orgId);
-  return u.remaining <= 0;
+  return (await agentUsage(db, orgId)).remainingToday <= 0;
 }
 
 /** Record one used agent message (service-role insert, so it can't be tampered with). */
 export async function recordAgentMessage(db: SupabaseClient, orgId: string): Promise<string | null> {
   const { data } = await db.from("agent_messages").insert({ org_id: orgId }).select("id").single();
   return data?.id ?? null;
+}
+
+/**
+ * People across the plan's workspaces: each distinct member counts once however
+ * many workspaces they're in, plus pending invites (by email).
+ */
+export async function seatUsage(orgId: string): Promise<{ used: number; group: BillingGroup }> {
+  const g = await billingGroup(orgId);
+  const db = createAdminClient();
+  const [{ data: members }, { data: invites }] = await Promise.all([
+    db.from("org_members").select("user_id").in("org_id", g.orgIds),
+    db.from("org_invites").select("email").in("org_id", g.orgIds).is("accepted_at", null),
+  ]);
+  const users = new Set((members ?? []).map((m) => m.user_id as string));
+  const emails = new Set((invites ?? []).map((i) => String(i.email).toLowerCase()));
+  return { used: users.size + emails.size, group: g };
 }

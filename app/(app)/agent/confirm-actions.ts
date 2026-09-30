@@ -50,8 +50,9 @@ export async function scheduleProposedPost(
     return { ok: false, error: NO_PLAN_MESSAGE };
   }
 
-  // Only allow targeting channels in the user's own org (RLS-scoped read).
-  const { data: owned } = await supabase.from("channels").select("id").in("id", channelIds);
+  // Only allow targeting channels in this workspace; RLS alone would also accept
+  // channels from the user's other workspaces.
+  const { data: owned } = await supabase.from("channels").select("id").eq("org_id", orgId).in("id", channelIds);
   const ownedIds = new Set((owned ?? []).map((c) => c.id));
   if (channelIds.some((id) => !ownedIds.has(id))) {
     return { ok: false, error: "One of those channels isn't in this workspace." };

@@ -7,14 +7,15 @@ import { AppNav } from "@/components/AppNav";
 import { UserMenu } from "@/components/UserMenu";
 import { SidebarSearch } from "@/components/SidebarSearch";
 import { HeaderTitle } from "@/components/HeaderTitle";
+import { AgentSparkIcon } from "@/components/AgentSparkIcon";
 import { SidebarSwitcher } from "@/components/SidebarSwitcher";
 import { AgentProposalDock } from "@/components/AgentProposalDock";
 import { NotificationBell, type Notice } from "@/components/NotificationBell";
-import { OrgSwitcher } from "@/components/OrgSwitcher";
+import { OrgSwitcher, type WorkspaceAllowance } from "@/components/OrgSwitcher";
 import { TimezoneSync } from "@/components/TimezoneSync";
-import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { PlanGate } from "@/components/PlanGate";
-import { orgHasAccess, type OrgAccessRow } from "@/lib/billing-guard";
+import { billingEnforced, billingGroup, orgHasAccess } from "@/lib/billing-guard";
+import { PLANS, WORKSPACE_LIMIT, nextWorkspacePlan } from "@/lib/plans";
 import { createClient } from "@/lib/supabase/server";
 import { getUserOrgs, getCurrentOrgId } from "@/lib/org";
 import { setActiveOrg } from "./team-actions";
@@ -47,34 +48,38 @@ export default async function AppLayout({
 
   const [orgs, activeId] = await Promise.all([getUserOrgs(), getCurrentOrgId()]);
 
-  // First-run onboarding + notification bell data (both scoped by RLS).
-  let onboarding: { show: boolean; connected: string[] } = { show: false, connected: [] };
+  // Plan access + notification bell data (both scoped by RLS).
   let notices: Notice[] = [];
   let locked = false;
+  let workspaces: WorkspaceAllowance | null = null;
   if (activeId) {
     const supabase = await createClient();
-    const [{ data: org }, { data: channels }, { data: failed }] = await Promise.all([
-      supabase
-        .from("orgs")
-        .select("onboarded_at, subscription_status, comped")
-        .eq("id", activeId)
-        .maybeSingle(),
-      supabase.from("channels").select("platform"),
+    const [group, { data: failed }] = await Promise.all([
+      // The plan may belong to the workspace this one is billed through.
+      billingGroup(activeId),
       // Terminally-failed deliveries (no retry pending) become notifications.
       supabase
         .from("post_targets")
-        .select("id, error, posts(id, body), channels(platform)")
+        .select("id, error, posts!inner(id, body, org_id), channels(platform)")
+        .eq("posts.org_id", activeId)
         .eq("status", "failed")
         .is("next_attempt_at", null)
         .limit(20),
     ]);
-    locked = !orgHasAccess(org as OrgAccessRow | null);
-    if (org && org.onboarded_at === null) {
-      onboarding = {
-        show: true,
-        connected: Array.from(new Set((channels ?? []).map((c) => c.platform))),
-      };
-    }
+    locked = billingEnforced() && !orgHasAccess(group);
+    // What the switcher needs to offer "Create workspace", or an upgrade instead.
+    const rootRole = orgs.find((o) => o.id === group.rootId)?.role ?? null;
+    const limit = WORKSPACE_LIMIT[group.plan] ?? 1;
+    const next = nextWorkspacePlan(group.plan);
+    workspaces = {
+      used: group.orgIds.length,
+      limit,
+      planName: group.plan === "trial" ? null : PLANS[group.plan].name,
+      nextPlan: next ? { name: PLANS[next].name, limit: WORKSPACE_LIMIT[next] } : null,
+      canManage: rootRole === "owner" || rootRole === "admin",
+      billingName: group.rootName,
+      active: !locked,
+    };
     notices = ((failed ?? []) as unknown as {
       id: string;
       error: string | null;
@@ -101,7 +106,6 @@ export default async function AppLayout({
         }}
       >
         <TimezoneSync />
-        {onboarding.show ? <OnboardingWizard connected={onboarding.connected} /> : null}
         {/* sidebar — transparent, sits on the backdrop (a layer behind the panel) */}
         <aside className="hidden w-60 shrink-0 flex-col md:flex">
           <div className="flex h-16 shrink-0 items-center px-5">
@@ -109,7 +113,7 @@ export default async function AppLayout({
           </div>
           <SidebarSwitcher>
             <SidebarSearch />
-            <OrgSwitcher orgs={orgs} activeId={activeId} action={setActiveOrg} />
+            <OrgSwitcher orgs={orgs} activeId={activeId} action={setActiveOrg} workspaces={workspaces} />
             <AppNav />
           </SidebarSwitcher>
           <UserMenu name={displayName} email={email} avatarUrl={avatarUrl} />
@@ -122,6 +126,14 @@ export default async function AppLayout({
               <header className="flex h-16 shrink-0 items-center gap-3 px-6">
                 <HeaderTitle />
                 <div className="ml-auto flex items-center gap-3">
+                  <Link
+                    href="/agent"
+                    aria-label="Open the AI agent"
+                    title="AI agent"
+                    className="flex size-9 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-ink"
+                  >
+                    <AgentSparkIcon size={18} />
+                  </Link>
                   <NotificationBell items={notices} />
                   <ThemeToggle />
                   <Link

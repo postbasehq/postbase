@@ -7,7 +7,7 @@
 
 # Terms of Service
 
-**Last updated: 29 September 2026**
+**Last updated: 30 September 2026**
 
 These Terms of Service ("Terms") are a legal agreement between you and
 **Berkway Group Limited** ("Berkway", "we", "us"), a company registered in England and
@@ -95,11 +95,16 @@ and must keep them confidential. We may apply rate limits and may revoke keys fo
   receipts. Your purchase is also subject to Stripe's terms shown at checkout. Prices
   include any sales tax, VAT or GST due, so the price shown is the price you pay (checkout
   may show it converted to your local currency).
+- **Workspaces.** A plan covers the number of workspaces shown on it. The channels,
+  seats and AI allowances on your plan are shared across all of its workspaces, and the
+  plan is billed to the workspace that bought it.
 - **Fair use.** Posting is unlimited on paid plans for normal use by the people and
   accounts on your plan. Some networks charge us for each API call (X, for example), so
-  if a workspace's usage is far beyond typical use (such as automated bulk posting),
-  we'll contact you first and may ask you to move to a larger plan or reduce usage.
-  AI features have the monthly allowances shown on your plan.
+  if your plan's usage, across all of its workspaces, is far beyond typical use (such as
+  automated bulk posting), we'll contact you first and may ask you to move to a larger
+  plan or reduce usage. AI image and video generation have the monthly allowances
+  shown on your plan. The AI agent is unlimited for normal use, with a daily safety
+  limit per workspace to stop automated or runaway use.
 - **Price changes** apply from your next renewal, with reasonable prior notice.
 - **Refunds.** Except where required by law, fees are non-refundable. As merchant of
   record, Stripe may also issue refunds in some cases, for example to resolve a billing

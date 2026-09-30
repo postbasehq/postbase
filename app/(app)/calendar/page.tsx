@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { scopeOrgId } from "@/lib/org";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { disconnectChannel } from "../actions";
 import { getTimeZone, formatInTz, localDateKey, localHM } from "@/lib/tz";
@@ -118,9 +119,11 @@ export default async function CalendarPage({
 
   // Fetch posts in a UTC window padded ±1 day, then bucket by local day.
   const supabase = await createClient();
+  const orgId = await scopeOrgId();
   const { data } = await supabase
     .from("posts")
     .select("id, body, scheduled_at, status, repeat_every, post_targets(channels(platform)), media(storage_url, type)")
+    .eq("org_id", orgId)
     .not("scheduled_at", "is", null)
     .gte("scheduled_at", `${addDays(firstKey, -1)}T00:00:00Z`)
     .lt("scheduled_at", `${addDays(lastKey, 2)}T00:00:00Z`)
@@ -130,6 +133,7 @@ export default async function CalendarPage({
   const { data: channels } = await supabase
     .from("channels")
     .select("id, platform, handle, status")
+    .eq("org_id", orgId)
     .order("created_at", { ascending: true });
   const accountsByPlatform: Record<
     string,

@@ -1,8 +1,9 @@
-import { AGENT_MESSAGE_LIMIT, AI_IMAGE_LIMIT, AI_VIDEO_LIMIT, PLAN_ORDER, PLANS } from "@/lib/plans";
+import { AI_IMAGE_LIMIT, AI_VIDEO_LIMIT, PLAN_ORDER, PLANS } from "@/lib/plans";
 import { Tile, MonthShot, AgentShot } from "@/components/marketing/CreatorGrid";
 import { McpShot } from "@/components/marketing/DevGrid";
 import { Heading, FaqList, wrap } from "@/components/marketing/ui";
 import { BrandTile } from "@/components/BrandTile";
+import { SubmitButton } from "@/components/SubmitButton";
 
 /** Real product shots of what every plan gets (same tiles as the homepage). */
 export function IncludedGrid() {
@@ -10,7 +11,7 @@ export function IncludedGrid() {
     <section className={`${wrap} pt-28 md:pt-36`}>
       <Heading
         title="Included in every plan"
-        sub="The plans differ in channels, people and AI allowances. The product is the same."
+        sub="The plans differ in workspaces, channels, people and AI allowances. The product is the same."
       />
       <div className="grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-5">
         <Tile
@@ -65,9 +66,10 @@ const GROUPS: { title: string; rows: Row[] }[] = [
   {
     title: "Essentials",
     rows: [
-      { label: "Social channels", note: "Each connected account counts as one", values: per((id) => n(PLANS[id].channels)) },
-      { label: "People in the workspace", values: per((id) => n(PLANS[id].seats)) },
-      { label: "Posts, threads and video", values: all("Unlimited") },
+      { label: "Workspaces", note: "A separate calendar, channels and media per client or brand, on one bill", values: per((id) => n(PLANS[id].workspaces)) },
+      { label: "Social channels", note: "Each connected account counts as one, across your workspaces", values: per((id) => n(PLANS[id].channels)) },
+      { label: "People", note: "Across your workspaces", values: per((id) => n(PLANS[id].seats)) },
+      { label: "Posts, threads and video", note: "Under our fair use policy", values: all("Unlimited") },
       { label: "Networks", networks: true, values: all(true) },
     ],
   },
@@ -103,7 +105,7 @@ const GROUPS: { title: string; rows: Row[] }[] = [
   {
     title: "AI",
     rows: [
-      { label: "AI agent messages a month", note: "Writes and schedules posts from a chat", values: per((id) => n(AGENT_MESSAGE_LIMIT[id])) },
+      { label: "AI agent", note: "Writes and schedules posts from a chat, under our fair use policy", values: all("Unlimited") },
       { label: "AI images a month", values: per((id) => n(AI_IMAGE_LIMIT[id])) },
       { label: "AI videos a month", values: per((id) => n(AI_VIDEO_LIMIT[id])) },
     ],
@@ -120,7 +122,7 @@ const GROUPS: { title: string; rows: Row[] }[] = [
     title: "Support",
     rows: [
       { label: "Email support", values: all(true) },
-      { label: "Priority email support", values: per((id) => id === "growth") },
+      { label: "Priority email support", values: per((id) => id === "growth" || id === "agency") },
     ],
   },
 ];
@@ -142,8 +144,16 @@ function No() {
 
 const FEATURED = "team";
 
-/** Every limit side by side, grouped, with the featured plan outlined. */
-export function CompareTable() {
+/**
+ * Every limit side by side, grouped, with the featured plan outlined. On the
+ * Billing page (`billing`) it sits in the app: no marketing section spacing,
+ * and each column's button starts checkout or a switch, like the plan cards.
+ */
+export function CompareTable({
+  billing,
+}: {
+  billing?: { currentPlan: string | null; action: (formData: FormData) => Promise<void> };
+} = {}) {
   // The featured column is outlined in brand blue: side borders on every cell,
   // plus a top cap on the header and a bottom cap on the last row.
   const col = (id: string, edge: "top" | "mid" | "bottom" = "mid") =>
@@ -155,14 +165,18 @@ export function CompareTable() {
   const lastGroup = GROUPS.length - 1;
 
   return (
-    <section id="compare" className={`${wrap} scroll-mt-28 pt-28 md:pt-36`}>
-      <Heading title="Compare plans" sub="Every limit, side by side." />
+    <section id="compare" className={billing ? "scroll-mt-6" : `${wrap} scroll-mt-28 pt-28 md:pt-36`}>
+      {billing ? (
+        <h2 className="mb-6 font-display text-[22px] font-semibold tracking-[-0.02em] text-ink">Compare plans</h2>
+      ) : (
+        <Heading title="Compare plans" sub="Every limit, side by side." />
+      )}
       <div className="overflow-x-auto pt-4">
-        <table className="w-full min-w-[760px] border-separate border-spacing-0 text-left text-[14px]">
+        <table className="w-full min-w-[900px] border-separate border-spacing-0 text-left text-[14px]">
           <colgroup>
-            <col className="w-[34%]" />
+            <col className="w-[28%]" />
             {PLAN_ORDER.map((id) => (
-              <col key={id} className="w-[22%]" />
+              <col key={id} className="w-[18%]" />
             ))}
           </colgroup>
           <thead>
@@ -173,6 +187,11 @@ export function CompareTable() {
               {PLAN_ORDER.map((id) => {
                 const p = PLANS[id];
                 const featured = id === FEATURED;
+                const btn = `rounded-full px-4 py-2.5 font-display text-[13px] font-semibold transition-shadow ${
+                  featured
+                    ? "bg-[#2b59d9] text-white shadow-sm hover:shadow-md"
+                    : "border border-[#e4e6eb] bg-white text-[#14161a] shadow-sm hover:border-[#14161a]"
+                }`;
                 return (
                   <th key={id} className={`relative px-4 pb-6 pt-7 text-center align-bottom font-normal ${col(id, "top")}`}>
                     {featured ? (
@@ -188,16 +207,27 @@ export function CompareTable() {
                       <span className="pb-0.5 text-[13px] text-muted">/month</span>
                     </div>
                     <div className="mt-1 text-[12px] text-muted">or ${p.monthly * 10} a year</div>
-                    <a
-                      href={`/billing?plan=${id}&interval=month`}
-                      className={`mt-4 inline-block w-full max-w-[180px] rounded-full px-4 py-2.5 font-display text-[13px] font-semibold transition-shadow ${
-                        featured
-                          ? "bg-[#2b59d9] text-white shadow-sm hover:shadow-md"
-                          : "border border-[#e4e6eb] bg-white text-[#14161a] shadow-sm hover:border-[#14161a]"
-                      }`}
-                    >
-                      Start free trial
-                    </a>
+                    {billing ? (
+                      <form action={billing.action} className="mt-4">
+                        <input type="hidden" name="plan" value={id} />
+                        <input type="hidden" name="interval" value="month" />
+                        <SubmitButton
+                          disabled={billing.currentPlan === id}
+                          pendingLabel="Opening…"
+                          className={`${btn} w-full max-w-[180px] disabled:cursor-default disabled:opacity-60`}
+                        >
+                          {billing.currentPlan === id
+                            ? "Current plan"
+                            : billing.currentPlan
+                              ? `Switch to ${p.name}`
+                              : "Start free trial"}
+                        </SubmitButton>
+                      </form>
+                    ) : (
+                      <a href={`/billing?plan=${id}&interval=month`} className={`mt-4 inline-block w-full max-w-[180px] ${btn}`}>
+                        Start free trial
+                      </a>
+                    )}
                   </th>
                 );
               })}
@@ -265,12 +295,24 @@ export const PRICING_FAQ: [string, string][] = [
     "Every plan starts with 7 days free. A card is required, but nothing is charged today. If you don't cancel before the trial ends, your plan starts and you're billed for the first month or year.",
   ],
   [
+    "Is posting really unlimited?",
+    "Yes, for normal use by the people and accounts on your plan. Some networks charge us for every post (X, for example), so if a plan's posting is far beyond typical use, such as automated bulk posting, we'll contact you before anything changes. The details are in our terms.",
+  ],
+  [
     "What counts as a channel?",
     "Each connected social account is one channel. One X account and one LinkedIn profile, for example, count as two.",
   ],
   [
+    "What's a workspace?",
+    "A separate space for one client or brand, with its own channels, calendar, media and team, and you switch between them from the sidebar. Creator includes 1, Team 3, Pro 5 and Agency 20, all on one bill. Channels, people and AI allowances are shared across them, so you can give a big client more channels and a small one fewer.",
+  ],
+  [
     "Who counts as a person?",
-    "Everyone in your workspace, including invites that haven't been accepted yet. Creator is for one person; Team allows 5 and Pro allows 15.",
+    "Everyone across your workspaces, including invites that haven't been accepted yet. Someone in three of your workspaces counts once. Creator is for one person; Team allows 5, Pro 15 and Agency 30.",
+  ],
+  [
+    "Which plan is right for an agency?",
+    "Agency, if you manage more than five clients: 20 workspaces, 100 channels and 30 people for $99/month. With five clients or fewer, Pro covers 5 workspaces and 50 channels for $59/month.",
   ],
   [
     "Can I change plans later?",
@@ -281,8 +323,8 @@ export const PRICING_FAQ: [string, string][] = [
     "Yes. Prices are in US dollars and include any sales tax or VAT. Checkout can show the price in your local currency.",
   ],
   [
-    "What happens if I reach an AI limit?",
-    "AI agent messages, images and videos reset each month. Until then you can keep posting as normal, or move to a bigger plan for a higher allowance.",
+    "Is the AI agent really unlimited?",
+    "Yes, for normal use on every plan. There's a daily safety limit per workspace to stop scripts or runaway sessions, far above what anyone uses by hand. AI images and videos have monthly allowances that reset on the 1st; the usage ring in the agent chat shows how much is left.",
   ],
   [
     "How do I cancel?",

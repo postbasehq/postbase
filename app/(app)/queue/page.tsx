@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { EmptyState } from "@/components/EmptyState";
 import { createClient } from "@/lib/supabase/server";
+import { scopeOrgId } from "@/lib/org";
 import { getTimeZone, formatInTz } from "@/lib/tz";
 import { SubmitButton } from "@/components/SubmitButton";
 import { BrandTile } from "@/components/BrandTile";
@@ -104,9 +106,11 @@ export default async function QueuePage({
   const from = (requested - 1) * PAGE_SIZE;
 
   // Channels connected in this org — populate the channel dropdown.
+  const orgId = await scopeOrgId();
   const { data: orgChannels } = await supabase
     .from("channels")
     .select("platform")
+    .eq("org_id", orgId)
     .order("created_at", { ascending: true });
   const channelOptions = Array.from(
     new Set((orgChannels ?? []).map((c) => c.platform)),
@@ -118,7 +122,8 @@ export default async function QueuePage({
   if (channel) {
     const { data: ct } = await supabase
       .from("post_targets")
-      .select("post_id, channels!inner(platform)")
+      .select("post_id, channels!inner(platform, org_id)")
+      .eq("channels.org_id", orgId)
       .eq("channels.platform", channel);
     channelPostIds = Array.from(new Set((ct ?? []).map((r) => r.post_id)));
   }
@@ -129,6 +134,7 @@ export default async function QueuePage({
       "id, body, thread_tail, scheduled_at, status, repeat_every, media(storage_url, type), post_targets(id, status, error, attempts, next_attempt_at, platform_post_id, metrics, metrics_updated_at, channels(platform, handle))",
       { count: "exact" },
     )
+    .eq("org_id", orgId)
     .order("scheduled_at", { ascending: true, nullsFirst: false });
   if (status !== "all") query = query.eq("status", status);
   if (q) query = query.ilike("body", `%${q}%`);
@@ -166,7 +172,7 @@ export default async function QueuePage({
   };
 
   return (
-    <div className="mx-auto max-w-[1200px]">
+    <div className="mx-auto flex min-h-full max-w-[1200px] flex-col">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <QueueControls channels={channelOptions} />
         <AutoRefresh active={inFlight} />
@@ -188,32 +194,29 @@ export default async function QueuePage({
         </div>
       </div>
 
-      <div className="mt-5 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
+      {/* When empty, the box fills the rest of the page with the message centred. */}
+      <div
+        className={`mt-5 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm ${
+          rows.length === 0 ? "flex flex-1 flex-col items-center justify-center" : ""
+        }`}
+      >
         {rows.length === 0 ? (
-          <div className="px-4 py-16 text-center">
-            <p className="text-sm text-muted">
-              {status === "all" && !q && !channel
-                ? "No posts yet."
-                : q
-                  ? `No posts match “${q}”.`
-                  : "No posts match these filters."}
-            </p>
-            {status === "all" && !q && !channel ? (
-              <Link
-                href="/composer"
-                className="mt-3 inline-block rounded-full border border-line px-4 py-2 text-sm font-medium text-blue-ink hover:bg-surface-2"
-              >
-                Write your first post
-              </Link>
-            ) : (
-              <Link
-                href="/queue"
-                className="mt-3 inline-block rounded-full border border-line px-4 py-2 text-sm font-medium text-blue-ink hover:bg-surface-2"
-              >
-                Clear filters
-              </Link>
-            )}
-          </div>
+          status === "all" && !q && !channel ? (
+            <EmptyState
+              kind="posts"
+              title="Nothing in your queue yet"
+              body="Every post you schedule, publish or save as a draft shows up here, with its status on each network."
+              primary={{ href: "/composer", label: "Write your first post" }}
+              secondary={{ href: "/channels", label: "Connect a channel" }}
+            />
+          ) : (
+            <EmptyState
+              kind="search"
+              title={q ? `No posts match “${q}”` : "No posts match these filters"}
+              body="Try a different search, or clear the filters to see everything."
+              primary={{ href: "/queue", label: "Clear filters" }}
+            />
+          )
         ) : (
           <div className="overflow-x-auto">
             <div className="min-w-[920px]">

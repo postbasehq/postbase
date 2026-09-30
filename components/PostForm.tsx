@@ -139,7 +139,7 @@ type Channel = {
   verified?: boolean | null;
 };
 type Media = { url: string; type: string };
-type LibraryItem = { id: string; url: string; name: string; type: string; size_bytes: number };
+type LibraryItem = { id: string; url: string; name: string; type: string; size_bytes: number; folder_id?: string | null };
 type DraftItem = {
   id: string;
   body: string;
@@ -159,6 +159,8 @@ type PostFormProps = {
   defaultScheduleLocal?: string;
   /** Reusable assets from the media library, for the "Pick from library" picker. */
   libraryItems?: LibraryItem[];
+  /** The library's folders, to filter the picker. */
+  libraryFolders?: { id: string; name: string }[];
   /** Existing drafts, for the "Load draft" picker (omit to hide the control). */
   drafts?: DraftItem[];
   /** Draft currently open in the editor, hidden from the "Load draft" list. */
@@ -200,6 +202,7 @@ export function PostForm({
   submitLabel,
   defaultScheduleLocal,
   libraryItems = [],
+  libraryFolders = [],
   drafts = [],
   currentDraftId,
   prefillMedia,
@@ -246,6 +249,7 @@ export function PostForm({
   const [busy, setBusy] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [libraryFolder, setLibraryFolder] = useState<string>("all");
   const [draftsOpen, setDraftsOpen] = useState(false);
   const [draftQuery, setDraftQuery] = useState("");
   const otherDrafts = drafts.filter((d) => d.id !== currentDraftId);
@@ -1257,8 +1261,26 @@ export function PostForm({
             </Link>
           </div>
         ) : (
+          <>
+          {libraryFolders.length > 0 ? (
+            <div className="mt-4 flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Folder">
+              {[{ id: "all", name: "All media" }, ...libraryFolders].map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setLibraryFolder(f.id)}
+                  aria-pressed={libraryFolder === f.id}
+                  className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+                    libraryFolder === f.id ? "border-[#2b59d9] bg-[#2b59d9] text-white" : "border-line text-muted hover:text-ink"
+                  }`}
+                >
+                  {f.name}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <div className="mt-4 grid max-h-[52vh] grid-cols-3 gap-2.5 overflow-y-auto sm:grid-cols-4">
-            {libraryItems.map((item) => {
+            {libraryItems.filter((item) => libraryFolder === "all" || item.folder_id === libraryFolder).map((item) => {
               const already = media.some((m) => m.url === item.url);
               const on = already || picked.has(item.url);
               return (
@@ -1298,6 +1320,7 @@ export function PostForm({
               );
             })}
           </div>
+          </>
         )}
 
         <div className="mt-5 flex justify-end gap-2.5">

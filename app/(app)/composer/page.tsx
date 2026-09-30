@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { scopeOrgId } from "@/lib/org";
 import { PostForm } from "@/components/PostForm";
 import { higgsfieldConfigured } from "@/lib/higgsfield";
 import { getCurrentOrgId } from "@/lib/org";
@@ -20,6 +21,7 @@ export default async function ComposerPage({
   const defaultScheduleLocal = at && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(at) ? at : undefined;
 
   const supabase = await createClient();
+  const orgId = await scopeOrgId();
 
   // "Use in a new post" from the media library pre-attaches one asset.
   let prefillMedia: { url: string; type: string }[] | undefined;
@@ -28,19 +30,21 @@ export default async function ComposerPage({
       .from("media_library")
       .select("url, type")
       .eq("id", mediaId)
+      .eq("org_id", orgId)
       .maybeSingle();
     if (m) prefillMedia = [{ url: m.url, type: m.type }];
   }
   // "Republish" from the queue: copy an existing post (any status) into a new,
   // unsaved one: text, thread, channels, per-channel versions, media and
   // settings. No id, so saving creates a new post and never edits the original.
-  // The time is left empty for the user to pick. RLS scopes it to the org.
+  // The time is left empty for the user to pick. Only posts in this workspace.
   let republish: PostFormInitial | undefined;
   if (from) {
     const { data: src } = await supabase
       .from("posts")
       .select("body, thread_tail, tiktok_privacy_level, tiktok_options, youtube_privacy, youtube_options, repeat_every, post_targets(channel_id, variant_body)")
       .eq("id", from)
+      .eq("org_id", orgId)
       .maybeSingle();
     if (src) {
       const { data: srcMedia } = await supabase.from("media").select("storage_url, type").eq("post_id", from);
@@ -65,16 +69,25 @@ export default async function ComposerPage({
   const { data: channels } = await supabase
     .from("channels")
     .select("id, platform, handle, display_name, avatar_url, verified")
+    .eq("org_id", orgId)
     .order("created_at", { ascending: true });
 
   const { data: library } = await supabase
     .from("media_library")
-    .select("id, url, name, type, size_bytes")
+    .select("id, url, name, type, size_bytes, folder_id")
+    .eq("org_id", orgId)
     .order("created_at", { ascending: false });
+
+  const { data: libraryFolders } = await supabase
+    .from("media_folders")
+    .select("id, name")
+    .eq("org_id", orgId)
+    .order("name", { ascending: true });
 
   const { data: draftRows } = await supabase
     .from("posts")
     .select("id, body, thread_tail, updated_at, post_targets(channels(platform))")
+    .eq("org_id", orgId)
     .eq("status", "draft")
     .order("updated_at", { ascending: false })
     .limit(50);
@@ -116,6 +129,7 @@ export default async function ComposerPage({
         submitLabel="Schedule post"
         defaultScheduleLocal={defaultScheduleLocal}
         libraryItems={library ?? []}
+        libraryFolders={libraryFolders ?? []}
         drafts={drafts}
         prefillMedia={prefillMedia}
         initial={republish}

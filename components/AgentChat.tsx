@@ -6,6 +6,7 @@ import { marked } from "marked";
 import { AgentSparkIcon } from "@/components/AgentSparkIcon";
 import { AgentPostsList } from "@/components/AgentPostsList";
 import { AgentModelSelector } from "@/components/AgentModelSelector";
+import { AgentUsageRing, type AgentUsageInfo } from "@/components/AgentUsageRing";
 import { AgentMentionMenu } from "@/components/AgentMentionMenu";
 import { AgentChannelMenu } from "@/components/AgentChannelMenu";
 import { AgentComposerInput, type AgentComposerHandle } from "@/components/AgentComposerInput";
@@ -94,6 +95,7 @@ export function AgentChat({
   limit,
   imagesRemaining: initialImagesRemaining = null,
   imagesLimit = null,
+  usage,
   modelsReady = { anthropic: true, openai: false },
 }: {
   channels: AgentChannel[];
@@ -102,6 +104,8 @@ export function AgentChat({
   limit?: number | null;
   imagesRemaining?: number | null;
   imagesLimit?: number | null;
+  /** Plan usage for the ring beside the model picker. */
+  usage?: AgentUsageInfo;
   modelsReady?: { anthropic: boolean; openai: boolean };
 }) {
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -509,7 +513,7 @@ export function AgentChat({
               disabled={outOfQuota}
               placeholder={
                 outOfQuota
-                  ? "You're out of agent messages this month"
+                  ? "Today's safety limit reached. It resets at midnight UTC"
                   : "Ask the agent to draft or schedule a post…"
               }
               className="max-h-48 min-h-[56px] w-full overflow-y-auto bg-transparent px-4 pt-3.5 text-sm text-ink outline-none disabled:opacity-60"
@@ -559,6 +563,18 @@ export function AgentChat({
 
               <div className="ml-auto flex items-center gap-1">
                 <AgentModelSelector value={model} onChange={changeModel} ready={modelsReady} />
+                {usage ? (
+                  <AgentUsageRing
+                    usage={{
+                      ...usage,
+                      // Images used this session count straight away.
+                      images:
+                        usage.images && imagesRemaining !== null && imagesLimit
+                          ? { used: imagesLimit - imagesRemaining, limit: imagesLimit }
+                          : usage.images,
+                    }}
+                  />
+                ) : null}
                 {busy ? (
                   <button
                     type="button"
@@ -586,38 +602,14 @@ export function AgentChat({
             </div>
           </form>
           <p className="px-2 pt-1.5 text-center text-[11px] text-muted">
-            {remaining !== null && limit && remaining <= Math.max(5, Math.ceil(limit * 0.1)) ? (
-              remaining <= 0 ? (
-                <>
-                  You&apos;re out of agent messages this month.{" "}
-                  <Link href="/billing" className="font-medium text-blue">
-                    Upgrade
-                  </Link>{" "}
-                  for more.
-                </>
-              ) : (
-                <>
-                  {remaining} agent message{remaining === 1 ? "" : "s"} left this month · nothing
-                  publishes until you click Schedule.
-                </>
-              )
+            {/* The agent is unlimited; only the hidden daily safety cap can stop it. */}
+            {remaining !== null && remaining <= 0 ? (
+              <span style={{ color: "#d14a3e" }} className="font-medium">
+                You&apos;ve reached today&apos;s safety limit in this workspace. It resets at midnight UTC.
+              </span>
             ) : (
               "The agent drafts posts for you to review — nothing publishes until you click Schedule."
             )}
-            {imagesRemaining !== null && imagesLimit ? (
-              <>
-                {" · "}
-                {imagesRemaining <= 0 ? (
-                  <span style={{ color: "#d14a3e" }} className="font-medium">
-                    No AI image credits left
-                  </span>
-                ) : (
-                  <>
-                    {imagesRemaining} AI image{imagesRemaining === 1 ? "" : "s"} left
-                  </>
-                )}
-              </>
-            ) : null}
           </p>
         </div>
       </div>

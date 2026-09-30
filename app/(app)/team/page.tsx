@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentOrgId, getOrgRole } from "@/lib/org";
-import { SEAT_LIMIT, type PlanId } from "@/lib/plans";
+import { PLANS, SEAT_LIMIT, type PlanId } from "@/lib/plans";
+import { seatUsage } from "@/lib/billing-guard";
 import { CopyField } from "@/components/CopyField";
 import { SubmitButton } from "@/components/SubmitButton";
 import { createInvite, revokeInvite, removeMember } from "../team-actions";
@@ -22,8 +23,12 @@ export default async function TeamPage() {
   const { data: org } = orgId
     ? await db.from("orgs").select("plan, name").eq("id", orgId).single()
     : { data: null };
-  const plan = (org?.plan ?? "trial") as PlanId;
+  // Seats are shared across every workspace the plan covers.
+  const seats = orgId ? await seatUsage(orgId) : null;
+  const plan = (seats?.group.plan ?? org?.plan ?? "trial") as PlanId;
   const seatLimit = SEAT_LIMIT[plan] ?? 1;
+  const planName = plan === "trial" ? "trial" : PLANS[plan].name;
+  const shared = (seats?.group.orgIds.length ?? 1) > 1;
 
   const { data: memberRows } = orgId
     ? await db.from("org_members").select("user_id, role, created_at").eq("org_id", orgId)
@@ -44,7 +49,7 @@ export default async function TeamPage() {
         .order("created_at", { ascending: true })
     : { data: [] };
 
-  const seatsUsed = members.length + (invites?.length ?? 0);
+  const seatsUsed = seats?.used ?? members.length + (invites?.length ?? 0);
   const atLimit = seatsUsed >= seatLimit;
 
   const card = "overflow-hidden rounded-2xl border border-line bg-surface shadow-sm";
@@ -57,6 +62,7 @@ export default async function TeamPage() {
         </div>
         <span className="ml-auto rounded-full border border-line px-3 py-1.5 text-xs font-medium text-muted">
           {seatsUsed} of {seatLimit} seat{seatLimit === 1 ? "" : "s"}
+          {shared ? " across your workspaces" : ""}
         </span>
       </div>
 
@@ -69,7 +75,7 @@ export default async function TeamPage() {
           <div className="p-4">
             {atLimit ? (
               <p className="text-sm text-muted">
-                You’ve used all {seatLimit} seat{seatLimit === 1 ? "" : "s"} on the {ROLE_LABEL[plan] ?? plan}{" "}
+                You’ve used all {seatLimit} seat{seatLimit === 1 ? "" : "s"} on the {planName}{" "}
                 plan.{" "}
                 <a href="/billing" className="font-medium text-blue-ink underline">
                   Upgrade

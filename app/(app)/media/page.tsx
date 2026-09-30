@@ -1,14 +1,21 @@
 import { createClient } from "@/lib/supabase/server";
-import { deleteMediaAsset, renameMediaAsset } from "../media-actions";
+import { scopeOrgId } from "@/lib/org";
+import { deleteMediaAsset, renameMediaAsset, type MediaFolder } from "../media-actions";
 import { MediaLibrary, type MediaItem } from "@/components/MediaLibrary";
 
 export default async function MediaPage() {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("media_library")
-    .select("id, url, name, type, size_bytes, created_at")
-    .order("created_at", { ascending: false });
+  const orgId = await scopeOrgId();
+  const [{ data }, { data: folderRows }] = await Promise.all([
+    supabase
+      .from("media_library")
+      .select("id, url, name, type, size_bytes, created_at, folder_id")
+      .eq("org_id", orgId)
+      .order("created_at", { ascending: false }),
+    supabase.from("media_folders").select("id, name").eq("org_id", orgId).order("name", { ascending: true }),
+  ]);
   const items = (data ?? []) as MediaItem[];
+  const folders = (folderRows ?? []) as MediaFolder[];
 
   return (
     <div>
@@ -35,6 +42,7 @@ export default async function MediaPage() {
       <div className="mt-6">
         <MediaLibrary
           initialItems={items}
+          initialFolders={folders}
           deleteAction={deleteMediaAsset}
           renameAction={renameMediaAsset}
         />

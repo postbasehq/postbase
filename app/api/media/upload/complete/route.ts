@@ -35,6 +35,7 @@ export async function POST(req: Request) {
     name?: string;
     type?: string;
     size?: number;
+    folderId?: string | null;
   };
   try {
     body = await req.json();
@@ -75,6 +76,19 @@ export async function POST(req: Request) {
     }),
   );
 
+  // Uploaded while a folder was open: file it there, if the folder is in this
+  // workspace. Anything else just lands in the library unfiled.
+  let folderId: string | null = null;
+  if (body.folderId) {
+    const { data: folder } = await supabase
+      .from("media_folders")
+      .select("id")
+      .eq("id", String(body.folderId))
+      .eq("org_id", orgId)
+      .maybeSingle();
+    folderId = folder?.id ?? null;
+  }
+
   const url = r2PublicUrl(key);
   const { data, error } = await supabase
     .from("media_library")
@@ -86,8 +100,9 @@ export async function POST(req: Request) {
       type,
       size_bytes: size,
       created_by: user.id,
+      folder_id: folderId,
     })
-    .select("id, key, url, name, type, size_bytes, created_at")
+    .select("id, key, url, name, type, size_bytes, created_at, folder_id")
     .single();
 
   if (error) {

@@ -1,19 +1,22 @@
 import { createClient } from "@/lib/supabase/server";
+import { scopeOrgId } from "@/lib/org";
 import { DeveloperClient } from "@/components/DeveloperClient";
 import { publicMcpUrl, listConnectedApps } from "@/lib/oauth";
 
 export default async function DevelopersPage() {
   const supabase = await createClient();
+  const orgId = await scopeOrgId();
   // Never select hashed_key.
   const { data: keys } = await supabase
     .from("api_keys")
     .select("id, label, key_hint, created_at, last_used_at")
+    .eq("org_id", orgId)
     .order("created_at", { ascending: false });
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const connectedApps = user ? await listConnectedApps(user.id) : [];
+  const connectedApps = user ? (await listConnectedApps(user.id)).filter((a) => a.orgId === orgId) : [];
 
   return (
     <div>

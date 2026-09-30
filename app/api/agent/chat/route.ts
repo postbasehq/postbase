@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { getCurrentOrgId } from "@/lib/org";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { atAgentLimit, recordAgentMessage, aiUsage } from "@/lib/billing-guard";
+import { atAgentLimit, recordAgentMessage, aiUsage, hasAccess, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
 import { higgsfieldConfigured } from "@/lib/higgsfield";
 import { systemPrompt } from "@/lib/agent/config";
 import { getModel, DEFAULT_MODEL_ID, estimateCostUsd } from "@/lib/agent/models";
@@ -73,12 +73,19 @@ export async function POST(req: Request) {
     );
   }
 
-  // Meter usage: gate on the org's monthly message quota, then count this turn.
+  // Unlimited under fair use; only a daily safety cap per workspace applies. Count this turn.
   const admin = createAdminClient();
+  if (!(await hasAccess(admin, orgId))) {
+    return new Response(JSON.stringify({ error: NO_PLAN_MESSAGE }), {
+      status: 402,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
   if (await atAgentLimit(admin, orgId)) {
     return new Response(
       JSON.stringify({
-        error: "You've used all your AI agent messages for this month. Upgrade your plan for more.",
+        error:
+          "You've reached today's safety limit for the AI agent in this workspace. It resets at midnight UTC. If you need more, email team@postbase.so.",
       }),
       { status: 429, headers: { "Content-Type": "application/json" } },
     );

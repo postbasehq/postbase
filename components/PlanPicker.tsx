@@ -74,7 +74,7 @@ export function PlanPicker({
     <div className="flex flex-col gap-6">
       <IntervalToggle interval={interval} onChange={setInterval} />
 
-      <div className="grid gap-4 md:grid-cols-3 md:py-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {PLAN_ORDER.map((id) => {
           const featured = chosen ? id === chosen : id === "team";
           return (
@@ -86,7 +86,6 @@ export function PlanPicker({
               badge={featured ? (chosen ? "Your pick" : "Most popular") : undefined}
               currentPlan={currentPlan}
               action={action}
-              className={featured ? "md:-my-3" : ""}
             />
           );
         })}
@@ -194,9 +193,7 @@ export function PlanCard({
     >
       {/* Zone 1: who it's for, the price and the one action */}
       <div
-        className={`relative isolate overflow-hidden rounded-2xl border border-line bg-surface-2 p-5 ${
-          featured ? "md:py-7" : ""
-        }`}
+        className="relative isolate overflow-hidden rounded-2xl border border-line bg-surface-2 p-5"
       >
         {/* The Postbase mark hanging from the panel's top edge, barely there. */}
         <LogoMark
@@ -213,7 +210,8 @@ export function PlanCard({
             <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${accent.fill}`}>{badge}</span>
           ) : null}
         </div>
-        <p className="mt-1 text-[14px] text-muted">{p.blurb}</p>
+        {/* Two lines reserved, so prices and buttons line up across the cards. */}
+        <p className="mt-1 min-h-[2lh] text-[14px] text-muted">{p.blurb}</p>
 
         <div className="mt-5 flex items-end gap-1">
           <span className="font-display text-[44px] font-semibold leading-none tracking-[-0.035em] text-ink">
@@ -257,6 +255,12 @@ export function PlanCard({
             <span className="text-muted"><PeopleIcon /></span>
             <span>
               <span className="font-semibold">{p.seats}</span> {p.seats === 1 ? "person" : "people"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <span className="text-muted"><WorkspacesIcon /></span>
+            <span>
+              <span className="font-semibold">{p.workspaces}</span> {p.workspaces === 1 ? "workspace" : "workspaces"}
             </span>
           </div>
         </div>
@@ -360,5 +364,16 @@ function SelfHostCard() {
         </a>
       </div>
     </div>
+  );
+}
+
+function WorkspacesIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </svg>
   );
 }

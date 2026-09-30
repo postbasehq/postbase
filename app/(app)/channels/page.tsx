@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { scopeOrgId } from "@/lib/org";
 import { disconnectChannel } from "../actions";
 import { ChannelsBoard } from "@/components/ChannelsBoard";
 
@@ -49,9 +50,11 @@ export default async function ChannelsPage({
 }) {
   const { connected, error } = await searchParams;
   const supabase = await createClient();
+  const orgId = await scopeOrgId();
   const { data: channels } = await supabase
     .from("channels")
     .select("id, platform, handle, status, display_name, avatar_url, verified")
+    .eq("org_id", orgId)
     .order("created_at", { ascending: true });
 
   // Group connected accounts by platform for the board.

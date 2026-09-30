@@ -2,10 +2,11 @@
  * Cloud plans, anchored on Postiz ($29 for 5 channels). Postbase pays X per API
  * call (posts $0.015, or $0.20 with a link; reads $0.005), so X stats are read
  * only on demand (lib/analytics/collect.ts) and X posting is covered by fair use.
- * AI generation and agent messages are capped per plan because they cost per use.
+ * AI image and video generation are capped per plan because they cost per use; the
+ * AI agent is unlimited under fair use, with a daily safety cap.
  */
 
-export type PlanId = "trial" | "creator" | "team" | "growth";
+export type PlanId = "trial" | "creator" | "team" | "growth" | "agency";
 
 export type Plan = {
   id: Exclude<PlanId, "trial">;
@@ -13,6 +14,8 @@ export type Plan = {
   monthly: number; // USD/mo
   channels: number;
   seats: number;
+  /** Workspaces the plan covers, sharing its channels, seats and AI allowances. */
+  workspaces: number;
   blurb: string;
   /** Set when the card lists only what this plan adds ("Everything in Creator, plus"). */
   inherits?: string;
@@ -30,6 +33,7 @@ export const AI_IMAGE_LIMIT: Record<PlanId, number> = {
   creator: 20,
   team: 100,
   growth: 300,
+  agency: 600,
 };
 // Video is ~10-50x the per-unit cost of an image, so quotas stay conservative
 // to protect margin (see AI pricing notes).
@@ -38,29 +42,31 @@ export const AI_VIDEO_LIMIT: Record<PlanId, number> = {
   creator: 3,
   team: 10,
   growth: 30,
+  agency: 60,
 };
 
-// Monthly AI-agent message quota by plan. Each user turn in the /agent chat
-// costs one message (a turn may fan out to several tool calls). Kept generous
-// on paid plans but capped so a runaway session can't rack up an open-ended
-// model bill; the trial gets a taste.
+// The AI agent is unlimited under fair use (see the Terms). Each user turn in
+// the /agent chat is one message (a turn may fan out to several tool calls).
 // Measured on Sonnet 5 with prompt caching: ~$0.002 (a lookup) to ~$0.006 (draft
-// + schedule) per message, so even Pro's full quota is ~$9/month. Sonnet beats
-// Haiku 4.5 on cost here: our ~5k-token prompt is below Haiku's cache minimum.
-// Real per-message cost is logged on agent_messages.cost_usd.
-export const AGENT_MESSAGE_LIMIT: Record<PlanId, number> = {
+// + schedule) per message, so normal use costs cents a month. Real per-message
+// cost is logged on agent_messages.cost_usd.
+//
+// A daily safety cap per workspace stops a script or runaway session running up
+// an open-ended model bill. Normal use never gets near it, so it isn't marketed;
+// the trial's is lower. Resets at midnight UTC.
+export const AGENT_DAILY_CAP: Record<PlanId, number> = {
   trial: 25,
-  creator: 150,
-  team: 500,
-  growth: 1500,
+  creator: 100,
+  team: 100,
+  growth: 100,
+  agency: 100,
 };
 
 /** The AI-quota feature line for a plan, derived from the limits (single source). */
 export const aiFeature = (plan: PlanId): string =>
   `${AI_IMAGE_LIMIT[plan]} AI images + ${AI_VIDEO_LIMIT[plan]} videos a month`;
 
-const agentFeature = (plan: PlanId): string =>
-  `AI agent: ${AGENT_MESSAGE_LIMIT[plan].toLocaleString("en-US")} messages a month`;
+const AGENT_FEATURE = "Unlimited AI agent";
 
 export const PLANS: Record<Exclude<PlanId, "trial">, Plan> = {
   creator: {
@@ -69,12 +75,13 @@ export const PLANS: Record<Exclude<PlanId, "trial">, Plan> = {
     monthly: 29,
     channels: 5,
     seats: 1,
+    workspaces: 1,
     blurb: "For solo creators publishing everywhere.",
     features: [
-      "X, LinkedIn, TikTok, YouTube, Bluesky and Mastodon",
+      "Post to X, LinkedIn, TikTok, YouTube, Bluesky or Mastodon",
       "Unlimited posts, threads and video",
       "Calendar, drafts and analytics",
-      agentFeature("creator"),
+      AGENT_FEATURE,
       aiFeature("creator"),
       "MCP server and API",
     ],
@@ -87,9 +94,10 @@ export const PLANS: Record<Exclude<PlanId, "trial">, Plan> = {
     monthly: 39,
     channels: 15,
     seats: 5,
+    workspaces: 3,
     blurb: "For creators with a small team.",
     inherits: "Everything in Creator, plus",
-    features: ["A shared workspace for up to 5 people", agentFeature("team"), aiFeature("team")],
+    features: ["Invite your team", "Separate workspaces for clients or brands", aiFeature("team")],
     priceMonthly: process.env.STRIPE_PRICE_TEAM_MONTH,
     priceAnnual: process.env.STRIPE_PRICE_TEAM_YEAR,
   },
@@ -99,31 +107,64 @@ export const PLANS: Record<Exclude<PlanId, "trial">, Plan> = {
     monthly: 59,
     channels: 50,
     seats: 15,
-    blurb: "For power users running many accounts.",
+    workspaces: 5,
+    blurb: "For growing brands and small agencies.",
     inherits: "Everything in Team, plus",
-    features: ["Up to 15 people", agentFeature("growth"), aiFeature("growth"), "Priority email support"],
+    features: [aiFeature("growth"), "Priority email support"],
     priceMonthly: process.env.STRIPE_PRICE_GROWTH_MONTH,
     priceAnnual: process.env.STRIPE_PRICE_GROWTH_YEAR,
   },
+  agency: {
+    id: "agency",
+    name: "Agency",
+    monthly: 99,
+    channels: 100,
+    seats: 30,
+    workspaces: 20,
+    blurb: "For agencies managing client accounts.",
+    inherits: "Everything in Pro, plus",
+    features: ["A workspace for each client, on one bill", aiFeature("agency"), "Priority email support"],
+    priceMonthly: process.env.STRIPE_PRICE_AGENCY_MONTH,
+    priceAnnual: process.env.STRIPE_PRICE_AGENCY_YEAR,
+  },
 };
 
-export const PLAN_ORDER: Exclude<PlanId, "trial">[] = ["creator", "team", "growth"];
+export const PLAN_ORDER: Exclude<PlanId, "trial">[] = ["creator", "team", "growth", "agency"];
 
-// Channel allowance by plan. Trial gets Creator-level access.
+// Allowances below are shared across all the workspaces a plan covers (see
+// lib/billing-guard.ts billingGroup). Trial gets Creator-level access.
+
+// Channel allowance by plan.
 export const CHANNEL_LIMIT: Record<PlanId, number> = {
   trial: 5,
   creator: 5,
   team: 15,
   growth: 50,
+  agency: 100,
 };
 
-// Seats (org members, incl. pending invites) by plan.
+// Seats (people across the plan's workspaces, incl. pending invites) by plan.
 export const SEAT_LIMIT: Record<PlanId, number> = {
   trial: 1,
   creator: 1,
   team: 5,
   growth: 15,
+  agency: 30,
 };
+
+// Workspaces a plan covers, including the one that pays for it.
+export const WORKSPACE_LIMIT: Record<PlanId, number> = {
+  trial: 1,
+  creator: 1,
+  team: 3,
+  growth: 5,
+  agency: 20,
+};
+
+/** The cheapest plan that covers more workspaces than this one, for upgrade prompts. */
+export function nextWorkspacePlan(plan: PlanId): Exclude<PlanId, "trial"> | null {
+  return PLAN_ORDER.find((p) => WORKSPACE_LIMIT[p] > WORKSPACE_LIMIT[plan]) ?? null;
+}
 
 // Statuses that grant access to the product (trialing counts).
 const ACTIVE_STATUSES = new Set(["trialing", "active", "past_due"]);

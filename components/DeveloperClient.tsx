@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { EmptyState } from "@/components/EmptyState";
 import { McpClientConfig } from "@/components/McpClientConfig";
 import { Modal } from "@/components/Modal";
 import {
@@ -368,9 +369,14 @@ export function DeveloperClient({
               ))}
             </div>
           ) : (
-            <p className="rounded-xl border border-dashed border-line bg-surface-2/40 px-4 py-6 text-center text-sm text-muted">
-              No API keys yet — generate one to get started.
-            </p>
+            <div className="rounded-xl border border-line">
+              <EmptyState
+                kind="keys"
+                title="No API keys yet"
+                body="Keys are for the REST API and the npm MCP package. AI tools like Claude and ChatGPT can sign in without one."
+                compact
+              />
+            </div>
           )}
         </div>
       </section>

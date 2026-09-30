@@ -65,3 +65,76 @@ export async function renameMediaAsset(formData: FormData) {
     .eq("org_id", orgId);
   revalidatePath("/media");
 }
+
+// ── Folders ─────────────────────────────────────────────────────────────
+
+export type MediaFolder = { id: string; name: string };
+export type FolderResult = { ok: true; folder?: MediaFolder } | { ok: false; error: string };
+
+async function folderContext() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const orgId = await getCurrentOrgId();
+  return { supabase, user, orgId };
+}
+
+const cleanName = (v: unknown) => String(v ?? "").replace(/\s+/g, " ").trim();
+
+/** Create a folder in the current workspace. */
+export async function createMediaFolder(name: string): Promise<FolderResult> {
+  const { supabase, user, orgId } = await folderContext();
+  if (!user || !orgId) return { ok: false, error: "Not signed in." };
+  const n = cleanName(name);
+  if (!n) return { ok: false, error: "Give the folder a name." };
+  if (n.length > 60) return { ok: false, error: "Keep it to 60 characters or fewer." };
+  const { data, error } = await supabase
+    .from("media_folders")
+    .insert({ org_id: orgId, name: n, created_by: user.id })
+    .select("id, name")
+    .single();
+  if (error) return { ok: false, error: error.code === "23505" ? "There's already a folder with that name." : "Couldn't create the folder." };
+  revalidatePath("/media");
+  return { ok: true, folder: data };
+}
+
+/** Rename a folder in the current workspace. */
+export async function renameMediaFolder(id: string, name: string): Promise<FolderResult> {
+  const { supabase, user, orgId } = await folderContext();
+  if (!user || !orgId) return { ok: false, error: "Not signed in." };
+  const n = cleanName(name);
+  if (!n) return { ok: false, error: "Give the folder a name." };
+  if (n.length > 60) return { ok: false, error: "Keep it to 60 characters or fewer." };
+  const { error } = await supabase.from("media_folders").update({ name: n }).eq("id", id).eq("org_id", orgId);
+  if (error) return { ok: false, error: error.code === "23505" ? "There's already a folder with that name." : "Couldn't rename the folder." };
+  revalidatePath("/media");
+  return { ok: true, folder: { id, name: n } };
+}
+
+/** Delete a folder. Its files stay in the library, unfiled (folder_id is set null). */
+export async function deleteMediaFolder(id: string): Promise<FolderResult> {
+  const { supabase, user, orgId } = await folderContext();
+  if (!user || !orgId) return { ok: false, error: "Not signed in." };
+  const { error } = await supabase.from("media_folders").delete().eq("id", id).eq("org_id", orgId);
+  if (error) return { ok: false, error: "Couldn't delete the folder." };
+  revalidatePath("/media");
+  return { ok: true };
+}
+
+/** Move files into a folder, or out of all folders (null). Current workspace only. */
+export async function moveMediaToFolder(ids: string[], folderId: string | null): Promise<FolderResult> {
+  const { supabase, user, orgId } = await folderContext();
+  if (!user || !orgId) return { ok: false, error: "Not signed in." };
+  const clean = ids.filter(Boolean).slice(0, 500);
+  if (clean.length === 0) return { ok: true };
+  if (folderId) {
+    // The folder must be in this workspace, not just one the user can see.
+    const { data: folder } = await supabase.from("media_folders").select("id").eq("id", folderId).eq("org_id", orgId).maybeSingle();
+    if (!folder) return { ok: false, error: "That folder doesn't exist." };
+  }
+  const { error } = await supabase.from("media_library").update({ folder_id: folderId }).in("id", clean).eq("org_id", orgId);
+  if (error) return { ok: false, error: "Couldn't move the files." };
+  revalidatePath("/media");
+  return { ok: true };
+}

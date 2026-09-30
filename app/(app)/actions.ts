@@ -266,11 +266,12 @@ export async function createPost(formData: FormData) {
   if (error) throw new Error(error.message);
 
   if (channelIds.length > 0) {
-    // Only allow targeting channels in the user's own org. The channels read is
-    // RLS-scoped, so this rejects any channel_id from another tenant.
+    // Only allow targeting channels in this workspace. RLS alone would also
+    // accept channels from the user's other workspaces.
     const { data: owned } = await supabase
       .from("channels")
       .select("id")
+      .eq("org_id", orgId)
       .in("id", channelIds);
     const ownedIds = new Set((owned ?? []).map((c) => c.id));
     if (channelIds.some((id) => !ownedIds.has(id))) {
@@ -360,11 +361,12 @@ export async function updatePost(formData: FormData) {
   if (error) throw new Error(error.message);
   if (!updated || updated.length === 0) redirect("/queue");
 
-  // Validate channels belong to the org, then replace the targets.
+  // Validate channels belong to this workspace, then replace the targets.
   if (channelIds.length > 0) {
     const { data: owned } = await supabase
       .from("channels")
       .select("id")
+      .eq("org_id", orgId)
       .in("id", channelIds);
     const ownedIds = new Set((owned ?? []).map((c) => c.id));
     if (channelIds.some((id) => !ownedIds.has(id))) {

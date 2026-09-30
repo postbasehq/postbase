@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { EmptyState } from "@/components/EmptyState";
 import { createClient } from "@/lib/supabase/server";
+import { scopeOrgId } from "@/lib/org";
 import { BrandTile } from "@/components/BrandTile";
 import { DeletePostButton } from "@/components/DeletePostButton";
 import { CalendarChannelsBar } from "@/components/CalendarChannelsBar";
@@ -39,6 +41,7 @@ export default async function DraftsPage({
   searchParams: Promise<{ page?: string; q?: string }>;
 }) {
   const supabase = await createClient();
+  const orgId = await scopeOrgId();
 
   const { page: pageParam, q: qParam } = await searchParams;
   const q = (qParam ?? "").trim();
@@ -48,6 +51,7 @@ export default async function DraftsPage({
   let query = supabase
     .from("posts")
     .select("id, body, thread_tail, updated_at, post_targets(channels(platform))", { count: "exact" })
+    .eq("org_id", orgId)
     .eq("status", "draft")
     .order("updated_at", { ascending: false });
   if (q) query = query.ilike("body", `%${q}%`);
@@ -59,6 +63,7 @@ export default async function DraftsPage({
   const { data: channels } = await supabase
     .from("channels")
     .select("id, platform, handle, status")
+    .eq("org_id", orgId)
     .order("created_at", { ascending: true });
   const accountsByPlatform: Record<
     string,
@@ -83,7 +88,7 @@ export default async function DraftsPage({
   };
 
   return (
-    <div className="mx-auto max-w-[1200px]">
+    <div className="mx-auto flex min-h-full max-w-[1200px] flex-col">
       <div className="flex flex-wrap items-center gap-3">
         <form className="flex w-full items-center gap-2 rounded-lg border border-line bg-surface px-3 focus-within:border-blue sm:w-80">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted" aria-hidden>
@@ -111,17 +116,28 @@ export default async function DraftsPage({
         </p>
       </div>
 
-      <div className="mt-5 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
+      {/* When empty, the box fills the rest of the page with the message centred. */}
+      <div
+        className={`mt-5 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm ${
+          rows.length === 0 ? "flex flex-1 flex-col items-center justify-center" : ""
+        }`}
+      >
         {rows.length === 0 ? (
-          <div className="px-4 py-16 text-center">
-            <p className="text-sm text-muted">{q ? `No drafts match “${q}”.` : "No drafts yet."}</p>
-            <Link
-              href={q ? "/drafts" : "/composer"}
-              className="mt-3 inline-block rounded-full border border-line px-4 py-2 text-sm font-medium text-blue-ink hover:bg-surface-2"
-            >
-              {q ? "Clear search" : "Start a draft"}
-            </Link>
-          </div>
+          q ? (
+            <EmptyState
+              kind="search"
+              title={`No drafts match “${q}”`}
+              body="Try a different search, or clear it to see every draft."
+              primary={{ href: "/drafts", label: "Clear search" }}
+            />
+          ) : (
+            <EmptyState
+              kind="drafts"
+              title="No drafts yet"
+              body="Save a post without a time and it waits here until you're ready to schedule it."
+              primary={{ href: "/composer", label: "Start a draft" }}
+            />
+          )
         ) : (
           <div className="overflow-x-auto">
             <div className="min-w-[680px]">

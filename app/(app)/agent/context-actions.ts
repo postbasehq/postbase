@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { scopeOrgId } from "@/lib/org";
 import type { AgentPostRow } from "@/lib/agent/tools";
 
 /**
@@ -33,6 +34,7 @@ export async function listContextPosts(
   const { data } = await supabase
     .from("posts")
     .select("id, body, scheduled_at, status, post_targets(channels(platform, handle))")
+    .eq("org_id", await scopeOrgId())
     .eq("status", status)
     .order(status === "scheduled" ? "scheduled_at" : "updated_at", {
       ascending: status === "scheduled",
@@ -50,6 +52,7 @@ export async function searchContextPosts(query: string): Promise<AgentPostRow[]>
   const { data } = await supabase
     .from("posts")
     .select("id, body, scheduled_at, status, post_targets(channels(platform, handle))")
+    .eq("org_id", await scopeOrgId())
     .in("status", ["draft", "scheduled"])
     .ilike("body", `%${q}%`)
     .order("updated_at", { ascending: false })

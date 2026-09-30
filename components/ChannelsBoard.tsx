@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { EmptyState } from "@/components/EmptyState";
 import { useRouter } from "next/navigation";
 import { BrandTile, BRANDS } from "@/components/BrandTile";
 import { BlueskyForm } from "@/components/BlueskyForm";
@@ -213,7 +214,8 @@ export function ChannelsBoard({
           </div>
         ) : null}
 
-        <div className="mt-4 flex pt-1">
+        {/* Pinned to the bottom so buttons line up across a row of cards. */}
+        <div className="mt-auto flex pt-5">
           {comingSoon && !connected ? (
             <span className="ml-auto rounded-full border border-line px-4 py-2 text-sm font-semibold text-muted">
               Coming soon
@@ -310,13 +312,21 @@ export function ChannelsBoard({
         const showAvailable = filter !== "connected" && availablePlatforms.length > 0;
         if (!showConnected && !showAvailable) {
           return (
-            <p className="rounded-2xl border border-line bg-surface px-4 py-8 text-center text-sm text-muted">
-              {q
-                ? `No channels match “${query}”.`
-                : filter === "connected"
-                  ? "No connected channels yet."
-                  : "No channels available to connect."}
-            </p>
+            <div className="rounded-2xl border border-line bg-surface shadow-sm">
+              {q ? (
+                <EmptyState kind="search" title={`No channels match “${query}”`} body="Try another network name." compact />
+              ) : filter === "connected" ? (
+                <EmptyState
+                  kind="channels"
+                  title="No channels connected yet"
+                  body="Connect X, LinkedIn, Bluesky and more. Each account takes about a minute."
+                  primary={{ href: "/channels", label: "See all networks" }}
+                  compact
+                />
+              ) : (
+                <EmptyState kind="channels" title="Every network is connected" body="You've connected all the networks Postbase supports." compact />
+              )}
+            </div>
           );
         }
         return (
@@ -324,7 +334,7 @@ export function ChannelsBoard({
             {showConnected ? (
               <section>
                 <h3 className="mb-3 text-sm font-semibold text-muted">Connected</h3>
-                <div className="grid grid-cols-1 items-start gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
                   {connectedPlatforms.map(renderCard)}
                 </div>
               </section>
@@ -334,7 +344,8 @@ export function ChannelsBoard({
                 <h3 className="mb-3 text-sm font-semibold text-muted">
                   {connectedPlatforms.length > 0 ? "Available to connect" : "Connect a channel"}
                 </h3>
-                <div className="grid grid-cols-1 items-start gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+                {/* Every row the same height: these cards only differ by a line of text. */}
+                <div className="grid auto-rows-fr grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
                   {availablePlatforms.map(renderCard)}
                 </div>
               </section>

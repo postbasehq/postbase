@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { scopeOrgId } from "@/lib/org";
 import { PostForm } from "@/components/PostForm";
 import { type TikTokInitial } from "@/components/TikTokSettings";
 import { type YouTubePrivacy } from "@/components/YouTubeSettings";
@@ -16,6 +17,7 @@ export default async function EditPostPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const orgId = await scopeOrgId();
 
   const { data: post } = await supabase
     .from("posts")
@@ -23,6 +25,7 @@ export default async function EditPostPage({
       "id, body, thread_tail, scheduled_at, status, tiktok_privacy_level, tiktok_options, youtube_privacy, youtube_options, repeat_every, post_targets(channel_id, variant_body, status, platform_post_id)",
     )
     .eq("id", id)
+    .eq("org_id", orgId)
     .maybeSingle();
 
   if (!post) notFound();
@@ -40,6 +43,7 @@ export default async function EditPostPage({
   const { data: channels } = await supabase
     .from("channels")
     .select("id, platform, handle, display_name, avatar_url, verified")
+    .eq("org_id", orgId)
     .order("created_at", { ascending: true });
 
   const { data: mediaRows } = await supabase
@@ -50,12 +54,20 @@ export default async function EditPostPage({
 
   const { data: library } = await supabase
     .from("media_library")
-    .select("id, url, name, type, size_bytes")
+    .select("id, url, name, type, size_bytes, folder_id")
+    .eq("org_id", orgId)
     .order("created_at", { ascending: false });
+
+  const { data: libraryFolders } = await supabase
+    .from("media_folders")
+    .select("id, name")
+    .eq("org_id", orgId)
+    .order("name", { ascending: true });
 
   const { data: draftRows } = await supabase
     .from("posts")
     .select("id, body, thread_tail, updated_at, post_targets(channels(platform))")
+    .eq("org_id", orgId)
     .eq("status", "draft")
     .order("updated_at", { ascending: false })
     .limit(50);
@@ -104,6 +116,7 @@ export default async function EditPostPage({
         action={updatePost}
         submitLabel="Save changes"
         libraryItems={library ?? []}
+        libraryFolders={libraryFolders ?? []}
         drafts={drafts}
         currentDraftId={post.id}
         aiEnabled={aiEnabled}
