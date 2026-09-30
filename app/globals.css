@@ -637,3 +637,34 @@ body {
     animation: none;
   }
 }
+
+/*
+  Press feedback: anything clickable gives way slightly while held, so a click
+  visibly lands. Uses the standalone `scale` property so it composes with
+  existing transforms (hover lifts, the fanned channel strip) and leaves each
+  element's own transitions alone. Full-width controls darken instead, since
+  shrinking a wide row looks off; backdrops are skipped. Opt out with
+  data-no-press.
+*/
+:is(button, [role="button"], [role="tab"], a[class*="rounded"][class*="px-"]):not(
+    :disabled,
+    [aria-disabled="true"],
+    [data-no-press],
+    [class*="w-full"],
+    [class*="inset-0"],
+    .block
+  ):active {
+  scale: 0.96;
+}
+:is(button, [role="button"], [role="option"], a[class*="rounded"][class*="px-"]):is([class*="w-full"], .block):not(
+    :disabled,
+    [aria-disabled="true"],
+    [data-no-press]
+  ):active {
+  filter: brightness(0.92);
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(button, [role="button"], [role="tab"], a[class*="rounded"][class*="px-"]):not([data-no-press]):active {
+    scale: none;
+  }
+}
