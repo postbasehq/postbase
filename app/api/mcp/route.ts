@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { authenticateApiKey } from "@/lib/api-auth";
 import { resolveAccessToken, resourceMetadataUrlFor } from "@/lib/oauth";
 import { listChannels, listPosts, createPost, cancelPost } from "@/lib/api-core";
+import { failedAuthLimited, postLimit, requestLimit, tooManyRequests } from "@/lib/api-limits";
 
 /**
  * Hosted MCP server (Streamable HTTP, stateless JSON-RPC). Authenticated by an
@@ -114,13 +115,17 @@ async function runTool(orgId: string, name: string, args: Args): Promise<unknown
       return listChannels(orgId);
     case "list_scheduled":
       return listPosts(orgId, typeof args.status === "string" ? args.status : "scheduled");
-    case "create_post":
+    case "create_post": {
+      // Same hourly post limit as the REST API; the message reaches the AI tool.
+      const hit = await postLimit(orgId);
+      if (hit) throw new Error(hit.message);
       return createPost(orgId, {
         body: typeof args.body === "string" ? args.body : "",
         thread: Array.isArray(args.thread) ? asStringArray(args.thread) : undefined,
         channelIds: asStringArray(args.channel_ids),
         scheduledAt: scheduledAtFrom(args),
       });
+    }
     case "cancel_post": {
       const ok = await cancelPost(orgId, String(args.post_id ?? ""));
       return { cancelled: ok };
@@ -205,9 +210,20 @@ function unauthorized(req: Request) {
   });
 }
 
+/** Unauthorized, or 429 once an IP keeps failing (slows key guessing). */
+async function rejectAuth(req: Request) {
+  if (await failedAuthLimited(req)) {
+    return tooManyRequests({ retryAfter: 60, message: "Too many failed attempts. Try again in a minute." }, cors);
+  }
+  return unauthorized(req);
+}
+
 export async function POST(req: Request) {
   const auth = await authorize(req);
-  if (!auth) return unauthorized(req);
+  if (!auth) return rejectAuth(req);
+  // Requests per minute, shared with the REST API.
+  const hit = await requestLimit(auth.orgId);
+  if (hit) return tooManyRequests(hit, cors);
 
   let payload: unknown;
   try {
@@ -234,7 +250,7 @@ export async function POST(req: Request) {
 // to upgrade — but it still needs auth discovery for unauthenticated probes.
 export async function GET(req: Request) {
   const auth = await authorize(req);
-  if (!auth) return unauthorized(req);
+  if (!auth) return rejectAuth(req);
   return new NextResponse("Method Not Allowed", { status: 405, headers: cors });
 }
 

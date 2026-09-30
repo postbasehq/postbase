@@ -4,20 +4,20 @@ import { useMemo, useState } from "react";
 import { ClientLogo } from "@/components/ClientLogo";
 
 /**
- * MCP client configuration generator. Picks a client and produces the exact
- * setup for our npx-stdio MCP server (`@postbasehq/mcp`) authenticated with an
- * API key. When a freshly-created/rotated key is available it's embedded
- * directly; otherwise a placeholder is shown for the user to paste.
- *
- * The OAuth ("Sign in with Postbase") auth mode is intentionally rendered but
- * disabled — it lights up in Phase 2 once the hosted remote MCP ships.
+ * MCP client configuration generator. Two ways to connect:
+ * - "Sign in with Postbase" (default): the hosted MCP server at `mcpUrl`, where
+ *   the client signs in with OAuth. No key to manage.
+ * - "API key": our npx-stdio server (`@postbasehq/mcp`) with a key in the
+ *   client's config. A freshly created/rotated key is embedded directly;
+ *   otherwise a placeholder is shown to paste over.
+ * Some clients (ChatGPT) can only connect by signing in.
  */
 
 const SERVER = "@postbasehq/mcp";
 const KEY_PLACEHOLDER = "pb_live_YOUR_KEY";
 
 type Built = {
-  language: "json" | "bash";
+  language: "json" | "bash" | "toml";
   filename?: string;
   where: string;
   code: string;
@@ -27,7 +27,10 @@ type Built = {
 type Client = {
   id: string;
   name: string;
-  build: (key: string) => Built;
+  /** Name for the API-key setup, when it's a different app (Claude → Claude Desktop). */
+  keyName?: string;
+  /** API-key setup; null when the client can only connect by signing in. */
+  build: ((key: string) => Built) | null;
 };
 
 const serverObject = (key: string) => ({
@@ -45,13 +48,20 @@ const b64 = (s: string) =>
 const CLIENTS: Client[] = [
   {
     id: "claude",
-    name: "Claude Desktop",
+    name: "Claude",
+    keyName: "Claude Desktop",
     build: (key) => ({
       language: "json",
       filename: "claude_desktop_config.json",
       where: "Settings → Developer → Edit Config, then restart Claude.",
       code: jsonBlock(key),
     }),
+  },
+  {
+    id: "chatgpt",
+    name: "ChatGPT",
+    // ChatGPT only takes remote servers, so it connects by signing in.
+    build: null,
   },
   {
     id: "claude-code",
@@ -76,6 +86,16 @@ const CLIENTS: Client[] = [
           b64(JSON.stringify(serverObject(key))),
         )}`,
       },
+    }),
+  },
+  {
+    id: "codex",
+    name: "Codex",
+    build: (key) => ({
+      language: "toml",
+      filename: "~/.codex/config.toml",
+      where: "Add to ~/.codex/config.toml, then restart Codex.",
+      code: `[mcp_servers.postbase]\ncommand = "npx"\nargs = ["-y", "${SERVER}"]\nenv = { POSTBASE_API_KEY = "${key}" }`,
     }),
   },
   {
@@ -124,6 +144,19 @@ function remoteConfig(client: Client, url: string): {
         instruction:
           "In Claude: Settings → Connectors → Add custom connector, and paste this URL. You'll sign in to Postbase in a browser window — no API key.",
         deeplink: { label: "Add to Claude", href: "https://claude.ai/settings/connectors" },
+      };
+    case "chatgpt":
+      return {
+        language: "url",
+        code: url,
+        instruction:
+          "In ChatGPT: turn on developer mode in Settings, create a custom MCP app, paste this URL and choose OAuth. You'll sign in to Postbase — no API key.",
+      };
+    case "codex":
+      return {
+        language: "toml",
+        code: `[mcp_servers.postbase]\nurl = "${url}"`,
+        instruction: "Add this to ~/.codex/config.toml, then run: codex mcp login postbase",
       };
     case "claude-code":
       return {
@@ -204,27 +237,27 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
 export function McpClientConfig({
   apiKey,
   mcpUrl,
+  title = "MCP client configuration",
+  sub = "Connect the Postbase MCP server to your AI tool so it can schedule and publish for you.",
 }: {
   apiKey: string | null;
   mcpUrl: string;
+  title?: string;
+  sub?: string;
 }) {
   const [clientId, setClientId] = useState("claude");
   const [authMode, setAuthMode] = useState<"oauth" | "apikey">("oauth");
   const key = apiKey ?? KEY_PLACEHOLDER;
   const client = CLIENTS.find((c) => c.id === clientId) ?? CLIENTS[0];
-  const built = useMemo(() => client.build(key), [client, key]);
+  const built = useMemo(() => (client.build ? client.build(key) : null), [client, key]);
   const remote = useMemo(() => remoteConfig(client, mcpUrl), [client, mcpUrl]);
 
   return (
     <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
       <div className="flex flex-wrap items-start gap-3 border-b border-line px-5 py-4">
         <div className="min-w-0">
-          <h2 className="font-display text-[15px] font-semibold tracking-[-0.01em]">
-            MCP client configuration
-          </h2>
-          <p className="mt-0.5 text-[13px] text-muted">
-            Connect the Postbase MCP server to your AI tool so it can schedule and publish for you.
-          </p>
+          <h2 className="font-display text-[15px] font-semibold tracking-[-0.01em]">{title}</h2>
+          <p className="mt-0.5 text-[13px] text-muted">{sub}</p>
         </div>
         <a
           href="https://docs.postbase.so/mcp/connect"
@@ -292,7 +325,7 @@ export function McpClientConfig({
                   }`}
                 >
                   <ClientLogo id={c.id} />
-                  {c.name}
+                  {authMode === "apikey" && c.keyName ? c.keyName : c.name}
                 </button>
               );
             })}
@@ -327,6 +360,13 @@ export function McpClientConfig({
                 {remote.code}
               </pre>
             </div>
+          </div>
+        ) : !built ? (
+          <div className="rounded-xl border border-line bg-surface-2 px-4 py-3.5 text-[13px] text-muted">
+            <span className="font-semibold text-ink">{client.name}</span> connects by signing in, not with an API key.{" "}
+            <button type="button" onClick={() => setAuthMode("oauth")} className="font-semibold text-blue-ink hover:underline">
+              Use Sign in with Postbase
+            </button>
           </div>
         ) : (
           <div>

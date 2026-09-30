@@ -96,7 +96,7 @@ const HERO: Record<
     ),
     sub: "Connect Claude, Cursor or your own code over MCP or the REST API. Every post your agent schedules lands in your calendar.",
     cta: { label: "Connect an agent", href: "/login" },
-    frame: "Connect your agent from the Developers page",
+    frame: "Connect your agent from the AI & API page",
   },
 };
 

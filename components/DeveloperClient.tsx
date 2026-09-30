@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
 import { McpClientConfig } from "@/components/McpClientConfig";
 import { Modal } from "@/components/Modal";
@@ -30,53 +30,90 @@ type ConnectedApp = {
   expiresAt: string;
 };
 
-type Section = { id: string; label: string };
+type Section = { id: string; label: string; icon: React.ReactNode };
 
-/** Sticky in-page menu with scrollspy: highlights the section in view and
- *  smooth-scrolls within the app's scrollable <main> on click. */
+const icon = (d: React.ReactNode) => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
+    {d}
+  </svg>
+);
+const SECTION_ICONS = {
+  mcp: icon(<path d="M12 3v3M12 18v3M3 12h3M18 12h3M12 8l1.2 2.8L16 12l-2.8 1.2L12 16l-1.2-2.8L8 12l2.8-1.2z" />),
+  apps: icon(<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />),
+  keys: icon(<path d="M15 7a4 4 0 1 1-3.9 4.9L4 19v-3h3v-3h3l1.1-1.1A4 4 0 0 1 15 7Z" />),
+  tools: icon(<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />),
+};
+
+/** The nearest scrolling ancestor (the app's <main>), or the window. */
+function scrollParent(el: HTMLElement | null): HTMLElement | null {
+  for (let p = el?.parentElement; p; p = p.parentElement) {
+    const o = getComputedStyle(p).overflowY;
+    if (o === "auto" || o === "scroll") return p;
+  }
+  return null;
+}
+
+/**
+ * Sticky in-page menu: a rail with a marker beside the section in view, and
+ * smooth scrolling on click. Tracks the app's scrolling <main>, not the window.
+ */
 function SideMenu({ sections }: { sections: Section[] }) {
   const [active, setActive] = useState<string>(sections[0]?.id ?? "");
+  // After a click, keep that item highlighted while the page scrolls to it, even
+  // when a short page can't bring the section all the way to the top.
+  const lockUntil = useRef(0);
 
   useEffect(() => {
-    const els = sections.map((s) => document.getElementById(s.id)).filter(
-      (el): el is HTMLElement => el != null,
-    );
-    if (els.length === 0) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]) setActive(visible[0].target.id);
-      },
-      { rootMargin: "-72px 0px -55% 0px", threshold: 0 },
-    );
-    els.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+    const first = document.getElementById(sections[0]?.id ?? "");
+    const scroller = scrollParent(first);
+    const target: HTMLElement | Window = scroller ?? window;
+    const onScroll = () => {
+      if (Date.now() < lockUntil.current) return;
+      const view = scroller ? scroller.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
+      // Whichever section fills most of the view. Works on short pages too, where
+      // later sections can never scroll up to the top.
+      let current = sections[0]?.id ?? "";
+      let most = -1;
+      for (const s of sections) {
+        const r = document.getElementById(s.id)?.getBoundingClientRect();
+        if (!r) continue;
+        const shown = Math.min(r.bottom, view.bottom) - Math.max(r.top, view.top);
+        if (shown > most) {
+          most = shown;
+          current = s.id;
+        }
+      }
+      setActive(current);
+    };
+    onScroll();
+    target.addEventListener("scroll", onScroll, { passive: true });
+    return () => target.removeEventListener("scroll", onScroll);
   }, [sections]);
 
   return (
-    <nav className="hidden lg:block">
+    <nav className="hidden lg:block" aria-label="On this page">
       <div className="sticky top-0">
-        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wide text-muted">
-          On this page
-        </p>
-        <ul className="flex flex-col gap-0.5">
+        <p className="px-3 pb-2.5 text-[12px] font-medium text-muted">On this page</p>
+        <ul className="relative flex flex-col gap-0.5 border-l border-line">
           {sections.map((s) => {
             const on = active === s.id;
             return (
-              <li key={s.id}>
+              <li key={s.id} className="relative">
+                {on ? <span aria-hidden className="absolute -left-px top-1.5 bottom-1.5 w-[2px] rounded-full bg-[#2b59d9]" /> : null}
                 <a
                   href={`#${s.id}`}
+                  aria-current={on ? "location" : undefined}
                   onClick={(e) => {
                     e.preventDefault();
+                    lockUntil.current = Date.now() + 1000;
                     document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
                     setActive(s.id);
                   }}
-                  className={`block rounded-lg px-3 py-1.5 text-[13px] font-medium transition ${
-                    on ? "bg-surface-2 text-ink" : "text-muted hover:bg-surface-2/60 hover:text-ink"
+                  className={`ml-2 flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] transition-colors ${
+                    on ? "font-semibold text-ink" : "font-medium text-muted hover:bg-surface-2 hover:text-ink"
                   }`}
                 >
+                  <span className={on ? "text-blue-ink" : ""}>{s.icon}</span>
                   {s.label}
                 </a>
               </li>
@@ -226,6 +263,13 @@ function RevealedKey({ value }: { value: string }) {
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
+      <p className="mt-2 text-[12px] text-muted">
+        It&apos;s also filled into the API key setup under{" "}
+        <a href="#mcp" className="font-semibold text-blue-ink hover:underline">
+          Connect an AI tool
+        </a>
+        .
+      </p>
     </div>
   );
 }
@@ -234,10 +278,13 @@ export function DeveloperClient({
   keys,
   mcpUrl,
   connectedApps = [],
+  workspace = "this workspace",
 }: {
   keys: KeyRow[];
   mcpUrl: string;
   connectedApps?: ConnectedApp[];
+  /** The workspace these keys and connections belong to. */
+  workspace?: string;
 }) {
   const [createState, createAction, creating] = useActionState<CreateKeyState, FormData>(
     createApiKey,
@@ -262,25 +309,83 @@ export function DeveloperClient({
   const [keyTarget, setKeyTarget] = useState<KeyRow | null>(null);
   const [rotateTarget, setRotateTarget] = useState<KeyRow | null>(null);
 
-  const sections: Section[] = [
-    { id: "api-keys", label: "API keys" },
-    { id: "mcp", label: "MCP client" },
-    ...(connectedApps.length > 0 ? [{ id: "apps", label: "Connected apps" }] : []),
-    { id: "tools", label: "Tools" },
-  ];
+  // Most people here want to connect an AI tool (no key); developers' keys come after.
+  const hasApps = connectedApps.length > 0;
+  const sections: Section[] = useMemo(
+    () => [
+      { id: "mcp", label: "Connect an AI tool", icon: SECTION_ICONS.mcp },
+      ...(hasApps ? [{ id: "apps", label: "Connected apps", icon: SECTION_ICONS.apps }] : []),
+      { id: "api-keys", label: "API keys", icon: SECTION_ICONS.keys },
+      { id: "tools", label: "Tools", icon: SECTION_ICONS.tools },
+    ],
+    [hasApps],
+  );
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[160px_minmax(0,1fr)]">
+    <div className="grid gap-8 lg:grid-cols-[190px_minmax(0,1fr)]">
       <SideMenu sections={sections} />
 
       <div className="flex min-w-0 flex-col gap-6 pb-8">
+      {/* ── MCP client configuration ─────────────────────────── */}
+      <div id="mcp" className="scroll-mt-4">
+        <McpClientConfig
+          apiKey={revealed}
+          mcpUrl={mcpUrl}
+          title="Connect an AI tool"
+          sub="Let Claude, ChatGPT, Cursor and other AI tools schedule posts for you. Signing in needs no key."
+        />
+      </div>
+
+      {/* ── Connected apps (OAuth tokens) ────────────────────── */}
+      {connectedApps.length > 0 ? (
+        <section id="apps" className="scroll-mt-4 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
+          <div className="border-b border-line px-5 py-4">
+            <h2 className="font-display text-[15px] font-semibold tracking-[-0.01em]">Connected apps</h2>
+            <p className="mt-0.5 text-[13px] text-muted">
+              AI tools signed in to {workspace}. Revoking cuts off their access immediately.
+            </p>
+          </div>
+          <div>
+            {connectedApps.map((a, i) => (
+              <div
+                key={a.id}
+                className={`flex flex-wrap items-center gap-3 px-5 py-3.5 ${
+                  i < connectedApps.length - 1 ? "border-b border-line" : ""
+                }`}
+              >
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-2 text-muted" aria-hidden>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                </span>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold">{a.appName}</div>
+                  <div className="mt-0.5 truncate text-xs text-muted">
+                    {a.orgName} · connected {fmt(a.createdAt)} · last used {fmt(a.lastUsedAt)}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRevokeTarget(a)}
+                  className="ml-auto rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted transition hover:bg-terra/10 hover:text-terra"
+                >
+                  Revoke
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {/* ── API Key card ─────────────────────────────────────── */}
       <section id="api-keys" className="scroll-mt-4 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
         <div className="flex flex-wrap items-start gap-3 border-b border-line px-5 py-4">
           <div className="min-w-0">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">For developers</div>
             <h2 className="font-display text-[15px] font-semibold tracking-[-0.01em]">API keys</h2>
             <p className="mt-0.5 text-[13px] text-muted">
-              A key authenticates the MCP server, the REST API, and the CLI. Shown once — store it safely.
+              For the REST API and the npm MCP package. A key only posts to {workspace}, and is shown once, so store it safely.
             </p>
           </div>
           <a
@@ -306,7 +411,7 @@ export function DeveloperClient({
               <span className="text-[13px] font-medium text-muted">New key label</span>
               <input
                 name="label"
-                placeholder="e.g. Claude on my laptop"
+                placeholder="e.g. My app or Zapier"
                 className="rounded-xl border border-line bg-ground px-3.5 py-2.5 text-sm outline-none focus-visible:border-blue"
               />
             </label>
@@ -381,53 +486,6 @@ export function DeveloperClient({
         </div>
       </section>
 
-      {/* ── MCP client configuration ─────────────────────────── */}
-      <div id="mcp" className="scroll-mt-4">
-        <McpClientConfig apiKey={revealed} mcpUrl={mcpUrl} />
-      </div>
-
-      {/* ── Connected apps (OAuth tokens) ────────────────────── */}
-      {connectedApps.length > 0 ? (
-        <section id="apps" className="scroll-mt-4 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
-          <div className="border-b border-line px-5 py-4">
-            <h2 className="font-display text-[15px] font-semibold tracking-[-0.01em]">Connected apps</h2>
-            <p className="mt-0.5 text-[13px] text-muted">
-              Tools you've signed in to Postbase from. Revoking cuts off their access immediately.
-            </p>
-          </div>
-          <div>
-            {connectedApps.map((a, i) => (
-              <div
-                key={a.id}
-                className={`flex flex-wrap items-center gap-3 px-5 py-3.5 ${
-                  i < connectedApps.length - 1 ? "border-b border-line" : ""
-                }`}
-              >
-                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-2 text-muted" aria-hidden>
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
-                </span>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold">{a.appName}</div>
-                  <div className="mt-0.5 truncate text-xs text-muted">
-                    {a.orgName} · connected {fmt(a.createdAt)} · last used {fmt(a.lastUsedAt)}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setRevokeTarget(a)}
-                  className="ml-auto rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted transition hover:bg-terra/10 hover:text-terra"
-                >
-                  Revoke
-                </button>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
       {/* ── Tools reference (collapsible) ────────────────────── */}
       <details
         id="tools"
@@ -471,7 +529,7 @@ export function DeveloperClient({
         description={
           <>
             The current key stops working immediately and a fresh one is generated (shown once).
-            Update anything using it — the MCP server, CLI, or REST API — with the new key.
+            Update anything using it, like the MCP package or your REST API calls, with the new key.
           </>
         }
         action={rotateAction}
@@ -487,8 +545,8 @@ export function DeveloperClient({
         title={`Revoke ${keyTarget?.label ?? "this key"}?`}
         description={
           <>
-            This API key stops working immediately. Anything using it — the MCP server, CLI, or REST
-            API — will fail until you generate a new one.
+            This API key stops working immediately. Anything using it, like the MCP package or your
+            REST API calls, will fail until you generate a new one.
           </>
         }
         action={revokeApiKey}

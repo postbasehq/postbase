@@ -28,9 +28,9 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    label: "Developer",
+    label: "Connect",
     items: [
-      { label: "Developers", href: "/api-keys", icon: ApiIcon },
+      { label: "AI & API", href: "/api-keys", icon: ApiIcon },
       {
         label: "Docs",
         href: "https://docs.postbase.so",

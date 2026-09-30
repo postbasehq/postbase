@@ -16,7 +16,7 @@ const TRAIL = [{ label: "Home", href: "/" }, { label: "Tools", href: "/tools" },
 const FAQS: [string, string][] = [
   [
     "Which should I pick, sign-in or API key?",
-    "Sign-in, if your AI tool supports remote servers, which all of the ones listed here do. There's no secret to store, and you can revoke access from the Postbase Developers page. Use an API key for scripts, CI, or tools that only run local servers.",
+    "Sign-in, if your AI tool supports remote servers, which all of the ones listed here do. There's no secret to store, and you can revoke access from the Postbase AI & API page. Use an API key for scripts, CI, or tools that only run local servers.",
   ],
   [
     "Where does the config file go?",
@@ -43,7 +43,7 @@ export default function McpConfigPage() {
         <SeoHero
           trail={TRAIL}
           h1={["MCP config", "generator"]}
-          sub="Pick your AI tool and get the exact setup for the Postbase MCP server. It's the same generator as the Developers page in the app."
+          sub="Pick your AI tool and get the exact setup for the Postbase MCP server. It's the same generator as the AI & API page in the app."
           cta={{ label: "Get a free trial", href: "/login" }}
           secondary={{ label: "Read the docs", href: "https://docs.postbase.so/mcp/connect" }}
         />
@@ -52,7 +52,7 @@ export default function McpConfigPage() {
           <div className="mx-auto max-w-[900px]">
             <McpClientConfig apiKey={null} mcpUrl={MCP_URL} />
             <p className="mt-3 text-center text-[13px] text-muted">
-              The API key option shows a placeholder. Create a real key on the Developers page after you sign up.
+              The API key option shows a placeholder. Create a real key on the AI & API page after you sign up.
             </p>
           </div>
         </section>

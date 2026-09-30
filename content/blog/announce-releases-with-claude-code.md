@@ -26,9 +26,9 @@ claude mcp add --transport http postbase https://mcp.postbase.so/mcp
 
 The first time Claude Code uses the server, it opens a browser window so you can sign in to Postbase and pick a workspace. There's no API key to store.
 
-::demo client-setup client=claude-code caption="The same command is on the Developers page, and Claude Code shows up under Connected apps once it signs in."
+::demo client-setup client=claude-code caption="The same command is on the AI & API page, and Claude Code shows up under Connected apps once it signs in."
 
-**Prefer an API key?** Create one on the Postbase Developers page and use the npm package instead:
+**Prefer an API key?** Create one on the Postbase AI & API page and use the npm package instead:
 
 ```bash
 claude mcp add postbase --env POSTBASE_API_KEY=pb_live_... -- npx @postbasehq/mcp

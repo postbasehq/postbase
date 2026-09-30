@@ -9,7 +9,7 @@ import { useLoop } from "@/components/marketing/Mocks";
 /*
  * Floating collage for the closing call to action, built from real Postbase UI:
  * the actual sidebar nav (AppNav), the calendar's header bar and day column,
- * the channels bar, and — for developers — the Developers page's key panel,
+ * the channels bar, and — for developers — the AI & API page's key panel,
  * MCP client picker and connected apps. Each plays a small loop.
  */
 

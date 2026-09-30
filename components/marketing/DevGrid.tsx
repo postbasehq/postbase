@@ -10,7 +10,7 @@ import { Tile, shot } from "@/components/marketing/CreatorGrid";
 
 /*
  * The developers feature grid, same card style as the creators grid. Screens
- * mirror: McpClientConfig (hosted connector per client), the Developers page
+ * mirror: McpClientConfig (hosted connector per client), the AI & API page
  * tools reference, the calendar with MCP posts, the API docs, and the connected
  * apps + revoke dialog.
  */
@@ -310,7 +310,7 @@ export function DevGrid() {
         layout="top"
         label="Access"
         title="Take access back in one click"
-        body="Every app you've signed in from is listed on your Developers page. Revoke one and it's cut off immediately."
+        body="Every app you've signed in from is listed on your AI & API page. Revoke one and it's cut off immediately."
       >
         <RevokeShot />
       </Tile>
@@ -329,7 +329,7 @@ const CLIENTS = [
   { id: "windsurf", name: "Windsurf" },
   { id: "gemini", name: "Gemini CLI" },
 ];
-// Same per-client setup the Developers page shows (VS Code's one-liner is skipped in the loop).
+// Same per-client setup the AI & API page shows (VS Code's one-liner is skipped in the loop).
 const REMOTE: Record<string, { language: string; code: string; instruction: string; deeplink?: string }> = {
   claude: {
     language: "url",
@@ -538,7 +538,7 @@ const APPS: AppRow[] = [
 ];
 
 /**
- * The Developers page's connected apps, as a fixed-size window: the revoke
+ * The AI & API page's connected apps, as a fixed-size window: the revoke
  * dialog opens centred inside it over a dimmed backdrop (never outside it),
  * and the revoked row stays in place, greyed out, so nothing jumps.
  */

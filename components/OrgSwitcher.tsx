@@ -195,7 +195,7 @@ function CreateWorkspace({ allowance: a, onDone }: { allowance: WorkspaceAllowan
               onClick={onDone}
               className="mt-2.5 inline-flex rounded-full bg-[#2b59d9] px-3.5 py-1.5 font-display text-[12px] font-semibold text-white shadow-sm"
             >
-              {a.active ? `See ${upgrade.name}` : "Choose a plan"} →
+              {a.active ? `See ${upgrade.name}` : "Choose a plan"}
             </Link>
           ) : null}
         </div>

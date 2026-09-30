@@ -76,32 +76,30 @@ export function AgentUsageRing({ usage }: { usage: AgentUsageInfo }) {
         <div
           role="dialog"
           aria-label="Plan usage"
-          className="absolute bottom-full right-0 z-50 mb-2 w-[300px] rounded-2xl border border-line bg-surface p-4 text-left shadow-xl"
+          className="absolute bottom-full right-0 z-50 mb-2 w-[248px] rounded-xl border border-line bg-surface p-3 text-left shadow-xl"
         >
           <div className="flex items-baseline justify-between gap-2">
-            <span className="font-display text-[15px] font-semibold text-ink">Plan usage</span>
-            {usage.planName ? <span className="text-[12px] text-muted">{usage.planName}</span> : null}
+            <span className="font-display text-[13px] font-semibold text-ink">Plan usage</span>
+            {usage.planName ? <span className="text-[11px] text-muted">{usage.planName}</span> : null}
           </div>
 
-          <div className="mt-4 flex items-center justify-between gap-3">
-            <span className="text-[13px] text-ink">AI agent</span>
-            <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-white" style={{ background: BLUE }}>
-              Unlimited
+          <div className="mt-2.5 flex items-center justify-between gap-2 text-[12px]">
+            <span className="text-ink">AI agent</span>
+            <span className="text-muted" title="Under our fair use policy">
+              <span className="font-semibold text-blue-ink">Unlimited</span>{" "}
+              · fair use
             </span>
           </div>
-          <p className="mt-1 text-[11px] text-muted">Under our fair use policy.</p>
-
           {usage.images ? <Bar label="AI images" {...usage.images} /> : null}
           {usage.videos ? <Bar label="AI videos" {...usage.videos} /> : null}
 
-          <p className="mt-4 text-[12px] text-muted">
-            AI allowances reset on {usage.resets}.
-            {usage.workspaces > 1 ? ` Shared across your ${usage.workspaces} workspaces.` : ""}
-          </p>
-
-          <div className="mt-3 border-t border-line pt-3">
-            <Link href="/billing" onClick={() => setOpen(false)} className="text-[13px] font-semibold text-blue-ink hover:underline">
-              Plans and billing →
+          <div className="mt-3 flex items-center justify-between gap-2 border-t border-line pt-2.5 text-[11px]">
+            <span className="text-muted">
+              Resets {usage.resets}
+              {usage.workspaces > 1 ? ` · ${usage.workspaces} workspaces` : ""}
+            </span>
+            <Link href="/billing" onClick={() => setOpen(false)} className="font-semibold text-blue-ink hover:underline">
+              Billing
             </Link>
           </div>
         </div>
@@ -113,14 +111,14 @@ export function AgentUsageRing({ usage }: { usage: AgentUsageInfo }) {
 function Bar({ label, used, limit }: { label: string; used: number; limit: number }) {
   const pct = limit ? Math.min(1, used / limit) : 0;
   return (
-    <div className="mt-4">
-      <div className="flex items-baseline justify-between gap-2 text-[13px]">
+    <div className="mt-2">
+      <div className="flex items-baseline justify-between gap-2 text-[12px]">
         <span className="text-ink">{label}</span>
         <span className="tabular-nums text-muted">
           <span className="font-semibold text-ink">{used}</span> / {limit}
         </span>
       </div>
-      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-line">
+      <div className="mt-1 h-1 overflow-hidden rounded-full bg-line">
         <div className="h-full rounded-full" style={{ width: `${Math.max(pct * 100, used > 0 ? 3 : 0)}%`, background: tone(pct) }} />
       </div>
     </div>

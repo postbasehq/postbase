@@ -196,7 +196,7 @@ export function CompareTable({
                   <th key={id} className={`relative px-4 pb-6 pt-7 text-center align-bottom font-normal ${col(id, "top")}`}>
                     {featured ? (
                       <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#2b59d9] px-3 py-1 text-[11px] font-semibold text-white">
-                        Most popular
+                        Recommended
                       </span>
                     ) : null}
                     <div className="font-display text-[20px] font-semibold text-ink">{p.name}</div>

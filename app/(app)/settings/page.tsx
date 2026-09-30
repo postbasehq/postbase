@@ -166,7 +166,7 @@ export default async function SettingsPage() {
         <Card
           panel={
             <div>
-              <div className="text-[13px] font-medium text-muted">Developers</div>
+              <div className="text-[13px] font-medium text-muted">AI & API</div>
               <div className="font-display text-[22px] font-semibold leading-tight tracking-[-0.02em] text-ink">API keys and AI tools</div>
               <div className="mt-1 text-[13px] text-muted">Everything that can post to this workspace from outside the app.</div>
             </div>
@@ -195,7 +195,7 @@ export default async function SettingsPage() {
               note={
                 appNames.length === 0
                   ? "Connect Claude, ChatGPT, Cursor and others by signing in. No key needed."
-                  : "Signed in to this workspace. Revoke any of them on the Developers page."
+                  : "Signed in to this workspace. Revoke any of them on the AI & API page."
               }
               href="/api-keys"
               cta={appNames.length === 0 ? "Connect a tool" : "Manage"}

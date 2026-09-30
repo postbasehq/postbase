@@ -223,7 +223,7 @@ export function DevShot({ client }: { client?: { logo: string; name: string; set
   );
 
   return (
-    <AppShell active="/api-keys" title="Developers" workspace={{ name: "Halden Coffee", sub: "3 channels" }}>
+    <AppShell active="/api-keys" title="AI & API" workspace={{ name: "Halden Coffee", sub: "3 channels" }}>
       <div ref={rootRef} className="relative flex h-full flex-col px-6 pb-4 pt-1">
         <p className="max-w-2xl text-[13px] text-muted">
           Use your API key to automate Postbase — hook up an AI agent over MCP, script it from the CLI, or call the REST

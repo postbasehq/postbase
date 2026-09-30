@@ -14,7 +14,7 @@ export const US = {
   scaling: "Per plan, not per channel: 15 channels and team seats for $39/month",
   networks: "X, LinkedIn, Bluesky, Mastodon, TikTok, YouTube (Instagram, Facebook and Threads coming soon)",
   mcp: "Yes, on every plan. Sign in with Postbase or use an API key",
-  api: "Yes, on every plan. Create a key on the Developers page",
+  api: "Yes, on every plan. Create a key on the AI & API page",
   oss: "Yes. Self-host for free with your own platform keys",
 };
 
@@ -163,7 +163,7 @@ export const COMPETITORS: Competitor[] = [
       ],
       [
         "Can I use the Postbase API without applying?",
-        "Yes. Create a key on the Developers page and call the REST API straight away, on every plan.",
+        "Yes. Create a key on the AI & API page and call the REST API straight away, on every plan.",
       ],
     ],
     sources: [
@@ -264,7 +264,7 @@ export const COMPETITORS: Competitor[] = [
       },
       {
         title: "Create an API key",
-        body: "Create a key on the Developers page. It works for the REST API and the npm MCP server, and you can revoke it any time.",
+        body: "Create a key on the AI & API page. It works for the REST API and the npm MCP server, and you can revoke it any time.",
       },
       {
         title: "Point your code at Postbase",

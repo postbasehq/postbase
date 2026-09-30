@@ -16,7 +16,7 @@ export const FAQ: [string, string][] = [
   ["Which networks does Postbase support?", "X, LinkedIn, TikTok, YouTube, Bluesky and Mastodon today. Instagram, Facebook and Threads are coming soon, once Meta approves our app."],
   [
     "Is there a public API?",
-    "Yes. The REST API uses bearer keys you create on the Developers page. You can list channels, list and create posts, and cancel scheduled posts. Keys are stored as hashes and can be revoked any time.",
+    "Yes. The REST API uses bearer keys you create on the AI & API page. You can list channels, list and create posts, and cancel scheduled posts. Keys are stored as hashes and can be revoked any time.",
   ],
   [
     "Can I edit a post for just one network?",

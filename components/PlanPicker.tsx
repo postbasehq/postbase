@@ -83,7 +83,7 @@ export function PlanPicker({
               id={id}
               interval={interval}
               featured={featured}
-              badge={featured ? (chosen ? "Your pick" : "Most popular") : undefined}
+              badge={featured ? (chosen ? "Your pick" : "Recommended") : undefined}
               currentPlan={currentPlan}
               action={action}
             />
@@ -165,7 +165,7 @@ export function PlanCard({
   id: keyof typeof PLANS;
   interval?: Interval;
   featured?: boolean;
-  /** Pill next to the plan name when featured, e.g. "Most popular". */
+  /** Pill next to the plan name when featured, e.g. "Recommended". */
   badge?: string;
   currentPlan?: string | null;
   action?: (formData: FormData) => Promise<void>;

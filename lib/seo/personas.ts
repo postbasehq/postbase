@@ -117,7 +117,7 @@ export const PERSONAS: Persona[] = [
     sub: "Connect Postbase to Claude, Claude Code or Cursor, and your launch notes turn into posts for every network, scheduled on a calendar you check once a week.",
     blurb: "Turn launch notes into scheduled posts from Claude, Claude Code or Cursor.",
     hero: { kind: "client", client: "claude" },
-    frame: "Connect Claude from the Developers page",
+    frame: "Connect Claude from the AI & API page",
     problems: [
       {
         title: "You ship, then forget to tell anyone",
@@ -155,7 +155,7 @@ export const PERSONAS: Persona[] = [
         shot: "revoke",
         label: "Access",
         title: "Take access back in one click",
-        body: "Every AI tool you've connected is listed on the Developers page. Revoke one and it's cut off immediately.",
+        body: "Every AI tool you've connected is listed on the AI & API page. Revoke one and it's cut off immediately.",
       },
       {
         shot: "tools",
@@ -177,7 +177,7 @@ export const PERSONAS: Persona[] = [
       ],
       [
         "Is there an API?",
-        "Yes, on every plan. Create a key on the Developers page and post from scripts, CI or your own app.",
+        "Yes, on every plan. Create a key on the AI & API page and post from scripts, CI or your own app.",
       ],
       [
         "Is Postbase open source?",

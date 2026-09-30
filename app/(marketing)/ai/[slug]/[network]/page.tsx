@@ -63,7 +63,7 @@ export default async function ComboPage({ params }: { params: Params }) {
     ...notes.faqs,
     [
       `Does ${client.name} need my ${n.name} password?`,
-      `No. You connect ${n.name} to Postbase once, and ${client.name} signs in to Postbase, not to ${n.name}. You can revoke ${client.name}'s access from the Developers page at any time.`,
+      `No. You connect ${n.name} to Postbase once, and ${client.name} signs in to Postbase, not to ${n.name}. You can revoke ${client.name}'s access from the AI & API page at any time.`,
     ],
     [
       `Can ${client.name} delete my ${n.name} posts?`,
@@ -83,7 +83,7 @@ export default async function ComboPage({ params }: { params: Params }) {
           sub={description + " No API key, and every post lands on a calendar you can check."}
           cta={{ label: "Connect in a minute", href: "/login" }}
           secondary={{ label: `All ${client.name} setup`, href: `/ai/${client.slug}` }}
-          frame={`Connect ${client.name} from the Developers page`}
+          frame={`Connect ${client.name} from the AI & API page`}
         >
           <ClientSetupDemo client={{ logo: client.logo, name: client.name, setup: client.setup }} />
         </SeoHero>

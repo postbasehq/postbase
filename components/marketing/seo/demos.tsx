@@ -38,7 +38,7 @@ export function NetworkComposerDemo({ network, text, media }: { network: string;
   );
 }
 
-/** The Developers page, adding this client's connector and it signing in. */
+/** The AI & API page, adding this client's connector and it signing in. */
 export function ClientSetupDemo({ client }: { client: { logo: string; name: string; setup: ClientSetup } }) {
   return (
     <Fit minWidth={900} height={660} mobile={{ renderWidth: 480, viewWidth: 480, height: 660 }}>
@@ -136,7 +136,7 @@ export function ClientTiles({ name }: { name: string }) {
         layout="top"
         label="Access"
         title="Take access back in one click"
-        body={`${name} shows up under Connected apps on your Developers page. Revoke it and it's cut off immediately.`}
+        body={`${name} shows up under Connected apps on your AI & API page. Revoke it and it's cut off immediately.`}
       >
         <RevokeShot />
       </Tile>

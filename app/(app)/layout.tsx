@@ -52,6 +52,8 @@ export default async function AppLayout({
   let notices: Notice[] = [];
   let locked = false;
   let workspaces: WorkspaceAllowance | null = null;
+  // Set when this workspace's plan belongs to another workspace, for the no-plan screen.
+  let linkedTo: { name: string; canManage: boolean } | null = null;
   if (activeId) {
     const supabase = await createClient();
     const [group, { data: failed }] = await Promise.all([
@@ -80,6 +82,7 @@ export default async function AppLayout({
       billingName: group.rootName,
       active: !locked,
     };
+    if (group.linked) linkedTo = { name: group.rootName, canManage: workspaces.canManage };
     notices = ((failed ?? []) as unknown as {
       id: string;
       error: string | null;
@@ -146,7 +149,7 @@ export default async function AppLayout({
               </header>
               <main className="min-h-0 flex-1 overflow-y-auto p-6">
                 <div className="mx-auto h-full w-full max-w-[1200px]">
-                  <PlanGate locked={locked}>{children}</PlanGate>
+                  <PlanGate locked={locked} linkedTo={linkedTo}>{children}</PlanGate>
                 </div>
               </main>
             </div>

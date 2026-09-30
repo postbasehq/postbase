@@ -73,7 +73,7 @@ An agent is great for the routine 80%: announcements, repurposing, reminders, th
 
 Before you connect anything, find the off switch. You should be able to see every AI tool connected to your account and revoke each one on its own.
 
-::demo revoke caption="Every connected AI tool is listed on Postbase's Developers page. Revoking one cuts it off immediately, and posts it already scheduled stay on your calendar."
+::demo revoke caption="Every connected AI tool is listed on Postbase's AI & API page. Revoking one cuts it off immediately, and posts it already scheduled stay on your calendar."
 
 Revoking should stop new actions straight away but leave what's already scheduled in place, so you can decide what to keep.
 

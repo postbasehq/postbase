@@ -42,7 +42,7 @@ export default async function AiClientPage({ params }: { params: Promise<{ slug:
           sub={c.sub}
           cta={{ label: "Connect in a minute", href: "/login" }}
           secondary={{ label: "Read the docs", href: "https://docs.postbase.so/mcp/connect" }}
-          frame={`Connect ${c.name} from the Developers page`}
+          frame={`Connect ${c.name} from the AI & API page`}
         >
           <ClientSetupDemo client={{ logo: c.logo, name: c.name, setup: c.setup }} />
         </SeoHero>

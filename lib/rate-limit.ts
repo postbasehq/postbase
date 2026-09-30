@@ -4,10 +4,17 @@ import { createAdminClient } from "@/lib/supabase/admin";
 /**
  * Fixed-window rate limit backed by Postgres (`rate_limit_hit`, migration 0031).
  * Returns true while `key` is within `limit` hits per `windowSeconds`.
- * Fails closed (logs) if the limiter itself errors: these limits guard paid
- * model calls, so an unknown state must not become unlimited spend.
+ *
+ * If the limiter itself errors it fails closed by default (logs, returns false):
+ * limits that guard paid model calls must not become unlimited spend. Pass
+ * `failOpen` where an outage shouldn't block everyone (the public API).
  */
-export async function rateLimit(key: string, windowSeconds: number, limit: number): Promise<boolean> {
+export async function rateLimit(
+  key: string,
+  windowSeconds: number,
+  limit: number,
+  opts: { failOpen?: boolean } = {},
+): Promise<boolean> {
   const { data, error } = await createAdminClient().rpc("rate_limit_hit", {
     p_key: key,
     p_window_seconds: windowSeconds,
@@ -15,7 +22,7 @@ export async function rateLimit(key: string, windowSeconds: number, limit: numbe
   });
   if (error) {
     console.error(`[rate-limit] ${key}: ${error.message}`);
-    return false;
+    return Boolean(opts.failOpen);
   }
   return data === true;
 }

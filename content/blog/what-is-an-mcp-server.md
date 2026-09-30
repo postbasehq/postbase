@@ -71,7 +71,7 @@ It's as safe as the tools the server exposes and the checks you put around them.
 3. **A place to review.** Posts should land in a calendar or queue you can check, not go straight out.
 4. **A way to revoke.** You should be able to cut off an AI tool's access in one click.
 
-::demo revoke caption="In Postbase, every connected AI tool is listed on the Developers page and can be revoked in one click."
+::demo revoke caption="In Postbase, every connected AI tool is listed on the AI & API page and can be revoked in one click."
 
 We go into more detail in [How to let an AI agent post for you without losing control](/blog/let-an-ai-agent-post-safely).
 

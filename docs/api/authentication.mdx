@@ -4,7 +4,7 @@ description: "Authenticate REST API requests with an API key."
 ---
 
 The Postbase REST API is authenticated with an **API key**. Generate one under
-**Developers** in the app, then send it as a bearer token.
+**AI & API** in the app, then send it as a bearer token.
 
 ## Base URL
 
@@ -25,8 +25,29 @@ created in.
 
 <Warning>
   Keys are shown once at creation. Store yours securely; rotate or revoke it
-  from **Developers** if it leaks.
+  from **AI & API** if it leaks.
 </Warning>
+
+## Rate limits
+
+Limits are counted per workspace, across the REST API and the MCP server
+together:
+
+| Limit | Value |
+| ----- | ----- |
+| Requests | 120 a minute |
+| Posts created (drafts and scheduled) | 60 an hour |
+| Failed authentications | 30 a minute per IP address |
+
+Over a limit, the API returns `429 Too Many Requests` with a `Retry-After`
+header (in seconds) and a JSON body:
+
+```json
+{ "error": "rate_limited", "message": "Rate limit: 120 requests a minute per workspace. Try again in a minute.", "retry_after": 60 }
+```
+
+Through MCP, a `create_post` call over the hourly limit returns a tool error
+with the same message.
 
 <Card title="Endpoints" icon="code" href="/api/posts">
   See the available endpoints for posts and channels.

@@ -41,9 +41,9 @@ Before the list, here's what actually matters when you pick one:
 
 Postbase's MCP server is hosted at a single URL. You add it to [Claude](/ai/claude), [Claude Code](/ai/claude-code), [Cursor](/ai/cursor), [VS Code](/ai/vscode), [Windsurf](/ai/windsurf) or [Gemini CLI](/ai/gemini-cli), sign in, and pick a workspace. There's also an npm package if you'd rather use an API key.
 
-::demo mcp caption="The Developers page in Postbase has the setup for each AI tool."
+::demo mcp caption="The AI & API page in Postbase has the setup for each AI tool."
 
-The agent gets four tools: list channels, create a post or thread (as a draft or scheduled), list the queue, and cancel a scheduled post. It can't delete anything or change your account. Everything it schedules appears on the same calendar as your own posts, and each connected tool can be revoked from the Developers page.
+The agent gets four tools: list channels, create a post or thread (as a draft or scheduled), list the queue, and cancel a scheduled post. It can't delete anything or change your account. Everything it schedules appears on the same calendar as your own posts, and each connected tool can be revoked from the AI & API page.
 
 **Worth knowing:** the MCP tools are text only today, so for TikTok and YouTube the agent drafts the caption and you add the video. Instagram, Facebook and Threads are waiting on Meta's app review. Postbase is open source and free to self-host.
 

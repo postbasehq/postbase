@@ -13,8 +13,12 @@ import {
 /**
  * Billing is enforced only once Stripe is fully configured (secret, webhook and
  * at least the base price). Self-hosted installs without Stripe keep full access.
+ *
+ * FORCE_BILLING=1 turns enforcement on in local development without Stripe, to
+ * see the no-plan screen and upgrade prompts. Ignored in production builds.
  */
 export function billingEnforced(): boolean {
+  if (process.env.FORCE_BILLING === "1" && process.env.NODE_ENV !== "production") return true;
   return Boolean(
     process.env.STRIPE_SECRET_KEY &&
       process.env.STRIPE_WEBHOOK_SECRET &&

@@ -12,7 +12,7 @@ const PAGES: { label: string; href: string; keywords?: string }[] = [
   { label: "Channels", href: "/channels", keywords: "connect accounts social x instagram" },
   { label: "Media", href: "/media", keywords: "library images video uploads" },
   { label: "Analytics", href: "/analytics", keywords: "metrics stats engagement" },
-  { label: "MCP & API", href: "/api-keys", keywords: "keys tokens integration developer" },
+  { label: "AI & API", href: "/api-keys", keywords: "keys tokens integration developer developers mcp claude chatgpt connect" },
   { label: "Team", href: "/team", keywords: "members invites workspace" },
   { label: "Billing", href: "/billing", keywords: "plan subscription payment upgrade" },
   { label: "Settings", href: "/settings", keywords: "preferences account" },

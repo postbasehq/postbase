@@ -20,7 +20,7 @@ Everything the workflow creates lands on your Postbase calendar. If you'd like a
 ## Step 1: connect your accounts and get an API key
 
 1. Sign up for Postbase (7-day free trial) and connect your accounts on the **Channels** page.
-2. Open **Developers** and create an API key. Name it "n8n" so you know where it's used. The key is shown once, so copy it now.
+2. Open **AI & API** and create an API key. Name it "n8n" so you know where it's used. The key is shown once, so copy it now.
 
 ## Step 2: store the key in n8n
 

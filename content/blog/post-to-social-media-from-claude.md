@@ -32,15 +32,15 @@ In Claude, open **Settings → Connectors → Add custom connector**. Name it Po
 https://mcp.postbase.so/mcp
 ```
 
-You can also copy it from the **Developers** page in Postbase, which has setup instructions for each AI tool.
+You can also copy it from the **AI & API** page in Postbase, which has setup instructions for each AI tool.
 
-::demo client-setup client=claude caption="The Developers page in Postbase: copy the connector URL, and Claude shows up under Connected apps once it signs in."
+::demo client-setup client=claude caption="The AI & API page in Postbase: copy the connector URL, and Claude shows up under Connected apps once it signs in."
 
 ## Step 3: sign in and pick a workspace
 
 When you add the connector, Claude opens a Postbase sign-in window. Sign in and choose the workspace Claude can post to. If you manage several brands in separate workspaces, Claude only sees the one you pick here.
 
-That's the whole setup. The connection now appears under **Developers → Connected apps** in Postbase, where you can revoke it at any time.
+That's the whole setup. The connection now appears under **AI & API → Connected apps** in Postbase, where you can revoke it at any time.
 
 ## Step 4: ask for a post
 
@@ -89,7 +89,7 @@ You can open any of them in the composer to change the wording, add an image or 
 
 **"One or more channel_ids are invalid".** Claude guessed a channel id instead of looking it up. Ask it to list your channels first, then try again.
 
-**Claude is connected to the wrong workspace.** Revoke the connection under **Developers → Connected apps**, then remove and re-add the connector in Claude and pick the right workspace when you sign in.
+**Claude is connected to the wrong workspace.** Revoke the connection under **AI & API → Connected apps**, then remove and re-add the connector in Claude and pick the right workspace when you sign in.
 
 ## Not using Claude's chat app?
 

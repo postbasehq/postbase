@@ -30,7 +30,7 @@ export default function AiPage() {
           sub="Postbase has a hosted MCP server. Add it to the AI tool you already use, sign in, and ask it to schedule posts for you."
           cta={{ label: "Connect in a minute", href: "/login" }}
           secondary={{ label: "Read the docs", href: "https://docs.postbase.so/mcp/connect" }}
-          frame="Connect your AI tool from the Developers page"
+          frame="Connect your AI tool from the AI & API page"
         >
           <ClientSetupDemo client={{ logo: claude.logo, name: claude.name, setup: claude.setup }} />
         </SeoHero>

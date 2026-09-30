@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { authenticateApiKey } from "@/lib/api-auth";
+import { guardApiRequest, postLimit, tooManyRequests } from "@/lib/api-limits";
 import { createPost, listPosts } from "@/lib/api-core";
 
 export async function GET(req: Request) {
-  const auth = await authenticateApiKey(req);
-  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await guardApiRequest(req, authenticateApiKey);
+  if (auth instanceof NextResponse) return auth;
 
   const status = new URL(req.url).searchParams.get("status") ?? undefined;
   const posts = await listPosts(auth.orgId, status);
@@ -12,8 +13,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const auth = await authenticateApiKey(req);
-  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await guardApiRequest(req, authenticateApiKey);
+  if (auth instanceof NextResponse) return auth;
 
   let payload: {
     body?: string;
@@ -26,6 +27,9 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
+
+  const hit = await postLimit(auth.orgId);
+  if (hit) return tooManyRequests(hit);
 
   try {
     const post = await createPost(auth.orgId, {

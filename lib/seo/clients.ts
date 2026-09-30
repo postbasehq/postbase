@@ -1,7 +1,7 @@
 /*
  * AI clients that connect to the Postbase MCP server. Drives /ai, /ai/[slug],
  * the sitemap, and the connector setup shown in the marketing product shots.
- * Setup steps mirror the hosted-connector config on the Developers page
+ * Setup steps mirror the hosted-connector config on the AI & API page
  * (components/McpClientConfig.tsx); keep them in sync.
  */
 
@@ -59,7 +59,7 @@ const COMMON_FAQS = (name: string): [string, string][] => [
   ],
   [
     `How do I stop ${name} posting for me?`,
-    `Open Developers → Connected apps in Postbase and click Revoke next to ${name}. Access ends immediately, and anything already scheduled stays in your calendar for you to keep or cancel.`,
+    `Open AI & API → Connected apps in Postbase and click Revoke next to ${name}. Access ends immediately, and anything already scheduled stays in your calendar for you to keep or cancel.`,
   ],
   [
     "Do I need a paid Postbase plan?",
@@ -202,7 +202,7 @@ export const CLIENTS: AiClient[] = [
     faqs: [
       [
         "Can I use an API key instead of signing in?",
-        "Yes. Create a key on the Developers page and run the npm package instead: claude mcp add postbase --env POSTBASE_API_KEY=your_key -- npx @postbasehq/mcp. The hosted sign-in is simpler, and you can revoke it from the same page.",
+        "Yes. Create a key on the AI & API page and run the npm package instead: claude mcp add postbase --env POSTBASE_API_KEY=your_key -- npx @postbasehq/mcp. The hosted sign-in is simpler, and you can revoke it from the same page.",
       ],
       [
         "Can I post from a CI job or script?",
@@ -232,7 +232,7 @@ export const CLIENTS: AiClient[] = [
     steps: [
       {
         title: "Add the server",
-        body: "Click Add to Cursor on the Postbase Developers page, or add a custom MCP server in Cursor's settings and paste the server URL.",
+        body: "Click Add to Cursor on the Postbase AI & API page, or add a custom MCP server in Cursor's settings and paste the server URL.",
       },
       SIGN_IN_STEP,
       ASK_STEP("Cursor"),
@@ -352,7 +352,7 @@ export const CLIENTS: AiClient[] = [
     faqs: [
       [
         "Can I use an API key instead of signing in?",
-        "Yes. Create a key on the Developers page and add the @postbasehq/mcp npm package to the mcpServers block of ~/.gemini/settings.json with POSTBASE_API_KEY set.",
+        "Yes. Create a key on the AI & API page and add the @postbasehq/mcp npm package to the mcpServers block of ~/.gemini/settings.json with POSTBASE_API_KEY set.",
       ],
       ...COMMON_FAQS("Gemini CLI"),
     ],
