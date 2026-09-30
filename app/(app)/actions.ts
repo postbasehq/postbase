@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import { openPick, PICK_COOKIE, saveMetaChannels } from "@/lib/meta-connect";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentOrgId } from "@/lib/org";
@@ -13,7 +15,7 @@ import {
   type YouTubePostOptions,
   type YouTubeTokens,
 } from "@/lib/platforms/youtube";
-import { revokeAccess as revokeMetaAccess, type MetaTokens } from "@/lib/platforms/meta";
+import { revokeAccess as revokeMetaAccess } from "@/lib/platforms/meta";
 import { atChannelLimit, atAiLimit, hasAccess, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
 import { connectBluesky } from "@/lib/platforms/bluesky";
 import { isRepeatEvery } from "@/lib/publish/repeat";
@@ -161,6 +163,21 @@ function parseVariants(formData: FormData): Record<string, string> {
   return {};
 }
 
+/**
+ * True when no other channel, in any workspace, was connected through the same
+ * Facebook login. Unknown logins count as shared, so we never revoke blindly.
+ */
+async function lastChannelForMetaLogin(channelId: string, providerUserId: string | null): Promise<boolean> {
+  if (!providerUserId) return false;
+  const { count } = await createAdminClient()
+    .from("channels")
+    .select("id", { count: "exact", head: true })
+    .eq("provider_user_id", providerUserId)
+    .in("platform", ["instagram", "facebook"])
+    .neq("id", channelId);
+  return count === 0;
+}
+
 /** Disconnect a channel — removes it (and its per-channel history) from the org. */
 export async function disconnectChannel(formData: FormData) {
   const supabase = await createClient();
@@ -174,7 +191,7 @@ export async function disconnectChannel(formData: FormData) {
   // so disconnect truly de-authorizes Postbase (not just a local token delete).
   const { data: channel } = await supabase
     .from("channels")
-    .select("platform, encrypted_tokens")
+    .select("platform, encrypted_tokens, provider_user_id")
     .eq("id", channelId)
     .eq("org_id", orgId)
     .maybeSingle();
@@ -188,10 +205,14 @@ export async function disconnectChannel(formData: FormData) {
       } else if (channel.platform === "youtube") {
         const t = decryptJson<YouTubeTokens>(enc);
         await revokeYouTubeAccess(t.refresh_token ?? t.access_token);
-      } else if (channel.platform === "instagram") {
-        // Meta revoke needs the user token (Instagram channels store it).
-        const t = decryptJson<MetaTokens>(enc);
-        if (t.user_access_token) await revokeMetaAccess(t.user_access_token);
+      } else if (channel.platform === "instagram" || channel.platform === "facebook") {
+        // Meta's revoke removes Postbase from the whole Facebook login, which
+        // would silently break every other Instagram account or Page connected
+        // through it. Only revoke when this is the last channel using it.
+        const t = decryptJson<{ user_access_token?: string }>(enc);
+        if (t.user_access_token && (await lastChannelForMetaLogin(channelId, channel.provider_user_id))) {
+          await revokeMetaAccess(t.user_access_token);
+        }
       }
     } catch {
       // Revoke is best-effort — never block disconnect on it.
@@ -842,4 +863,38 @@ export async function pollAiVideo(
   } catch (e) {
     return { status: "error", error: e instanceof Error ? e.message : "Video generation failed." };
   }
+}
+
+/**
+ * Connect the Instagram accounts or Facebook Pages ticked in the picker. The
+ * login comes from the short-lived cookie set by the Meta callback; the
+ * accounts are re-read from Meta, so only ids the login can reach are saved.
+ */
+export async function connectMetaAccounts(formData: FormData) {
+  const supabase = await createClient();
+  const orgId = await getCurrentOrgId();
+  const jar = await cookies();
+  const pick = openPick(jar.get(PICK_COOKIE)?.value, orgId);
+  jar.delete(PICK_COOKIE);
+  if (!pick || !orgId) redirect("/channels?error=pick_expired");
+
+  const ids = formData.getAll("account").map(String).filter(Boolean);
+  if (ids.length === 0) redirect("/channels");
+
+  let result: { saved: number; limitHit: boolean; failed: boolean };
+  try {
+    result = await saveMetaChannels(supabase, orgId, pick, ids);
+  } catch {
+    redirect(`/channels?error=${pick.platform === "instagram" ? "ig_connect_failed" : "fb_connect_failed"}`);
+  }
+  revalidatePath("/channels");
+  if (result.limitHit && result.saved === 0) redirect("/channels?error=channel_limit");
+  if (result.failed && result.saved === 0) redirect("/channels?error=save_failed");
+  redirect(`/channels?connected=${pick.platform}${result.limitHit ? "&error=channel_limit" : ""}`);
+}
+
+/** Close the picker without connecting anything. */
+export async function cancelMetaPick() {
+  (await cookies()).delete(PICK_COOKIE);
+  redirect("/channels");
 }

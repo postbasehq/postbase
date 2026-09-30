@@ -2,14 +2,13 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
-import { atChannelLimit } from "@/lib/billing-guard";
-import { encryptJson } from "@/lib/crypto";
-import { exchangeCode, getMeId, longLivedToken, resolveInstagram, type MetaTokens } from "@/lib/platforms/meta";
+import { exchangeCode, getMeId, longLivedToken } from "@/lib/platforms/meta";
+import { listMetaOptions, PICK_COOKIE, PICK_TTL_S, saveMetaChannels, sealPick } from "@/lib/meta-connect";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
-// Instagram OAuth callback: exchange the code, resolve the IG Business account,
-// store the channel with encrypted Page tokens.
+// Instagram OAuth callback: exchange the code, find the Instagram Business accounts
+// this Facebook login reaches, and connect the one (or ask which, if several).
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
@@ -18,11 +17,12 @@ export async function GET(request: Request) {
   const jar = await cookies();
   const savedState = jar.get("ig_oauth_state")?.value;
 
-  const fail = (reason: string) => {
-    const res = NextResponse.redirect(`${APP_URL}/channels?error=${reason}`);
+  const done = (query: string) => {
+    const res = NextResponse.redirect(`${APP_URL}/channels?${query}`);
     res.cookies.delete("ig_oauth_state");
     return res;
   };
+  const fail = (reason: string) => done(`error=${reason}`);
 
   // Meta appends error params when the user declines the dialog.
   if (searchParams.get("error")) return fail("ig_connect_failed");
@@ -38,53 +38,36 @@ export async function GET(request: Request) {
   if (!orgId) return fail("no_workspace");
 
   try {
-    const shortToken = await exchangeCode(code);
+    const shortToken = await exchangeCode(code, undefined);
     const longLived = await longLivedToken(shortToken);
-    const ig = await resolveInstagram(longLived.access_token);
-
-    const tokens: MetaTokens = {
-      access_token: ig.pageAccessToken, // Page tokens from a long-lived user token don't expire
-      ig_user_id: ig.igUserId,
-      page_id: ig.pageId,
-      user_access_token: longLived.access_token,
+    const pick = {
+      platform: "instagram" as const,
+      userToken: longLived.access_token,
+      fbUserId: await getMeId(longLived.access_token),
+      tokenExpiry: longLived.expires_in ? new Date(Date.now() + longLived.expires_in * 1000).toISOString() : null,
     };
-    const handle = ig.username ? `@${ig.username}` : `ig:${ig.igUserId}`;
-    // Long-lived user token expiry (informational — Page tokens themselves are durable).
-    const tokenExpiry = longLived.expires_in
-      ? new Date(Date.now() + longLived.expires_in * 1000).toISOString()
-      : null;
+    const options = await listMetaOptions(supabase, orgId, "instagram", pick.userToken);
+    if (options.length === 0) return fail("ig_no_account");
 
-    const fields = {
-      encrypted_tokens: encryptJson(tokens),
-      token_expiry: tokenExpiry,
-      status: "active",
-      display_name: ig.name ?? null,
-      avatar_url: ig.avatarUrl ?? null,
-      // App-scoped FB user id — lets the deauthorize/data-deletion callbacks
-      // find and remove this channel when the user removes the app.
-      provider_user_id: await getMeId(longLived.access_token),
-    };
+    // Several accounts: ask which to connect.
+    if (options.length > 1) {
+      const res = done("pick=instagram");
+      res.cookies.set(PICK_COOKIE, sealPick({ ...pick, orgId }), {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: PICK_TTL_S,
+      });
+      return res;
+    }
 
-    // Reconnecting the same account updates the existing channel instead of duplicating it.
-    const { data: existing } = await supabase
-      .from("channels")
-      .select("id")
-      .eq("org_id", orgId)
-      .eq("platform", "instagram")
-      .eq("handle", handle)
-      .maybeSingle();
-
-    if (!existing && (await atChannelLimit(supabase, orgId))) return fail("channel_limit");
-
-    const { error } = existing
-      ? await supabase.from("channels").update(fields).eq("id", existing.id)
-      : await supabase.from("channels").insert({ org_id: orgId, platform: "instagram", handle, ...fields });
-    if (error) return fail("save_failed");
+    const result = await saveMetaChannels(supabase, orgId, pick, [options[0].id]);
+    if (result.limitHit) return fail("channel_limit");
+    if (result.failed || result.saved === 0) return fail("save_failed");
   } catch {
     return fail("ig_connect_failed");
   }
 
-  const res = NextResponse.redirect(`${APP_URL}/channels?connected=instagram`);
-  res.cookies.delete("ig_oauth_state");
-  return res;
+  return done("connected=instagram");
 }

@@ -21,6 +21,8 @@ type TargetRow = {
   platform_post_id: string | null;
   variant_body: string | null;
   attempts: number;
+  pending_ref: string | null;
+  pending_since: string | null;
   channels: ChannelRow | null;
 };
 type PostRow = {
@@ -48,6 +50,8 @@ const INTERRUPTED_ERROR =
 const POST_COLUMNS = "id, org_id, body, thread_tail, tiktok_privacy_level, tiktok_options, youtube_privacy, youtube_options";
 // How many times to try a target before giving up.
 const MAX_ATTEMPTS = 4;
+// How long a platform may keep processing an upload before we give up on it.
+const PENDING_MAX_MS = 30 * 60_000;
 
 // Backoff (minutes) indexed by the attempt number just completed (1-based).
 function backoffMs(attempts: number): number {
@@ -64,7 +68,7 @@ async function loadTarget(db: Db, targetId: string): Promise<TargetRow | null> {
   const { data } = await db
     .from("post_targets")
     .select(
-      "id, status, platform_post_id, variant_body, attempts, channels(id, platform, handle, encrypted_tokens, token_expiry)",
+      "id, status, platform_post_id, variant_body, attempts, pending_ref, pending_since, channels(id, platform, handle, encrypted_tokens, token_expiry)",
     )
     .eq("id", targetId)
     .maybeSingle();
@@ -128,16 +132,33 @@ async function publishTarget(
     youtubePrivacy: post.youtube_privacy,
     youtubeOptions: post.youtube_options,
     tiktokOptions: post.tiktok_options,
+    pendingRef: target.pending_ref,
   });
 
   if (result.ok) {
     // A warning (e.g. a thumbnail YouTube refused) is kept on the target for support.
     await db
       .from("post_targets")
-      .update({ status: "published", platform_post_id: result.platformPostId, error: result.warning ?? null, next_attempt_at: null })
+      .update({ status: "published", platform_post_id: result.platformPostId, error: result.warning ?? null, next_attempt_at: null, pending_ref: null, pending_since: null })
       .eq("id", target.id);
     if (target.channels?.id) await clearReconnect(db, target.channels.id);
     return true;
+  }
+
+  // Still processing on the platform's side: check again next minute. Not a
+  // failed attempt, but give up if it never finishes.
+  if (!result.ok && result.pendingRef) {
+    const since = target.pending_ref === result.pendingRef && target.pending_since ? target.pending_since : new Date().toISOString();
+    const stale = Date.now() - Date.parse(since) > PENDING_MAX_MS;
+    await db
+      .from("post_targets")
+      .update(
+        stale
+          ? { status: "failed", error: "The platform took too long to process the media. Retry to upload it again.", next_attempt_at: null, pending_ref: null, pending_since: null }
+          : { status: "failed", error: result.error, next_attempt_at: new Date(Date.now() + 60_000).toISOString(), pending_ref: result.pendingRef, pending_since: since },
+      )
+      .eq("id", target.id);
+    return false;
   }
 
   // Failure: schedule a retry with backoff, or give up after MAX_ATTEMPTS.
@@ -153,6 +174,9 @@ async function publishTarget(
       status: "failed",
       error: result.error,
       attempts,
+      // A dead upload is dropped so a retry starts afresh.
+      pending_ref: null,
+      pending_since: null,
       next_attempt_at: canRetry ? new Date(Date.now() + backoffMs(attempts)).toISOString() : null,
     })
     .eq("id", target.id);

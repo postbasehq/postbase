@@ -6,7 +6,7 @@ import { getMe as xGetMe, type XTokens } from "@/lib/platforms/x";
 import { getMe as liGetMe, type LinkedInTokens } from "@/lib/platforms/linkedin";
 import { getUser as ttGetUser, type TikTokTokens } from "@/lib/platforms/tiktok";
 import { getChannel as ytGetChannel, type YouTubeTokens } from "@/lib/platforms/youtube";
-import { resolveInstagram, type MetaTokens } from "@/lib/platforms/meta";
+import { listInstagramAccounts, type MetaTokens } from "@/lib/platforms/meta";
 import { verifyAccount, type MastodonTokens } from "@/lib/platforms/mastodon";
 import { connectBluesky, type BlueskyTokens } from "@/lib/platforms/bluesky";
 
@@ -86,7 +86,8 @@ async function fetchProfile(platform: string, encrypted: string): Promise<Profil
     case "instagram": {
       const t = decryptJson<MetaTokens>(encrypted);
       if (!t.user_access_token) return null;
-      const ig = await resolveInstagram(t.user_access_token);
+      const ig = (await listInstagramAccounts(t.user_access_token)).find((a) => a.igUserId === t.ig_user_id);
+      if (!ig) return null;
       return { display_name: ig.name, avatar_url: ig.avatarUrl };
     }
     case "mastodon": {

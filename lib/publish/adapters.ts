@@ -7,7 +7,7 @@ import {
   createImageContainer,
   createVideoContainer,
   publishContainer,
-  waitForContainer,
+  containerStatus,
   postPageFeed,
   postPagePhoto,
   uploadUnpublishedPhoto,
@@ -82,11 +82,15 @@ export type PublishInput = {
   /** YouTube title, thumbnail and audience chosen in the composer. */
   youtubeOptions?: YouTubePostOptions | null;
   tiktokOptions?: TikTokPostOptions | null;
+  /** An upload still processing from an earlier run (Instagram container id). */
+  pendingRef?: string | null;
 };
 
 export type PublishResult =
   | { ok: true; platformPostId: string; warning?: string }
-  | { ok: false; error: string };
+  | { ok: false; error: string; pendingRef?: undefined }
+  /** Still processing on the platform's side: check `pendingRef` again next run. */
+  | { ok: false; error: string; pendingRef: string };
 
 function isExpiring(iso: string | null): boolean {
   if (!iso) return false;
@@ -200,6 +204,8 @@ async function ensureInstagramImageUrl(url: string, type: string): Promise<strin
   return db.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
+const IG_PROCESSING = "Instagram is still processing the video.";
+
 async function publishToInstagram(input: PublishInput): Promise<PublishResult> {
   if (!input.encryptedTokens) return { ok: false, error: "Instagram account not connected." };
 
@@ -225,6 +231,26 @@ async function publishToInstagram(input: PublishInput): Promise<PublishResult> {
   const token = tokens.access_token;
 
   try {
+    // An upload from an earlier run: check it rather than uploading again.
+    if (input.pendingRef) {
+      const st = await containerStatus(token, input.pendingRef);
+      if (st.code === "FINISHED") {
+        return { ok: true, platformPostId: await publishContainer(igId, token, input.pendingRef) };
+      }
+      if (st.code === "PUBLISHED") {
+        // Went out on an earlier run whose result was lost: never post it twice.
+        return { ok: true, platformPostId: input.pendingRef };
+      }
+      if (st.code === "IN_PROGRESS") {
+        return { ok: false, error: IG_PROCESSING, pendingRef: input.pendingRef };
+      }
+      // ERROR / EXPIRED: this upload is dead. Report it, and upload afresh on a retry.
+      return {
+        ok: false,
+        error: `Instagram couldn’t process the media (${st.code.toLowerCase()}${st.detail ? `: ${st.detail}` : ""}).`,
+      };
+    }
+
     let creationId: string;
 
     if (videos.length > 0) {
@@ -243,11 +269,20 @@ async function publishToInstagram(input: PublishInput): Promise<PublishResult> {
       creationId = await createCarouselContainer(igId, token, childIds, caption);
     }
 
-    // Wait until the container finishes processing — publishing too early fails
-    // with "Media ID is not available". Images usually finish on the first poll.
-    await waitForContainer(token, creationId);
-    const id = await publishContainer(igId, token, creationId);
-    return { ok: true, platformPostId: id };
+    // Publishing before the container finishes fails ("Media ID is not
+    // available"). Images finish at once; Reels can take minutes, so wait a
+    // little, then leave it to the next run instead of holding the cron.
+    for (let i = 0; i < 8; i++) {
+      const st = await containerStatus(token, creationId);
+      if (st.code === "FINISHED") {
+        return { ok: true, platformPostId: await publishContainer(igId, token, creationId) };
+      }
+      if (st.code === "ERROR" || st.code === "EXPIRED") {
+        throw new Error(`Instagram couldn’t process the media (${st.code.toLowerCase()}${st.detail ? `: ${st.detail}` : ""}).`);
+      }
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+    return { ok: false, error: IG_PROCESSING, pendingRef: creationId };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Instagram publish failed." };
   }

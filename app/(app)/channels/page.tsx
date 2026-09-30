@@ -1,6 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { scopeOrgId } from "@/lib/org";
-import { disconnectChannel } from "../actions";
+import { cookies } from "next/headers";
+import { cancelMetaPick, connectMetaAccounts, disconnectChannel } from "../actions";
+import { MetaAccountPicker } from "@/components/MetaAccountPicker";
+import { listMetaOptions, openPick, PICK_COOKIE, type MetaOption, type MetaPlatform } from "@/lib/meta-connect";
 import { ChannelsBoard } from "@/components/ChannelsBoard";
 import { channelHealth, reconnectReason, type ChannelHealth } from "@/lib/channel-health";
 
@@ -47,6 +50,9 @@ const ERRORS: Record<string, string> = {
   fb_not_configured: "Facebook isn’t configured on this server yet (missing Meta app keys).",
   fb_connect_failed: "Connecting Facebook failed — please try again.",
   fb_no_page: "No Facebook Page found on your account. Create a Page, then reconnect.",
+  ig_no_account:
+    "No Instagram Business or Creator account is linked to your Facebook Pages. Switch the Instagram account to Business or Creator and link it to a Page, then reconnect.",
+  pick_expired: "That took a little long, so for your security the sign-in expired. Please connect again.",
   mt_no_instance: "Enter your Mastodon server address to connect.",
   mt_bad_instance: "That doesn’t look like a valid Mastodon server address.",
   mt_connect_failed: "Connecting Mastodon failed — check the server address and try again.",
@@ -58,11 +64,26 @@ const ERRORS: Record<string, string> = {
 export default async function ChannelsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ connected?: string; error?: string }>;
+  searchParams: Promise<{ connected?: string; error?: string; pick?: string }>;
 }) {
-  const { connected, error } = await searchParams;
+  const { connected, pick, ...rest } = await searchParams;
+  let error = rest.error;
   const supabase = await createClient();
   const orgId = await scopeOrgId();
+
+  // Back from Facebook with several accounts to choose from.
+  let picker: { platform: MetaPlatform; options: MetaOption[] } | null = null;
+  if (pick === "instagram" || pick === "facebook") {
+    const parked = openPick((await cookies()).get(PICK_COOKIE)?.value, orgId);
+    if (!parked || parked.platform !== pick) error ??= "pick_expired";
+    else {
+      try {
+        picker = { platform: pick, options: await listMetaOptions(supabase, orgId, pick, parked.userToken) };
+      } catch {
+        error ??= pick === "instagram" ? "ig_connect_failed" : "fb_connect_failed";
+      }
+    }
+  }
   const { data: channels } = await supabase
     .from("channels")
     .select("id, platform, handle, status, status_error, reconnect_by, display_name, avatar_url, verified")
@@ -156,6 +177,14 @@ export default async function ChannelsPage({
           accountsByPlatform={accountsByPlatform}
           disconnectAction={disconnectChannel}
         />
+        {picker ? (
+          <MetaAccountPicker
+            platform={picker.platform}
+            options={picker.options}
+            connectAction={connectMetaAccounts}
+            cancelAction={cancelMetaPick}
+          />
+        ) : null}
       </div>
     </div>
   );

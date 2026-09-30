@@ -154,17 +154,20 @@ export async function longLivedToken(
   return { access_token: json.access_token, expires_in: json.expires_in };
 }
 
-/** Find the first Page with a linked IG Business account and return its ids/tokens. */
-export async function resolveInstagram(userToken: string): Promise<{
+export type InstagramAccount = {
   igUserId: string;
   username: string;
   name?: string;
   avatarUrl?: string;
   pageId: string;
   pageAccessToken: string;
-}> {
+};
+
+/** Every Instagram Business/Creator account reachable through the user's Pages. */
+export async function listInstagramAccounts(userToken: string): Promise<InstagramAccount[]> {
   const p = new URLSearchParams({
     fields: "id,name,access_token,instagram_business_account{id,username,name,profile_picture_url}",
+    limit: "100",
     access_token: userToken,
   });
   const json = await graphJson<{
@@ -175,20 +178,16 @@ export async function resolveInstagram(userToken: string): Promise<{
     }[];
   }>(`${graph()}/me/accounts?${p}`);
 
-  const page = (json.data ?? []).find((pg) => pg.instagram_business_account?.id);
-  if (!page || !page.instagram_business_account) {
-    throw new Error(
-      "No Instagram Business account is linked to your Facebook Pages. Convert the IG account to Business/Creator and link it to a Page.",
-    );
-  }
-  return {
-    igUserId: page.instagram_business_account.id,
-    username: page.instagram_business_account.username ?? "",
-    name: page.instagram_business_account.name,
-    avatarUrl: page.instagram_business_account.profile_picture_url,
-    pageId: page.id,
-    pageAccessToken: page.access_token,
-  };
+  return (json.data ?? [])
+    .filter((pg) => pg.instagram_business_account?.id)
+    .map((pg) => ({
+      igUserId: pg.instagram_business_account!.id,
+      username: pg.instagram_business_account!.username ?? "",
+      name: pg.instagram_business_account!.name,
+      avatarUrl: pg.instagram_business_account!.profile_picture_url,
+      pageId: pg.id,
+      pageAccessToken: pg.access_token,
+    }));
 }
 
 function form(params: Record<string, string>): RequestInit {
@@ -205,17 +204,23 @@ export type FacebookTokens = {
   access_token: string; // long-lived Page access token
   page_id: string;
   page_name?: string;
+  user_access_token?: string; // long-lived user token, to revoke on disconnect
 };
 
 /** List the Facebook Pages the user manages, with their (long-lived) tokens. */
 export async function resolvePages(
   userToken: string,
-): Promise<{ id: string; name: string; access_token: string }[]> {
-  const p = new URLSearchParams({ fields: "id,name,access_token", access_token: userToken });
+): Promise<{ id: string; name: string; access_token: string; avatarUrl?: string }[]> {
+  const p = new URLSearchParams({ fields: "id,name,access_token,picture{url}", limit: "100", access_token: userToken });
   const json = await graphJson<{
-    data?: { id: string; name: string; access_token: string }[];
+    data?: { id: string; name: string; access_token: string; picture?: { data?: { url?: string } } }[];
   }>(`${graph()}/me/accounts?${p}`);
-  return json.data ?? [];
+  return (json.data ?? []).map((pg) => ({
+    id: pg.id,
+    name: pg.name,
+    access_token: pg.access_token,
+    avatarUrl: pg.picture?.data?.url,
+  }));
 }
 
 /** Publish a text post to a Page feed. Returns the post id. */
@@ -396,6 +401,17 @@ export async function getMediaInsights(
     saves: by.saved ?? 0,
     shares: by.shares ?? 0,
   };
+}
+
+/** One status check of a media container: FINISHED, IN_PROGRESS, ERROR, EXPIRED or PUBLISHED. */
+export async function containerStatus(
+  token: string,
+  creationId: string,
+): Promise<{ code: string; detail?: string }> {
+  const json = await graphJson<{ status_code?: string; status?: string }>(
+    `${graph()}/${creationId}?fields=status_code,status&access_token=${encodeURIComponent(token)}`,
+  );
+  return { code: json.status_code ?? "IN_PROGRESS", detail: json.status };
 }
 
 /** Poll a container until it's FINISHED (needed for video; images are usually instant). */
