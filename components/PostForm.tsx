@@ -9,6 +9,7 @@ import { SubmitButton } from "@/components/SubmitButton";
 import { Modal } from "@/components/Modal";
 import { BrandTile } from "@/components/BrandTile";
 import { DateTimePicker } from "@/components/DateTimePicker";
+import { channelHealth } from "@/lib/channel-health";
 import { TikTokSettings, type TikTokInitial } from "@/components/TikTokSettings";
 import { YouTubeSettings, type YouTubePrivacy } from "@/components/YouTubeSettings";
 import type { YouTubePostOptions } from "@/lib/platforms/youtube";
@@ -137,6 +138,8 @@ type Channel = {
   display_name?: string | null;
   avatar_url?: string | null;
   verified?: boolean | null;
+  status?: string;
+  reconnect_by?: string | null;
 };
 type Media = { url: string; type: string };
 type LibraryItem = { id: string; url: string; name: string; type: string; size_bytes: number; folder_id?: string | null };
@@ -278,6 +281,8 @@ export function PostForm({
   const hasVideo = media.some((m) => m.type.startsWith("video/"));
   const selectedChannels = channels.filter((c) => selected.has(c.id));
   const selectedPlatforms = Array.from(new Set(selectedChannels.map((c) => c.platform)));
+  // Selected channels whose connection is broken: their posts won't go out until reconnected.
+  const brokenSelected = selectedChannels.filter((c) => c.status && channelHealth({ status: c.status, reconnect_by: c.reconnect_by }) === "reconnect");
 
   // Live preview: which selected channel is being previewed.
   const [previewIdx, setPreviewIdx] = useState(0);
@@ -567,15 +572,16 @@ export function PostForm({
               <>
                 {channels.map((c) => {
                   const on = selected.has(c.id);
+                  const broken = Boolean(c.status) && channelHealth({ status: c.status!, reconnect_by: c.reconnect_by }) === "reconnect";
                   const blocking =
-                    on && checkPlatform(c.platform).some((n) => n.level === "error");
+                    broken || (on && checkPlatform(c.platform).some((n) => n.level === "error"));
                   return (
                     <button
                       type="button"
                       key={c.id}
                       onClick={() => toggleChannel(c.id)}
                       aria-pressed={on}
-                      title={`${label(c.platform)}${c.handle ? ` ${c.handle}` : ""}`}
+                      title={`${label(c.platform)}${c.handle ? ` ${c.handle}` : ""}${broken ? " · needs reconnecting" : ""}`}
                       className={`relative rounded-full transition ${
                         on
                           ? "ring-2 ring-blue ring-offset-2 ring-offset-surface"
@@ -584,7 +590,7 @@ export function PostForm({
                     >
                       <BrandTile platform={c.platform} size={34} radius={17} />
                       {blocking ? (
-                        <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-terra ring-2 ring-surface" />
+                        <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-[#d14a3e] ring-2 ring-surface" />
                       ) : null}
                     </button>
                   );
@@ -592,6 +598,19 @@ export function PostForm({
               </>
             )}
           </div>
+          {brokenSelected.length > 0 ? (
+            <p className="mt-2 text-[12px] leading-snug text-muted">
+              <span className="font-semibold text-[#d14a3e]">
+                {brokenSelected.map((c) => `${label(c.platform)}${c.handle ? ` ${c.handle}` : ""}`).join(", ")}{" "}
+                {brokenSelected.length === 1 ? "needs" : "need"} reconnecting.
+              </span>{" "}
+              Posts to {brokenSelected.length === 1 ? "it" : "them"} won’t go out until you{" "}
+              <Link href="/channels" className="font-semibold text-blue-ink hover:underline">
+                reconnect in Channels
+              </Link>
+              .
+            </p>
+          ) : null}
           </div>
 
           {/* editor */}

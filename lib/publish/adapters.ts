@@ -266,6 +266,11 @@ async function publishToLinkedIn(input: PublishInput): Promise<PublishResult> {
     };
   }
 
+  // Without a refresh token a LinkedIn connection simply lapses after 60 days.
+  if (!tokens.refresh_token && input.tokenExpiry && Date.parse(input.tokenExpiry) <= Date.now()) {
+    return { ok: false, error: "LinkedIn token expired (LinkedIn connections last 60 days) — reconnect the channel." };
+  }
+
   // Refresh an expiring access token when a refresh token is available.
   if (isExpiring(input.tokenExpiry) && tokens.refresh_token) {
     try {

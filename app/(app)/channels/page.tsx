@@ -2,6 +2,18 @@ import { createClient } from "@/lib/supabase/server";
 import { scopeOrgId } from "@/lib/org";
 import { disconnectChannel } from "../actions";
 import { ChannelsBoard } from "@/components/ChannelsBoard";
+import { channelHealth, reconnectReason, type ChannelHealth } from "@/lib/channel-health";
+
+const BRAND_LABEL: Record<string, string> = {
+  x: "X",
+  instagram: "Instagram",
+  linkedin: "LinkedIn",
+  tiktok: "TikTok",
+  youtube: "YouTube",
+  facebook: "Facebook",
+  bluesky: "Bluesky",
+  mastodon: "Mastodon",
+};
 
 const CONNECTED_LABEL: Record<string, string> = {
   x: "X account connected.",
@@ -53,7 +65,7 @@ export default async function ChannelsPage({
   const orgId = await scopeOrgId();
   const { data: channels } = await supabase
     .from("channels")
-    .select("id, platform, handle, status, display_name, avatar_url, verified")
+    .select("id, platform, handle, status, status_error, reconnect_by, display_name, avatar_url, verified")
     .eq("org_id", orgId)
     .order("created_at", { ascending: true });
 
@@ -67,8 +79,24 @@ export default async function ChannelsPage({
       displayName: string | null;
       avatarUrl: string | null;
       verified: boolean;
+      health: ChannelHealth;
+      reason: string | null;
+      reconnectBy: string | null;
+      waiting: number;
     }[]
   > = {};
+
+  // Scheduled posts held up by each broken channel, so the prompt can say so.
+  const broken = (channels ?? []).filter((c) => channelHealth(c) !== "ok").map((c) => c.id);
+  const waiting: Record<string, number> = {};
+  if (broken.length > 0) {
+    const { data: pending } = await supabase
+      .from("post_targets")
+      .select("channel_id")
+      .in("channel_id", broken)
+      .in("status", ["scheduled", "failed"]);
+    for (const t of pending ?? []) waiting[t.channel_id] = (waiting[t.channel_id] ?? 0) + 1;
+  }
   for (const c of channels ?? []) {
     (accountsByPlatform[c.platform] ??= []).push({
       id: c.id,
@@ -77,6 +105,10 @@ export default async function ChannelsPage({
       displayName: c.display_name ?? null,
       avatarUrl: c.avatar_url ?? null,
       verified: Boolean(c.verified),
+      health: channelHealth(c),
+      reason: channelHealth(c) === "reconnect" ? reconnectReason(c.status_error ?? (c.reconnect_by ? "60 days" : null), BRAND_LABEL[c.platform] ?? c.platform) : null,
+      reconnectBy: c.reconnect_by ?? null,
+      waiting: waiting[c.id] ?? 0,
     });
   }
   const connectedCount = channels?.length ?? 0;

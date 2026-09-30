@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { clearReconnect, flagReconnect, needsReconnect } from "@/lib/channel-health";
 import { publish } from "@/lib/publish/adapters";
 import type { TikTokPostOptions } from "@/lib/platforms/tiktok";
 import type { YouTubePostOptions } from "@/lib/platforms/youtube";
@@ -135,13 +136,17 @@ async function publishTarget(
       .from("post_targets")
       .update({ status: "published", platform_post_id: result.platformPostId, error: result.warning ?? null, next_attempt_at: null })
       .eq("id", target.id);
+    if (target.channels?.id) await clearReconnect(db, target.channels.id);
     return true;
   }
 
   // Failure: schedule a retry with backoff, or give up after MAX_ATTEMPTS.
   const attempts = (target.attempts ?? 0) + 1;
-  // Retrying can't fix a broken attachment, so don't.
-  const canRetry = attempts < MAX_ATTEMPTS && !brokenMedia;
+  // Lost access: flag the channel so the user is told to reconnect it.
+  const authLost = needsReconnect(result.error);
+  if (authLost && target.channels?.id) await flagReconnect(db, target.channels.id, result.error);
+  // Retrying can't fix a broken attachment or lost access, so don't.
+  const canRetry = attempts < MAX_ATTEMPTS && !brokenMedia && !authLost;
   await db
     .from("post_targets")
     .update({

@@ -86,13 +86,14 @@ export function CalendarChannelsBar({
             const isOn = (accountsByPlatform[p.id]?.length ?? 0) > 0;
             const angle = (i - (n - 1) / 2) * 6; // gentle fan
             const label = BRANDS[p.id]?.label ?? p.id;
+            const broken = accountsByPlatform[p.id]?.some((a) => a.status === "reconnect") ?? false;
             return (
               <button
                 key={p.id}
                 type="button"
                 onClick={() => setActive(p.id)}
                 aria-label={isOn ? `Manage ${label}` : `Connect ${label}`}
-                title={isOn ? `Manage ${label}` : `Connect ${label}`}
+                title={broken ? `${label} needs reconnecting` : isOn ? `Manage ${label}` : `Connect ${label}`}
                 style={{ marginLeft: i === 0 ? 0 : -3, transform: `rotate(${angle}deg)`, zIndex: i }}
                 className={`relative rounded-[9px] bg-surface p-[2.5px] shadow-sm ring-1 ring-line transition duration-150 hover:z-20 focus-visible:z-20 focus-visible:outline-none ${
                   isOn ? "" : "opacity-45 grayscale hover:opacity-100 hover:grayscale-0"
@@ -101,6 +102,9 @@ export function CalendarChannelsBar({
                 <span className="block transition-transform duration-150 hover:-translate-y-1">
                   <BrandTile platform={p.id} size={26} radius={7} />
                 </span>
+                {broken ? (
+                  <span className="absolute -right-1 -top-1 size-2.5 rounded-full bg-[#d14a3e] ring-2 ring-surface" />
+                ) : null}
               </button>
             );
           })}
@@ -141,7 +145,14 @@ export function CalendarChannelsBar({
                     <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
                       {a.handle ?? "Connected account"}
                     </span>
-                    {a.status !== "active" ? (
+                    {a.status === "reconnect" ? (
+                      <a
+                        href={current.kind === "oauth" ? `/api/connect/${current.id}` : "/channels"}
+                        className="rounded-full bg-[#d14a3e] px-2.5 py-0.5 text-[11px] font-semibold text-white"
+                      >
+                        Reconnect
+                      </a>
+                    ) : a.status !== "active" ? (
                       <span className="rounded-full border border-line px-2.5 py-0.5 text-[11px] font-semibold text-muted">
                         {a.status}
                       </span>

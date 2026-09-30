@@ -10,7 +10,8 @@ import { HeaderTitle } from "@/components/HeaderTitle";
 import { AgentSparkIcon } from "@/components/AgentSparkIcon";
 import { SidebarSwitcher } from "@/components/SidebarSwitcher";
 import { AgentProposalDock } from "@/components/AgentProposalDock";
-import { NotificationBell, type Notice } from "@/components/NotificationBell";
+import { NotificationBell, type ChannelIssue, type Notice } from "@/components/NotificationBell";
+import { channelHealth, RECONNECT_WARN_MS } from "@/lib/channel-health";
 import { OrgSwitcher, type WorkspaceAllowance } from "@/components/OrgSwitcher";
 import { TimezoneSync } from "@/components/TimezoneSync";
 import { PlanGate } from "@/components/PlanGate";
@@ -50,13 +51,14 @@ export default async function AppLayout({
 
   // Plan access + notification bell data (both scoped by RLS).
   let notices: Notice[] = [];
+  let channelIssues: ChannelIssue[] = [];
   let locked = false;
   let workspaces: WorkspaceAllowance | null = null;
   // Set when this workspace's plan belongs to another workspace, for the no-plan screen.
   let linkedTo: { name: string; canManage: boolean } | null = null;
   if (activeId) {
     const supabase = await createClient();
-    const [group, { data: failed }] = await Promise.all([
+    const [group, { data: failed }, { data: chans }] = await Promise.all([
       // The plan may belong to the workspace this one is billed through.
       billingGroup(activeId),
       // Terminally-failed deliveries (no retry pending) become notifications.
@@ -67,7 +69,23 @@ export default async function AppLayout({
         .eq("status", "failed")
         .is("next_attempt_at", null)
         .limit(20),
+      // Channels that need reconnecting (or will soon) come first in the bell.
+      supabase
+        .from("channels")
+        .select("id, platform, handle, display_name, status, status_error, reconnect_by")
+        .eq("org_id", activeId)
+        .or(`status.eq.reconnect,reconnect_by.lt.${new Date(Date.now() + RECONNECT_WARN_MS).toISOString()}`),
     ]);
+    channelIssues = (chans ?? [])
+      .map((c) => ({ c, health: channelHealth(c) }))
+      .filter(({ health }) => health !== "ok")
+      .map(({ c, health }) => ({
+        id: c.id,
+        platform: c.platform,
+        name: c.display_name || c.handle || null,
+        health: health as "reconnect" | "expiring",
+        reconnectBy: c.reconnect_by ?? null,
+      }));
     locked = billingEnforced() && !orgHasAccess(group);
     // What the switcher needs to offer "Create workspace", or an upgrade instead.
     const rootRole = orgs.find((o) => o.id === group.rootId)?.role ?? null;
@@ -137,7 +155,7 @@ export default async function AppLayout({
                   >
                     <AgentSparkIcon size={18} />
                   </Link>
-                  <NotificationBell items={notices} />
+                  <NotificationBell items={notices} channelIssues={channelIssues} />
                   <ThemeToggle />
                   <Link
                     href="/composer"

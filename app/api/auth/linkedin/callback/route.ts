@@ -55,6 +55,8 @@ export async function GET(request: Request) {
       encrypted_tokens: encryptJson(tokens),
       token_expiry: tokenExpiry,
       status: "active",
+      // No refresh token: the connection lapses at expiry, so warn ahead of it.
+      reconnect_by: token.refresh_token ? null : tokenExpiry,
       display_name: me.name ?? null,
       avatar_url: me.picture ?? null,
     };

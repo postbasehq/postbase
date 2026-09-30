@@ -7,6 +7,7 @@ import { BrandTile, BRANDS } from "@/components/BrandTile";
 import { BlueskyForm } from "@/components/BlueskyForm";
 import { DisconnectButton } from "@/components/DisconnectButton";
 import { Modal } from "@/components/Modal";
+import { formatReconnectBy } from "@/lib/channel-health";
 import { COMING_SOON } from "@/lib/platforms/availability";
 
 type Account = {
@@ -16,6 +17,12 @@ type Account = {
   displayName?: string | null;
   avatarUrl?: string | null;
   verified?: boolean;
+  /** "reconnect": the platform stopped accepting our access; "expiring": it will soon. */
+  health?: "ok" | "reconnect" | "expiring";
+  reason?: string | null;
+  reconnectBy?: string | null;
+  /** Scheduled or failed posts held up by this account. */
+  waiting?: number;
 };
 type Kind = "oauth" | "bluesky" | "mastodon";
 
@@ -72,9 +79,21 @@ function cardGlow(platform: string): React.CSSProperties {
   return c ? ({ "--glow": c } as React.CSSProperties) : {};
 }
 
+const RED = "#d14a3e";
+const AMBER = "#e3a72c";
+
 function StatusPill({ status }: { status: string }) {
   // Connected reads as a quiet dot + label (not a loud filled badge); any other
   // status keeps a bordered pill so it stands out as needing attention.
+  if (status === "reconnect" || status === "expiring") {
+    const color = status === "reconnect" ? RED : AMBER;
+    return (
+      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold" style={{ color }}>
+        <span className="size-1.5 rounded-full" style={{ background: color }} />
+        {status === "reconnect" ? "Reconnect needed" : "Expires soon"}
+      </span>
+    );
+  }
   if (status === "active") {
     return (
       <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-green">
@@ -162,7 +181,15 @@ export function ChannelsBoard({
           </div>
           {connected ? (
             <span className="ml-auto shrink-0">
-              <StatusPill status="active" />
+              <StatusPill
+                status={
+                  accounts.some((a) => a.health === "reconnect")
+                    ? "reconnect"
+                    : accounts.some((a) => a.health === "expiring")
+                      ? "expiring"
+                      : "active"
+                }
+              />
             </span>
           ) : null}
         </div>
@@ -172,11 +199,14 @@ export function ChannelsBoard({
             {accounts.map((a) => {
               const primary = a.displayName || a.handle || "Connected account";
               const secondary = a.displayName && a.handle ? a.handle : null;
+              const issue = a.health === "reconnect" || a.health === "expiring" ? a.health : null;
               return (
                 <div
                   key={a.id}
-                  className="flex items-center gap-3 rounded-xl border border-line/70 bg-surface-2/50 px-2.5 py-2"
+                  className="rounded-xl border border-line/70 bg-surface-2/50 px-2.5 py-2"
+                  style={{ borderColor: issue === "reconnect" ? RED : issue === "expiring" ? AMBER : undefined }}
                 >
+                <div className="flex items-center gap-3">
                   {a.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -193,7 +223,7 @@ export function ChannelsBoard({
                     <div className="flex items-center gap-1">
                       <span className="truncate text-[13px] font-semibold text-ink">{primary}</span>
                       {a.verified ? <VerifiedTick /> : null}
-                      {a.status !== "active" ? (
+                      {a.status !== "active" && a.status !== "reconnect" ? (
                         <span className="ml-1">
                           <StatusPill status={a.status} />
                         </span>
@@ -208,6 +238,40 @@ export function ChannelsBoard({
                     channelId={a.id}
                     label={`${brand?.label ?? p.id}${a.handle ? ` (${a.handle})` : ""}`}
                   />
+                </div>
+                {issue ? (
+                  <div className="mt-2 flex flex-wrap items-end gap-x-3 gap-y-2 border-t border-line/70 pt-2">
+                    <div className="min-w-0 flex-1 text-[12px] leading-snug">
+                      <div className="font-semibold" style={{ color: issue === "reconnect" ? RED : AMBER }}>
+                        {issue === "reconnect"
+                          ? "Posts to this account can’t go out"
+                          : `Reconnect by ${formatReconnectBy(a.reconnectBy!)}`}
+                      </div>
+                      <div className="mt-0.5 text-muted">
+                        {issue === "reconnect"
+                          ? a.reason
+                          : "LinkedIn connections last 60 days. Reconnect before then to keep posting."}
+                        {a.waiting ? ` ${a.waiting} ${a.waiting === 1 ? "post is" : "posts are"} waiting on it.` : ""}
+                      </div>
+                    </div>
+                    {p.kind === "oauth" ? (
+                      <a
+                        href={`/api/connect/${p.id}`}
+                        className="shrink-0 rounded-full bg-[#2b59d9] px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-shadow hover:shadow-md"
+                      >
+                        Reconnect
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setActive(p.id)}
+                        className="shrink-0 rounded-full bg-[#2b59d9] px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-shadow hover:shadow-md"
+                      >
+                        Reconnect
+                      </button>
+                    )}
+                  </div>
+                ) : null}
                 </div>
               );
             })}

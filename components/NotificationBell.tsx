@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { formatReconnectBy } from "@/lib/channel-health";
 
 export type Notice = {
   id: string;
@@ -11,8 +12,17 @@ export type Notice = {
   error: string | null;
 };
 
+export type ChannelIssue = {
+  id: string;
+  platform: string;
+  name: string | null;
+  health: "reconnect" | "expiring";
+  reconnectBy: string | null;
+};
+
 // Solid brand red (not the salmon --terra token).
 const RED = "#d14a3e";
+const AMBER = "#e3a72c";
 
 const PLATFORM_LABEL: Record<string, string> = {
   x: "X",
@@ -21,12 +31,20 @@ const PLATFORM_LABEL: Record<string, string> = {
   linkedin: "LinkedIn",
   tiktok: "TikTok",
   youtube: "YouTube",
+  bluesky: "Bluesky",
+  mastodon: "Mastodon",
 };
 
-export function NotificationBell({ items }: { items: Notice[] }) {
+export function NotificationBell({
+  items,
+  channelIssues = [],
+}: {
+  items: Notice[];
+  channelIssues?: ChannelIssue[];
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const count = items.length;
+  const count = items.length + channelIssues.length;
 
   useEffect(() => {
     if (!open) return;
@@ -72,7 +90,7 @@ export function NotificationBell({ items }: { items: Notice[] }) {
                 className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-white"
                 style={{ background: RED }}
               >
-                {count} failed
+                {count} to fix
               </span>
             ) : null}
           </div>
@@ -89,6 +107,31 @@ export function NotificationBell({ items }: { items: Notice[] }) {
           ) : (
             <>
               <div className="max-h-96 space-y-0.5 overflow-y-auto px-2 pb-1">
+                {channelIssues.map((c) => {
+                  const color = c.health === "reconnect" ? RED : AMBER;
+                  const label = PLATFORM_LABEL[c.platform] ?? c.platform;
+                  return (
+                    <Link
+                      key={c.id}
+                      href="/channels"
+                      onClick={() => setOpen(false)}
+                      className="block rounded-xl px-3 py-2.5 transition-colors hover:bg-surface"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="size-2 shrink-0 rounded-full" style={{ background: color }} />
+                        <span className="text-sm font-semibold text-ink">
+                          {c.health === "reconnect" ? `Reconnect ${label}` : `${label} expires soon`}
+                        </span>
+                      </div>
+                      <div className="mt-1 truncate pl-4 text-xs text-muted">
+                        {c.name ? `${c.name} · ` : ""}
+                        {c.health === "reconnect"
+                          ? "Posts to this account can’t go out until it’s reconnected."
+                          : `Reconnect by ${formatReconnectBy(c.reconnectBy!)} to keep posting.`}
+                      </div>
+                    </Link>
+                  );
+                })}
                 {items.map((n) => (
                   <Link
                     key={n.id}
@@ -113,11 +156,11 @@ export function NotificationBell({ items }: { items: Notice[] }) {
               </div>
               <div className="p-2">
                 <Link
-                  href="/queue"
+                  href={items.length > 0 ? "/queue" : "/channels"}
                   onClick={() => setOpen(false)}
                   className="block rounded-xl bg-surface px-4 py-2.5 text-center text-xs font-semibold text-blue-ink transition-colors hover:bg-blue-soft"
                 >
-                  Go to queue to retry
+                  {items.length > 0 ? "Go to queue to retry" : "Go to Channels"}
                 </Link>
               </div>
             </>
