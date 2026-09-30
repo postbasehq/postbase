@@ -183,7 +183,9 @@ async function tiktokJson<T>(url: string, init: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   const json = (await res.json()) as TikTokEnvelope<T>;
   if (json.error && json.error.code && json.error.code !== "ok") {
-    throw new Error(json.error.message ?? `TikTok error ${json.error.code}`);
+    // Keep TikTok's error code: its messages are often generic ("review our
+    // integration guidelines") and the code is what says what actually failed.
+    throw new Error(`${json.error.message ?? "TikTok error"} (${json.error.code})`);
   }
   if (!res.ok || !json.data) throw new Error(`TikTok request failed (${res.status}).`);
   return json.data;

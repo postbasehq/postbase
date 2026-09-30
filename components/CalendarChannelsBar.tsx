@@ -197,7 +197,7 @@ export function CalendarChannelsBar({
                     href={`/api/connect/${current.id}`}
                     className="rounded-full bg-blue px-5 py-2 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
                   >
-                    {connected ? "Add another →" : `Continue to ${brand?.label} →`}
+                    {connected ? "Add another" : `Continue to ${brand?.label}`}
                   </a>
                 </div>
               </div>
@@ -252,7 +252,7 @@ export function CalendarChannelsBar({
                     type="submit"
                     className="rounded-full bg-blue px-5 py-2 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
                   >
-                    Continue →
+                    Continue
                   </button>
                 </div>
               </form>

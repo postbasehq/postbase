@@ -413,7 +413,7 @@ export function ChannelsBoard({
                     href={`/api/connect/${current.id}`}
                     className="rounded-full bg-blue px-5 py-2 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
                   >
-                    Continue to {BRANDS[current.id]?.label} →
+                    Continue to {BRANDS[current.id]?.label}
                   </a>
                 </div>
               </div>
@@ -466,7 +466,7 @@ export function ChannelsBoard({
                     type="submit"
                     className="rounded-full bg-blue px-5 py-2 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
                   >
-                    Continue →
+                    Continue
                   </button>
                 </div>
               </form>

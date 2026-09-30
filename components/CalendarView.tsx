@@ -101,6 +101,8 @@ function RepeatGlyph() {
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const ROW = 68; // px per hour row
+// Post pills that fit in one hour row (26px each + gap); more collapse into "+N more".
+const MAX_IN_HOUR = 2;
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -880,6 +882,43 @@ function TimeGrid({
   const pastHours = (key: string) =>
     key < todayKey ? 24 : key === todayKey ? nowHour : 0;
   const isPast = (key: string, hour: number) => hour < pastHours(key);
+
+  // "+N more" opens a list of everything in that hour; outside click or Esc closes it.
+  const [openCell, setOpenCell] = useState<string | null>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!openCell) return;
+    const onDown = (e: MouseEvent) => !popRef.current?.contains(e.target as Node) && setOpenCell(null);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpenCell(null);
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [openCell]);
+
+  const renderPill = (p: CalPost) => (
+    <Link
+                            key={p.id}
+                            href={`/composer/${p.id}`}
+                            draggable={false}
+                            onPointerDown={(e) => drag.onPillPointerDown(e, p)}
+                            onClick={drag.onPillClick}
+                            onMouseEnter={(e) => drag.onPillEnter(e, p)}
+                            onMouseLeave={drag.onPillLeave}
+                            className={`pointer-events-auto flex items-center gap-1.5 rounded-md border border-l-[3px] px-1.5 py-1 text-[11px] shadow-sm transition hover:shadow ${pillClass(p.status)} ${
+                              canDrag(p.status) ? "cursor-grab active:cursor-grabbing" : ""
+                            } ${drag.draggingId === p.id && !isRepost(p.status) ? "opacity-40" : ""}`}
+                            aria-label={`${p.timeLabel} · ${p.body || "(empty)"}`}
+                          >
+                            <PlatformIcons platforms={p.platforms} status={p.status} />
+                            <span className="tabular-nums text-muted">{p.timeLabel}</span>
+                            <span className="truncate">{p.body || "(empty)"}</span>
+                            {p.repeat ? <RepeatGlyph /> : null}
+                          </Link>
+  );
+
   return (
     <div className="flex h-full flex-col">
       {/* day headers */}
@@ -956,29 +995,36 @@ function TimeGrid({
                           <span className="text-lg leading-none">+</span>
                         </Link>
                       )}
-                      {/* events */}
+                      {/* events: two rows fit an hour; past that, the first one plus "+N more" */}
                       <div className="pointer-events-none absolute inset-x-1 top-1 flex flex-col gap-1">
-                        {cell.map((p) => (
-                          <Link
-                            key={p.id}
-                            href={`/composer/${p.id}`}
-                            draggable={false}
-                            onPointerDown={(e) => drag.onPillPointerDown(e, p)}
-                            onClick={drag.onPillClick}
-                            onMouseEnter={(e) => drag.onPillEnter(e, p)}
-                            onMouseLeave={drag.onPillLeave}
-                            className={`pointer-events-auto flex items-center gap-1.5 rounded-md border border-l-[3px] px-1.5 py-1 text-[11px] shadow-sm transition hover:shadow ${pillClass(p.status)} ${
-                              canDrag(p.status) ? "cursor-grab active:cursor-grabbing" : ""
-                            } ${drag.draggingId === p.id && !isRepost(p.status) ? "opacity-40" : ""}`}
-                            aria-label={`${p.timeLabel} · ${p.body || "(empty)"}`}
+                        {(cell.length > MAX_IN_HOUR ? cell.slice(0, MAX_IN_HOUR - 1) : cell).map((p) => renderPill(p))}
+                        {cell.length > MAX_IN_HOUR ? (
+                          <button
+                            type="button"
+                            onClick={() => setOpenCell(`${d.key}#${h}`)}
+                            className="pointer-events-auto flex items-center justify-center rounded-md border border-line bg-surface px-1.5 py-1 text-[11px] font-semibold text-blue-ink shadow-sm transition hover:border-[#2b59d9]"
                           >
-                            <PlatformIcons platforms={p.platforms} status={p.status} />
-                            <span className="tabular-nums text-muted">{p.timeLabel}</span>
-                            <span className="truncate">{p.body || "(empty)"}</span>
-                            {p.repeat ? <RepeatGlyph /> : null}
-                          </Link>
-                        ))}
+                            +{cell.length - (MAX_IN_HOUR - 1)} more
+                          </button>
+                        ) : null}
                       </div>
+                      {/* everything in this hour, on top of the grid */}
+                      {openCell === `${d.key}#${h}` ? (
+                        <div
+                          ref={popRef}
+                          className="absolute inset-x-1 top-1 z-30 flex max-h-[320px] min-w-[220px] flex-col gap-1 overflow-y-auto rounded-xl border border-line bg-surface p-1.5 shadow-xl"
+                        >
+                          <div className="flex items-center justify-between px-1 pb-1 pt-0.5 text-[11px] font-semibold text-muted">
+                            <span>
+                              {pad(h)}:00 · {cell.length} posts
+                            </span>
+                            <button type="button" onClick={() => setOpenCell(null)} aria-label="Close" className="rounded px-1 text-muted hover:text-ink">
+                              ✕
+                            </button>
+                          </div>
+                          {cell.map((p) => renderPill(p))}
+                        </div>
+                      ) : null}
                     </div>
                   );
                 })}
