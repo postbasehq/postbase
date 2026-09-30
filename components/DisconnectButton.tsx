@@ -63,8 +63,8 @@ export function DisconnectButton({
                   Disconnect {label}?
                 </h3>
                 <p className="mt-1.5 text-sm text-muted">
-                  This removes the channel and its post history from Postbase. You can reconnect it
-                  anytime.
+                  This removes the channel and its post history from Postbase. Scheduled posts that
+                  only go to this channel move to Drafts. You can reconnect it anytime.
                 </p>
                 <div className="mt-5 flex justify-end gap-2.5">
                   <button

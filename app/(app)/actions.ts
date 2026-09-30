@@ -198,6 +198,14 @@ export async function disconnectChannel(formData: FormData) {
     }
   }
 
+  // Posts still waiting to go out to this channel, before its targets go.
+  const { data: pending } = await supabase
+    .from("post_targets")
+    .select("post_id, posts!inner(status, org_id)")
+    .eq("channel_id", channelId)
+    .eq("posts.org_id", orgId)
+    .in("posts.status", ["scheduled", "publishing"]);
+
   // Scoped to the caller's org (RLS + explicit check). post_targets cascade-delete.
   const { error } = await supabase
     .from("channels")
@@ -205,6 +213,24 @@ export async function disconnectChannel(formData: FormData) {
     .eq("id", channelId)
     .eq("org_id", orgId);
   if (error) throw new Error(error.message);
+
+  // A post that only went to this channel now has nowhere to go: without this it
+  // sits "scheduled"/"publishing" forever. Return it to Drafts, text and media
+  // intact, so it can be pointed at another channel (e.g. after a reconnect).
+  const postIds = [...new Set((pending ?? []).map((t) => t.post_id as string))];
+  if (postIds.length > 0) {
+    const { data: stillTargeted } = await supabase.from("post_targets").select("post_id").in("post_id", postIds);
+    const orphaned = postIds.filter((id) => !(stillTargeted ?? []).some((t) => t.post_id === id));
+    if (orphaned.length > 0) {
+      await supabase
+        .from("posts")
+        .update({ status: "draft", scheduled_at: null, repeat_every: null })
+        .in("id", orphaned)
+        .eq("org_id", orgId);
+    }
+  }
+  revalidatePath("/calendar");
+  revalidatePath("/drafts");
 
   revalidatePath("/channels");
   revalidatePath("/composer");

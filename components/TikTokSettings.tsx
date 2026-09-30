@@ -72,9 +72,10 @@ export function TikTokSettings({
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [privacy, setPrivacy] = useState(initial?.privacy ?? "");
-  const [allowComment, setAllowComment] = useState(!initial?.disableComment);
-  const [allowDuet, setAllowDuet] = useState(!initial?.disableDuet);
-  const [allowStitch, setAllowStitch] = useState(!initial?.disableStitch);
+  // Interactions start unchecked (TikTok's guidelines); a saved post keeps its choices.
+  const [allowComment, setAllowComment] = useState(initial?.disableComment === false);
+  const [allowDuet, setAllowDuet] = useState(initial?.disableDuet === false);
+  const [allowStitch, setAllowStitch] = useState(initial?.disableStitch === false);
   const [disclose, setDisclose] = useState(
     Boolean(initial?.brandOrganic || initial?.brandedContent),
   );
@@ -112,7 +113,10 @@ export function TikTokSettings({
       body: JSON.stringify({ channel_id: channelId }),
     })
       .then(async (r) => {
-        if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error ?? "failed");
+        if (!r.ok) {
+          const j = await r.json().catch(() => ({}));
+          throw new Error(`${j.error ?? "failed"} ${j.message ?? ""}`);
+        }
         return r.json() as Promise<CreatorInfo>;
       })
       .then((data) => {
@@ -173,9 +177,8 @@ export function TikTokSettings({
 
   if (!channelId) return null;
 
-  const options = (info?.privacyOptions?.length ? info.privacyOptions : ["SELF_ONLY"]).filter(
-    (o) => !(disclose && brandedContent && o === "SELF_ONLY"),
-  );
+  const options = info?.privacyOptions?.length ? info.privacyOptions : ["SELF_ONLY"];
+  const privateLocked = disclose && brandedContent;
 
   const check =
     "size-4 shrink-0 rounded border-line text-blue focus-visible:ring-blue disabled:opacity-40";
@@ -193,8 +196,10 @@ export function TikTokSettings({
       {loading ? (
         <p className="text-xs text-muted">Loading your TikTok account…</p>
       ) : loadError ? (
-        <p className="text-xs text-terra">
-          Couldn’t load your TikTok account. Reconnect TikTok in Channels and try again.
+        <p className="text-xs text-[#d14a3e]">
+          {/spam_risk|reached_active_user_cap/.test(loadError)
+            ? "This TikTok account can’t post any more right now. Please try again later."
+            : "Couldn’t load your TikTok account. Reconnect TikTok in Channels and try again."}
         </p>
       ) : (
         <>
@@ -256,21 +261,32 @@ export function TikTokSettings({
                 >
                   {options.map((o) => {
                     const isSel = o === privacy;
+                    const off = privateLocked && o === "SELF_ONLY";
                     return (
                       <li key={o}>
                         <button
                           type="button"
                           role="option"
                           aria-selected={isSel}
+                          aria-disabled={off}
+                          disabled={off}
+                          title={off ? "Branded content visibility cannot be set to private." : undefined}
                           onClick={() => {
                             setPrivacy(o);
                             setPrivacyOpen(false);
                           }}
-                          className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm transition-colors hover:bg-surface-2 ${
-                            isSel ? "font-semibold text-ink" : "text-ink"
-                          }`}
+                          className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm transition-colors ${
+                            off ? "cursor-not-allowed text-muted opacity-50" : "text-ink hover:bg-surface-2"
+                          } ${isSel ? "font-semibold" : ""}`}
                         >
-                          {PRIVACY_LABEL[o] ?? o}
+                          <span>
+                            {PRIVACY_LABEL[o] ?? o}
+                            {off ? (
+                              <span className="block text-[11px] font-normal">
+                                Branded content visibility cannot be set to private.
+                              </span>
+                            ) : null}
+                          </span>
                           {isSel ? (
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-blue" aria-hidden>
                               <path d="M20 6 9 17l-5-5" />
@@ -373,13 +389,19 @@ export function TikTokSettings({
                   />
                   Branded content — promoting another brand (paid partnership)
                 </label>
+                {yourBrand || brandedContent ? (
+                  <p className="text-xs text-muted">
+                    Your {isPhoto ? "photo" : "video"} will be labeled as “
+                    {brandedContent ? "Paid partnership" : "Promotional content"}”.
+                  </p>
+                ) : null}
                 {discloseIncomplete ? (
-                  <p className="text-xs text-terra">
+                  <p className="text-xs text-[#d14a3e]">
                     Select at least one: Your brand, Branded content, or both.
                   </p>
                 ) : null}
                 {brandedPrivate ? (
-                  <p className="text-xs text-terra">
+                  <p className="text-xs text-[#d14a3e]">
                     Branded content can’t be private — choose a wider audience.
                   </p>
                 ) : null}
@@ -401,7 +423,8 @@ export function TikTokSettings({
             <a href={MUSIC_URL} target="_blank" rel="noreferrer" className="text-blue-ink underline">
               Music Usage Confirmation
             </a>
-            .
+            . Once posted, it can take a few minutes for your {isPhoto ? "post" : "video"} to process and appear on
+            your TikTok profile.
           </p>
         </>
       )}
