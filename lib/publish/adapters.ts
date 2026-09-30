@@ -31,7 +31,7 @@ import {
   waitForPublish,
   creatorInfo,
   pickPrivacyLevel,
-  TIKTOK_MAX_SINGLE_CHUNK,
+  TIKTOK_MAX_VIDEO,
   type TikTokTokens,
 } from "@/lib/platforms/tiktok";
 import {
@@ -372,8 +372,8 @@ async function publishToTikTok(input: PublishInput): Promise<PublishResult> {
       const res = await fetch(videos[0].url);
       if (!res.ok) throw new Error(`Couldn't fetch video (${res.status})`);
       const bytes = await res.arrayBuffer();
-      if (bytes.byteLength > TIKTOK_MAX_SINGLE_CHUNK) {
-        throw new Error("TikTok video must be under 64MB.");
+      if (bytes.byteLength > TIKTOK_MAX_VIDEO) {
+        throw new Error("TikTok videos can be up to 4GB.");
       }
       const init = await initVideoUpload(
         tokens.access_token,

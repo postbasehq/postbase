@@ -221,8 +221,18 @@ export async function creatorInfo(
   });
 }
 
-// TikTok single-chunk FILE_UPLOAD accepts a whole video up to 64MB in one PUT.
+// FILE_UPLOAD chunking rules (TikTok Media Transfer Guide): a video up to 64MB
+// may go as one chunk; larger ones in chunks of 5–64MB, where the chunk count is
+// floor(size / chunk_size) and the last chunk absorbs the remainder (≤128MB).
 export const TIKTOK_MAX_SINGLE_CHUNK = 64 * 1024 * 1024;
+const TIKTOK_CHUNK = 10 * 1024 * 1024;
+export const TIKTOK_MAX_VIDEO = 4 * 1024 * 1024 * 1024;
+
+/** Chunk size + count TikTok expects for a video of this many bytes. */
+export function tiktokChunking(size: number): { chunkSize: number; count: number } {
+  if (size <= TIKTOK_MAX_SINGLE_CHUNK) return { chunkSize: size, count: 1 };
+  return { chunkSize: TIKTOK_CHUNK, count: Math.floor(size / TIKTOK_CHUNK) };
+}
 
 /**
  * Initialize a Direct Post video via FILE_UPLOAD (we upload the bytes directly,
@@ -249,12 +259,11 @@ export async function initVideoUpload(
           disable_stitch: options?.disableStitch ?? false,
           ...commercialFlags(options),
         },
-        // Single chunk: the whole file in one PUT.
         source_info: {
           source: "FILE_UPLOAD",
           video_size: videoSize,
-          chunk_size: videoSize,
-          total_chunk_count: 1,
+          chunk_size: tiktokChunking(videoSize).chunkSize,
+          total_chunk_count: tiktokChunking(videoSize).count,
         },
       }),
     },
@@ -262,23 +271,29 @@ export async function initVideoUpload(
   return { publishId: data.publish_id, uploadUrl: data.upload_url };
 }
 
-/** Upload the whole video to the init'd upload URL as a single chunk. */
+/** Upload the video to the init'd upload URL, in order, chunk by chunk. */
 export async function uploadVideoFile(
   uploadUrl: string,
   bytes: ArrayBuffer,
   mimeType = "video/mp4",
 ): Promise<void> {
   const size = bytes.byteLength;
-  const res = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: {
-      "Content-Type": mimeType,
-      "Content-Length": String(size),
-      "Content-Range": `bytes 0-${size - 1}/${size}`,
-    },
-    body: bytes,
-  });
-  if (!res.ok) throw new Error(`TikTok video upload failed (${res.status}).`);
+  const { chunkSize, count } = tiktokChunking(size);
+  for (let i = 0; i < count; i++) {
+    const start = i * chunkSize;
+    // The last chunk runs to the end of the file.
+    const end = i === count - 1 ? size : start + chunkSize;
+    const res = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": mimeType,
+        "Content-Length": String(end - start),
+        "Content-Range": `bytes ${start}-${end - 1}/${size}`,
+      },
+      body: bytes.slice(start, end),
+    });
+    if (!res.ok) throw new Error(`TikTok video upload failed at part ${i + 1} of ${count} (${res.status}).`);
+  }
 }
 
 /** Initialize a Direct Post photo carousel from public URLs. Returns the publish id. */
