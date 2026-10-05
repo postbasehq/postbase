@@ -32,6 +32,8 @@ export async function deleteMediaAsset(formData: FormData) {
     .eq("org_id", orgId)
     .maybeSingle();
   if (!row) return;
+  // Keys are minted as `<orgId>/<uuid>.<ext>`; never delete outside this workspace.
+  if (!String(row.key).startsWith(`${orgId}/`)) return;
 
   try {
     await r2Client().send(new DeleteObjectCommand({ Bucket: r2Bucket(), Key: row.key }));

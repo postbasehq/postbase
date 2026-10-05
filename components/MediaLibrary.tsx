@@ -180,15 +180,16 @@ export function MediaLibrary({
         body: JSON.stringify({ name: file.name, type: file.type, size: file.size }),
       });
       if (!createRes.ok) {
-        const code = (await createRes.json().catch(() => ({}))).error;
+        const { error: code, message } = await createRes.json().catch(() => ({}));
         throw new Error(
-          code === "too_large"
-            ? "File is over the 1 GB limit."
-            : code === "unsupported_type"
-              ? "Unsupported file type."
-              : code === "no_workspace"
-                ? "No workspace found."
-                : "Couldn’t start the upload (is R2 configured?).",
+          message ||
+            (code === "too_large"
+              ? "File is over the 1 GB limit."
+              : code === "unsupported_type"
+                ? "Unsupported file type."
+                : code === "no_workspace"
+                  ? "No workspace found."
+                  : "Couldn’t start the upload (is R2 configured?)."),
         );
       }
       const { key, uploadId, partSize, urls } = (await createRes.json()) as {
@@ -217,7 +218,10 @@ export function MediaLibrary({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ key, uploadId, parts, name: file.name, type: file.type, size: file.size, folderId: uploadFolder }),
       });
-      if (!doneRes.ok) throw new Error("Couldn’t finalize the upload.");
+      if (!doneRes.ok) {
+        const { message } = await doneRes.json().catch(() => ({}));
+        throw new Error(message || "Couldn’t finalize the upload.");
+      }
       const { item } = (await doneRes.json()) as { item: MediaItem };
 
       setItems((it) => [item, ...it]);

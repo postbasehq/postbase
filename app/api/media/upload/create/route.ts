@@ -3,6 +3,8 @@ import { CreateMultipartUploadCommand, UploadPartCommand } from "@aws-sdk/client
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
+import { storageBlocker } from "@/lib/media-storage";
+import { rateLimit } from "@/lib/rate-limit";
 import {
   r2Client,
   r2Bucket,
@@ -19,6 +21,10 @@ export const runtime = "nodejs";
  * Begin a presigned S3 multipart upload to R2. Returns the object key, an
  * uploadId, the part size, and one presigned PUT URL per part. The browser
  * uploads each chunk directly to R2, then calls /complete.
+ *
+ * Gated like post-media uploads: an active plan or trial and room in the
+ * plan's storage allowance. The declared size is only a first check; /complete
+ * re-checks against the object's real size in R2.
  */
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -45,6 +51,14 @@ export async function POST(req: Request) {
   if (!Number.isFinite(size) || size <= 0 || size > R2_MAX_BYTES) {
     return NextResponse.json({ error: "too_large" }, { status: 413 });
   }
+  if (!(await rateLimit(`media-upload:${user.id}`, 60, 30))) {
+    return NextResponse.json(
+      { error: "rate_limited", message: "Too many uploads at once. Wait a minute and try again." },
+      { status: 429 },
+    );
+  }
+  const blocked = await storageBlocker(orgId, size);
+  if (blocked) return NextResponse.json({ error: "blocked", message: blocked }, { status: 403 });
 
   const key = `${orgId}/${crypto.randomUUID()}.${extForType(type)}`;
   const client = r2Client();

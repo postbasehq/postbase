@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
-import { CompleteMultipartUploadCommand } from "@aws-sdk/client-s3";
+import { CompleteMultipartUploadCommand, DeleteObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { storageBlocker } from "@/lib/media-storage";
 import {
   r2Client,
   r2Bucket,
@@ -15,8 +17,11 @@ export const runtime = "nodejs";
 type Part = { PartNumber: number; ETag: string };
 
 /**
- * Finish a multipart upload: stitch the parts in R2, then record the asset in
- * media_library (RLS scopes it to the caller's org). Returns the new row.
+ * Finish a multipart upload: stitch the parts in R2, read the object's real
+ * size back (the browser's declared size is never trusted), re-check the
+ * plan's storage allowance, then record the asset in media_library. Members
+ * can't insert library rows themselves (migration 0047), so this is the only
+ * writer. An object over the limits is deleted again. Returns the new row.
  */
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -62,9 +67,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "too_large" }, { status: 413 });
   }
 
-  await r2Client().send(
+  const client = r2Client();
+  const Bucket = r2Bucket();
+  await client.send(
     new CompleteMultipartUploadCommand({
-      Bucket: r2Bucket(),
+      Bucket,
       Key: key,
       UploadId: uploadId,
       MultipartUpload: {
@@ -75,6 +82,19 @@ export async function POST(req: Request) {
       },
     }),
   );
+
+  // Each presigned part URL accepts up to 5 GB, so check what actually landed.
+  const head = await client.send(new HeadObjectCommand({ Bucket, Key: key }));
+  const actualSize = Number(head.ContentLength ?? 0);
+  const reject = async (status: number, error: string, message: string) => {
+    await client.send(new DeleteObjectCommand({ Bucket, Key: key })).catch(() => {});
+    return NextResponse.json({ error, message }, { status });
+  };
+  if (!Number.isFinite(actualSize) || actualSize <= 0 || actualSize > R2_MAX_BYTES) {
+    return reject(413, "too_large", "File is over the 1 GB limit.");
+  }
+  const blocked = await storageBlocker(orgId, actualSize);
+  if (blocked) return reject(403, "blocked", blocked);
 
   // Uploaded while a folder was open: file it there, if the folder is in this
   // workspace. Anything else just lands in the library unfiled.
@@ -90,7 +110,7 @@ export async function POST(req: Request) {
   }
 
   const url = r2PublicUrl(key);
-  const { data, error } = await supabase
+  const { data, error } = await createAdminClient()
     .from("media_library")
     .insert({
       org_id: orgId,
@@ -98,16 +118,14 @@ export async function POST(req: Request) {
       url,
       name,
       type,
-      size_bytes: size,
+      size_bytes: actualSize,
       created_by: user.id,
       folder_id: folderId,
     })
     .select("id, key, url, name, type, size_bytes, created_at, folder_id")
     .single();
 
-  if (error) {
-    return NextResponse.json({ error: "save_failed" }, { status: 500 });
-  }
+  if (error) return reject(500, "save_failed", "Couldn’t save the upload.");
 
   return NextResponse.json({ item: data });
 }

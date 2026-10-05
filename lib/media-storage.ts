@@ -34,11 +34,19 @@ export async function uploadBlocker(orgId: string, type: string, size: number, m
   if (!UPLOAD_EXT[type]) return "That file type isn't supported. Use JPG, PNG, WebP, GIF, MP4 or MOV.";
   if (!Number.isFinite(size) || size <= 0) return "That file looks empty.";
   if (size > maxBytes) return `That file is too large (max ${Math.round(maxBytes / 1024 / 1024)} MB).`;
+  return storageBlocker(orgId, size);
+}
+
+/**
+ * Plan + allowance check shared by post-media uploads and the R2 media library:
+ * an active plan or trial, and room for `size` more bytes.
+ */
+export async function storageBlocker(orgId: string, size: number): Promise<string | null> {
   if (!(await hasAccess(createAdminClient(), orgId))) return NO_PLAN_MESSAGE;
   if (!billingEnforced()) return null;
   const u = await storageUsage(orgId);
   if (u.used + size > u.limit) {
-    return `Your plan's ${formatGb(u.limit)} of media storage is full. Delete posts you no longer need, or upgrade in Billing.`;
+    return `Your plan's ${formatGb(u.limit)} of media storage is full. Delete files or posts you no longer need, or upgrade in Billing.`;
   }
   return null;
 }
