@@ -33,13 +33,19 @@ export function needsReconnect(error: string | null | undefined): boolean {
   return Boolean(error && AUTH_ERROR.test(error));
 }
 
-/** Mark a channel as needing a reconnect, keeping the platform's error for the prompt. */
-export async function flagReconnect(db: Db, channelId: string, error: string): Promise<void> {
-  await db
+/**
+ * Mark a channel as needing a reconnect, keeping the platform's error for the
+ * prompt. True only when this call flagged it (it wasn't flagged already), so
+ * the caller can tell the owners once per incident.
+ */
+export async function flagReconnect(db: Db, channelId: string, error: string): Promise<boolean> {
+  const { data } = await db
     .from("channels")
     .update({ status: "reconnect", status_error: error, status_at: new Date().toISOString() })
     .eq("id", channelId)
-    .neq("status", "reconnect");
+    .neq("status", "reconnect")
+    .select("id");
+  return (data?.length ?? 0) > 0;
 }
 
 /** A post went out, so the connection works: clear any reconnect flag. */

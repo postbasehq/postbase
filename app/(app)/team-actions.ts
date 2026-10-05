@@ -9,6 +9,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentOrgId, getOrgRole, ACTIVE_ORG_COOKIE } from "@/lib/org";
 import { SEAT_LIMIT } from "@/lib/plans";
 import { seatUsage } from "@/lib/billing-guard";
+import { sendInviteEmail } from "@/lib/email/notify";
 
 const COOKIE = { httpOnly: true, sameSite: "lax" as const, path: "/", maxAge: 60 * 60 * 24 * 365 };
 
@@ -46,10 +47,15 @@ export async function createInvite(formData: FormData) {
   }
 
   const token = randomBytes(24).toString("base64url");
-  const { error } = await db
+  const { data: invite, error } = await db
     .from("org_invites")
-    .insert({ org_id: orgId, email, role, token, invited_by: user?.id ?? null });
+    .insert({ org_id: orgId, email, role, token, invited_by: user?.id ?? null })
+    .select("id")
+    .single();
   if (error) throw new Error(error.message);
+  // Email the link too; copying it from the Team page still works as before.
+  const { data: org } = await db.from("orgs").select("name").eq("id", orgId).maybeSingle();
+  await sendInviteEmail({ id: invite.id, email, token, role, orgName: org?.name ?? "a workspace", inviter: user?.email ?? null });
   revalidatePath("/team");
 }
 

@@ -7,6 +7,7 @@ import type { TikTokPostOptions } from "@/lib/platforms/tiktok";
 import type { YouTubePostOptions } from "@/lib/platforms/youtube";
 import { isRepeatEvery, nextOccurrence } from "@/lib/publish/repeat";
 import { NO_PLAN_MESSAGE, accessRowFor, orgHasAccess } from "@/lib/billing-guard";
+import { notifyPostsFailed, notifyReconnect } from "@/lib/email/notify";
 
 type Db = ReturnType<typeof createAdminClient>;
 
@@ -241,7 +242,9 @@ async function publishTarget(
   const attempts = (target.attempts ?? 0) + 1;
   // Lost access: flag the channel so the user is told to reconnect it.
   const authLost = needsReconnect(result.error);
-  if (authLost && target.channels?.id) await flagReconnect(db, target.channels.id, result.error);
+  if (authLost && target.channels?.id && (await flagReconnect(db, target.channels.id, result.error))) {
+    await notifyReconnect(target.channels.id);
+  }
   // Retrying can't fix a broken attachment or lost access, so don't.
   const canRetry = attempts < MAX_ATTEMPTS && !brokenMedia && !authLost;
   await db
@@ -260,7 +263,7 @@ async function publishTarget(
 }
 
 /** Roll the per-target outcomes up into the post's status. */
-async function recomputePostStatus(db: Db, postId: string): Promise<boolean> {
+async function recomputePostStatus(db: Db, postId: string): Promise<string | null> {
   const { data, error } = await db
     .from("post_targets")
     .select("status, next_attempt_at, platform_post_id")
@@ -269,7 +272,7 @@ async function recomputePostStatus(db: Db, postId: string): Promise<boolean> {
   // spawned): leave the post as it is; the next run recomputes it.
   if (error) {
     console.error(`[publish] status of ${postId} left for next run: ${error.message}`);
-    return false;
+    return null;
   }
   const targets = data ?? [];
 
@@ -286,7 +289,7 @@ async function recomputePostStatus(db: Db, postId: string): Promise<boolean> {
     .update({ status, updated_at: new Date().toISOString() })
     .eq("id", postId)
     .neq("status", "draft");
-  return true;
+  return status;
 }
 
 /**
@@ -498,9 +501,14 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
 
   // 5. Roll target outcomes up to each touched post, then spawn the next
   //    occurrence for any repeating post that just published.
+  const failedPosts: string[] = [];
   for (const postId of touched) {
-    if (await recomputePostStatus(db, postId)) await spawnRepeatIfDue(db, postId);
+    const status = await recomputePostStatus(db, postId);
+    if (status) await spawnRepeatIfDue(db, postId);
+    if (status === "failed") failedPosts.push(postId);
   }
+  // One email per person per run; each post once per failure (keyed by claim).
+  await notifyPostsFailed(failedPosts);
 
   return { processed };
 }

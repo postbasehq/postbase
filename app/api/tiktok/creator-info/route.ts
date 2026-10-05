@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { notifyReconnect } from "@/lib/email/notify";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
 import { creatorInfo, type TikTokTokens } from "@/lib/platforms/tiktok";
@@ -49,7 +50,9 @@ export async function POST(req: Request) {
   try {
     tokens = await freshTikTokTokens(channel.id, channel.encrypted_tokens, channel.token_expiry);
   } catch {
-    await flagReconnect(createAdminClient(), channel.id, "TikTok token expired — reconnect the channel.");
+    if (await flagReconnect(createAdminClient(), channel.id, "TikTok token expired — reconnect the channel.")) {
+      await notifyReconnect(channel.id);
+    }
     return NextResponse.json({ error: "reconnect_required" }, { status: 401 });
   }
 
@@ -82,7 +85,7 @@ export async function POST(req: Request) {
   } catch (e) {
     const message = e instanceof Error ? e.message : "failed";
     if (needsReconnect(message)) {
-      await flagReconnect(createAdminClient(), channel.id, message);
+      if (await flagReconnect(createAdminClient(), channel.id, message)) await notifyReconnect(channel.id);
       return NextResponse.json({ error: "reconnect_required", message }, { status: 401 });
     }
     return NextResponse.json(

@@ -2,7 +2,7 @@ import { needsReconnect } from "@/lib/channel-health";
 
 export type PostErrorFix = "reconnect" | "retry" | "edit";
 
-const LABEL: Record<string, string> = {
+export const PLATFORM_LABEL: Record<string, string> = {
   x: "X",
   instagram: "Instagram",
   facebook: "Facebook",
@@ -23,7 +23,7 @@ export function explainPostError(
   platform?: string | null,
 ): { text: string; fix: PostErrorFix } {
   const e = error ?? "";
-  const name = LABEL[platform ?? ""] ?? platform ?? "The platform";
+  const name = PLATFORM_LABEL[platform ?? ""] ?? platform ?? "The platform";
 
   if (!e) return { text: "Delivery failed.", fix: "retry" };
   if (needsReconnect(e)) {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { sendWelcome } from "@/lib/email/notify";
 
 // Exchanges the magic-link / OAuth code for a session, then redirects to the app.
 export async function GET(request: Request) {
@@ -12,8 +13,14 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      // A brand-new account (first sign-in within two hours of creation, inside the sign-in link's life) gets the
+      // welcome email; sendWelcome is keyed per user, so it only ever goes once.
+      const u = data.user;
+      if (u && Date.now() - Date.parse(u.created_at) < 2 * 60 * 60_000) await sendWelcome({ id: u.id, email: u.email });
+      return NextResponse.redirect(`${origin}${next}`);
+    }
   }
 
   return NextResponse.redirect(`${origin}/login?error=auth`);

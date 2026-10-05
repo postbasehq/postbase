@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { planForPrice } from "@/lib/plans";
+import { notifyPaymentFailed, notifySubscriptionEnded, notifyTrialEnding } from "@/lib/email/notify";
 
 /**
  * Stripe webhook — keeps each org's plan/status in sync with its subscription.
@@ -46,8 +47,15 @@ export async function POST(request: Request) {
   switch (event.type) {
     case "customer.subscription.created":
     case "customer.subscription.updated":
+      await syncSubscription(event.data.object);
+      break;
     case "customer.subscription.trial_will_end":
       await syncSubscription(event.data.object);
+      await notifyTrialEnding(event.data.object);
+      break;
+    case "invoice.payment_failed":
+      // Status changes (past_due) arrive as subscription.updated; this one tells people.
+      await notifyPaymentFailed(event.data.object);
       break;
     case "customer.subscription.deleted": {
       // Ended for good (cancelled at period end, or unpaid). Access is derived
@@ -59,6 +67,7 @@ export async function POST(request: Request) {
         .from("orgs")
         .update({ subscription_status: "canceled", plan: "trial", stripe_subscription_id: null })
         .eq("stripe_customer_id", customer);
+      await notifySubscriptionEnded(sub);
       break;
     }
     default:
