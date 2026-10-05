@@ -50,7 +50,7 @@ export async function xLinkUsage(orgId: string): Promise<XLinkUsage> {
 
 export type Reservation =
   | { ok: true; id: string | null }
-  | { ok: false; error: string };
+  | { ok: false; error: string; transient?: boolean };
 
 /**
  * Atomically take `count` link posts from the plan's allowance for one send.
@@ -59,7 +59,15 @@ export type Reservation =
  */
 export async function reserveXLinks(orgId: string, targetId: string, count: number): Promise<Reservation> {
   if (count <= 0 || !billingEnforced()) return { ok: true, id: null };
-  const g = await billingGroup(orgId);
+  // Fail closed but transient: if the check itself errors, don't send; the
+  // publisher puts the target back and the next run checks again.
+  const unavailable = { ok: false, error: "Couldn't check your X link allowance. It will be retried.", transient: true } as const;
+  let g: Awaited<ReturnType<typeof billingGroup>>;
+  try {
+    g = await billingGroup(orgId);
+  } catch {
+    return unavailable;
+  }
   const limit = X_LINK_LIMIT[g.plan] ?? X_LINK_LIMIT.trial;
   const db = createAdminClient();
   const { data, error } = await db.rpc("reserve_x_links", {
@@ -70,8 +78,7 @@ export async function reserveXLinks(orgId: string, targetId: string, count: numb
     p_limit: limit,
     p_since: xLinkPeriodStart().toISOString(),
   });
-  // Fail closed: if the check itself errors, don't send (a retry runs it again).
-  if (error) return { ok: false, error: "Couldn't check your X link allowance. It will be retried." };
+  if (error) return unavailable;
   if (!data) return { ok: false, error: overLimitMessage(limit, count) };
   return { ok: true, id: data as string };
 }

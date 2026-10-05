@@ -62,20 +62,41 @@ function backoffMs(attempts: number): number {
   return (mins[Math.min(attempts - 1, mins.length - 1)] ?? 60) * 60_000;
 }
 
+/**
+ * Something failed before anything was sent (a database blip, an allowance
+ * check that couldn't run). The claim is released so the next run tries again,
+ * rather than the target being failed or left to the interrupted sweep.
+ */
+class RetryLater extends Error {}
+
+// Loaders throw on query errors: an empty result must mean "none", never "the
+// read failed" (a post would otherwise go out without its media).
 async function loadMedia(db: Db, postId: string): Promise<MediaItem[]> {
-  const { data } = await db.from("media").select("storage_url, type").eq("post_id", postId);
+  const { data, error } = await db.from("media").select("storage_url, type").eq("post_id", postId);
+  if (error) throw new RetryLater(`media for ${postId}: ${error.message}`);
   return (data ?? []).map((m) => ({ url: m.storage_url, type: m.type }));
 }
 
 async function loadTarget(db: Db, targetId: string): Promise<TargetRow | null> {
-  const { data } = await db
+  const { data, error } = await db
     .from("post_targets")
     .select(
       "id, status, platform_post_id, variant_body, attempts, pending_ref, pending_since, thread_ids, channels(id, platform, handle, encrypted_tokens, token_expiry)",
     )
     .eq("id", targetId)
     .maybeSingle();
+  if (error) throw new RetryLater(`target ${targetId}: ${error.message}`);
   return (data ?? null) as unknown as TargetRow | null;
+}
+
+/** Undo a claim we made: back to the state it was claimed from, unsent. */
+async function releaseClaim(db: Db, targetId: string, from: "scheduled" | "failed"): Promise<void> {
+  await db
+    .from("post_targets")
+    .update({ status: from, claimed_at: null })
+    .eq("id", targetId)
+    .eq("status", "publishing")
+    .is("platform_post_id", null);
 }
 
 /**
@@ -131,6 +152,7 @@ async function publishTarget(
   let reservationId: string | null = null;
   if (isX && !brokenMedia) {
     const reservation = await reserveXLinks(post.org_id, target.id, countXLinkPosts(unsent));
+    if (!reservation.ok && reservation.transient) throw new RetryLater(reservation.error);
     if (!reservation.ok) {
       // Over the allowance: retrying won't help until the link is removed or
       // the month resets, so it waits for the user (Retry re-checks).
@@ -221,11 +243,17 @@ async function publishTarget(
 }
 
 /** Roll the per-target outcomes up into the post's status. */
-async function recomputePostStatus(db: Db, postId: string): Promise<void> {
-  const { data } = await db
+async function recomputePostStatus(db: Db, postId: string): Promise<boolean> {
+  const { data, error } = await db
     .from("post_targets")
     .select("status, next_attempt_at, platform_post_id")
     .eq("post_id", postId);
+  // A failed read would look like "no targets" (= published, and a repeat
+  // spawned): leave the post as it is; the next run recomputes it.
+  if (error) {
+    console.error(`[publish] status of ${postId} left for next run: ${error.message}`);
+    return false;
+  }
   const targets = data ?? [];
 
   // No targets → nothing to deliver; consider it published.
@@ -241,6 +269,7 @@ async function recomputePostStatus(db: Db, postId: string): Promise<void> {
     .update({ status, updated_at: new Date().toISOString() })
     .eq("id", postId)
     .neq("status", "draft");
+  return true;
 }
 
 /**
@@ -339,6 +368,16 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
     .select("post_id");
   for (const r of interrupted ?? []) touched.add(r.post_id as string);
 
+  // 1b. Posts left "publishing" for a while get their status recomputed, in
+  //     case an earlier run couldn't (a failed read leaves the post as it was).
+  const { data: lingering } = await db
+    .from("posts")
+    .select("id")
+    .eq("status", "publishing")
+    .lt("updated_at", stuckBeforeIso)
+    .limit(50);
+  for (const r of lingering ?? []) touched.add(r.id as string);
+
   // 2. Due scheduled posts start publishing.
   const { data: due } = await db
     .from("posts")
@@ -380,20 +419,38 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
     touched.add(item.postId);
     processed++;
 
-    if (!posts.has(item.postId)) {
-      const { data: post } = await db.from("posts").select(POST_COLUMNS).eq("id", item.postId).maybeSingle();
-      posts.set(item.postId, post ? { post: post as PostRow, media: await loadMedia(db, item.postId) } : null);
+    // Everything up to the send is safe to retry: if a read fails, put the
+    // target back for the next run (results are only cached on success).
+    let loaded: { post: PostRow; media: MediaItem[] } | null;
+    let target: TargetRow | null;
+    let allowed: boolean;
+    try {
+      if (!posts.has(item.postId)) {
+        const { data: post, error } = await db.from("posts").select(POST_COLUMNS).eq("id", item.postId).maybeSingle();
+        if (error) throw new RetryLater(`post ${item.postId}: ${error.message}`);
+        posts.set(item.postId, post ? { post: post as PostRow, media: await loadMedia(db, item.postId) } : null);
+      }
+      loaded = posts.get(item.postId) ?? null;
+      target = await loadTarget(db, item.id);
+      if (!loaded || !target) {
+        // Deleted between queueing and claiming: nothing to send.
+        await releaseClaim(db, item.id, item.from);
+        continue;
+      }
+      const orgId = loaded.post.org_id;
+      if (!access.has(orgId)) {
+        // The plan may belong to the workspace this one is billed through.
+        // accessRowFor throws on a database error, which lands in the catch.
+        access.set(orgId, orgHasAccess(await accessRowFor(orgId)));
+      }
+      allowed = access.get(orgId)!;
+    } catch (e) {
+      console.error(`[publish] retrying ${item.id} next run:`, e instanceof Error ? e.message : e);
+      await releaseClaim(db, item.id, item.from);
+      continue;
     }
-    const loaded = posts.get(item.postId);
-    const target = await loadTarget(db, item.id);
-    if (!loaded || !target) continue;
 
-    const orgId = loaded.post.org_id;
-    if (!access.has(orgId)) {
-      // The plan may belong to the workspace this one is billed through.
-      access.set(orgId, orgHasAccess(await accessRowFor(orgId)));
-    }
-    if (!access.get(orgId)) {
+    if (!allowed) {
       await db
         .from("post_targets")
         .update({ status: "failed", error: NO_PLAN_MESSAGE, next_attempt_at: null })
@@ -403,7 +460,13 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
 
     try {
       await publishTarget(db, target, loaded.post, loaded.media);
-    } catch {
+    } catch (e) {
+      if (e instanceof RetryLater) {
+        // Raised before anything was sent (e.g. the X link check couldn't run).
+        console.error(`[publish] retrying ${item.id} next run:`, e.message);
+        await releaseClaim(db, item.id, item.from);
+        continue;
+      }
       // Outcome unknown (it may have gone out). Leave it claimed: the interrupted
       // sweep fails it for the user to check, and the rest of the queue carries on.
     }
@@ -412,8 +475,7 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
   // 5. Roll target outcomes up to each touched post, then spawn the next
   //    occurrence for any repeating post that just published.
   for (const postId of touched) {
-    await recomputePostStatus(db, postId);
-    await spawnRepeatIfDue(db, postId);
+    if (await recomputePostStatus(db, postId)) await spawnRepeatIfDue(db, postId);
   }
 
   return { processed };

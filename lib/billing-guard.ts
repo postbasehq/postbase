@@ -54,18 +54,25 @@ export type BillingGroup = {
 
 export async function billingGroup(orgId: string): Promise<BillingGroup> {
   const db = createAdminClient();
-  const { data: self } = await db
+  // Query errors throw rather than reading as "trial, no access": a database
+  // blip must never look like a lapsed plan (the publisher would fail every
+  // due post for the workspace).
+  const { data: self, error: selfError } = await db
     .from("orgs")
     .select("id, name, billing_org_id, plan, subscription_status, comped")
     .eq("id", orgId)
     .maybeSingle();
+  if (selfError) throw new Error(`billingGroup(${orgId}): ${selfError.message}`);
   const rootId = (self?.billing_org_id as string | null) ?? orgId;
-  const [{ data: root }, { data: members }] = await Promise.all([
+  const [{ data: root, error: rootError }, { data: members, error: membersError }] = await Promise.all([
     rootId === orgId
-      ? Promise.resolve({ data: self })
+      ? Promise.resolve({ data: self, error: null })
       : db.from("orgs").select("id, name, plan, subscription_status, comped").eq("id", rootId).maybeSingle(),
     db.from("orgs").select("id").eq("billing_org_id", rootId).order("created_at", { ascending: true }),
   ]);
+  if (rootError || membersError) {
+    throw new Error(`billingGroup(${orgId}): ${(rootError ?? membersError)!.message}`);
+  }
   return {
     rootId,
     rootName: (root?.name as string) ?? "",
