@@ -17,6 +17,7 @@ import type { YouTubePostOptions } from "@/lib/platforms/youtube";
 import { REPEAT_OPTIONS } from "@/lib/publish/repeat";
 import { ASPECT_RATIOS, type AspectRatio } from "@/lib/higgsfield";
 import { generateAiImage, startAiVideo, pollAiVideo } from "@/app/(app)/actions";
+import { createMediaUpload } from "@/app/(app)/media-upload-actions";
 import { PostPreview } from "@/components/PostPreview";
 
 /* ── Platform rules ─────────────────────────────────────────────────────────
@@ -415,19 +416,21 @@ export function PostForm({
       const supabase = createClient();
       const added: Media[] = [];
       for (const file of Array.from(files)) {
-        const ext = file.name.includes(".") ? file.name.split(".").pop() : "bin";
-        const path = `uploads/${crypto.randomUUID()}.${ext}`;
+        // The server checks plan, type, size and storage, then hands out a
+        // one-time upload URL; the browser can't write to storage otherwise.
+        const slot = await createMediaUpload({ type: file.type, size: file.size });
+        if (!slot.ok) {
+          setUploadError(slot.error);
+          continue;
+        }
         const { error } = await supabase.storage
           .from("post-media")
-          .upload(path, file, { contentType: file.type, upsert: false });
+          .uploadToSignedUrl(slot.path, slot.token, file, { contentType: file.type });
         if (error) {
           setUploadError(error.message);
           continue;
         }
-        added.push({
-          url: supabase.storage.from("post-media").getPublicUrl(path).data.publicUrl,
-          type: file.type,
-        });
+        added.push({ url: slot.publicUrl, type: file.type });
       }
       setMedia((m) => [...m, ...added]);
     } catch {

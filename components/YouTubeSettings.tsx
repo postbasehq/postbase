@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { createMediaUpload } from "@/app/(app)/media-upload-actions";
 import type { YouTubePostOptions } from "@/lib/platforms/youtube";
 
 export type YouTubePrivacy = "public" | "unlisted" | "private";
@@ -84,13 +85,13 @@ export function YouTubeSettings({
     if (file.size > THUMB_MAX_BYTES) return setThumbError("Thumbnails can be up to 2 MB.");
     setThumbBusy(true);
     try {
-      const supabase = createClient();
-      const path = `uploads/${crypto.randomUUID()}.${file.type === "image/png" ? "png" : "jpg"}`;
-      const { error } = await supabase.storage
-        .from("post-media")
-        .upload(path, file, { contentType: file.type, upsert: false });
+      const slot = await createMediaUpload({ type: file.type, size: file.size, purpose: "thumbnail" });
+      if (!slot.ok) throw new Error(slot.error);
+      const { error } = await createClient()
+        .storage.from("post-media")
+        .uploadToSignedUrl(slot.path, slot.token, file, { contentType: file.type });
       if (error) throw new Error(error.message);
-      setThumb(supabase.storage.from("post-media").getPublicUrl(path).data.publicUrl);
+      setThumb(slot.publicUrl);
     } catch (e) {
       setThumbError(e instanceof Error ? e.message : "Upload failed.");
     } finally {

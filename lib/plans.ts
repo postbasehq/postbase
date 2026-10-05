@@ -88,6 +88,18 @@ export const X_LINK_LIMIT: Record<PlanId, number> = {
 /** The X-links feature line for a plan, derived from the limit. */
 export const xLinkFeature = (plan: PlanId): string => `${X_LINK_LIMIT[plan]} X posts with links a month`;
 
+// Storage for files uploaded in the composer, agent chat and AI generation
+// (the post-media bucket), shared across the plan's workspaces. Files nothing
+// uses are cleaned up after 48 hours, so this only bounds kept media.
+const GB = 1024 ** 3;
+export const STORAGE_LIMIT_BYTES: Record<PlanId, number> = {
+  trial: 1 * GB,
+  creator: 5 * GB,
+  team: 10 * GB,
+  growth: 25 * GB,
+  agency: 50 * GB,
+};
+
 /** The AI-quota feature line for a plan, derived from the limits (single source). */
 export const aiFeature = (plan: PlanId): string =>
   `${AI_IMAGE_LIMIT[plan]} AI images + ${AI_VIDEO_LIMIT[plan]} videos a month`;

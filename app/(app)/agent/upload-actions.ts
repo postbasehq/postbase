@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentOrgId } from "@/lib/org";
+import { uploadBlocker } from "@/lib/media-storage";
 
 /**
  * Uploads an image the user attached in the agent chat to the post-media bucket
@@ -27,6 +28,8 @@ export async function uploadAgentImage(
   const ext = EXT[file.type];
   if (!ext) return { ok: false, error: "Only JPG, PNG, WebP or GIF images." };
   if (file.size > MAX_BYTES) return { ok: false, error: "Image is too large (max 10MB)." };
+  const blocked = await uploadBlocker(orgId, file.type, file.size, MAX_BYTES);
+  if (blocked) return { ok: false, error: blocked };
 
   const bytes = Buffer.from(await file.arrayBuffer());
   const path = `agent/${orgId}/${crypto.randomUUID()}.${ext}`;

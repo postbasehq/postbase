@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/publish",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-media",
+      "schedule": "0 3 * * *"
     }
   ]
 }
