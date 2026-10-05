@@ -6,6 +6,8 @@ import { MetaAccountPicker } from "@/components/MetaAccountPicker";
 import { listMetaOptions, openPick, PICK_COOKIE, type MetaOption, type MetaPlatform } from "@/lib/meta-connect";
 import { ChannelsBoard } from "@/components/ChannelsBoard";
 import { channelHealth, reconnectReason, type ChannelHealth } from "@/lib/channel-health";
+import { hasEarlyAccess } from "@/lib/platforms/availability";
+import { toggleWaitlist } from "../waitlist-actions";
 
 const BRAND_LABEL: Record<string, string> = {
   x: "X",
@@ -134,6 +136,15 @@ export default async function ChannelsPage({
   }
   const connectedCount = channels?.length ?? 0;
 
+  // Platforms still in app review: who's asked to hear when they open, and
+  // whether this user is a Meta app tester allowed to connect early.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: waitlistRows } = await supabase.from("platform_waitlist").select("platform");
+  const waitlisted = (waitlistRows ?? []).map((r) => r.platform as string);
+  const earlyAccess = hasEarlyAccess(user?.email);
+
   return (
     <div>
       <header className="flex items-end justify-between gap-4 pb-5 [border-bottom:0.5px_solid_var(--line)]">
@@ -176,6 +187,9 @@ export default async function ChannelsPage({
         <ChannelsBoard
           accountsByPlatform={accountsByPlatform}
           disconnectAction={disconnectChannel}
+          waitlisted={waitlisted}
+          waitlistAction={toggleWaitlist}
+          earlyAccess={earlyAccess}
         />
         {picker ? (
           <MetaAccountPicker

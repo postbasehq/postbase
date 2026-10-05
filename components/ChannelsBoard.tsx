@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { EmptyState } from "@/components/EmptyState";
 import { useRouter } from "next/navigation";
 import { BrandTile, BRANDS } from "@/components/BrandTile";
@@ -8,7 +8,7 @@ import { BlueskyForm } from "@/components/BlueskyForm";
 import { DisconnectButton } from "@/components/DisconnectButton";
 import { Modal } from "@/components/Modal";
 import { formatReconnectBy } from "@/lib/channel-health";
-import { COMING_SOON } from "@/lib/platforms/availability";
+import { COMING_SOON, LIMITED } from "@/lib/platforms/availability";
 
 type Account = {
   id: string;
@@ -121,15 +121,37 @@ function VerifiedTick() {
 export function ChannelsBoard({
   accountsByPlatform,
   disconnectAction,
+  waitlisted = [],
+  waitlistAction,
+  earlyAccess = false,
 }: {
   accountsByPlatform: Record<string, Account[]>;
   disconnectAction: (formData: FormData) => Promise<void>;
+  /** Platforms this user asked to hear about when they open. */
+  waitlisted?: string[];
+  waitlistAction?: (platform: string, join: boolean) => Promise<void>;
+  /** Meta app tester: platforms in review connect as normal. */
+  earlyAccess?: boolean;
 }) {
   const router = useRouter();
   const [active, setActive] = useState<string | null>(null);
   const [instance, setInstance] = useState("");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "connected" | "available">("all");
+  // Optimistic waitlist state so the button flips the moment it's pressed.
+  const [joined, setJoined] = useState<Set<string>>(() => new Set(waitlisted));
+  const [, startTransition] = useTransition();
+
+  function toggleNotify(platform: string) {
+    const join = !joined.has(platform);
+    setJoined((prev) => {
+      const next = new Set(prev);
+      if (join) next.add(platform);
+      else next.delete(platform);
+      return next;
+    });
+    startTransition(() => waitlistAction?.(platform, join));
+  }
 
   const current = PLATFORMS.find((p) => p.id === active) ?? null;
   const totalConnected = Object.values(accountsByPlatform).reduce(
@@ -161,7 +183,8 @@ export function ChannelsBoard({
     const brand = BRANDS[p.id];
     const accounts = accountsByPlatform[p.id] ?? [];
     const connected = accounts.length > 0;
-    const comingSoon = COMING_SOON[p.id];
+    const comingSoon = earlyAccess ? undefined : COMING_SOON[p.id];
+    const limited = LIMITED[p.id];
     return (
       <div
         key={p.id}
@@ -177,6 +200,20 @@ export function ChannelsBoard({
             <p className="mt-0.5 text-[13px] leading-snug text-muted">{p.desc}</p>
             {comingSoon && !connected ? (
               <p className="mt-1 text-[12px] font-medium leading-snug text-muted">{comingSoon}</p>
+            ) : null}
+            {limited ? (
+              <p className="mt-1 text-[12px] font-medium leading-snug text-muted">
+                {limited}{" "}
+                {waitlistAction ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleNotify(p.id)}
+                    className="font-semibold text-blue-ink underline decoration-line underline-offset-2 hover:decoration-current"
+                  >
+                    {joined.has(p.id) ? "We’ll email you. Undo" : "Email me when it does"}
+                  </button>
+                ) : null}
+              </p>
             ) : null}
           </div>
           {connected ? (
@@ -281,9 +318,30 @@ export function ChannelsBoard({
         {/* Pinned to the bottom so buttons line up across a row of cards. */}
         <div className="mt-auto flex pt-5">
           {comingSoon && !connected ? (
-            <span className="ml-auto rounded-full border border-line px-4 py-2 text-sm font-semibold text-muted">
-              Coming soon
-            </span>
+            <div className="flex w-full items-center justify-between gap-2.5 whitespace-nowrap">
+              <span className="text-[12px] font-semibold text-[#e3a72c]">Awaiting approval</span>
+              {joined.has(p.id) ? (
+                <button
+                  type="button"
+                  onClick={() => toggleNotify(p.id)}
+                  title="Stop the email"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 text-sm font-semibold text-muted transition-colors hover:bg-surface-2"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                  On the list
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => toggleNotify(p.id)}
+                  className="rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
+                >
+                  Notify me
+                </button>
+              )}
+            </div>
           ) : (
             <button
               type="button"
@@ -463,6 +521,11 @@ export function ChannelsBoard({
                 {current.note ? (
                   <p className="mt-3 rounded-xl bg-surface-2 px-3.5 py-3 text-[13px] text-muted">
                     {current.note}
+                  </p>
+                ) : null}
+                {LIMITED[current.id] ? (
+                  <p className="mt-3 rounded-xl bg-surface-2 px-3.5 py-3 text-[13px] text-muted">
+                    {LIMITED[current.id]}
                   </p>
                 ) : null}
                 <div className="mt-5 flex justify-end gap-2.5">

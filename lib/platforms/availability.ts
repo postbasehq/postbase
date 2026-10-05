@@ -1,8 +1,33 @@
 /**
  * Platforms whose publishing is built but can't be connected yet (waiting on
- * the platform's app review). Shown as "Coming soon" in Channels + onboarding;
- * already-connected accounts keep working. Delete the entry once approved.
+ * the platform's app review). Shown as "Awaiting approval" with a "Notify me"
+ * button in Channels; already-connected accounts keep working. Delete the entry
+ * once approved.
  */
 export const COMING_SOON: Record<string, string> = {
-  instagram: "Coming soon — waiting on Meta’s app review.",
+  instagram: "Waiting on Meta’s app review. We’ll email you the day it opens.",
 };
+
+/**
+ * Platforms that connect and post, but with a limit until an audit passes.
+ * TikTok: posts go out private (SELF_ONLY) until the Direct Post audit clears.
+ */
+export const LIMITED: Record<string, string> = {
+  tiktok: "Posts go out as private (only you can see them) until TikTok approves public posting.",
+};
+
+/** Platforms people can join the waitlist for (matches the DB check). */
+export const WAITLIST_PLATFORMS = ["instagram", "facebook", "tiktok"] as const;
+
+/**
+ * Accounts let through the review gate early: emails also added as testers in
+ * the Meta app, where an unreviewed app works for them. Comma-separated env.
+ */
+export function hasEarlyAccess(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const list = (process.env.EARLY_ACCESS_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return list.includes(email.toLowerCase());
+}
