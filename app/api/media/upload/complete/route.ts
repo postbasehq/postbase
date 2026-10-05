@@ -86,12 +86,17 @@ export async function POST(req: Request) {
   // Each presigned part URL accepts up to 5 GB, so check what actually landed.
   const head = await client.send(new HeadObjectCommand({ Bucket, Key: key }));
   const actualSize = Number(head.ContentLength ?? 0);
+  // The type the object was created with at /create, not what the browser says now.
+  const actualType = head.ContentType ?? "";
   const reject = async (status: number, error: string, message: string) => {
     await client.send(new DeleteObjectCommand({ Bucket, Key: key })).catch(() => {});
     return NextResponse.json({ error, message }, { status });
   };
   if (!Number.isFinite(actualSize) || actualSize <= 0 || actualSize > R2_MAX_BYTES) {
     return reject(413, "too_large", "File is over the 1 GB limit.");
+  }
+  if (!R2_ALLOWED_TYPES.includes(actualType)) {
+    return reject(415, "unsupported_type", "Unsupported file type.");
   }
   const blocked = await storageBlocker(orgId, actualSize);
   if (blocked) return reject(403, "blocked", blocked);
@@ -117,7 +122,7 @@ export async function POST(req: Request) {
       key,
       url,
       name,
-      type,
+      type: actualType,
       size_bytes: actualSize,
       created_by: user.id,
       folder_id: folderId,

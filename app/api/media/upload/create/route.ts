@@ -23,8 +23,8 @@ export const runtime = "nodejs";
  * uploads each chunk directly to R2, then calls /complete.
  *
  * Gated like post-media uploads: an active plan or trial and room in the
- * plan's storage allowance. The declared size is only a first check; /complete
- * re-checks against the object's real size in R2.
+ * plan's storage allowance. Part URLs are bound to the declared size, and
+ * /complete re-checks against the object's real size in R2.
  */
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
   if (!R2_ALLOWED_TYPES.includes(type)) {
     return NextResponse.json({ error: "unsupported_type" }, { status: 415 });
   }
-  if (!Number.isFinite(size) || size <= 0 || size > R2_MAX_BYTES) {
+  if (!Number.isSafeInteger(size) || size <= 0 || size > R2_MAX_BYTES) {
     return NextResponse.json({ error: "too_large" }, { status: 413 });
   }
   if (!(await rateLimit(`media-upload:${user.id}`, 60, 30))) {
@@ -72,6 +72,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "create_failed" }, { status: 502 });
   }
 
+  // Each part URL is signed for its exact byte length (R2 rejects any other
+  // Content-Length with 403), so the bytes that can land in R2 — even for an
+  // upload that's never completed — are exactly the size checked above.
   const partCount = Math.max(1, Math.ceil(size / R2_PART_SIZE));
   const urls = await Promise.all(
     Array.from({ length: partCount }, (_, i) =>
@@ -82,8 +85,9 @@ export async function POST(req: Request) {
           Key: key,
           UploadId: uploadId,
           PartNumber: i + 1,
+          ContentLength: Math.min(R2_PART_SIZE, size - i * R2_PART_SIZE),
         }),
-        { expiresIn: R2_PRESIGN_TTL },
+        { expiresIn: R2_PRESIGN_TTL, signableHeaders: new Set(["content-length"]) },
       ),
     ),
   );
