@@ -81,7 +81,9 @@ export async function startCheckout(formData: FormData) {
     subscription_data: { ...trial, metadata: { org_id: orgId } },
     success_url: billingUrls.success,
     cancel_url: billingUrls.cancel,
-    allow_promotion_codes: true,
+    // Promo codes are monthly-only: a "N months off" coupon applies to the first
+    // invoice, which on an annual plan covers the whole year.
+    allow_promotion_codes: interval === "month",
   };
   const session = await getStripe().checkout.sessions.create(params);
   if (!session.url) throw new Error("Couldn’t start checkout.");
