@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { marked } from "marked";
+import { renderSafeMarkdown } from "@/lib/safe-markdown";
 import { AgentSparkIcon } from "@/components/AgentSparkIcon";
 import { AgentPostsList } from "@/components/AgentPostsList";
 import { AgentModelSelector } from "@/components/AgentModelSelector";
@@ -827,7 +827,7 @@ function AssistantRow({
   onImageClick: (url: string) => void;
 }) {
   const html = useMemo(
-    () => (msg.content ? marked.parse(msg.content, { async: false }) : ""),
+    () => (msg.content ? renderSafeMarkdown(msg.content) : ""),
     [msg.content],
   );
   const settled = !!(msg.content || (msg.images && msg.images.length) || msg.list || msg.proposalCard);
