@@ -1,6 +1,6 @@
 "use server";
 
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -10,6 +10,7 @@ import { getCurrentOrgId, getOrgRole, ACTIVE_ORG_COOKIE } from "@/lib/org";
 import { SEAT_LIMIT } from "@/lib/plans";
 import { seatUsage } from "@/lib/billing-guard";
 import { sendInviteEmail } from "@/lib/email/notify";
+import { rateLimit } from "@/lib/rate-limit";
 
 const COOKIE = { httpOnly: true, sameSite: "lax" as const, path: "/", maxAge: 60 * 60 * 24 * 365 };
 
@@ -45,6 +46,15 @@ export async function createInvite(formData: FormData) {
   if (used >= (SEAT_LIMIT[group.plan] ?? 1)) {
     throw new Error("You’ve reached your plan’s seat limit. Upgrade in Billing to add more.");
   }
+
+  // Each invite emails the address with this workspace's name in the subject:
+  // cap it so re-inviting (or invite/revoke loops) can't be used to spam someone.
+  const [orgOk, addressOk] = await Promise.all([
+    rateLimit(`invite-org:${orgId}`, 60 * 60, 20),
+    rateLimit(`invite-to:${createHash("sha256").update(email).digest("hex").slice(0, 32)}`, 24 * 60 * 60, 3),
+  ]);
+  if (!orgOk) throw new Error("Too many invites in the last hour. Try again later.");
+  if (!addressOk) throw new Error("That address has been invited several times today. Try again tomorrow.");
 
   const token = randomBytes(24).toString("base64url");
   const { data: invite, error } = await db
