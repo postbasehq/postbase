@@ -19,11 +19,24 @@ export async function authenticateApiKey(
   const db = createAdminClient();
   const { data } = await db
     .from("api_keys")
-    .select("id, org_id")
+    .select("id, org_id, created_by")
     .eq("hashed_key", hashApiKey(key))
     .maybeSingle();
 
   if (!data) return null;
+
+  // A key acts for the member who made it: once they've left the workspace it
+  // stops working (removeMember also deletes it). Keys predating created_by
+  // have no creator and stay valid.
+  if (data.created_by) {
+    const { data: member, error } = await db
+      .from("org_members")
+      .select("user_id")
+      .eq("org_id", data.org_id)
+      .eq("user_id", data.created_by)
+      .maybeSingle();
+    if (error || !member) return null;
+  }
 
   // best-effort usage timestamp; don't block the request on it
   void db

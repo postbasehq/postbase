@@ -9,6 +9,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export const CODE_TTL_SECONDS = 60; // authorization codes are exchanged immediately
 export const ACCESS_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
+// A refresh token is good for 90 days from its last rotation: a client that
+// keeps refreshing stays connected; one idle for 90 days has to re-authorize.
+export const REFRESH_IDLE_SECONDS = 60 * 60 * 24 * 90;
 export const MCP_SCOPE = "mcp";
 
 /** The public origin of this deployment (the OAuth issuer + resource base). */
@@ -183,14 +186,15 @@ export async function issueCode(input: {
 /** Consume a code (single-use): returns its record and deletes it, or null. */
 export async function consumeCode(code: string) {
   const db = createAdminClient();
-  const hash = sha256(code);
+  // Delete-and-return in one statement, so two concurrent exchanges of the same
+  // code can't both get it.
   const { data } = await db
     .from("oauth_codes")
+    .delete()
+    .eq("code_hash", sha256(code))
     .select("*")
-    .eq("code_hash", hash)
     .maybeSingle();
   if (!data) return null;
-  await db.from("oauth_codes").delete().eq("code_hash", hash);
   if (new Date(data.expires_at as string).getTime() < Date.now()) return null;
   return data as {
     client_id: string;
@@ -205,6 +209,26 @@ export async function consumeCode(code: string) {
 }
 
 // ── Tokens ──────────────────────────────────────────────────────────────────
+/**
+ * Whether the user who authorized a token is still in its workspace. Tokens act
+ * as the workspace, so someone removed from the team must lose access at once.
+ * Null when the lookup itself failed (callers deny, but never revoke, on null).
+ */
+async function stillMember(
+  db: ReturnType<typeof createAdminClient>,
+  orgId: string,
+  userId: string,
+): Promise<boolean | null> {
+  const { data, error } = await db
+    .from("org_members")
+    .select("user_id")
+    .eq("org_id", orgId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) return null;
+  return Boolean(data);
+}
+
 export async function issueTokens(input: {
   clientId: string;
   orgId: string;
@@ -233,11 +257,19 @@ export async function refreshTokens(refreshToken: string, clientId: string) {
   const db = createAdminClient();
   const { data } = await db
     .from("oauth_tokens")
-    .select("id, client_id, org_id, user_id, scope")
+    .select("id, client_id, org_id, user_id, scope, created_at")
     .eq("refresh_token_hash", sha256(refreshToken))
     .maybeSingle();
   if (!data || data.client_id !== clientId) return null;
-  await db.from("oauth_tokens").delete().eq("id", data.id);
+  // created_at is the last rotation (each refresh inserts a fresh row).
+  const idle = Date.now() - new Date(data.created_at as string).getTime() > REFRESH_IDLE_SECONDS * 1000;
+  const member = await stillMember(db, data.org_id as string, data.user_id as string);
+  if (member === null) return null;
+  // Single-use: the presented row goes either way (rotated, expired or revoked).
+  // Only the request that actually deletes it gets a new pair, so two concurrent
+  // refreshes with the same token can't both succeed.
+  const { data: consumed } = await db.from("oauth_tokens").delete().eq("id", data.id).select("id");
+  if (!consumed?.length || idle || !member) return null;
   return issueTokens({
     clientId: data.client_id as string,
     orgId: data.org_id as string,
@@ -289,11 +321,12 @@ export async function resolveAccessToken(token: string): Promise<{ orgId: string
   const db = createAdminClient();
   const { data } = await db
     .from("oauth_tokens")
-    .select("id, org_id, expires_at")
+    .select("id, org_id, user_id, expires_at")
     .eq("access_token_hash", sha256(token))
     .maybeSingle();
   if (!data) return null;
   if (new Date(data.expires_at as string).getTime() < Date.now()) return null;
+  if ((await stillMember(db, data.org_id as string, data.user_id as string)) !== true) return null;
   void db
     .from("oauth_tokens")
     .update({ last_used_at: new Date().toISOString() })
