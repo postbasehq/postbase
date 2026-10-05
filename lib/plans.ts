@@ -152,8 +152,9 @@ export const PLANS: Record<Exclude<PlanId, "trial">, Plan> = {
     blurb: "For growing brands and small agencies.",
     inherits: "Everything in Team, plus",
     features: [aiFeature("growth"), xLinkFeature("growth"), "Priority email support"],
-    priceMonthly: process.env.STRIPE_PRICE_GROWTH_MONTH,
-    priceAnnual: process.env.STRIPE_PRICE_GROWTH_YEAR,
+    // Shown as "Pro"; the internal id stays "growth". Older envs used GROWTH_*.
+    priceMonthly: process.env.STRIPE_PRICE_PRO_MONTH ?? process.env.STRIPE_PRICE_GROWTH_MONTH,
+    priceAnnual: process.env.STRIPE_PRICE_PRO_YEAR ?? process.env.STRIPE_PRICE_GROWTH_YEAR,
   },
   agency: {
     id: "agency",
