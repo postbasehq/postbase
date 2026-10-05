@@ -39,6 +39,7 @@ import {
   refreshTokens as ytRefreshTokens,
   setThumbnail as ytSetThumbnail,
   defaultPrivacyStatus,
+  YouTubeUploadUnconfirmed,
   type YouTubePostOptions,
   type YouTubeTokens,
 } from "@/lib/platforms/youtube";
@@ -84,17 +85,22 @@ export type PublishInput = {
   tiktokOptions?: TikTokPostOptions | null;
   /** An upload still processing from an earlier run (Instagram container id). */
   pendingRef?: string | null;
-  /** X: thread posts already sent by an earlier attempt, to continue after. */
+  /** X, Bluesky, Mastodon: thread posts already sent by an earlier attempt, to continue after. */
   threadIds?: string[] | null;
-  /** X: called with the thread's post ids after each one goes out. */
+  /** X, Bluesky, Mastodon: called with the thread's post ids after each one goes out. */
   onThreadProgress?: (ids: string[]) => Promise<void>;
+  /** Stable per target across retries (the target id), for platforms that dedupe on it. */
+  idempotencyKey?: string;
 };
 
 export type PublishResult =
   | { ok: true; platformPostId: string; warning?: string }
-  | { ok: false; error: string; pendingRef?: undefined }
-  /** Still processing on the platform's side: check `pendingRef` again next run. */
-  | { ok: false; error: string; pendingRef: string };
+  /**
+   * Failed. With `pendingRef`: still processing on the platform's side, check
+   * it again next run. With `uncertain`: the platform may already have the
+   * post, so it must not be sent again automatically.
+   */
+  | { ok: false; error: string; pendingRef?: string; uncertain?: boolean };
 
 function isExpiring(iso: string | null): boolean {
   if (!iso) return false;
@@ -221,6 +227,20 @@ async function ensureInstagramImageUrl(url: string, type: string): Promise<strin
 
 const IG_PROCESSING = "Instagram is still processing the video.";
 
+/**
+ * Publish a finished container. If the call errors we can't tell whether it
+ * went out (the response may just be lost), so the container stays pending:
+ * next run reads its status — PUBLISHED means done, FINISHED means try again —
+ * instead of uploading a second copy.
+ */
+async function publishIgContainer(igId: string, token: string, creationId: string): Promise<PublishResult> {
+  try {
+    return { ok: true, platformPostId: await publishContainer(igId, token, creationId) };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Instagram publish failed.", pendingRef: creationId };
+  }
+}
+
 async function publishToInstagram(input: PublishInput): Promise<PublishResult> {
   if (!input.encryptedTokens) return { ok: false, error: "Instagram account not connected." };
 
@@ -249,9 +269,7 @@ async function publishToInstagram(input: PublishInput): Promise<PublishResult> {
     // An upload from an earlier run: check it rather than uploading again.
     if (input.pendingRef) {
       const st = await containerStatus(token, input.pendingRef);
-      if (st.code === "FINISHED") {
-        return { ok: true, platformPostId: await publishContainer(igId, token, input.pendingRef) };
-      }
+      if (st.code === "FINISHED") return publishIgContainer(igId, token, input.pendingRef);
       if (st.code === "PUBLISHED") {
         // Went out on an earlier run whose result was lost: never post it twice.
         return { ok: true, platformPostId: input.pendingRef };
@@ -289,9 +307,7 @@ async function publishToInstagram(input: PublishInput): Promise<PublishResult> {
     // little, then leave it to the next run instead of holding the cron.
     for (let i = 0; i < 8; i++) {
       const st = await containerStatus(token, creationId);
-      if (st.code === "FINISHED") {
-        return { ok: true, platformPostId: await publishContainer(igId, token, creationId) };
-      }
+      if (st.code === "FINISHED") return publishIgContainer(igId, token, creationId);
       if (st.code === "ERROR" || st.code === "EXPIRED") {
         throw new Error(`Instagram couldn’t process the media (${st.code.toLowerCase()}${st.detail ? `: ${st.detail}` : ""}).`);
       }
@@ -524,6 +540,7 @@ async function publishToYouTube(input: PublishInput): Promise<PublishResult> {
     }
     return { ok: true, platformPostId: id, warning };
   } catch (e) {
+    if (e instanceof YouTubeUploadUnconfirmed) return { ok: false, error: e.message, uncertain: true };
     return { ok: false, error: e instanceof Error ? e.message : "YouTube publish failed." };
   }
 }
@@ -586,21 +603,28 @@ async function publishToBluesky(input: PublishInput): Promise<PublishResult> {
   const segments = [input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean);
   const clip = (s: string) => (Array.from(s).length > BLUESKY_MAX_CHARS ? Array.from(s).slice(0, BLUESKY_MAX_CHARS).join("") : s);
 
+  // A retry continues after the parts an earlier attempt already posted (kept
+  // as "uri|cid", which a reply needs) instead of posting the lead again.
+  const sent = (input.threadIds ?? []).filter(Boolean);
+  const ref = (s: string) => {
+    const [uri, cid] = s.split("|");
+    return { uri, cid };
+  };
+  if (sent.length >= segments.length && sent[0]) return { ok: true, platformPostId: ref(sent[0]).uri };
+
   try {
-    let root: { uri: string; cid: string } | undefined;
-    let parent: { uri: string; cid: string } | undefined;
-    let leadUri = "";
-    for (let i = 0; i < segments.length; i++) {
+    let root = sent.length ? ref(sent[0]) : undefined;
+    let parent = sent.length ? ref(sent[sent.length - 1]) : undefined;
+    for (let i = sent.length; i < segments.length; i++) {
       const media = i === 0 ? input.media : [];
       const reply = root && parent ? { root, parent } : undefined;
       const { uri, cid } = await bskyCreatePost(tokens, clip(segments[i]), media, reply);
-      if (i === 0) {
-        root = { uri, cid };
-        leadUri = uri;
-      }
+      if (i === 0) root = { uri, cid };
       parent = { uri, cid };
+      sent.push(`${uri}|${cid}`);
+      await input.onThreadProgress?.([...sent]);
     }
-    return { ok: true, platformPostId: leadUri };
+    return { ok: true, platformPostId: root!.uri };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Bluesky publish failed." };
   }
@@ -623,16 +647,23 @@ async function publishToMastodon(input: PublishInput): Promise<PublishResult> {
   const clip = (s: string) =>
     Array.from(s).length > MASTODON_MAX_CHARS ? Array.from(s).slice(0, MASTODON_MAX_CHARS).join("") : s;
 
+  // A retry continues after the parts an earlier attempt already posted.
+  const sent = (input.threadIds ?? []).filter(Boolean);
+  if (sent.length >= segments.length && sent[0]) return { ok: true, platformPostId: sent[0] };
+
   try {
-    let replyTo: string | undefined;
-    let leadId = "";
-    for (let i = 0; i < segments.length; i++) {
+    let replyTo: string | undefined = sent[sent.length - 1];
+    for (let i = sent.length; i < segments.length; i++) {
       const media = i === 0 ? input.media : [];
-      const { id } = await mastoCreatePost(tokens, clip(segments[i]), media, replyTo);
-      if (i === 0) leadId = id;
+      // Same key on every retry of this part: if an earlier response was lost,
+      // Mastodon returns the status it already created instead of a duplicate.
+      const key = input.idempotencyKey ? `${input.idempotencyKey}:${i}` : undefined;
+      const { id } = await mastoCreatePost(tokens, clip(segments[i]), media, replyTo, key);
       replyTo = id; // chain the thread as replies
+      sent.push(id);
+      await input.onThreadProgress?.([...sent]);
     }
-    return { ok: true, platformPostId: leadId };
+    return { ok: true, platformPostId: sent[0] };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Mastodon publish failed." };
   }

@@ -359,7 +359,15 @@ export async function waitForPublish(
   { tries = 5, delayMs = 3000 }: { tries?: number; delayMs?: number } = {},
 ): Promise<{ status: string; postId?: string }> {
   for (let i = 0; i < tries; i++) {
-    const data = await fetchPublishStatus(accessToken, publishId);
+    // The upload is already accepted at this point, so a failed status check
+    // isn't a failed post (retrying would upload it twice): treat it like
+    // "still processing" and let the metrics job resolve it later.
+    let data: Awaited<ReturnType<typeof fetchPublishStatus>>;
+    try {
+      data = await fetchPublishStatus(accessToken, publishId);
+    } catch {
+      return { status: "PROCESSING" };
+    }
     if (data.status === "PUBLISH_COMPLETE" && data.postId) return { status: data.status, postId: data.postId };
     if (data.status === "FAILED") {
       throw new Error(`TikTok publish failed: ${data.failReason ?? "unknown"}`);

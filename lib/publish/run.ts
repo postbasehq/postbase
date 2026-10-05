@@ -44,6 +44,8 @@ type MediaItem = { url: string; type: string };
 // (the function was killed). Must exceed the cron's maxDuration so a live run is
 // never mistaken for a dead one.
 const STUCK_AFTER_MS = 10 * 60_000;
+/** Platforms that post a thread as a chain and can resume it from post_targets.thread_ids. */
+const THREADED_PLATFORMS = new Set(["x", "bluesky", "mastodon"]);
 // Stop claiming new targets after this long, leaving headroom under the cron's
 // maxDuration (300s) for in-flight uploads/polls to finish. The rest wait for
 // the next run.
@@ -145,8 +147,12 @@ async function publishTarget(
   // X: posts with links come out of the plan's monthly allowance. Reserve them
   // before sending (all or nothing, so a thread never stops half-way for it);
   // only the posts that actually go out are kept.
-  const isX = target.channels?.platform === "x";
-  const resumeIds = isX ? (target.thread_ids ?? []) : [];
+  const platform = target.channels?.platform ?? "";
+  const isX = platform === "x";
+  // Threads remember which parts went out, so a retry continues after them
+  // rather than posting the lead again.
+  const threaded = THREADED_PLATFORMS.has(platform);
+  const resumeIds = threaded ? (target.thread_ids ?? []) : [];
   const unsent = isX ? xTexts(body, threadTail).slice(resumeIds.length) : [];
   let sentIds = resumeIds;
   let reservationId: string | null = null;
@@ -168,7 +174,7 @@ async function publishTarget(
   const result: PublishResult = brokenMedia
     ? { ok: false as const, error: "An attached image is missing. Open the post, remove the broken image and add it again." }
     : await publish({
-    platform: target.channels?.platform ?? "",
+    platform,
     body,
     threadTail,
     media,
@@ -182,7 +188,8 @@ async function publishTarget(
     tiktokOptions: post.tiktok_options,
     pendingRef: target.pending_ref,
     threadIds: resumeIds,
-    onThreadProgress: isX
+    idempotencyKey: target.id,
+    onThreadProgress: threaded
       ? async (ids) => {
           sentIds = ids;
           // Best effort: a failed write must not stop the thread mid-way.
@@ -216,6 +223,16 @@ async function publishTarget(
           ? { status: "failed", error: "The platform took too long to process the media. Retry to upload it again.", next_attempt_at: null, pending_ref: null, pending_since: null }
           : { status: "failed", error: result.error, next_attempt_at: new Date(Date.now() + 60_000).toISOString(), pending_ref: result.pendingRef, pending_since: since },
       )
+      .eq("id", target.id);
+    return false;
+  }
+
+  // The platform may already have it: never send again automatically. The
+  // user checks their account and uses Retry only if it isn't there.
+  if (!result.ok && result.uncertain) {
+    await db
+      .from("post_targets")
+      .update({ status: "failed", error: result.error, attempts: (target.attempts ?? 0) + 1, pending_ref: null, pending_since: null, next_attempt_at: null })
       .eq("id", target.id);
     return false;
   }

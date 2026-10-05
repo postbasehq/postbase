@@ -149,6 +149,31 @@ export async function getChannel(
   return { id: ch.id, title: ch.snippet?.title ?? "YouTube", avatar_url };
 }
 
+/** The upload may have completed (the video may exist), but YouTube didn't confirm it. */
+export class YouTubeUploadUnconfirmed extends Error {}
+
+/**
+ * Ask a resumable session whether the upload finished: the video id if it did,
+ * "incomplete" if YouTube has fewer bytes (safe to upload again), or null when
+ * it can't tell.
+ */
+async function uploadSessionStatus(accessToken: string, uploadUrl: string, size: number): Promise<string | "incomplete" | null> {
+  try {
+    const res = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Length": "0", "Content-Range": `bytes */${size}` },
+    });
+    if (res.status === 308) return "incomplete";
+    if (res.ok) {
+      const json = (await res.json().catch(() => ({}))) as { id?: string };
+      return json.id ?? null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 /** Upload a video (resumable, single PUT). Returns the video id. */
 export async function uploadVideo(
   accessToken: string,
@@ -176,14 +201,35 @@ export async function uploadVideo(
   const uploadUrl = init.headers.get("location");
   if (!uploadUrl) throw new Error("YouTube didn’t return an upload URL.");
 
-  const put = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "Content-Type": mime, "Content-Length": String(bytes.byteLength) },
-    body: bytes,
-  });
-  const json = (await put.json()) as { id?: string; error?: { message?: string } };
-  if (!put.ok || !json.id) throw new Error(json.error?.message ?? `YouTube upload failed (${put.status})`);
-  return json.id;
+  // Once the bytes are sent the video may exist even if this response is lost
+  // or garbled, and a blind retry would upload it twice. Anything short of a
+  // clear answer is checked against the upload session.
+  let put: Response;
+  try {
+    put = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": mime, "Content-Length": String(bytes.byteLength) },
+      body: bytes,
+    });
+  } catch {
+    return confirmUpload(accessToken, uploadUrl, bytes.byteLength, "The connection dropped during the upload.");
+  }
+  const json = (await put.json().catch(() => null)) as { id?: string; error?: { message?: string } } | null;
+  if (put.ok && json?.id) return json.id;
+  // A clear 4xx rejection (bad metadata, quota) means nothing was created.
+  if (put.status >= 400 && put.status < 500 && json?.error) {
+    throw new Error(json.error.message ?? `YouTube upload failed (${put.status})`);
+  }
+  return confirmUpload(accessToken, uploadUrl, bytes.byteLength, `YouTube didn't confirm the upload (${put.status}).`);
+}
+
+async function confirmUpload(accessToken: string, uploadUrl: string, size: number, why: string): Promise<string> {
+  const status = await uploadSessionStatus(accessToken, uploadUrl, size);
+  if (status === "incomplete") throw new Error(`${why} Nothing was published; it will be retried.`);
+  if (status) return status;
+  throw new YouTubeUploadUnconfirmed(
+    `${why} The video may already be on your channel. Check YouTube Studio, then use Retry only if it isn't there.`,
+  );
 }
 
 /** Set a custom thumbnail on an uploaded video (thumbnails.set). YouTube only

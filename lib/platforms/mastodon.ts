@@ -188,6 +188,7 @@ export async function createPost(
   text: string,
   media: MastodonMedia[] = [],
   inReplyToId?: string,
+  idempotencyKey?: string,
 ): Promise<{ id: string; url: string }> {
   const mediaIds: string[] = [];
   for (const m of media.slice(0, 4)) {
@@ -203,7 +204,8 @@ export async function createPost(
   const status = await api<{ id: string; url: string }>(tokens.instance, "/api/v1/statuses", {
     token: tokens.access_token,
     body,
-    headers: { "Idempotency-Key": randomUUID() }, // Mastodon dedupes retries on this
+    // Mastodon dedupes on this for an hour; pass a key that's stable across retries.
+    headers: { "Idempotency-Key": idempotencyKey ?? randomUUID() },
   });
   return { id: status.id, url: status.url };
 }
