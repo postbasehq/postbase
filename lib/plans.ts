@@ -62,6 +62,21 @@ export const AGENT_DAILY_CAP: Record<PlanId, number> = {
   agency: 100,
 };
 
+// X posts containing a link, per month (shared across the plan's workspaces).
+// X bills $0.20 for a post with a link vs $0.015 without, so these are sized to
+// cost at most ~15% of the plan's price. Plain posts and threads stay unlimited.
+// Each post in a thread that carries a link counts as one.
+export const X_LINK_LIMIT: Record<PlanId, number> = {
+  trial: 3,
+  creator: 20,
+  team: 30,
+  growth: 45,
+  agency: 75,
+};
+
+/** The X-links feature line for a plan, derived from the limit. */
+export const xLinkFeature = (plan: PlanId): string => `${X_LINK_LIMIT[plan]} X posts with links a month`;
+
 /** The AI-quota feature line for a plan, derived from the limits (single source). */
 export const aiFeature = (plan: PlanId): string =>
   `${AI_IMAGE_LIMIT[plan]} AI images + ${AI_VIDEO_LIMIT[plan]} videos a month`;
@@ -83,6 +98,7 @@ export const PLANS: Record<Exclude<PlanId, "trial">, Plan> = {
       "Calendar, drafts and analytics",
       AGENT_FEATURE,
       aiFeature("creator"),
+      xLinkFeature("creator"),
       "MCP server and API",
     ],
     priceMonthly: process.env.STRIPE_PRICE_CREATOR_MONTH,
@@ -97,7 +113,7 @@ export const PLANS: Record<Exclude<PlanId, "trial">, Plan> = {
     workspaces: 3,
     blurb: "For creators with a small team.",
     inherits: "Everything in Creator, plus",
-    features: ["Invite your team", "Separate workspaces for clients or brands", aiFeature("team")],
+    features: ["Invite your team", "Separate workspaces for clients or brands", aiFeature("team"), xLinkFeature("team")],
     priceMonthly: process.env.STRIPE_PRICE_TEAM_MONTH,
     priceAnnual: process.env.STRIPE_PRICE_TEAM_YEAR,
   },
@@ -110,7 +126,7 @@ export const PLANS: Record<Exclude<PlanId, "trial">, Plan> = {
     workspaces: 5,
     blurb: "For growing brands and small agencies.",
     inherits: "Everything in Team, plus",
-    features: [aiFeature("growth"), "Priority email support"],
+    features: [aiFeature("growth"), xLinkFeature("growth"), "Priority email support"],
     priceMonthly: process.env.STRIPE_PRICE_GROWTH_MONTH,
     priceAnnual: process.env.STRIPE_PRICE_GROWTH_YEAR,
   },
@@ -123,7 +139,7 @@ export const PLANS: Record<Exclude<PlanId, "trial">, Plan> = {
     workspaces: 20,
     blurb: "For agencies managing client accounts.",
     inherits: "Everything in Pro, plus",
-    features: ["A workspace for each client, on one bill", aiFeature("agency"), "Priority email support"],
+    features: ["A workspace for each client, on one bill", aiFeature("agency"), xLinkFeature("agency"), "Priority email support"],
     priceMonthly: process.env.STRIPE_PRICE_AGENCY_MONTH,
     priceAnnual: process.env.STRIPE_PRICE_AGENCY_YEAR,
   },

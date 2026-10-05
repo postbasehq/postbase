@@ -84,6 +84,10 @@ export type PublishInput = {
   tiktokOptions?: TikTokPostOptions | null;
   /** An upload still processing from an earlier run (Instagram container id). */
   pendingRef?: string | null;
+  /** X: thread posts already sent by an earlier attempt, to continue after. */
+  threadIds?: string[] | null;
+  /** X: called with the thread's post ids after each one goes out. */
+  onThreadProgress?: (ids: string[]) => Promise<void>;
 };
 
 export type PublishResult =
@@ -95,6 +99,11 @@ export type PublishResult =
 function isExpiring(iso: string | null): boolean {
   if (!iso) return false;
   return Date.now() >= Date.parse(iso) - 120_000; // 2-min buffer
+}
+
+/** The posts an X send is made of: the body, then each thread part. */
+export function xTexts(body: string, threadTail: string[]): string[] {
+  return [body, ...threadTail].map((t) => t.trim()).filter(Boolean);
 }
 
 async function publishToX(input: PublishInput): Promise<PublishResult> {
@@ -128,7 +137,9 @@ async function publishToX(input: PublishInput): Promise<PublishResult> {
     }
   }
 
-  const texts = [input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean);
+  const texts = xTexts(input.body, input.threadTail);
+  const resumeIds = input.threadIds ?? [];
+  if (resumeIds.length >= texts.length && resumeIds[0]) return { ok: true, platformPostId: resumeIds[0] };
   try {
     // X takes one video or up to 4 images per post — say so rather than
     // surfacing X's cryptic "media ids are invalid".
@@ -141,14 +152,18 @@ async function publishToX(input: PublishInput): Promise<PublishResult> {
     }
 
     // Upload any media first (videos in chunks), then attach the ids to the lead tweet.
+    // Resuming after the first post went out: its media is already attached.
     const mediaIds: string[] = [];
-    for (const m of input.media) {
+    for (const m of resumeIds.length > 0 ? [] : input.media) {
       const res = await fetch(m.url);
       if (!res.ok) throw new Error(`Couldn't fetch media (${res.status})`);
       const bytes = await res.arrayBuffer();
       mediaIds.push(await uploadMedia(tokens.access_token, bytes, m.type));
     }
-    const { id } = await postThread(tokens.access_token, texts, mediaIds);
+    const { id } = await postThread(tokens.access_token, texts, mediaIds, {
+      resumeIds,
+      onPosted: input.onThreadProgress,
+    });
     return { ok: true, platformPostId: id };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "X publish failed." };

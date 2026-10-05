@@ -1,6 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { clearReconnect, flagReconnect, needsReconnect } from "@/lib/channel-health";
-import { publish } from "@/lib/publish/adapters";
+import { publish, xTexts, type PublishResult } from "@/lib/publish/adapters";
+import { countXLinkPosts } from "@/lib/x-link-count";
+import { reserveXLinks, settleXLinks } from "@/lib/x-links";
 import type { TikTokPostOptions } from "@/lib/platforms/tiktok";
 import type { YouTubePostOptions } from "@/lib/platforms/youtube";
 import { isRepeatEvery, nextOccurrence } from "@/lib/publish/repeat";
@@ -23,6 +25,7 @@ type TargetRow = {
   attempts: number;
   pending_ref: string | null;
   pending_since: string | null;
+  thread_ids: string[] | null;
   channels: ChannelRow | null;
 };
 type PostRow = {
@@ -68,7 +71,7 @@ async function loadTarget(db: Db, targetId: string): Promise<TargetRow | null> {
   const { data } = await db
     .from("post_targets")
     .select(
-      "id, status, platform_post_id, variant_body, attempts, pending_ref, pending_since, channels(id, platform, handle, encrypted_tokens, token_expiry)",
+      "id, status, platform_post_id, variant_body, attempts, pending_ref, pending_since, thread_ids, channels(id, platform, handle, encrypted_tokens, token_expiry)",
     )
     .eq("id", targetId)
     .maybeSingle();
@@ -117,7 +120,30 @@ async function publishTarget(
   // A media row without a real URL (e.g. an invented one from an old agent
   // draft) can never publish; fail clearly instead of with fetch's parse error.
   const brokenMedia = media.some((m) => !/^https?:\/\//i.test(m.url ?? ""));
-  const result = brokenMedia
+
+  // X: posts with links come out of the plan's monthly allowance. Reserve them
+  // before sending (all or nothing, so a thread never stops half-way for it);
+  // only the posts that actually go out are kept.
+  const isX = target.channels?.platform === "x";
+  const resumeIds = isX ? (target.thread_ids ?? []) : [];
+  const unsent = isX ? xTexts(body, threadTail).slice(resumeIds.length) : [];
+  let sentIds = resumeIds;
+  let reservationId: string | null = null;
+  if (isX && !brokenMedia) {
+    const reservation = await reserveXLinks(post.org_id, target.id, countXLinkPosts(unsent));
+    if (!reservation.ok) {
+      // Over the allowance: retrying won't help until the link is removed or
+      // the month resets, so it waits for the user (Retry re-checks).
+      await db
+        .from("post_targets")
+        .update({ status: "failed", error: reservation.error, next_attempt_at: null })
+        .eq("id", target.id);
+      return false;
+    }
+    reservationId = reservation.id;
+  }
+
+  const result: PublishResult = brokenMedia
     ? { ok: false as const, error: "An attached image is missing. Open the post, remove the broken image and add it again." }
     : await publish({
     platform: target.channels?.platform ?? "",
@@ -133,13 +159,24 @@ async function publishTarget(
     youtubeOptions: post.youtube_options,
     tiktokOptions: post.tiktok_options,
     pendingRef: target.pending_ref,
+    threadIds: resumeIds,
+    onThreadProgress: isX
+      ? async (ids) => {
+          sentIds = ids;
+          // Best effort: a failed write must not stop the thread mid-way.
+          await db.from("post_targets").update({ thread_ids: ids }).eq("id", target.id).then(undefined, () => {});
+        }
+      : undefined,
   });
+
+  // Keep only the link posts that went out; a failed send gives the rest back.
+  if (isX) await settleXLinks(reservationId, countXLinkPosts(unsent.slice(0, sentIds.length - resumeIds.length)));
 
   if (result.ok) {
     // A warning (e.g. a thumbnail YouTube refused) is kept on the target for support.
     await db
       .from("post_targets")
-      .update({ status: "published", platform_post_id: result.platformPostId, error: result.warning ?? null, next_attempt_at: null, pending_ref: null, pending_since: null })
+      .update({ status: "published", platform_post_id: result.platformPostId, error: result.warning ?? null, next_attempt_at: null, pending_ref: null, pending_since: null, thread_ids: null })
       .eq("id", target.id);
     if (target.channels?.id) await clearReconnect(db, target.channels.id);
     return true;

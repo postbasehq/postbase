@@ -1,4 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
+import { xLinkWarningFor } from "@/lib/x-links";
 import { listChannels, listPosts, cancelPost } from "@/lib/api-core";
 import { generateAiImage } from "@/app/(app)/actions";
 import { higgsfieldConfigured } from "@/lib/higgsfield";
@@ -216,12 +217,20 @@ export async function runAgentTool(
       if (!proposal.body.trim() && proposal.thread.length === 0) {
         return { forModel: "Can't propose an empty post — provide body or thread text." };
       }
+      const xWarning = await xLinkWarningFor(
+        orgId,
+        channelIds,
+        proposal.thread.length ? proposal.thread : [proposal.body],
+        proposal.scheduledAt,
+        variants,
+      );
       return {
         forModel:
           "Draft shown to the user as a preview card. Tell them to review it and click Schedule (or ask you to change it). Do not claim it's scheduled." +
           (dropped > 0
             ? ` ${dropped} image URL(s) were ignored because they weren't images from this workspace. If the user wanted an image attached, tell them to click "Use in a post" on the image, or add it in the composer.`
-            : ""),
+            : "") +
+          (xWarning ? ` Tell the user: ${xWarning}` : ""),
         proposal,
       };
     }

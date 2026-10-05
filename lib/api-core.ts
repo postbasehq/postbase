@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasAccess, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
+import { xLinkWarningFor } from "@/lib/x-links";
 
 /**
  * Core operations exposed to the public API / MCP server, always scoped to one org.
@@ -81,7 +82,9 @@ export async function createPost(orgId: string, input: CreatePostInput) {
   }
 
   // The cron poller publishes scheduled posts when due — no event needed.
-  return post;
+  // Over the X link allowance? Say so now; the publisher enforces it when due.
+  const warning = status === "scheduled" ? await xLinkWarningFor(orgId, channelIds, segments, scheduledAt) : null;
+  return warning ? { ...post, warning } : post;
 }
 
 /** Returns true if a post was cancelled, false if it didn't exist in this org. */

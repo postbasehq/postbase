@@ -316,18 +316,34 @@ export async function getTweetsMetrics(
   return out;
 }
 
-/** Post a thread as a reply chain; media (if any) attaches to the first tweet. */
+/** A thread that failed part-way: `ids` are the posts that did go out, in order. */
+export class ThreadError extends Error {
+  constructor(message: string, readonly ids: string[]) {
+    super(message);
+  }
+}
+
+/**
+ * Post a thread as a reply chain; media (if any) attaches to the first tweet.
+ * `resumeIds` are posts already sent by an earlier attempt: the thread carries
+ * on after them instead of starting over (which would duplicate them on X).
+ * `onPosted` sees the ids so far after every post, so progress survives a crash.
+ */
 export async function postThread(
   accessToken: string,
   texts: string[],
   mediaIds?: string[],
+  opts: { resumeIds?: string[]; onPosted?: (ids: string[]) => Promise<void> } = {},
 ): Promise<{ id: string }> {
-  let firstId = "";
-  let prevId: string | undefined;
-  for (let i = 0; i < texts.length; i++) {
-    const { id } = await postTweet(accessToken, texts[i], prevId, i === 0 ? mediaIds : undefined);
-    if (!firstId) firstId = id;
-    prevId = id;
+  const ids = [...(opts.resumeIds ?? [])].slice(0, texts.length);
+  for (let i = ids.length; i < texts.length; i++) {
+    try {
+      const { id } = await postTweet(accessToken, texts[i], ids[i - 1], i === 0 ? mediaIds : undefined);
+      ids.push(id);
+    } catch (e) {
+      throw new ThreadError(e instanceof Error ? e.message : "X post failed.", ids);
+    }
+    await opts.onPosted?.([...ids]);
   }
-  return { id: firstId };
+  return { id: ids[0] };
 }

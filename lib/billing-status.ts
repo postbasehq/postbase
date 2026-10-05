@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { CHANNEL_LIMIT, PLANS, SEAT_LIMIT, WORKSPACE_LIMIT, planIsActive, type PlanId } from "@/lib/plans";
 import { agentUsage, aiUsage, billingGroup, seatUsage } from "@/lib/billing-guard";
 import { getStripe, stripeConfigured } from "@/lib/stripe";
+import { xLinkUsage } from "@/lib/x-links";
 import type { Meter } from "@/components/BillingStatus";
 
 /*
@@ -44,21 +45,23 @@ export async function loadBillingStatus(orgId: string | null) {
 
   // Usage against the plan's allowances. Seats count pending invites, as the Team page does.
   // Usage is counted across every workspace the plan covers.
-  const [channels, seats, agent, ai, cancelAt] = orgId && group
+  const [channels, seats, agent, ai, cancelAt, xLinks] = orgId && group
     ? await Promise.all([
         db.from("channels").select("id", { count: "exact", head: true }).in("org_id", group.orgIds),
         seatUsage(orgId),
         agentUsage(db, orgId),
         aiUsage(db, orgId),
         scheduledCancel(org?.stripe_subscription_id),
+        xLinkUsage(orgId),
       ])
-    : [null, null, null, null, null];
+    : [null, null, null, null, null, null];
   const meters: Meter[] = [
     { label: "Workspaces", used: group?.orgIds.length ?? 1, limit: WORKSPACE_LIMIT[plan] ?? 1 },
     { label: "Channels", used: channels?.count ?? 0, limit: CHANNEL_LIMIT[plan] ?? CHANNEL_LIMIT.trial },
     { label: "People", used: seats?.used ?? 0, limit: SEAT_LIMIT[plan] ?? 1 },
     { label: "AI images", monthly: true, used: ai?.image.used ?? 0, limit: ai?.image.limit ?? 0 },
     { label: "AI videos", monthly: true, used: ai?.video.used ?? 0, limit: ai?.video.limit ?? 0 },
+    ...(xLinks?.enforced ? [{ label: "X posts with links", monthly: true, used: xLinks.used, limit: xLinks.limit }] : []),
   ];
   const now = new Date();
   const resets = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toLocaleDateString(undefined, {

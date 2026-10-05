@@ -4,6 +4,7 @@ import { PostForm } from "@/components/PostForm";
 import { higgsfieldConfigured } from "@/lib/higgsfield";
 import { getCurrentOrgId } from "@/lib/org";
 import { aiUsage, hasAccess } from "@/lib/billing-guard";
+import { xLinkUsage } from "@/lib/x-links";
 import { createPost } from "../actions";
 import { type TikTokInitial } from "@/components/TikTokSettings";
 import { type YouTubePrivacy } from "@/components/YouTubeSettings";
@@ -118,6 +119,13 @@ export default async function ComposerPage({
     }
   }
 
+  // The X posts-with-links allowance, for the composer's live note.
+  let xLinks: { remaining: number; limit: number; resetsAt: string } | undefined;
+  if (accessOrgId) {
+    const u = await xLinkUsage(accessOrgId);
+    if (u.enforced) xLinks = { remaining: u.remaining, limit: u.limit, resetsAt: u.resetsAt };
+  }
+
   return (
     <div>
       {republish ? (
@@ -135,6 +143,7 @@ export default async function ComposerPage({
         initial={republish}
         aiEnabled={aiEnabled}
         aiRemaining={aiRemaining}
+        xLinks={xLinks}
         canSchedule={canSchedule}
       />
     </div>

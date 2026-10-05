@@ -8,6 +8,7 @@ import type { YouTubePostOptions } from "@/lib/platforms/youtube";
 import { higgsfieldConfigured } from "@/lib/higgsfield";
 import { getCurrentOrgId } from "@/lib/org";
 import { aiUsage, hasAccess } from "@/lib/billing-guard";
+import { xLinkUsage } from "@/lib/x-links";
 import { updatePost } from "../../actions";
 
 export default async function EditPostPage({
@@ -106,6 +107,13 @@ export default async function EditPostPage({
     }
   }
 
+  // The X posts-with-links allowance, for the composer's live note.
+  let xLinks: { remaining: number; limit: number; resetsAt: string } | undefined;
+  if (accessOrgId) {
+    const u = await xLinkUsage(accessOrgId);
+    if (u.enforced) xLinks = { remaining: u.remaining, limit: u.limit, resetsAt: u.resetsAt };
+  }
+
   return (
     <div>
       <p className="text-sm text-muted">
@@ -121,6 +129,7 @@ export default async function EditPostPage({
         currentDraftId={post.id}
         aiEnabled={aiEnabled}
         aiRemaining={aiRemaining}
+        xLinks={xLinks}
         canSchedule={canSchedule}
         initial={{
           id: post.id,

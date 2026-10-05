@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/SubmitButton";
 import { Modal } from "@/components/Modal";
+import { countXLinkPosts } from "@/lib/x-link-count";
 import { BrandTile } from "@/components/BrandTile";
 import { DateTimePicker } from "@/components/DateTimePicker";
 import { channelHealth } from "@/lib/channel-health";
@@ -174,6 +175,8 @@ type PostFormProps = {
   aiEnabled?: boolean;
   /** Remaining AI generations this month (per plan quota). */
   aiRemaining?: { image: number; video: number };
+  /** The plan's X posts-with-links allowance this month (absent when unlimited). */
+  xLinks?: { remaining: number; limit: number; resetsAt: string };
   initial?: {
     /** Omit to prefill a brand-new post (republish) instead of editing one. */
     id?: string;
@@ -212,6 +215,7 @@ export function PostForm({
   initial,
   aiEnabled = false,
   aiRemaining,
+  xLinks,
 }: PostFormProps) {
   const [tweets, setTweets] = useState<Tweet[]>(() =>
     (initial?.thread?.length ? initial.thread : [""]).map((text, i) => ({
@@ -341,6 +345,24 @@ export function PostForm({
     }
     if (meta.prefersVideo && hasMedia && !hasVideo)
       notes.push({ level: "info", text: "Posts as a photo carousel" });
+    if (platform === "x" && xLinks) {
+      // Each X account sends its own copy, so each one's link posts count.
+      const needed = selectedChannels
+        .filter((c) => c.platform === "x")
+        .reduce((n, c) => n + countXLinkPosts(variants[c.id]?.trim() ? [variants[c.id]] : cleanTweets), 0);
+      if (needed > 0) {
+        const laterMonth = !!utc && utc >= xLinks.resetsAt;
+        const posts = needed === 1 ? "1 X post with a link" : `${needed} X posts with links`;
+        notes.push(
+          laterMonth || needed <= xLinks.remaining
+            ? { level: "info", text: `Uses ${posts}${laterMonth ? " from next month's allowance" : ` (${xLinks.remaining} of ${xLinks.limit} left this month)`}` }
+            : {
+                level: "info",
+                text: `Uses ${posts}, but only ${xLinks.remaining} of ${xLinks.limit} are left this month. Remove the link or it will fail when due.`,
+              },
+        );
+      }
+    }
     return notes;
   }
 
