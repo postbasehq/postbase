@@ -3,10 +3,12 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId, getOrgRole } from "@/lib/org";
-import { getClient, issueCode } from "@/lib/oauth";
+import { getClient, isSafeRedirectUri, issueCode } from "@/lib/oauth";
 
 /** Build a redirect back to the client with query params appended. */
 function backTo(redirectUri: string, params: Record<string, string>): string {
+  // Last line of defence: never hand the browser a javascript:/data: URL.
+  if (!isSafeRedirectUri(redirectUri)) throw new Error("Unsafe redirect_uri.");
   const url = new URL(redirectUri);
   for (const [k, v] of Object.entries(params)) if (v) url.searchParams.set(k, v);
   return url.toString();

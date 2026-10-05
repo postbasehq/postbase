@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { registerClient } from "@/lib/oauth";
+import { isSafeRedirectUri, registerClient } from "@/lib/oauth";
 
 // RFC 7591 — Dynamic Client Registration. MCP clients register themselves to
 // obtain a client_id before starting the authorization-code + PKCE flow.
@@ -8,21 +8,6 @@ const cors = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "*",
 };
-
-function isHttpsOrLocal(u: string): boolean {
-  try {
-    const url = new URL(u);
-    return (
-      url.protocol === "https:" ||
-      url.hostname === "localhost" ||
-      url.hostname === "127.0.0.1" ||
-      // Native clients use custom schemes / loopback for the redirect.
-      url.protocol.endsWith(":")
-    );
-  } catch {
-    return false;
-  }
-}
 
 export async function POST(req: Request) {
   let body: { client_name?: string; redirect_uris?: unknown; token_endpoint_auth_method?: string };
@@ -38,18 +23,23 @@ export async function POST(req: Request) {
   const redirectUris = Array.isArray(body.redirect_uris)
     ? body.redirect_uris.filter((u): u is string => typeof u === "string")
     : [];
-  if (redirectUris.length === 0 || !redirectUris.every(isHttpsOrLocal)) {
+  if (
+    redirectUris.length === 0 ||
+    redirectUris.length > 10 ||
+    !redirectUris.every((u) => u.length <= 2048 && isSafeRedirectUri(u))
+  ) {
     return NextResponse.json(
       {
         error: "invalid_redirect_uri",
-        error_description: "One or more redirect_uris are required and must be https or loopback.",
+        error_description:
+          "Between 1 and 10 redirect_uris are required: https, http on loopback, or a native app scheme.",
       },
       { status: 400, headers: cors },
     );
   }
 
   const { client_id } = await registerClient({
-    client_name: typeof body.client_name === "string" ? body.client_name : undefined,
+    client_name: typeof body.client_name === "string" ? body.client_name.slice(0, 100) : undefined,
     redirect_uris: redirectUris,
     token_endpoint_auth_method: "none",
   });

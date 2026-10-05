@@ -82,6 +82,42 @@ function randomToken(prefix: string): string {
 }
 
 // ── Dynamic client registration ────────────────────────────────────────────
+// Schemes a browser would execute or load in our origin rather than hand off
+// to a native app. A redirect to one of these from the consent page is XSS.
+const BLOCKED_SCHEMES = new Set([
+  "javascript:",
+  "data:",
+  "vbscript:",
+  "file:",
+  "blob:",
+  "about:",
+  "filesystem:",
+  "view-source:",
+  "ftp:",
+  "ws:",
+  "wss:",
+]);
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+/**
+ * Whether a client may use this redirect_uri (RFC 8252 shapes): https anywhere,
+ * http only on loopback, or a native app's private-use scheme (cursor://…,
+ * com.example.app:/…). Checked at registration and again before every redirect.
+ */
+export function isSafeRedirectUri(u: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(u);
+  } catch {
+    return false;
+  }
+  const scheme = url.protocol.toLowerCase();
+  if (scheme === "https:") return true;
+  if (scheme === "http:") return LOOPBACK_HOSTS.has(url.hostname);
+  if (BLOCKED_SCHEMES.has(scheme)) return false;
+  return /^[a-z][a-z0-9+.-]*:$/.test(scheme);
+}
+
 export async function registerClient(input: {
   client_name?: string;
   redirect_uris: string[];
@@ -107,8 +143,9 @@ export async function getClient(clientId: string) {
     .eq("client_id", clientId)
     .maybeSingle();
   if (!data) return null;
+  // Drop anything unsafe even if it got stored, so it can never be matched.
   const redirectUris = Array.isArray(data.redirect_uris)
-    ? (data.redirect_uris as string[])
+    ? (data.redirect_uris as unknown[]).filter((u): u is string => typeof u === "string" && isSafeRedirectUri(u))
     : [];
   return { clientId: data.client_id, name: data.client_name as string | null, redirectUris };
 }
