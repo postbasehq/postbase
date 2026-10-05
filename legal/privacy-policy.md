@@ -7,7 +7,7 @@
 
 # Privacy Policy
 
-**Last updated: 28 September 2026**
+**Last updated: 5 October 2026**
 
 This Privacy Policy explains how **Berkway Group Limited** ("Berkway", "we", "us"),
 trading as **Postbase**, collects, uses, and protects personal data when you use the
@@ -72,13 +72,16 @@ own privacy policies.
 We share personal data with vetted service providers who process it on our behalf:
 
 - **Supabase** — database, authentication, and file/media storage.
-- **Resend** — delivery of account emails (sign-in links and email confirmations).
+- **Resend** — delivery of account and service emails (sign-in links, failed-post and
+  reconnect notices, team invites and billing notices).
 - **Vercel** — application hosting, scheduled publishing, and privacy-friendly site analytics.
 - **Cloudflare (R2)** — storage for files you upload to your media library.
 - **Stripe** — payment processing, and merchant of record for subscriptions (tax
   calculation, receipts, fraud prevention and billing disputes).
 - **Anthropic and OpenAI** — AI models that power the Postbase agent, when you use it.
 - **Higgsfield** — AI image and video generation, when you use it.
+- **Sentry** — error monitoring, so we can find and fix faults. Error reports are stripped of
+  request bodies, headers, cookies and URL query strings before they're sent.
 - **Google (Google Analytics)** — website analytics, only if you accept analytics cookies.
 
 When you instruct the Service to publish, we transmit your content and use your stored

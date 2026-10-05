@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { publishDuePosts } from "@/lib/publish/run";
 import { refreshMetrics } from "@/lib/analytics/collect";
+import * as Sentry from "@sentry/nextjs";
+import { checkPublishingHealth, pingHealthcheck } from "@/lib/monitoring/health";
 
 export const dynamic = "force-dynamic";
 // Headroom for slow uploads + processing polls (TikTok, Instagram, YouTube). The
@@ -22,7 +24,17 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { processed } = await publishDuePosts();
+  let processed: number;
+  try {
+    ({ processed } = await publishDuePosts());
+  } catch (e) {
+    // A crashed run: report it and tell the heartbeat, then fail the request.
+    Sentry.captureException(e);
+    await pingHealthcheck("fail", e instanceof Error ? `${e.message}\n${e.stack ?? ""}` : String(e));
+    throw e;
+  }
+  await pingHealthcheck("ok", `processed=${processed}`);
+  await checkPublishingHealth();
   // Refresh engagement metrics for recently published posts (bounded internally).
   let refreshed = 0;
   try {

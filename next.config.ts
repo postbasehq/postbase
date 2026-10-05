@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -46,4 +47,17 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry's build plugin only uploads source maps (readable stack traces); error
+// reporting works without it. Wrap only when a token is set, so builds without
+// Sentry configured are unchanged.
+export default process.env.SENTRY_AUTH_TOKEN
+  ? withSentryConfig(nextConfig, {
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      silent: true,
+      telemetry: false,
+      widenClientFileUpload: true,
+      sourcemaps: { deleteSourcemapsAfterUpload: true },
+    })
+  : nextConfig;
