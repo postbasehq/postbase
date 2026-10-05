@@ -51,15 +51,26 @@ export const AI_VIDEO_LIMIT: Record<PlanId, number> = {
 // + schedule) per message, so normal use costs cents a month. Real per-message
 // cost is logged on agent_messages.cost_usd.
 //
-// A daily safety cap per workspace stops a script or runaway session running up
-// an open-ended model bill. Normal use never gets near it, so it isn't marketed;
-// the trial's is lower. Resets at midnight UTC.
+// Two backstops stop a script or runaway session running up an open-ended
+// model bill. Both are per plan, shared across its workspaces (like every other
+// allowance), and sized far above normal use so they aren't marketed:
+// - a daily message cap, reset at midnight UTC;
+// - a monthly spend ceiling on the logged model cost, reset on the 1st (UTC).
+// Each message's input is also bounded (server-side history, length caps in
+// app/api/agent/chat/route.ts), so one message costs at most a few cents.
 export const AGENT_DAILY_CAP: Record<PlanId, number> = {
   trial: 25,
-  creator: 100,
+  creator: 50,
   team: 100,
-  growth: 100,
-  agency: 100,
+  growth: 150,
+  agency: 300,
+};
+export const AGENT_MONTHLY_BUDGET_USD: Record<PlanId, number> = {
+  trial: 1,
+  creator: 5,
+  team: 8,
+  growth: 12,
+  agency: 20,
 };
 
 // X posts containing a link, per month (shared across the plan's workspaces).

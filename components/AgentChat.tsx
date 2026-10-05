@@ -306,12 +306,6 @@ export function AgentChat({
       setBusy(true);
 
       const apiText = clean;
-      // Tool results aren't kept between turns, so tell the model which images
-      // earlier replies generated; otherwise it can't attach them later.
-      const history = messages.map((m) => ({
-        role: m.role,
-        content: m.images?.length ? `${m.content}\n\n[Images generated in this message: ${m.images.join(" ")}]` : m.content,
-      }));
       const userMsg: Msg = {
         id: uid(),
         role: "user",
@@ -339,7 +333,8 @@ export function AgentChat({
           signal: controller.signal,
           body: JSON.stringify({
             conversationId,
-            messages: [...history, { role: "user", content: apiText }],
+            // Only the new message: the server loads the conversation itself.
+            messages: [{ role: "user", content: apiText }],
             attachments: atts,
             model,
           }),

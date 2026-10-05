@@ -2,12 +2,14 @@ import { cookies } from "next/headers";
 import { getCurrentOrgId } from "@/lib/org";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { atAgentLimit, recordAgentMessage, aiUsage, hasAccess, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
+import { agentLimitReason, billingGroup, recordAgentMessage, aiUsage, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
+import { AGENT_DAILY_CAP } from "@/lib/plans";
 import { higgsfieldConfigured } from "@/lib/higgsfield";
 import { systemPrompt } from "@/lib/agent/config";
 import { getModel, DEFAULT_MODEL_ID, estimateCostUsd } from "@/lib/agent/models";
 import { runAnthropic } from "@/lib/agent/run-anthropic";
 import { runOpenAI } from "@/lib/agent/run-openai";
+import { buildHistory, HISTORY_TURNS, type StoredMessage } from "@/lib/agent/history";
 import type { PostProposal } from "@/lib/agent/tools";
 
 export const runtime = "nodejs";
@@ -16,6 +18,10 @@ export const runtime = "nodejs";
 export const maxDuration = 120;
 
 type ClientMessage = { role: "user" | "assistant"; content: string };
+
+// Bounds on what one message can send the model, so its cost stays at a few
+// cents however it's called (history bounds live in lib/agent/history.ts).
+const MAX_USER_CHARS = 4000;
 type Attachment = { url: string; type: string };
 
 const enc = new TextEncoder();
@@ -45,9 +51,9 @@ export async function POST(req: Request) {
       attachments?: Attachment[];
       model?: string;
     };
-    history = (body.messages ?? [])
-      .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
-      .slice(-20);
+    // Only the new message is taken from the browser; the history is loaded below.
+    const last = (body.messages ?? []).at(-1);
+    history = last && last.role === "user" && typeof last.content === "string" ? [{ role: "user", content: last.content }] : [];
     conversationId = typeof body.conversationId === "string" ? body.conversationId : null;
     attachments = (body.attachments ?? [])
       .filter((a) => a && typeof a.url === "string" && typeof a.type === "string" && a.type.startsWith("image/"))
@@ -60,6 +66,12 @@ export async function POST(req: Request) {
     return new Response(JSON.stringify({ error: "Expected a user message." }), { status: 400 });
   }
   const userText = history[history.length - 1].content;
+  if (userText.length > MAX_USER_CHARS) {
+    return new Response(
+      JSON.stringify({ error: `That message is too long. Keep it under ${MAX_USER_CHARS.toLocaleString("en-US")} characters.` }),
+      { status: 400, headers: { "Content-Type": "application/json" } },
+    );
+  }
 
   // Resolve the model + provider, then require that provider's key.
   const model = getModel(modelId) ?? getModel(DEFAULT_MODEL_ID) ?? getModel("claude-sonnet-5")!;
@@ -73,19 +85,25 @@ export async function POST(req: Request) {
     );
   }
 
-  // Unlimited under fair use; only a daily safety cap per workspace applies. Count this turn.
+  // Unlimited under fair use, with two per-plan backstops (lib/plans.ts). Count this turn.
   const admin = createAdminClient();
-  if (!(await hasAccess(admin, orgId))) {
+  const limit = await agentLimitReason(admin, orgId);
+  if (limit === "no_plan") {
     return new Response(JSON.stringify({ error: NO_PLAN_MESSAGE }), {
       status: 402,
       headers: { "Content-Type": "application/json" },
     });
   }
-  if (await atAgentLimit(admin, orgId)) {
+  if (limit) {
+    const group = await billingGroup(orgId);
+    if (limit === "budget") console.error(`[agent] monthly spend ceiling reached for plan ${group.rootId} (${group.plan})`);
+    const viaMcp = " To keep going now, connect Postbase to Claude or ChatGPT through MCP (Developers page) and work from your own assistant.";
     return new Response(
       JSON.stringify({
         error:
-          "You've reached today's safety limit for the AI agent in this workspace. It resets at midnight UTC. If you need more, email team@postbase.so.",
+          limit === "daily"
+            ? `You've reached today's AI agent limit for your plan (${AGENT_DAILY_CAP[group.plan]} messages). It resets at midnight UTC.${viaMcp}`
+            : `Your plan has reached this month's fair-use limit for the AI agent. It resets on the 1st. If you need more, email team@postbase.so.${viaMcp}`,
       }),
       { status: 429, headers: { "Content-Type": "application/json" } },
     );
@@ -118,6 +136,14 @@ export async function POST(req: Request) {
     conversationId = created?.id ?? null;
   }
   if (conversationId) {
+    // Earlier turns from the database (before this message is stored), then this one.
+    const { data: stored } = await admin
+      .from("agent_chat_messages")
+      .select("role, content, images")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: false })
+      .limit(HISTORY_TURNS);
+    history = [...buildHistory((stored ?? []) as StoredMessage[]), { role: "user", content: userText }];
     await admin
       .from("agent_chat_messages")
       .insert({ conversation_id: conversationId, org_id: orgId, role: "user", content: userText });
@@ -138,6 +164,13 @@ export async function POST(req: Request) {
       const send = (obj: unknown) => controller.enqueue(sse(obj));
       let assistantText = "";
       let latestProposal: PostProposal | null = null;
+      const images: string[] = [];
+      // Note images generated this turn so later turns can attach them.
+      const forward = (obj: unknown) => {
+        const o = obj as { type?: string; url?: unknown };
+        if (o?.type === "image" && typeof o.url === "string") images.push(o.url);
+        send(obj);
+      };
       try {
         send({ type: "meta", conversationId: convoId, title, model: model.id });
 
@@ -150,7 +183,7 @@ export async function POST(req: Request) {
           userText,
           attachments,
           orgId,
-          send,
+          send: forward,
         });
         assistantText = result.assistantText;
         latestProposal = result.latestProposal;
@@ -176,7 +209,7 @@ export async function POST(req: Request) {
         send({ type: "error", message: e instanceof Error ? e.message : "The agent hit an error." });
       } finally {
         // Persist the assistant turn (best effort) and bump the conversation.
-        if (convoId && (assistantText.trim() || latestProposal)) {
+        if (convoId && (assistantText.trim() || latestProposal || images.length)) {
           try {
             await admin.from("agent_chat_messages").insert({
               conversation_id: convoId,
@@ -184,6 +217,7 @@ export async function POST(req: Request) {
               role: "assistant",
               content: assistantText,
               proposal: latestProposal,
+              images: images.length ? images : null,
             });
             await admin
               .from("agent_conversations")

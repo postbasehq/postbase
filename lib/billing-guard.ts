@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   AGENT_DAILY_CAP,
+  AGENT_MONTHLY_BUDGET_USD,
   AI_IMAGE_LIMIT,
   AI_VIDEO_LIMIT,
   CHANNEL_LIMIT,
@@ -166,10 +167,13 @@ export type AgentUsage = {
   plan: PlanId;
   /** Messages sent this month across the plan's workspaces (for display; not limited). */
   month: number;
-  /** Messages sent today in this workspace, against the daily safety cap. */
+  /** Messages sent today across the plan's workspaces, against the daily cap. */
   today: number;
   dailyCap: number;
   remainingToday: number;
+  /** Logged model cost this month across the plan's workspaces, against the ceiling. */
+  spentUsd: number;
+  budgetUsd: number;
 };
 
 /** Start (UTC) of today: when the daily safety cap resets. */
@@ -179,30 +183,43 @@ function dayStartIso(): string {
 }
 
 /**
- * AI-agent usage. Messages are unlimited under fair use; the only limit is a
- * daily safety cap per workspace (lib/plans.ts AGENT_DAILY_CAP).
+ * AI-agent usage. Messages are unlimited under fair use; two backstops apply,
+ * both per plan across its workspaces (lib/plans.ts): a daily message cap and
+ * a monthly spend ceiling on the logged model cost.
  */
 export async function agentUsage(_db: SupabaseClient, orgId: string): Promise<AgentUsage> {
   const g = await billingGroup(orgId);
   const db = createAdminClient();
-  const [{ count: month }, { count: today }] = await Promise.all([
+  const [{ count: month }, { count: today }, { data: spent }] = await Promise.all([
     db.from("agent_messages").select("id", { count: "exact", head: true }).in("org_id", g.orgIds).gte("created_at", monthStartIso()),
-    db.from("agent_messages").select("id", { count: "exact", head: true }).eq("org_id", orgId).gte("created_at", dayStartIso()),
+    db.from("agent_messages").select("id", { count: "exact", head: true }).in("org_id", g.orgIds).gte("created_at", dayStartIso()),
+    db.rpc("agent_spend_since", { p_orgs: g.orgIds, p_since: monthStartIso() }),
   ]);
   const dailyCap = AGENT_DAILY_CAP[g.plan] ?? AGENT_DAILY_CAP.trial;
+  const budget = AGENT_MONTHLY_BUDGET_USD[g.plan] ?? AGENT_MONTHLY_BUDGET_USD.trial;
   return {
     plan: g.plan,
     month: month ?? 0,
     today: today ?? 0,
     dailyCap,
     remainingToday: Math.max(0, dailyCap - (today ?? 0)),
+    spentUsd: Number(spent ?? 0),
+    budgetUsd: budget,
   };
 }
 
-/** Whether the workspace has no access, or has hit today's safety cap. */
+/** Why the agent can't take another message right now, or null if it can. */
+export async function agentLimitReason(db: SupabaseClient, orgId: string): Promise<"no_plan" | "daily" | "budget" | null> {
+  if (!(await hasAccess(db, orgId))) return "no_plan";
+  const u = await agentUsage(db, orgId);
+  if (u.remainingToday <= 0) return "daily";
+  if (u.spentUsd >= u.budgetUsd) return "budget";
+  return null;
+}
+
+/** Whether the workspace has no access, or has hit one of the agent's backstops. */
 export async function atAgentLimit(db: SupabaseClient, orgId: string): Promise<boolean> {
-  if (!(await hasAccess(db, orgId))) return true;
-  return (await agentUsage(db, orgId)).remainingToday <= 0;
+  return (await agentLimitReason(db, orgId)) !== null;
 }
 
 /** Record one used agent message (service-role insert, so it can't be tampered with). */

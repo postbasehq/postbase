@@ -107,8 +107,10 @@ and must keep them confidential. We may apply rate limits and may revoke keys fo
   thread that contains a link counts once, and X posts without links stay unlimited. A
   post that would go over the allowance isn't sent until you remove the link or the
   allowance resets on the 1st of the month (UTC). AI image and video generation have
-  the monthly allowances shown on your plan. The AI agent is unlimited for normal use, with a daily safety
-  limit per workspace to stop automated or runaway use.
+  the monthly allowances shown on your plan. The AI agent is unlimited for normal use, with safety limits
+  shared across your plan's workspaces to stop automated or runaway use: a daily
+  message limit (reset at midnight UTC) and a monthly fair-use ceiling (reset on the
+  1st). Each message to the agent can be up to 4,000 characters.
 - **Price changes** apply from your next renewal, with reasonable prior notice.
 - **Refunds.** Except where required by law, fees are non-refundable. As merchant of
   record, Stripe may also issue refunds in some cases, for example to resolve a billing
