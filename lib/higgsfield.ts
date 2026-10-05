@@ -38,6 +38,8 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 function extractUrl(j: Record<string, unknown>): string | undefined {
   const anyJ = j as Record<string, any>;
   return (
+    anyJ.video?.url ||
+    anyJ.result?.video?.url ||
     anyJ.result?.url ||
     anyJ.result?.raw?.url ||
     anyJ.result?.images?.[0]?.url ||
@@ -47,12 +49,20 @@ function extractUrl(j: Record<string, unknown>): string | undefined {
   );
 }
 
-// Video model endpoint. The exact text-to-video / image-to-video model path is
-// discovered per-account in Higgsfield's console, so it's env-overridable
-// (HIGGSFIELD_VIDEO_ENDPOINT) with an assumed default. Same async shape as image.
-function videoEndpoint(): string {
-  return process.env.HIGGSFIELD_VIDEO_ENDPOINT || `${API}/higgsfield-ai/kling/2.5/standard`;
+// Video model: Kling 2.6 Pro (docs.higgsfield.ai/docs/models/kling-2-6). The
+// cheapest Kling that does vertical video: $0.07/s list, so a 5s clip is about
+// $0.35 (Kling 2.5 Turbo is cheaper but has no aspect ratio, so no 9:16).
+// Overridable with HIGGSFIELD_VIDEO_MODEL; the mode is appended.
+function videoEndpoint(mode: "text-to-video" | "image-to-video"): string {
+  return `${API}/${process.env.HIGGSFIELD_VIDEO_MODEL || "kling-video/v2.6/pro"}/${mode}`;
 }
+
+// Every clip is 5 seconds with no generated audio: cost is per second (and
+// audio can add to it), so this keeps each video at a known price.
+const VIDEO_SECONDS = 5;
+
+// Kling takes 16:9, 9:16 or 1:1; 4:5 portrait goes to the nearest, square.
+const KLING_RATIO: Record<AspectRatio, string> = { "9:16": "9:16", "4:5": "1:1", "1:1": "1:1", "16:9": "16:9" };
 
 // Higgsfield submits jobs on api.higgsfield.ai but hands back status/cancel URLs
 // on platform.higgsfield.ai — both must be allowed for polling to work.
@@ -73,10 +83,15 @@ export async function startVideo(opts: {
   aspectRatio: AspectRatio;
   imageUrl?: string;
 }): Promise<{ statusUrl: string; requestId?: string }> {
-  const body: Record<string, unknown> = { prompt: opts.prompt, aspect_ratio: opts.aspectRatio };
-  // NOTE: `input_image` field name assumed — confirm for the chosen video model.
-  if (opts.imageUrl) body.input_image = opts.imageUrl;
-  const res = await fetch(videoEndpoint(), {
+  const body: Record<string, unknown> = {
+    // Kling requires a prompt even when animating an image.
+    prompt: opts.prompt || "Bring this image to life with subtle, natural motion.",
+    duration: VIDEO_SECONDS,
+    sound: "off",
+    aspect_ratio: KLING_RATIO[opts.aspectRatio] ?? "9:16",
+  };
+  if (opts.imageUrl) body.image_url = opts.imageUrl;
+  const res = await fetch(videoEndpoint(opts.imageUrl ? "image-to-video" : "text-to-video"), {
     method: "POST",
     headers: { Authorization: authHeader(), "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -89,7 +104,8 @@ export async function startVideo(opts: {
 }
 
 /** One poll of a generation status URL. */
-export async function pollStatus(statusUrl: string): Promise<{ done: boolean; url?: string; error?: string }> {
+/** `failed` means Higgsfield didn't charge for it (failed / NSFW / cancelled). */
+export async function pollStatus(statusUrl: string): Promise<{ done: boolean; url?: string; error?: string; failed?: boolean }> {
   const s = await fetch(statusUrl, { headers: { Authorization: authHeader() } });
   const sj = (await s.json().catch(() => ({}))) as Record<string, any>;
   const status = String(sj.status ?? "").toLowerCase();
@@ -97,8 +113,11 @@ export async function pollStatus(statusUrl: string): Promise<{ done: boolean; ur
     const url = extractUrl(sj);
     return url ? { done: true, url } : { done: true, error: "Finished but no result URL was found." };
   }
+  if (status === "nsfw") {
+    return { done: true, failed: true, error: "That prompt was blocked by the content filter. Try describing it differently." };
+  }
   if (status === "failed" || status === "canceled" || status === "cancelled" || status === "error") {
-    return { done: true, error: sj.error || `Generation ${status}.` };
+    return { done: true, failed: true, error: sj.error || `Generation ${status}.` };
   }
   return { done: false };
 }

@@ -823,8 +823,9 @@ export async function startAiVideo(
 
   try {
     const { statusUrl } = await startVideo({ prompt: clean, aspectRatio: ratio, imageUrl });
-    // Video is billed on submission, so record usage now (service role).
-    await createAdminClient().from("ai_generations").insert({ org_id: orgId, kind: "video" });
+    // Count it against the allowance now (service role), tied to this job so a
+    // failure can give it back and only this workspace can collect the result.
+    await createAdminClient().from("ai_generations").insert({ org_id: orgId, kind: "video", ref: statusUrl });
     return { ok: true, statusUrl };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Couldn't start the video." };
@@ -842,23 +843,38 @@ export async function pollAiVideo(
   if (!higgsfieldConfigured()) return { status: "error", error: "Not configured." };
   const orgId = await getCurrentOrgId();
   if (!orgId) return { status: "error", error: "No workspace found." };
-  // Only ever fetch Higgsfield's own status URLs with our auth header.
+  // Only ever fetch Higgsfield's own status URLs with our auth header, and only
+  // for a job this workspace started.
   if (!statusUrl || !isHiggsfieldUrl(statusUrl)) return { status: "error", error: "Invalid status URL." };
+  const admin = createAdminClient();
+  const { data: job } = await admin
+    .from("ai_generations")
+    .select("id, result_url")
+    .eq("org_id", orgId)
+    .eq("kind", "video")
+    .eq("ref", statusUrl)
+    .maybeSingle();
+  if (!job) return { status: "error", error: "Invalid status URL." };
+  if (job.result_url) return { status: "done", url: job.result_url, type: "video/mp4" };
   try {
     const r = await pollStatus(statusUrl);
     if (!r.done) return { status: "processing" };
-    if (r.error || !r.url) return { status: "error", error: r.error || "No video was returned." };
+    if (r.error || !r.url) {
+      // Higgsfield didn't charge for it, so the user gets the video back.
+      if (r.failed) await admin.from("ai_generations").delete().eq("id", job.id);
+      return { status: "error", error: r.error || "No video was returned." };
+    }
     const bytes = await fetch(r.url).then((res) => {
       if (!res.ok) throw new Error(`Couldn't download the video (${res.status}).`);
       return res.arrayBuffer();
     });
     const path = `ai/${orgId}/${crypto.randomUUID()}.mp4`;
-    const admin = createAdminClient();
     const { error } = await admin.storage
       .from("post-media")
       .upload(path, Buffer.from(bytes), { contentType: "video/mp4", upsert: false });
     if (error) return { status: "error", error: "Generated the video but couldn't save it." };
     const url = admin.storage.from("post-media").getPublicUrl(path).data.publicUrl;
+    await admin.from("ai_generations").update({ result_url: url }).eq("id", job.id);
     return { status: "done", url, type: "video/mp4" };
   } catch (e) {
     return { status: "error", error: e instanceof Error ? e.message : "Video generation failed." };

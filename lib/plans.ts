@@ -35,8 +35,10 @@ export const AI_IMAGE_LIMIT: Record<PlanId, number> = {
   growth: 300,
   agency: 600,
 };
-// Video is ~10-50x the per-unit cost of an image, so quotas stay conservative
-// to protect margin (see AI pricing notes).
+// Confirmed Higgsfield API prices (2026-10): a Soul 2 image is $0.0032; a video
+// is a 5s Kling 2.6 Pro clip at $0.07/s list, about $0.35 (lib/higgsfield.ts).
+// So Agency's full allowance costs at most ~$2 in images + ~$21 in video.
+// Failed or blocked generations aren't charged by Higgsfield and don't count.
 export const AI_VIDEO_LIMIT: Record<PlanId, number> = {
   trial: 1,
   creator: 3,
