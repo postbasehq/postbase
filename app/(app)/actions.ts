@@ -311,6 +311,8 @@ export async function createPost(formData: FormData) {
       youtube_options: parseYoutubeOptions(formData),
       tiktok_options: parseTiktokOptions(formData),
       repeat_every: parseRepeatEvery(formData, status === "scheduled"),
+      // Repeats step on the author's local calendar (keeps 09:00 at 09:00 across DST).
+      timezone: await getTimeZone(),
     })
     .select("id")
     .single();
@@ -403,6 +405,7 @@ export async function updatePost(formData: FormData) {
       youtube_options: parseYoutubeOptions(formData),
       tiktok_options: parseTiktokOptions(formData),
       repeat_every: parseRepeatEvery(formData, status === "scheduled"),
+      timezone: await getTimeZone(),
       // Editing re-arms the repeat: a rescheduled post hasn't published yet.
       repeat_next_spawned: false,
     })

@@ -303,11 +303,17 @@ async function spawnRepeatIfDue(db: Db, postId: string): Promise<void> {
     .eq("status", "published")
     .eq("repeat_next_spawned", false)
     .not("repeat_every", "is", null)
-    .select("org_id, author_id, body, thread_tail, tiktok_privacy_level, tiktok_options, youtube_privacy, youtube_options, scheduled_at, repeat_every")
+    .select("org_id, author_id, body, thread_tail, tiktok_privacy_level, tiktok_options, youtube_privacy, youtube_options, scheduled_at, repeat_every, timezone")
     .maybeSingle();
   if (!origin || !isRepeatEvery(origin.repeat_every)) return;
 
-  const nextAt = nextOccurrence(origin.scheduled_at ?? new Date().toISOString(), origin.repeat_every);
+  // Stepped in the author's timezone so the local time survives DST changes.
+  const nextAt = nextOccurrence(
+    origin.scheduled_at ?? new Date().toISOString(),
+    origin.repeat_every,
+    new Date(),
+    origin.timezone as string | null,
+  );
 
   const { data: clone } = await db
     .from("posts")
@@ -323,6 +329,7 @@ async function spawnRepeatIfDue(db: Db, postId: string): Promise<void> {
       youtube_privacy: origin.youtube_privacy,
       youtube_options: origin.youtube_options,
       repeat_every: origin.repeat_every,
+      timezone: origin.timezone,
     })
     .select("id")
     .single();

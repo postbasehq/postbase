@@ -1,3 +1,5 @@
+import { localDateKey, localHM, zonedTimeToUtc } from "@/lib/tz-core";
+
 // Recurrence cadences for repeating posts. The keyword is stored on
 // posts.repeat_every; the label is what the composer shows.
 
@@ -30,28 +32,52 @@ export function isRepeatEvery(v: unknown): v is RepeatEvery {
   return typeof v === "string" && (v in DAYS || v === "month");
 }
 
-/** Advance a date by one cadence step (calendar-aware for "month"). */
-function step(date: Date, key: RepeatEvery): Date {
-  const d = new Date(date);
-  if (key === "month") {
-    d.setUTCMonth(d.getUTCMonth() + 1);
-  } else {
-    d.setUTCDate(d.getUTCDate() + (DAYS[key] ?? 1));
-  }
-  return d;
+/** Days in a month (month is 1-12). */
+function daysIn(year: number, month: number): number {
+  return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
 
 /**
- * The next occurrence strictly in the future. If the poller fell behind
- * (or the cadence is short), we skip missed slots rather than backfilling
- * a burst of catch-up posts — the next post lands on the upcoming slot.
+ * Advance one cadence step on the local calendar of `tz`, keeping the local
+ * wall-clock time: "every week at 09:00" stays 09:00 across a DST change. A
+ * month step clamps to the month's last day (31 Jan → 28/29 Feb, not 3 Mar).
  */
-export function nextOccurrence(fromIso: string, key: RepeatEvery, now: Date = new Date()): string {
-  let d = new Date(fromIso);
+function step(iso: string, key: RepeatEvery, tz: string): string {
+  const [y, m, d] = localDateKey(iso, tz).split("-").map(Number);
+  const { hour, minute } = localHM(iso, tz);
+  let next: Date;
+  if (key === "month") {
+    const ny = m === 12 ? y + 1 : y;
+    const nm = m === 12 ? 1 : m + 1;
+    next = new Date(Date.UTC(ny, nm - 1, Math.min(d, daysIn(ny, nm))));
+  } else {
+    next = new Date(Date.UTC(y, m - 1, d + (DAYS[key] ?? 1)));
+  }
+  return zonedTimeToUtc(next.toISOString().slice(0, 10), hour, minute, tz);
+}
+
+/**
+ * The next occurrence strictly in the future, stepped in the post's timezone
+ * (UTC when it has none). If the poller fell behind (or the cadence is short),
+ * missed slots are skipped rather than backfilled as a burst of catch-up posts.
+ */
+export function nextOccurrence(
+  fromIso: string,
+  key: RepeatEvery,
+  now: Date = new Date(),
+  tz: string | null = null,
+): string {
+  let iso = fromIso;
   // Guard against a bad/absent base date.
-  if (Number.isNaN(d.getTime())) d = new Date(now);
+  if (Number.isNaN(new Date(iso).getTime())) iso = now.toISOString();
+  let zone = tz || "UTC";
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: zone });
+  } catch {
+    zone = "UTC"; // unknown zone name: fall back rather than throw in the publisher
+  }
   do {
-    d = step(d, key);
-  } while (d.getTime() <= now.getTime());
-  return d.toISOString();
+    iso = step(iso, key, zone);
+  } while (new Date(iso).getTime() <= now.getTime());
+  return iso;
 }
