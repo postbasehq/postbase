@@ -42,18 +42,24 @@ function daysIn(year: number, month: number): number {
  * wall-clock time: "every week at 09:00" stays 09:00 across a DST change. A
  * month step clamps to the month's last day (31 Jan → 28/29 Feb, not 3 Mar).
  */
-function step(iso: string, key: RepeatEvery, tz: string): string {
+function step(iso: string, key: RepeatEvery, tz: string, times = 1): string {
   const [y, m, d] = localDateKey(iso, tz).split("-").map(Number);
   const { hour, minute } = localHM(iso, tz);
   let next: Date;
   if (key === "month") {
-    const ny = m === 12 ? y + 1 : y;
-    const nm = m === 12 ? 1 : m + 1;
+    const total = y * 12 + (m - 1) + times;
+    const ny = Math.floor(total / 12);
+    const nm = (total % 12) + 1;
     next = new Date(Date.UTC(ny, nm - 1, Math.min(d, daysIn(ny, nm))));
   } else {
-    next = new Date(Date.UTC(y, m - 1, d + (DAYS[key] ?? 1)));
+    next = new Date(Date.UTC(y, m - 1, d + (DAYS[key] ?? 1) * times));
   }
   return zonedTimeToUtc(next.toISOString().slice(0, 10), hour, minute, tz);
+}
+
+/** Longest a cadence step can be, so a jump estimated from it never overshoots. */
+function maxStepMs(key: RepeatEvery): number {
+  return (key === "month" ? 31 : (DAYS[key] ?? 1)) * 86_400_000;
 }
 
 /**
@@ -68,16 +74,26 @@ export function nextOccurrence(
   tz: string | null = null,
 ): string {
   let iso = fromIso;
-  // Guard against a bad/absent base date.
-  if (Number.isNaN(new Date(iso).getTime())) iso = now.toISOString();
+  // Guard against a bad/absent base date. Anything before 2000 can only be bad
+  // data (and Date.UTC reads years 0-99 as 1900s): start from now instead.
+  const base = new Date(iso);
+  if (Number.isNaN(base.getTime()) || base.getUTCFullYear() < 2000) iso = now.toISOString();
   let zone = tz || "UTC";
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: zone });
   } catch {
     zone = "UTC"; // unknown zone name: fall back rather than throw in the publisher
   }
-  do {
-    iso = step(iso, key, zone);
-  } while (new Date(iso).getTime() <= now.getTime());
-  return iso;
+  // Far behind (or a base date far in the past): jump most of the way in one
+  // calendar step, landing just short of now, so this never walks thousands of
+  // slots inside the publisher. The remaining steps are at most a few.
+  const behind = Math.floor((now.getTime() - new Date(iso).getTime()) / maxStepMs(key)) - 2;
+  if (behind > 0) iso = step(iso, key, zone, behind);
+  for (let i = 0; i < 1000; i++) {
+    const next = step(iso, key, zone);
+    // Each step must move forward; anything else would loop the publisher.
+    iso = new Date(next).getTime() > new Date(iso).getTime() ? next : new Date(new Date(iso).getTime() + 86_400_000).toISOString();
+    if (new Date(iso).getTime() > now.getTime()) return iso;
+  }
+  return new Date(now.getTime() + maxStepMs(key)).toISOString();
 }
