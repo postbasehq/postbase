@@ -23,7 +23,7 @@ export default async function EditPostPage({
   const { data: post } = await supabase
     .from("posts")
     .select(
-      "id, body, thread_tail, scheduled_at, status, tiktok_privacy_level, tiktok_options, youtube_privacy, youtube_options, repeat_every, post_targets(channel_id, variant_body, status, platform_post_id)",
+      "id, body, thread_tail, scheduled_at, status, tiktok_privacy_level, tiktok_options, youtube_privacy, youtube_options, repeat_every, post_targets(channel_id, variant_body, status, platform_post_id, thread_ids)",
     )
     .eq("id", id)
     .eq("org_id", orgId)
@@ -33,10 +33,11 @@ export default async function EditPostPage({
   // Can't edit a post that has already published (fully or partially) or is
   // mid-publish — re-saving would republish duplicates to channels that already
   // got it. (Retry a failed channel from the queue instead.)
-  const anyDelivered = (post.post_targets ?? []).some(
-    (t) => (t as { status?: string; platform_post_id?: string | null }).status === "published" ||
-      (t as { platform_post_id?: string | null }).platform_post_id,
-  );
+  // A thread that failed part-way (thread_ids set) is partly live too.
+  const anyDelivered = (post.post_targets ?? []).some((t) => {
+    const r = t as { status?: string; platform_post_id?: string | null; thread_ids?: string[] | null };
+    return r.status === "published" || r.platform_post_id || (r.thread_ids?.length ?? 0) > 0;
+  });
   if (post.status === "published" || post.status === "publishing" || anyDelivered) {
     redirect("/queue");
   }

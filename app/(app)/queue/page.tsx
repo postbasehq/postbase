@@ -54,6 +54,7 @@ type TargetRow = {
   attempts: number;
   next_attempt_at: string | null;
   platform_post_id: string | null;
+  thread_ids: string[] | null;
   metrics: Record<string, number> | null;
   metrics_updated_at: string | null;
   channels: { platform: string; handle: string | null } | null;
@@ -69,7 +70,8 @@ type PostRow = {
   post_targets: TargetRow[];
 };
 
-const isDelivered = (t: TargetRow) => t.status === "published" || !!t.platform_post_id;
+// A thread that failed part-way (thread_ids set) is partly live: not editable.
+const isDelivered = (t: TargetRow) => t.status === "published" || !!t.platform_post_id || (t.thread_ids?.length ?? 0) > 0;
 
 // Shared 6-column grid (Date · Content · Channels · Delivery · Status · Actions).
 const COLS = "grid grid-cols-[128px_minmax(0,1fr)_88px_108px_120px_124px]";
@@ -132,7 +134,7 @@ export default async function QueuePage({
   let query = supabase
     .from("posts")
     .select(
-      "id, body, thread_tail, scheduled_at, status, repeat_every, media(storage_url, type), post_targets(id, status, error, attempts, next_attempt_at, platform_post_id, metrics, metrics_updated_at, channels(platform, handle))",
+      "id, body, thread_tail, scheduled_at, status, repeat_every, media(storage_url, type), post_targets(id, status, error, attempts, next_attempt_at, platform_post_id, thread_ids, metrics, metrics_updated_at, channels(platform, handle))",
       { count: "exact" },
     )
     .eq("org_id", orgId)
@@ -333,7 +335,7 @@ export default async function QueuePage({
                           >
                             Edit
                           </Link>
-                        ) : targets.some((t) => t.status === "published" || t.platform_post_id) ? (
+                        ) : targets.some(isDelivered) ? (
                           <>
                             <PostStatsButton
                               iconOnly

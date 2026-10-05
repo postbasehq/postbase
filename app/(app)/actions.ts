@@ -368,14 +368,14 @@ export async function updatePost(formData: FormData) {
   // duplicates. Retrying a failed channel is handled by the queue Retry.
   const { data: current } = await supabase
     .from("posts")
-    .select("status, post_targets(status, platform_post_id)")
+    .select("status, post_targets(status, platform_post_id, thread_ids)")
     .eq("id", postId)
     .eq("org_id", orgId)
     .maybeSingle();
   if (!current) redirect("/queue"); // not ours / gone — bounce with feedback
   const anyDelivered = (
-    (current.post_targets ?? []) as { status: string; platform_post_id: string | null }[]
-  ).some((t) => t.status === "published" || t.platform_post_id);
+    (current.post_targets ?? []) as { status: string; platform_post_id: string | null; thread_ids: string[] | null }[]
+  ).some((t) => t.status === "published" || t.platform_post_id || (t.thread_ids?.length ?? 0) > 0);
   if (current.status === "published" || current.status === "publishing" || anyDelivered) {
     redirect("/queue");
   }
