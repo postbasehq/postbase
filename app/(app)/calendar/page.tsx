@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { scopeOrgId } from "@/lib/org";
+import { canManageOrg, getOrgRole, scopeOrgId } from "@/lib/org";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { disconnectChannel } from "../actions";
 import { getTimeZone, formatInTz, localDateKey, localHM } from "@/lib/tz";
@@ -120,6 +120,7 @@ export default async function CalendarPage({
   // Fetch posts in a UTC window padded ±1 day, then bucket by local day.
   const supabase = await createClient();
   const orgId = await scopeOrgId();
+  const canManage = canManageOrg(await getOrgRole(orgId));
   const { data } = await supabase
     .from("posts")
     .select("id, body, scheduled_at, status, repeat_every, post_targets(channels(platform)), media(storage_url, type)")
@@ -209,7 +210,7 @@ export default async function CalendarPage({
         monthCells={monthCells}
         posts={posts}
         accountsByPlatform={accountsByPlatform}
-        disconnectAction={disconnectChannel}
+        disconnectAction={canManage ? disconnectChannel : undefined}
       />
     </div>
   );

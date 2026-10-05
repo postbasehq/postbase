@@ -126,7 +126,8 @@ export function ChannelsBoard({
   earlyAccess = false,
 }: {
   accountsByPlatform: Record<string, Account[]>;
-  disconnectAction: (formData: FormData) => Promise<void>;
+  /** Omitted for members: only owners and admins can disconnect. */
+  disconnectAction?: (formData: FormData) => Promise<void>;
   /** Platforms this user asked to hear about when they open. */
   waitlisted?: string[];
   waitlistAction?: (platform: string, join: boolean) => Promise<void>;
@@ -270,11 +271,13 @@ export function ChannelsBoard({
                       <div className="truncate text-xs text-muted">{secondary}</div>
                     ) : null}
                   </div>
-                  <DisconnectButton
-                    action={disconnectAction}
-                    channelId={a.id}
-                    label={`${brand?.label ?? p.id}${a.handle ? ` (${a.handle})` : ""}`}
-                  />
+                  {disconnectAction ? (
+                    <DisconnectButton
+                      action={disconnectAction}
+                      channelId={a.id}
+                      label={`${brand?.label ?? p.id}${a.handle ? ` (${a.handle})` : ""}`}
+                    />
+                  ) : null}
                 </div>
                 {issue ? (
                   <div className="mt-2 flex flex-wrap items-end gap-x-3 gap-y-2 border-t border-line/70 pt-2">

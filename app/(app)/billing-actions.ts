@@ -5,7 +5,7 @@ import type Stripe from "stripe";
 import { getStripe, stripeConfigured, billingUrls, managedPayments } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getCurrentOrgId } from "@/lib/org";
+import { canManageOrg, getCurrentOrgId, getOrgRole } from "@/lib/org";
 import { PLANS, planIsActive, priceId, type PlanId } from "@/lib/plans";
 import { billingGroup } from "@/lib/billing-guard";
 
@@ -37,6 +37,13 @@ async function ensureCustomer(orgId: string, email: string): Promise<string> {
   return customer.id;
 }
 
+/** Checkout and the Stripe portal (cancel, change plan or card, invoices) are owner/admin only. */
+async function requireBillingManager(orgId: string) {
+  if (!canManageOrg(await getOrgRole(orgId))) {
+    throw new Error("Only owners and admins can manage billing.");
+  }
+}
+
 /** Start a Checkout Session for a plan + interval and redirect to Stripe. */
 export async function startCheckout(formData: FormData) {
   if (!stripeConfigured()) throw new Error("Billing isn’t configured on this server yet.");
@@ -48,6 +55,7 @@ export async function startCheckout(formData: FormData) {
   if (!user?.email) throw new Error("Sign in to subscribe.");
   const orgId = await getCurrentOrgId();
   if (!orgId) throw new Error("No workspace found.");
+  await requireBillingManager(orgId);
   // A workspace covered by another's plan never gets its own subscription.
   const group = await billingGroup(orgId);
   if (group.linked) throw new Error(`This workspace is on ${group.rootName}'s plan. Change the plan from ${group.rootName}.`);
@@ -95,6 +103,7 @@ export async function openPortal() {
   if (!stripeConfigured()) throw new Error("Billing isn’t configured on this server yet.");
   const orgId = await getCurrentOrgId();
   if (!orgId) throw new Error("No workspace found.");
+  await requireBillingManager(orgId);
   if ((await billingGroup(orgId)).linked) redirect("/billing");
 
   const db = createAdminClient();

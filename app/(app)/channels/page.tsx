@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { scopeOrgId } from "@/lib/org";
+import { canManageOrg, getOrgRole, scopeOrgId } from "@/lib/org";
 import { cookies } from "next/headers";
 import { cancelMetaPick, connectMetaAccounts, disconnectChannel } from "../actions";
 import { MetaAccountPicker } from "@/components/MetaAccountPicker";
@@ -72,6 +72,7 @@ export default async function ChannelsPage({
   let error = rest.error;
   const supabase = await createClient();
   const orgId = await scopeOrgId();
+  const canManage = canManageOrg(await getOrgRole(orgId));
 
   // Back from Facebook with several accounts to choose from.
   let picker: { platform: MetaPlatform; options: MetaOption[] } | null = null;
@@ -186,7 +187,7 @@ export default async function ChannelsPage({
       <div className="mt-6 pb-10">
         <ChannelsBoard
           accountsByPlatform={accountsByPlatform}
-          disconnectAction={disconnectChannel}
+          disconnectAction={canManage ? disconnectChannel : undefined}
           waitlisted={waitlisted}
           waitlistAction={toggleWaitlist}
           earlyAccess={earlyAccess}

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/EmptyState";
 import { createClient } from "@/lib/supabase/server";
-import { scopeOrgId } from "@/lib/org";
+import { canManageOrg, getOrgRole, scopeOrgId } from "@/lib/org";
 import { BrandTile } from "@/components/BrandTile";
 import { DeletePostButton } from "@/components/DeletePostButton";
 import { CalendarChannelsBar } from "@/components/CalendarChannelsBar";
@@ -42,6 +42,7 @@ export default async function DraftsPage({
 }) {
   const supabase = await createClient();
   const orgId = await scopeOrgId();
+  const canManage = canManageOrg(await getOrgRole(orgId));
 
   const { page: pageParam, q: qParam } = await searchParams;
   const q = (qParam ?? "").trim();
@@ -254,7 +255,7 @@ export default async function DraftsPage({
         ) : null}
       </div>
 
-      <CalendarChannelsBar accountsByPlatform={accountsByPlatform} disconnectAction={disconnectChannel} />
+      <CalendarChannelsBar accountsByPlatform={accountsByPlatform} disconnectAction={canManage ? disconnectChannel : undefined} />
     </div>
   );
 }

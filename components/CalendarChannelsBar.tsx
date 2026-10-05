@@ -52,7 +52,8 @@ export function CalendarChannelsBar({
   disconnectAction,
 }: {
   accountsByPlatform: Record<string, Account[]>;
-  disconnectAction: (formData: FormData) => Promise<void>;
+  /** Omitted for members: only owners and admins can disconnect. */
+  disconnectAction?: (formData: FormData) => Promise<void>;
 }) {
   const router = useRouter();
   const [active, setActive] = useState<string | null>(null);
@@ -162,11 +163,13 @@ export function CalendarChannelsBar({
                         {a.status}
                       </span>
                     ) : null}
-                    <DisconnectButton
-                      action={disconnectAction}
-                      channelId={a.id}
-                      label={`${brand?.label ?? current.id}${a.handle ? ` (${a.handle})` : ""}`}
-                    />
+                    {disconnectAction ? (
+                      <DisconnectButton
+                        action={disconnectAction}
+                        channelId={a.id}
+                        label={`${brand?.label ?? current.id}${a.handle ? ` (${a.handle})` : ""}`}
+                      />
+                    ) : null}
                   </div>
                 ))}
               </div>

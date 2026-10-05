@@ -67,6 +67,11 @@ export async function getOrgRole(orgId: string): Promise<string | null> {
   return data?.role ?? null;
 }
 
+/** Owners and admins manage billing, channels and the team; members create and schedule. */
+export function canManageOrg(role: string | null | undefined): boolean {
+  return role === "owner" || role === "admin";
+}
+
 /** Matches no row. Filtering by it returns nothing rather than every workspace. */
 const NO_ORG = "00000000-0000-0000-0000-000000000000";
 

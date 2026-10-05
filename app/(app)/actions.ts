@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 import { openPick, PICK_COOKIE, saveMetaChannels } from "@/lib/meta-connect";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getCurrentOrgId } from "@/lib/org";
+import { canManageOrg, getCurrentOrgId, getOrgRole } from "@/lib/org";
 import { encryptJson, decryptJson } from "@/lib/crypto";
 import { revokeAccess as revokeTikTokAccess, type TikTokTokens } from "@/lib/platforms/tiktok";
 import { revokeAccess as revokeXAccess, type XTokens } from "@/lib/platforms/x";
@@ -183,6 +183,10 @@ export async function disconnectChannel(formData: FormData) {
   const supabase = await createClient();
   const orgId = await getCurrentOrgId();
   if (!orgId) throw new Error("No workspace found for this user.");
+  // Disconnecting revokes the account's access and drops its history: owners/admins only.
+  if (!canManageOrg(await getOrgRole(orgId))) {
+    throw new Error("Only owners and admins can disconnect channels.");
+  }
 
   const channelId = String(formData.get("channel_id") ?? "");
   if (!channelId) throw new Error("Missing channel id.");

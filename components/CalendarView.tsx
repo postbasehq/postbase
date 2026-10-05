@@ -328,7 +328,8 @@ export function CalendarView({
   monthCells: MonthCell[];
   posts: CalPost[];
   accountsByPlatform: Record<string, { id: string; handle: string | null; status: string }[]>;
-  disconnectAction: (formData: FormData) => Promise<void>;
+  /** Omitted for members: only owners and admins can disconnect. */
+  disconnectAction?: (formData: FormData) => Promise<void>;
 }) {
   const router = useRouter();
   const go = (v: View, date: string) => router.push(`/calendar?view=${v}&date=${date}`);
