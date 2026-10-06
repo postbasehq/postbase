@@ -130,11 +130,13 @@ export function AgentChat({
   useEffect(() => {
     try {
       const saved = localStorage.getItem("pb_agent_model");
-      if (saved && AGENT_MODELS.some((m) => m.id === saved)) setModel(saved);
+      // Only restore a saved model whose provider is configured, so an old GPT pick can't strand the chat.
+      const m = AGENT_MODELS.find((x) => x.id === saved);
+      if (m && modelsReady[m.provider]) setModel(m.id);
     } catch {
       // ignore
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- once, on load
   const changeModel = (id: string) => {
     setModel(id);
     try {
