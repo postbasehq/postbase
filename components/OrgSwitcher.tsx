@@ -94,8 +94,9 @@ export function OrgSwitcher({
         </svg>
       </button>
 
+      {/* The menu: at least the switcher's width, never narrower than 260px so rows stay on one line (it may overhang the sidebar, like any popover). */}
       {open ? (
-        <div role="menu" className="absolute inset-x-3 top-full z-50 mt-1.5 rounded-2xl border border-line bg-surface p-1.5 shadow-xl">
+        <div role="menu" className="absolute left-3 top-full z-50 mt-1.5 w-[max(calc(100%_-_1.5rem),260px)] rounded-2xl border border-line bg-surface p-1.5 shadow-xl">
           <div className="px-2.5 pb-1.5 pt-1 text-[11px] font-medium uppercase tracking-wide text-muted">Workspaces</div>
           {orgs.map((o) => {
             const current = o.id === active.id;
@@ -259,8 +260,8 @@ function CreateWorkspace({ allowance: a, onDone }: { allowance: WorkspaceAllowan
           className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[13px] font-semibold text-blue-ink transition-colors hover:bg-surface-2"
         >
           {plus}
-          Create workspace
-          <span className="ml-auto text-[11px] font-medium text-muted">
+          <span className="whitespace-nowrap">Create workspace</span>
+          <span className="ml-auto shrink-0 whitespace-nowrap pl-2 text-[11px] font-medium tabular-nums text-muted">
             {a.used} of {a.limit}
           </span>
         </button>
