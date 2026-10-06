@@ -276,6 +276,7 @@ export function PostForm({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [libraryFolder, setLibraryFolder] = useState<string>("all");
+  const [libraryQuery, setLibraryQuery] = useState("");
   const [draftsOpen, setDraftsOpen] = useState(false);
   const [draftQuery, setDraftQuery] = useState("");
   const otherDrafts = drafts.filter((d) => d.id !== currentDraftId);
@@ -570,15 +571,19 @@ export function PostForm({
     });
 
   function addPicked() {
+    // In the order they were picked (the numbers on the tiles).
     const have = new Set(media.map((m) => m.url));
-    const add = libraryItems
-      .filter((it) => picked.has(it.url) && !have.has(it.url))
+    const byUrl = new Map(libraryItems.map((it) => [it.url, it]));
+    const add = [...picked]
+      .map((url) => byUrl.get(url))
+      .filter((it): it is LibraryItem => !!it && !have.has(it.url))
       .map((it) => ({ url: it.url, type: it.type }));
     setMedia((m) => [...m, ...add]);
     closeLibrary();
   }
   function closeLibrary() {
     setPicked(new Set());
+    setLibraryQuery("");
     setLibraryOpen(false);
   }
 
@@ -1384,122 +1389,186 @@ export function PostForm({
         </div>
       </Modal>
 
-      <Modal open={libraryOpen} onClose={closeLibrary} labelledBy="lib-picker-title" size="lg" {...BRAND_GLASS_PANEL}>
-        <div className="flex items-center gap-2">
-          <h3
-            id="lib-picker-title"
-            className="font-display text-lg font-semibold tracking-[-0.01em]"
-          >
-            Pick from library
-          </h3>
-          <Link href="/media" className="ml-auto text-xs font-medium text-blue-ink hover:underline">
-            Manage media
-          </Link>
-        </div>
-
-        {libraryItems.length === 0 ? (
-          <div className="mt-5 flex flex-col items-center rounded-2xl border border-dashed border-line bg-surface-2/40 px-6 py-10 text-center">
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted" aria-hidden>
-              <rect x="3" y="3" width="18" height="18" rx="3" />
-              <circle cx="8.5" cy="8.5" r="1.6" />
-              <path d="m21 15-4-4a2 2 0 0 0-2.8 0L4 21" />
-            </svg>
-            <h4 className="mt-4 font-display text-[15px] font-semibold tracking-[-0.01em] text-ink">
-              Nothing saved yet
-            </h4>
-            <p className="mt-1 max-w-[17rem] text-[13px] leading-relaxed text-muted">
-              Upload a photo or video once and it’ll live here — ready to reuse across any post.
-            </p>
-            <Link
-              href="/media"
-              className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-blue px-4 py-2 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M12 19V5M5 12l7-7 7 7" />
-              </svg>
-              Upload media
-            </Link>
-          </div>
-        ) : (
-          <>
-          {libraryFolders.length > 0 ? (
-            <div className="mt-4 flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Folder">
-              {[{ id: "all", name: "All media" }, ...libraryFolders].map((f) => (
-                <button
-                  key={f.id}
-                  type="button"
-                  onClick={() => setLibraryFolder(f.id)}
-                  aria-pressed={libraryFolder === f.id}
-                  className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
-                    libraryFolder === f.id ? "border-[#2b59d9] bg-[#2b59d9] text-white" : "border-line text-muted hover:text-ink"
-                  }`}
-                >
-                  {f.name}
-                </button>
-              ))}
-            </div>
-          ) : null}
-          <div className="mt-4 grid max-h-[52vh] grid-cols-3 gap-2.5 overflow-y-auto sm:grid-cols-4">
-            {libraryItems.filter((item) => libraryFolder === "all" || item.folder_id === libraryFolder).map((item) => {
-              const already = media.some((m) => m.url === item.url);
-              const on = already || picked.has(item.url);
-              return (
-                <button
-                  type="button"
-                  key={item.id}
-                  onClick={() => !already && togglePick(item.url)}
-                  disabled={already}
-                  title={item.name}
-                  className={`relative aspect-square overflow-hidden rounded-xl border-2 bg-surface-2 transition-colors ${
-                    on ? "border-blue" : "border-line"
-                  } ${already ? "opacity-60" : ""}`}
-                >
-                  {item.type.startsWith("video/") ? (
-                    <video
-                      src={`${item.url}#t=0.1`}
-                      muted
-                      playsInline
-                      preload="metadata"
-                      className="size-full object-cover"
+      <Modal
+        open={libraryOpen}
+        onClose={closeLibrary}
+        labelledBy="lib-picker-title"
+        size="lg"
+        panelClassName="rounded-[22px] border border-line bg-surface p-2 shadow-lg"
+      >
+        {(() => {
+          const pickOrder = [...picked];
+          const q = libraryQuery.trim().toLowerCase();
+          const shown = libraryItems.filter(
+            (it) => (libraryFolder === "all" || it.folder_id === libraryFolder) && (!q || it.name.toLowerCase().includes(q)),
+          );
+          const uploadHere = () => {
+            closeLibrary();
+            fileRef.current?.click();
+          };
+          return (
+            <>
+              {/* Zone 1: what this is, and narrowing it down */}
+              <div className="relative isolate overflow-hidden rounded-2xl border border-line bg-surface-2 p-5">
+                <LogoMark
+                  color="currentColor"
+                  className="pointer-events-none absolute right-24 top-0 -z-10 w-[88px] text-ink opacity-[0.05]"
+                />
+                <div className="flex items-start gap-3">
+                  <div className="min-w-0">
+                    <h3 id="lib-picker-title" className="font-display text-[20px] font-semibold tracking-[-0.02em] text-ink">
+                      Add from your library
+                    </h3>
+                    <p className="mt-0.5 text-[13px] text-muted">
+                      {libraryItems.length === 0
+                        ? "Files you upload on the Media page can be reused in any post"
+                        : `${libraryItems.length} ${libraryItems.length === 1 ? "file" : "files"}. Pick as many as you need.`}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closeLibrary}
+                    aria-label="Close"
+                    className="ml-auto grid size-8 shrink-0 place-items-center rounded-full border border-line bg-surface text-muted transition-colors hover:text-ink"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+                      <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                {libraryItems.length > 8 ? (
+                  <label className="mt-4 flex items-center gap-2 rounded-xl border border-line bg-surface px-3 focus-within:border-[#2b59d9]">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted" aria-hidden>
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="m21 21-4.3-4.3" />
+                    </svg>
+                    <input
+                      type="text"
+                      value={libraryQuery}
+                      onChange={(e) => setLibraryQuery(e.target.value)}
+                      placeholder="Search by file name"
+                      aria-label="Search the library"
+                      className="min-w-0 flex-1 bg-transparent py-2.5 text-sm text-ink outline-none placeholder:text-muted"
                     />
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.url} alt={item.name} className="size-full object-cover" />
-                  )}
-                  {on ? (
-                    <span className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-blue text-xs font-bold text-on-blue">
-                      ✓
-                    </span>
-                  ) : null}
-                  {already ? (
-                    <span className="absolute inset-x-0 bottom-0 bg-ink/70 py-0.5 text-center text-[10px] font-semibold text-white">
-                      Added
-                    </span>
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
-          </>
-        )}
+                  </label>
+                ) : null}
+                {libraryItems.length > 0 && libraryFolders.length > 0 ? (
+                  <div className="mt-3 flex gap-1.5 overflow-x-auto" role="group" aria-label="Folder">
+                    {[{ id: "all", name: "All media" }, ...libraryFolders].map((f) => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setLibraryFolder(f.id)}
+                        aria-pressed={libraryFolder === f.id}
+                        className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+                          libraryFolder === f.id ? "border-[#2b59d9] bg-[#2b59d9] text-white" : "border-line bg-surface text-muted hover:text-ink"
+                        }`}
+                      >
+                        {f.name}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
 
-        <div className="mt-5 flex justify-end gap-2.5">
-          <button
-            type="button"
-            onClick={closeLibrary}
-            className="rounded-full border border-line px-4 py-2 text-sm font-medium text-muted hover:bg-surface-2 hover:text-ink"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={addPicked}
-            disabled={picked.size === 0}
-            className="rounded-full bg-blue px-5 py-2 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md disabled:opacity-50"
-          >
-            {picked.size > 0 ? `Add ${picked.size}` : "Add"}
-          </button>
-        </div>
+              {/* Zone 2: the files */}
+              {libraryItems.length === 0 ? (
+                <div className="flex flex-col items-center px-6 py-10 text-center">
+                  <h4 className="font-display text-[16px] font-semibold tracking-[-0.01em] text-ink">Your library is empty</h4>
+                  <p className="mt-1.5 max-w-[34ch] text-[13px] leading-relaxed text-muted">
+                    Upload straight into this post, or add files on the Media page to reuse them later.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={uploadHere}
+                    className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-[#2b59d9] px-4 py-2 font-display text-sm font-semibold text-white shadow-sm transition-shadow hover:shadow-md"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M12 16V4M7 9l5-5 5 5M5 20h14" />
+                    </svg>
+                    Upload from device
+                  </button>
+                </div>
+              ) : shown.length === 0 ? (
+                <p className="px-6 py-12 text-center text-[13px] text-muted">
+                  {q ? `No files named like “${libraryQuery.trim()}”.` : "Nothing in this folder yet."}
+                </p>
+              ) : (
+                <div className="grid max-h-[50vh] grid-cols-3 gap-2 overflow-y-auto p-3 sm:grid-cols-4">
+                  {shown.map((item) => {
+                    const already = media.some((m) => m.url === item.url);
+                    const order = pickOrder.indexOf(item.url) + 1;
+                    const isVideo = item.type.startsWith("video/");
+                    return (
+                      <button
+                        type="button"
+                        key={item.id}
+                        onClick={() => !already && togglePick(item.url)}
+                        disabled={already}
+                        aria-pressed={order > 0}
+                        aria-label={`${item.name}${already ? ", already in this post" : ""}`}
+                        title={item.name}
+                        className={`group relative aspect-square overflow-hidden rounded-xl bg-surface-2 outline-none ring-offset-2 ring-offset-surface transition focus-visible:ring-2 focus-visible:ring-[#2b59d9] ${
+                          order > 0 ? "ring-2 ring-[#2b59d9]" : ""
+                        } ${already ? "cursor-default" : ""}`}
+                      >
+                        {isVideo ? (
+                          <video src={`${item.url}#t=0.1`} muted playsInline preload="metadata" className="size-full object-cover" />
+                        ) : (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={item.url} alt="" className="size-full object-cover" />
+                        )}
+                        {already ? <span className="absolute inset-0 bg-surface/70" aria-hidden /> : null}
+                        {isVideo ? (
+                          <span className="absolute bottom-1.5 left-1.5 rounded-md bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                            Video
+                          </span>
+                        ) : null}
+                        {already ? (
+                          <span className="absolute inset-x-0 bottom-1.5 text-center text-[11px] font-semibold text-ink">In post</span>
+                        ) : (
+                          <span
+                            className={`absolute right-1.5 top-1.5 grid size-6 place-items-center rounded-full text-[12px] font-bold tabular-nums ${
+                              order > 0
+                                ? "bg-[#2b59d9] text-white"
+                                : "border-2 border-white/90 bg-black/25 text-transparent opacity-0 group-hover:opacity-100"
+                            }`}
+                            aria-hidden
+                          >
+                            {order > 0 ? order : ""}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center gap-3 border-t border-line px-3 pb-1.5 pt-3">
+                {libraryItems.length > 0 ? (
+                  <span className="text-[12px] text-muted">
+                    {picked.size === 0 ? "Pick files to add them to this post" : `${picked.size} selected, added in that order`}
+                  </span>
+                ) : null}
+                <div className="ml-auto flex items-center gap-3">
+                  <Link href="/media" className="text-[13px] font-semibold text-blue-ink hover:underline">
+                    Manage media
+                  </Link>
+                  {libraryItems.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={addPicked}
+                      disabled={picked.size === 0}
+                      className="rounded-full bg-[#2b59d9] px-5 py-2 font-display text-sm font-semibold text-white shadow-sm transition-shadow hover:shadow-md disabled:opacity-50"
+                    >
+                      {picked.size > 0 ? `Add ${picked.size}` : "Add"}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </>
+          );
+        })()}
       </Modal>
 
       <Modal
