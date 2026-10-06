@@ -49,4 +49,17 @@ describe("media downloads are bounded", () => {
     expect(r.bytes.byteLength).toBe(1234);
     expect(r.type).toBe("image/png");
   });
+  it("refuses to follow redirects", async () => {
+    let seen: RequestInit | undefined;
+    net = installFakeNet(() => undefined);
+    net.restore();
+    const original = globalThis.fetch;
+    globalThis.fetch = (async (_u: RequestInfo | URL, init?: RequestInit) => ((seen = init), new Response(new Uint8Array(1)))) as typeof fetch;
+    try {
+      await fetchMedia("https://x/a", { maxBytes: 10 });
+    } finally {
+      globalThis.fetch = original;
+    }
+    expect(seen?.redirect).toBe("error");
+  });
 });

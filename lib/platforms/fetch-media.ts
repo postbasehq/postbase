@@ -13,7 +13,9 @@ export async function fetchMedia(
   opts: { maxBytes: number; timeoutMs?: number; what?: string },
 ): Promise<{ bytes: ArrayBuffer; type: string | null }> {
   const what = opts.what ?? "media";
-  const res = await fetch(url, { signal: AbortSignal.timeout(opts.timeoutMs ?? 150_000) });
+  // No redirects: our storage answers directly, and following one could lead
+  // off the allowlisted hosts.
+  const res = await fetch(url, { redirect: "error", signal: AbortSignal.timeout(opts.timeoutMs ?? 150_000) });
   if (!res.ok) throw new Error(`Couldn't fetch ${what} (${res.status})`);
   const declared = Number(res.headers.get("content-length") ?? 0);
   if (declared > opts.maxBytes) throw new Error(`The ${what} is too large to publish (${Math.round(declared / 1048576)} MB).`);
