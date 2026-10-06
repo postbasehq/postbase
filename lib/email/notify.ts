@@ -1,7 +1,7 @@
 import type Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { claimKeys, emailConfigured, releaseKeys, sendEmail, sendEmailOnce } from "@/lib/email/send";
-import { APP_URL, esc, excerpt, layout, list, p } from "@/lib/email/templates";
+import { APP_URL, esc, excerpt, layout, list, list as listBlock, p } from "@/lib/email/templates";
 import { explainPostError, PLATFORM_LABEL } from "@/lib/post-errors";
 import { reconnectReason } from "@/lib/channel-health";
 import { PLANS, planForPrice } from "@/lib/plans";
@@ -321,5 +321,33 @@ export function notifySubscriptionEnded(sub: Stripe.Subscription): Promise<void>
       cta: { label: "Choose a plan", url: `${APP_URL}/billing` },
     });
     await sendEmailOnce(`sub-ended:${sub.id}`, { ...email, to: await managerEmails(db, org.id) });
+  });
+}
+
+/** Confirmation after self-serve account deletion (sent before nothing else exists for them). */
+export function sendAccountDeleted(opts: { email: string; userId: string; workspaces: string[] }): Promise<void> {
+  return guard(`account-deleted ${opts.userId}`, async () => {
+    const list = opts.workspaces;
+    const email = layout({
+      subject: "Your Postbase account has been deleted",
+      preheader: "Your account and data are gone.",
+      heading: "Your account has been deleted",
+      blocks: [
+        p("Your Postbase account has been deleted, as you asked.", "Your Postbase account has been deleted, as you asked."),
+        ...(list.length
+          ? [
+              p("These workspaces were deleted with it, including their posts, media and connected accounts:", "These workspaces were deleted with it, including their posts, media and connected accounts:"),
+              listBlock(list.map((n) => ({ html: esc(n), text: n }))),
+            ]
+          : []),
+        p(
+          "Any subscription was cancelled and Postbase's access to your social accounts was revoked. Stripe keeps the billing records it's required to by law. Backups roll off within 90 days.",
+          "Any subscription was cancelled and Postbase's access to your social accounts was revoked. Stripe keeps the billing records it's required to by law. Backups roll off within 90 days.",
+          true,
+        ),
+        p("If you didn't do this, reply to this email straight away.", "If you didn't do this, reply to this email straight away.", true),
+      ],
+    });
+    await sendEmailOnce(`account-deleted:${opts.userId}`, { ...email, to: [opts.email] });
   });
 }

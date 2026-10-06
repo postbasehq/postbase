@@ -7,15 +7,9 @@ import { openPick, PICK_COOKIE, saveMetaChannels } from "@/lib/meta-connect";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { canManageOrg, getCurrentOrgId, getOrgRole } from "@/lib/org";
-import { encryptJson, decryptJson } from "@/lib/crypto";
-import { revokeAccess as revokeTikTokAccess, type TikTokTokens } from "@/lib/platforms/tiktok";
-import { revokeAccess as revokeXAccess, type XTokens } from "@/lib/platforms/x";
-import {
-  revokeAccess as revokeYouTubeAccess,
-  type YouTubePostOptions,
-  type YouTubeTokens,
-} from "@/lib/platforms/youtube";
-import { revokeAccess as revokeMetaAccess } from "@/lib/platforms/meta";
+import { encryptJson } from "@/lib/crypto";
+import { revokeChannelAccess } from "@/lib/channel-revoke";
+import { type YouTubePostOptions } from "@/lib/platforms/youtube";
 import { atChannelLimit, aiLimitMessage, hasAccess, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
 import { connectBluesky } from "@/lib/platforms/bluesky";
 import { isRepeatEvery } from "@/lib/publish/repeat";
@@ -190,21 +184,6 @@ function parseVariants(formData: FormData): Record<string, string> {
   return {};
 }
 
-/**
- * True when no other channel, in any workspace, was connected through the same
- * Facebook login. Unknown logins count as shared, so we never revoke blindly.
- */
-async function lastChannelForMetaLogin(channelId: string, providerUserId: string | null): Promise<boolean> {
-  if (!providerUserId) return false;
-  const { count } = await createAdminClient()
-    .from("channels")
-    .select("id", { count: "exact", head: true })
-    .eq("provider_user_id", providerUserId)
-    .in("platform", ["instagram", "facebook"])
-    .neq("id", channelId);
-  return count === 0;
-}
-
 /** Disconnect a channel — removes it (and its per-channel history) from the org. */
 export async function disconnectChannel(formData: FormData) {
   const supabase = await createClient();
@@ -222,33 +201,11 @@ export async function disconnectChannel(formData: FormData) {
   // so disconnect truly de-authorizes Postbase (not just a local token delete).
   const { data: channel } = await supabase
     .from("channels")
-    .select("platform, encrypted_tokens, provider_user_id")
+    .select("id, org_id, platform, encrypted_tokens, provider_user_id")
     .eq("id", channelId)
     .eq("org_id", orgId)
     .maybeSingle();
-  if (channel?.encrypted_tokens) {
-    const enc = channel.encrypted_tokens;
-    try {
-      if (channel.platform === "tiktok") {
-        await revokeTikTokAccess(decryptJson<TikTokTokens>(enc).access_token);
-      } else if (channel.platform === "x") {
-        await revokeXAccess(decryptJson<XTokens>(enc).access_token);
-      } else if (channel.platform === "youtube") {
-        const t = decryptJson<YouTubeTokens>(enc);
-        await revokeYouTubeAccess(t.refresh_token ?? t.access_token);
-      } else if (channel.platform === "instagram" || channel.platform === "facebook") {
-        // Meta's revoke removes Postbase from the whole Facebook login, which
-        // would silently break every other Instagram account or Page connected
-        // through it. Only revoke when this is the last channel using it.
-        const t = decryptJson<{ user_access_token?: string }>(enc);
-        if (t.user_access_token && (await lastChannelForMetaLogin(channelId, channel.provider_user_id))) {
-          await revokeMetaAccess(t.user_access_token);
-        }
-      }
-    } catch {
-      // Revoke is best-effort — never block disconnect on it.
-    }
-  }
+  if (channel) await revokeChannelAccess(channel);
 
   // Posts still waiting to go out to this channel, before its targets go.
   const { data: pending } = await supabase

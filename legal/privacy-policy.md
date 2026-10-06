@@ -129,9 +129,11 @@ Transfer Agreement / Addendum or the EU Standard Contractual Clauses.
 ## 7. Retention
 
 We keep personal data for as long as your account is active and as needed to provide the
-Service. When you delete a connected channel we delete its stored tokens. When you close
-your account we delete or anonymise your personal data within 90 days, except where
-we must retain records to meet legal, tax, or security obligations.
+Service. When you delete a connected channel we delete its stored tokens. You can delete
+your account at any time in **Settings → Your data**: your account and any workspaces only
+you belong to are deleted straight away, and remaining copies in backups are removed within
+90 days. We keep only records we must retain to meet legal, tax, or security obligations
+(for example, Stripe keeps billing records).
 
 ## 8. Security
 
@@ -147,7 +149,8 @@ measures appropriate to the risk.
 
 Under UK GDPR you have the right to access, rectify, erase, restrict, or object to the
 processing of your personal data, to data portability, and to withdraw consent where we
-rely on it. To exercise any right, email **team@postbase.so**.
+rely on it. You can download a copy of your data (portability) and delete your account
+yourself in **Settings → Your data**. To exercise any other right, email **team@postbase.so**.
 
 You also have the right to complain to the UK Information Commissioner's Office (ICO) at
 **ico.org.uk**, though we'd appreciate the chance to resolve your concern first.

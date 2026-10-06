@@ -8,6 +8,8 @@ import { LogoMark } from "@/components/marketing/Decor";
 import { workspaceInitial, workspaceTile } from "@/lib/workspace-tile";
 import { WorkspaceNameForm } from "@/components/settings/WorkspaceNameForm";
 import { ThemePicker } from "@/components/settings/ThemePicker";
+import { AccountData } from "@/components/settings/AccountData";
+import { planAccountDeletion } from "@/lib/account/delete";
 import { listConnectedApps } from "@/lib/oauth";
 import { BillingStatus, ManageButton } from "@/components/BillingStatus";
 import { loadBillingStatus } from "@/lib/billing-status";
@@ -216,6 +218,21 @@ export default async function SettingsPage() {
         >
           <ThemePicker />
         </Card>
+
+        {/* Your data: export and account deletion */}
+        {user?.email ? (
+          <Card
+            panel={
+              <div>
+                <div className="text-[13px] font-medium text-muted">Your data</div>
+                <div className="font-display text-[22px] font-semibold leading-tight tracking-[-0.02em] text-ink">Export or delete</div>
+                <div className="mt-1 text-[13px] text-muted">Take a copy of your data, or close your account for good.</div>
+              </div>
+            }
+          >
+            <AccountData email={user.email} plan={await planAccountDeletion(user.id)} />
+          </Card>
+        ) : null}
       </div>
     </div>
   );
