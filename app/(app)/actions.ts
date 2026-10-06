@@ -112,6 +112,15 @@ async function orphanedStoragePaths(
 }
 
 
+/**
+ * Posts, their targets and media are written with the service role (members
+ * can only read them, migration 0061), so every server-side check here
+ * (plan, limits, validation, own media) can't be skipped by writing to the
+ * tables directly. Every write is scoped to the caller's workspace: by
+ * org_id, or to a post just verified (or created) in it.
+ */
+const writeDb = () => createAdminClient();
+
 /** Parse the composer's `thread` JSON field into non-empty, trimmed tweet segments. */
 function parseThread(formData: FormData): string[] {
   const raw = formData.get("thread");
@@ -249,7 +258,7 @@ export async function disconnectChannel(formData: FormData) {
     const { data: stillTargeted } = await supabase.from("post_targets").select("post_id").in("post_id", postIds);
     const orphaned = postIds.filter((id) => !(stillTargeted ?? []).some((t) => t.post_id === id));
     if (orphaned.length > 0) {
-      await supabase
+      await writeDb()
         .from("posts")
         .update({ status: "draft", scheduled_at: null, repeat_every: null })
         .in("id", orphaned)
@@ -304,7 +313,7 @@ export async function createPost(formData: FormData) {
     redirect("/queue");
   }
 
-  const { data: post, error } = await supabase
+  const { data: post, error } = await writeDb()
     .from("posts")
     .insert({
       org_id: orgId,
@@ -345,13 +354,13 @@ export async function createPost(formData: FormData) {
       variant_body: variants[channel_id] ?? null,
       status,
     }));
-    const { error: targetErr } = await supabase.from("post_targets").insert(targets);
+    const { error: targetErr } = await writeDb().from("post_targets").insert(targets);
     if (targetErr) throw new Error(targetErr.message);
   }
 
   const media = parseMedia(formData);
   if (media.length > 0) {
-    await supabase
+    await writeDb()
       .from("media")
       .insert(media.map((m) => ({ post_id: post.id, storage_url: m.url, type: m.type })));
   }
@@ -405,7 +414,7 @@ export async function updatePost(formData: FormData) {
   if (scheduledAt) await assertSendable(supabase, orgId, channelIds, segments, scheduledAt, formData);
 
   // Update the post, scoped to the org, and confirm it was ours.
-  const { data: updated, error } = await supabase
+  const { data: updated, error } = await writeDb()
     .from("posts")
     .update({
       body: segments[0],
@@ -439,10 +448,10 @@ export async function updatePost(formData: FormData) {
       throw new Error("Invalid channel selection.");
     }
   }
-  await supabase.from("post_targets").delete().eq("post_id", postId);
+  await writeDb().from("post_targets").delete().eq("post_id", postId);
   if (channelIds.length > 0) {
     const variants = parseVariants(formData);
-    const { error: tErr } = await supabase.from("post_targets").insert(
+    const { error: tErr } = await writeDb().from("post_targets").insert(
       channelIds.map((channel_id) => ({
         post_id: postId,
         channel_id,
@@ -471,9 +480,9 @@ export async function updatePost(formData: FormData) {
     await createAdminClient().storage.from("post-media").remove(removedPaths);
   }
 
-  await supabase.from("media").delete().eq("post_id", postId);
+  await writeDb().from("media").delete().eq("post_id", postId);
   if (media.length > 0) {
-    await supabase
+    await writeDb()
       .from("media")
       .insert(media.map((m) => ({ post_id: postId, storage_url: m.url, type: m.type })));
   }
@@ -494,9 +503,21 @@ export async function retryTarget(formData: FormData) {
   const blocked = await schedulingProblem(orgId);
   if (blocked) throw new Error(blocked);
 
-  // Reset the attempt counter and make it due now. RLS scopes this to the
-  // caller's org, so a target id from another tenant hits nothing.
-  const { data: updated } = await supabase
+  // The target must be on a post in this workspace: checked here, since the
+  // write below uses the service role.
+  const { data: target } = await supabase
+    .from("post_targets")
+    .select("id, posts!inner(org_id)")
+    .eq("id", targetId)
+    .eq("posts.org_id", orgId)
+    .maybeSingle();
+  if (!target) {
+    revalidatePath("/queue");
+    return;
+  }
+
+  // Reset the attempt counter and make it due now.
+  const { data: updated } = await writeDb()
     .from("post_targets")
     .update({ status: "failed", error: null, attempts: 0, next_attempt_at: new Date().toISOString() })
     .eq("id", targetId)
@@ -505,7 +526,7 @@ export async function retryTarget(formData: FormData) {
 
   if (updated?.[0]) {
     // Reflect that the post is being worked on again.
-    await supabase.from("posts").update({ status: "publishing" }).eq("id", updated[0].post_id);
+    await writeDb().from("posts").update({ status: "publishing" }).eq("id", updated[0].post_id).eq("org_id", orgId);
   }
 
   revalidatePath("/queue");
@@ -553,7 +574,7 @@ export async function reschedulePost(
 
   // Scoped to the org and to posts that are still waiting, so a post the
   // publisher has already picked up (or another tenant's post) never moves.
-  const { data: updated, error } = await supabase
+  const { data: updated, error } = await writeDb()
     .from("posts")
     .update({ scheduled_at: scheduledAt })
     .eq("id", postId)
@@ -613,7 +634,7 @@ export async function repostPost(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { data: copy, error } = await supabase
+  const { data: copy, error } = await writeDb()
     .from("posts")
     .insert({
       org_id: orgId,
@@ -631,7 +652,7 @@ export async function repostPost(
     .single();
   if (error || !copy) return { ok: false, error: error?.message ?? "Couldn't create the copy." };
 
-  const { error: tErr } = await supabase.from("post_targets").insert(
+  const { error: tErr } = await writeDb().from("post_targets").insert(
     targets.map((t) => ({
       post_id: copy.id,
       channel_id: t.channel_id,
@@ -640,13 +661,13 @@ export async function repostPost(
     })),
   );
   if (tErr) {
-    await supabase.from("posts").delete().eq("id", copy.id);
+    await writeDb().from("posts").delete().eq("id", copy.id);
     return { ok: false, error: tErr.message };
   }
 
   const { data: media } = await supabase.from("media").select("storage_url, type").eq("post_id", postId);
   if (media && media.length > 0) {
-    await supabase
+    await writeDb()
       .from("media")
       .insert(media.map((m) => ({ post_id: copy.id, storage_url: m.storage_url, type: m.type })));
   }
@@ -695,7 +716,7 @@ export async function deletePost(formData: FormData) {
   }
 
   // post_targets + media rows cascade on delete (see 0001_init).
-  await supabase.from("posts").delete().eq("id", postId).eq("org_id", orgId);
+  await writeDb().from("posts").delete().eq("id", postId).eq("org_id", orgId);
 
   revalidatePath("/drafts");
   revalidatePath("/queue");

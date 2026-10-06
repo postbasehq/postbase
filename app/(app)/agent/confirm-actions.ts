@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { firstBlockingProblem, pastTimeProblem } from "@/lib/post-validation";
 import { isOwnMediaUrl } from "@/lib/media-urls";
 import { getCurrentOrgId } from "@/lib/org";
@@ -11,7 +12,7 @@ import { schedulingProblem } from "@/lib/billing-guard";
  * Commits a post the agent proposed. This is the ONLY path that actually writes
  * a scheduled/draft post from the agent surface — it runs when the human clicks
  * "Schedule" on a proposal card, never automatically. Mirrors the composer's
- * createPost (post + targets + media), session-scoped so RLS enforces the org.
+ * createPost (post + targets + media), scoped to the caller's workspace.
  */
 export type ConfirmProposal = {
   body: string;
@@ -72,7 +73,10 @@ export async function scheduleProposedPost(
     if (problem) return { ok: false, error: problem };
   }
 
-  const { data: post, error } = await supabase
+  // Written with the service role (members can only read posts, 0061),
+  // scoped to the caller's workspace.
+  const db = createAdminClient();
+  const { data: post, error } = await db
     .from("posts")
     .insert({
       org_id: orgId,
@@ -87,7 +91,7 @@ export async function scheduleProposedPost(
   if (error) return { ok: false, error: error.message };
 
   const variants = proposal.variants ?? {};
-  const { error: targetErr } = await supabase.from("post_targets").insert(
+  const { error: targetErr } = await db.from("post_targets").insert(
     channelIds.map((channel_id) => ({
       post_id: post.id,
       channel_id,
@@ -99,7 +103,7 @@ export async function scheduleProposedPost(
 
   const media = (proposal.media ?? []).filter((m) => m?.url && isOwnMediaUrl(m.url, orgId));
   if (media.length > 0) {
-    await supabase
+    await db
       .from("media")
       .insert(media.map((m) => ({ post_id: post.id, storage_url: m.url, type: m.type })));
   }
