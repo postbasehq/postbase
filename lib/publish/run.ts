@@ -13,6 +13,7 @@ type Db = ReturnType<typeof createAdminClient>;
 
 type ChannelRow = {
   id: string;
+  org_id: string;
   platform: string;
   handle: string | null;
   encrypted_tokens: string | null;
@@ -84,7 +85,7 @@ async function loadTarget(db: Db, targetId: string): Promise<TargetRow | null> {
   const { data, error } = await db
     .from("post_targets")
     .select(
-      "id, status, platform_post_id, variant_body, attempts, pending_ref, pending_since, thread_ids, channels(id, platform, handle, encrypted_tokens, token_expiry)",
+      "id, status, platform_post_id, variant_body, attempts, pending_ref, pending_since, thread_ids, channels(id, org_id, platform, handle, encrypted_tokens, token_expiry)",
     )
     .eq("id", targetId)
     .maybeSingle();
@@ -474,6 +475,17 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
     } catch (e) {
       console.error(`[publish] retrying ${item.id} next run:`, e instanceof Error ? e.message : e);
       await releaseClaim(db, item.id, item.from);
+      continue;
+    }
+
+    // Defence in depth with the post_targets trigger (0056): never send through
+    // a channel that isn't in the post's own workspace.
+    if (target.channels && target.channels.org_id !== loaded.post.org_id) {
+      console.error(`[publish] refusing ${target.id}: channel ${target.channels.id} is not in post ${loaded.post.id}'s workspace`);
+      await db
+        .from("post_targets")
+        .update({ status: "failed", error: "This channel doesn't belong to the post's workspace.", next_attempt_at: null })
+        .eq("id", target.id);
       continue;
     }
 

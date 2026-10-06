@@ -8,6 +8,7 @@ const O = "33333333-3333-4333-8333-333333333333";
 let org: Record<string, unknown>;
 let fail: Set<string>;
 let failRecompute: boolean;
+let channelOrg: string;
 let net: ReturnType<typeof installFakeNet>;
 
 function db(r: FakeRequest) {
@@ -20,7 +21,7 @@ function db(r: FakeRequest) {
   if (r.table === "post_targets" && r.method === "GET" && q.get("status") === "eq.scheduled") return json([{ id: T, post_id: P, posts: { status: "publishing" } }]);
   if (r.table === "post_targets" && r.method === "PATCH" && q.get("id") === `eq.${T}`) return json([{ id: T }]);
   if (r.table === "post_targets" && r.method === "GET" && q.get("id") === `eq.${T}`) {
-    return rows([{ id: T, status: "publishing", platform_post_id: null, variant_body: null, attempts: 0, pending_ref: null, pending_since: null, thread_ids: null, channels: { id: "c", platform: "bluesky", handle: "@x", encrypted_tokens: null, token_expiry: null } }]);
+    return rows([{ id: T, status: "publishing", platform_post_id: null, variant_body: null, attempts: 0, pending_ref: null, pending_since: null, thread_ids: null, channels: { id: "c", org_id: channelOrg, platform: "bluesky", handle: "@x", encrypted_tokens: null, token_expiry: null } }]);
   }
   if (r.table === "post_targets" && r.method === "GET" && q.get("post_id") === `eq.${P}`) {
     return failRecompute ? json({ code: "08006", message: "boom" }, 400) : json([{ status: "scheduled", next_attempt_at: null, platform_post_id: null }]);
@@ -34,6 +35,7 @@ beforeEach(() => {
   org = { id: O, name: "Acme", billing_org_id: null, plan: "creator", subscription_status: "active", comped: false };
   fail = new Set();
   failRecompute = false;
+  channelOrg = O;
   net = installFakeNet(db);
 });
 afterEach(() => {
@@ -68,5 +70,10 @@ describe("the publisher never turns a database blip into a failed post", () => {
     await publishDuePosts();
     const postWrites = net.log.filter((r) => r.method === "PATCH" && r.table === "posts" && r.query.includes(`id=eq.${P}`));
     expect(postWrites).toHaveLength(0);
+  });
+  it("never sends through a channel from another workspace", async () => {
+    channelOrg = "44444444-4444-4444-8444-444444444444";
+    await publishDuePosts();
+    expect(targetWrites().at(-1)).toMatchObject({ status: "failed", error: "This channel doesn't belong to the post's workspace." });
   });
 });
