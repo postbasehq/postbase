@@ -2,13 +2,23 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { planForPrice } from "@/lib/plans";
+import { syncSubscription } from "@/lib/stripe-sync";
 import { notifyPaymentFailed, notifySubscriptionEnded, notifyTrialEnding } from "@/lib/email/notify";
 
 /**
  * Stripe webhook — keeps each org's plan/status in sync with its subscription.
  * Set the endpoint to /api/stripe/webhook and STRIPE_WEBHOOK_SECRET in Stripe.
+ *
+ * Order-proof and retry-safe:
+ * - Stripe doesn't guarantee event order, so a subscription event's payload is
+ *   only a pointer: the subscription is re-read from Stripe and its current
+ *   state applied. A late "updated" can't revive a cancelled subscription.
+ * - Changes are matched by subscription id, so events for an old subscription
+ *   can't overwrite (or end) the workspace's current one.
+ * - If the database write fails the handler answers 500, so Stripe retries
+ *   instead of the change being lost.
  */
+
 export async function POST(request: Request) {
   const sig = request.headers.get("stripe-signature");
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -23,55 +33,31 @@ export async function POST(request: Request) {
   }
 
   const db = createAdminClient();
-
-  async function syncSubscription(sub: Stripe.Subscription) {
-    const orgId = sub.metadata?.org_id;
-    const customer = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
-    const item = sub.items.data[0];
-    const price = item?.price?.id;
-    const plan = planForPrice(price);
-    const update: Record<string, unknown> = {
-      stripe_subscription_id: sub.id,
-      subscription_status: sub.status,
-      // Since API 2025-03-31.basil the billing period lives on the subscription item.
-      current_period_end: item?.current_period_end
-        ? new Date(item.current_period_end * 1000).toISOString()
-        : null,
-    };
-    if (plan) update.plan = plan;
-    else console.error(`[stripe] unknown price ${price} on subscription ${sub.id}; plan not updated`);
-    const q = db.from("orgs").update(update);
-    await (orgId ? q.eq("id", orgId) : q.eq("stripe_customer_id", customer));
-  }
-
-  switch (event.type) {
-    case "customer.subscription.created":
-    case "customer.subscription.updated":
-      await syncSubscription(event.data.object);
-      break;
-    case "customer.subscription.trial_will_end":
-      await syncSubscription(event.data.object);
-      await notifyTrialEnding(event.data.object);
-      break;
-    case "invoice.payment_failed":
-      // Status changes (past_due) arrive as subscription.updated; this one tells people.
-      await notifyPaymentFailed(event.data.object);
-      break;
-    case "customer.subscription.deleted": {
-      // Ended for good (cancelled at period end, or unpaid). Access is derived
-      // from subscription_status, so "canceled" locks the workspace; plan drops
-      // to trial limits. A new checkout won't grant a second trial.
-      const sub = event.data.object;
-      const customer = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
-      await db
-        .from("orgs")
-        .update({ subscription_status: "canceled", plan: "trial", stripe_subscription_id: null })
-        .eq("stripe_customer_id", customer);
-      await notifySubscriptionEnded(sub);
-      break;
+  try {
+    switch (event.type) {
+      case "customer.subscription.created":
+      case "customer.subscription.updated":
+      case "customer.subscription.trial_will_end":
+      case "customer.subscription.deleted": {
+        // The payload may be stale (events arrive out of order): read it fresh.
+        const sub = await getStripe().subscriptions.retrieve(event.data.object.id);
+        const outcome = await syncSubscription(db, sub);
+        if (event.type === "customer.subscription.trial_will_end" && outcome === "updated") await notifyTrialEnding(sub);
+        if (event.type === "customer.subscription.deleted" && outcome === "ended") await notifySubscriptionEnded(sub);
+        break;
+      }
+      case "invoice.payment_failed":
+        // Status changes (past_due) arrive as subscription.updated; this one tells people.
+        await notifyPaymentFailed(event.data.object);
+        break;
+      default:
+        break;
     }
-    default:
-      break;
+  } catch (e) {
+    // Database or Stripe trouble: 500 so Stripe retries (it backs off for up to
+    // 3 days). Every step above is safe to repeat.
+    console.error(`[stripe] ${event.type} ${event.id} failed:`, e instanceof Error ? e.message : e);
+    return NextResponse.json({ error: "retry" }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });
