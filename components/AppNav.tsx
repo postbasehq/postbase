@@ -51,8 +51,8 @@ const SECTIONS: Section[] = [
     label: "Support",
     items: [
       { label: "Postbase on X", href: "https://x.com/postbasehq", icon: XIcon, external: true },
-      // TODO: wire Feedback (swap href for a form/route, or convert to a modal trigger).
-      { label: "Feedback", href: "#", icon: FeedbackIcon },
+      // Feedback goes straight to the team inbox (replies come from a person).
+      { label: "Feedback", href: "mailto:team@postbase.so?subject=Postbase%20feedback", icon: FeedbackIcon },
     ],
   },
 ];

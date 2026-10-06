@@ -9,6 +9,7 @@ import { SidebarSearch } from "@/components/SidebarSearch";
 import { HeaderTitle } from "@/components/HeaderTitle";
 import { AgentSparkIcon } from "@/components/AgentSparkIcon";
 import { SidebarSwitcher } from "@/components/SidebarSwitcher";
+import { MobileNav } from "@/components/MobileNav";
 import { AgentProposalDock } from "@/components/AgentProposalDock";
 import { NotificationBell, type ChannelIssue, type Notice } from "@/components/NotificationBell";
 import { channelHealth, RECONNECT_WARN_MS } from "@/lib/channel-health";
@@ -141,12 +142,34 @@ export default async function AppLayout({
         </aside>
 
         {/* floating content panel — inset from the edges, elevated over the backdrop */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col py-3 pl-0 pr-3">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col p-2 md:py-3 md:pl-0 md:pr-3">
           <div className="flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_18px_50px_-20px_rgba(16,24,40,0.35)]">
             <div className="flex min-w-0 flex-1 flex-col">
-              <header className="flex h-16 shrink-0 items-center gap-3 px-6">
-                <HeaderTitle />
-                <div className="ml-auto flex items-center gap-3">
+              <header className="flex h-16 shrink-0 items-center gap-2 px-3 md:gap-3 md:px-6">
+                {/* Phones: the sidebar is hidden, so it opens as a drawer from here. */}
+                <MobileNav
+                  header={<Logo href="/calendar" />}
+                  footer={
+                    <div className="flex items-end gap-1 pr-3">
+                      <div className="min-w-0 flex-1">
+                        <UserMenu name={displayName} email={email} avatarUrl={avatarUrl} />
+                      </div>
+                      <div className="pb-4">
+                        <ThemeToggle />
+                      </div>
+                    </div>
+                  }
+                >
+                  <SidebarSwitcher>
+                    <SidebarSearch />
+                    <OrgSwitcher orgs={orgs} activeId={activeId} action={setActiveOrg} workspaces={workspaces} />
+                    <AppNav />
+                  </SidebarSwitcher>
+                </MobileNav>
+                <div className="min-w-0">
+                  <HeaderTitle />
+                </div>
+                <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-3">
                   <Link
                     href="/agent"
                     aria-label="Open the AI agent"
@@ -156,16 +179,19 @@ export default async function AppLayout({
                     <AgentSparkIcon size={18} />
                   </Link>
                   <NotificationBell items={notices} channelIssues={channelIssues} />
-                  <ThemeToggle />
+                  {/* On phones the theme toggle lives in the menu drawer. */}
+                  <div className="hidden md:block">
+                    <ThemeToggle />
+                  </div>
                   <Link
                     href="/composer"
-                    className="rounded-full bg-blue px-4 py-2 font-display text-sm font-semibold text-on-blue shadow-sm"
+                    className="ml-1 whitespace-nowrap rounded-full bg-blue px-3.5 py-2 font-display text-sm font-semibold text-on-blue shadow-sm md:ml-0 md:px-4"
                   >
                     New post
                   </Link>
                 </div>
               </header>
-              <main className="min-h-0 flex-1 overflow-y-auto p-6">
+              <main className="min-h-0 flex-1 overflow-y-auto p-4 md:p-6">
                 <div className="mx-auto h-full w-full max-w-[1200px]">
                   <PlanGate locked={locked} linkedTo={linkedTo}>{children}</PlanGate>
                 </div>
