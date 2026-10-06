@@ -16,6 +16,9 @@ import { marked } from "marked";
  *   seo_title: Shorter title for search results (optional; defaults to title)
  *   ---
  *
+ * A "## Frequently asked questions" section with each question as a `###`
+ * heading also becomes FAQPage structured data on the page.
+ *
  * A line of the form `::demo name key=value …` drops an animated product shot
  * into the post at that point (see components/marketing/blog/Demo.tsx).
  * Posts are ours, so the rendered HTML is trusted.
@@ -39,7 +42,12 @@ export type PostMeta = {
 
 export type Block = { kind: "html"; html: string } | { kind: "demo"; name: string; props: Record<string, string> };
 
-export type Post = PostMeta & { blocks: Block[]; headings: { id: string; text: string }[] };
+export type Post = PostMeta & {
+  blocks: Block[];
+  headings: { id: string; text: string }[];
+  /** Questions and answers from a "## Frequently asked questions" section, for FAQPage data. */
+  faqs: [string, string][];
+};
 
 const DIR = path.join(process.cwd(), "content", "blog");
 
@@ -139,7 +147,29 @@ export function getPost(slug: string): Post | null {
   }
   flush();
 
-  return { ...meta, blocks, headings };
+  return { ...meta, blocks, headings, faqs: faqsFrom(body) };
+}
+
+/** Markdown to plain text, for structured data: links keep their text, formatting goes. */
+const plain = (md: string) =>
+  md
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/[*_`>]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+/** The "## Frequently asked questions" section's `###` questions and the text under each. */
+function faqsFrom(body: string): [string, string][] {
+  const m = body.match(/^## Frequently asked questions\s*$([\s\S]*?)(?=^## |(?![\s\S]))/m);
+  if (!m) return [];
+  return m[1]
+    .split(/^### /m)
+    .slice(1)
+    .map((chunk) => {
+      const [q, ...rest] = chunk.split("\n");
+      return [plain(q), plain(rest.join("\n"))] as [string, string];
+    })
+    .filter(([q, a]) => q && a);
 }
 
 export const formatDate = (iso: string) =>

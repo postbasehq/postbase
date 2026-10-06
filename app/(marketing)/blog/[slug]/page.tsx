@@ -58,6 +58,15 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
         publisher: { "@id": `${SITE_URL}/#organization` },
         image: { "@type": "ImageObject", url: `${SITE_URL}${path}/cover.png`, width: 1200, height: 630 },
       },
+      ...(post.faqs.length
+        ? [
+            {
+              "@type": "FAQPage",
+              "@id": `${SITE_URL}${path}#faq`,
+              mainEntity: post.faqs.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+            },
+          ]
+        : []),
       {
         "@type": "BreadcrumbList",
         itemListElement: trail.map((t, i) => ({ "@type": "ListItem", position: i + 1, name: t.label, item: `${SITE_URL}${t.href ?? path}` })),
