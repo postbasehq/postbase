@@ -8,7 +8,7 @@ import { BlueskyForm } from "@/components/BlueskyForm";
 import { DisconnectButton } from "@/components/DisconnectButton";
 import { Modal } from "@/components/Modal";
 import { formatReconnectBy } from "@/lib/channel-health";
-import { COMING_SOON, LIMITED } from "@/lib/platforms/availability";
+import { COMING_SOON, IN_DEVELOPMENT, LIMITED } from "@/lib/platforms/availability";
 
 type Account = {
   id: string;
@@ -27,9 +27,9 @@ type Account = {
 type Kind = "oauth" | "bluesky" | "mastodon";
 
 /**
- * Supported publishing platforms, in display order. Labels + logos come from
- * BrandTile's BRANDS map. Facebook is intentionally omitted: Page publishing is
- * built but parked behind Meta App Review.
+ * Publishing platforms, in display order. Labels + logos come from BrandTile's
+ * BRANDS map. Facebook is built but waits on Meta's app review (COMING_SOON);
+ * Threads isn't built yet (IN_DEVELOPMENT), so it only takes sign-ups.
  */
 const PLATFORMS: { id: string; kind: Kind; desc: string; note?: string; access?: string[] }[] = [
   { id: "x", kind: "oauth", desc: "Publish posts and threads to your X account." },
@@ -39,6 +39,8 @@ const PLATFORMS: { id: string; kind: Kind; desc: string; note?: string; access?:
     desc: "Post to a Business or Creator account.",
     note: "Requires a Business/Creator account linked to a Facebook Page.",
   },
+  { id: "facebook", kind: "oauth", desc: "Publish posts to a Facebook Page you manage." },
+  { id: "threads", kind: "oauth", desc: "Publish posts and threads to your Threads profile." },
   { id: "linkedin", kind: "oauth", desc: "Publish posts to your LinkedIn profile." },
   {
     id: "tiktok",
@@ -64,6 +66,7 @@ const TITLE_ID = "channel-connect-title";
 // both light and dark surfaces.
 const GLOW: Record<string, string> = {
   x: "#8a9099",
+  threads: "#8a9099",
   facebook: "#1877F2",
   linkedin: "#0A66C2",
   instagram: "#E1306C",
@@ -184,7 +187,8 @@ export function ChannelsBoard({
     const brand = BRANDS[p.id];
     const accounts = accountsByPlatform[p.id] ?? [];
     const connected = accounts.length > 0;
-    const comingSoon = earlyAccess ? undefined : COMING_SOON[p.id];
+    const building = IN_DEVELOPMENT[p.id];
+    const comingSoon = building ?? (earlyAccess ? undefined : COMING_SOON[p.id]);
     const limited = LIMITED[p.id];
     return (
       <div
@@ -322,7 +326,7 @@ export function ChannelsBoard({
         <div className="mt-auto flex pt-5">
           {comingSoon && !connected ? (
             <div className="flex w-full items-center justify-between gap-2.5 whitespace-nowrap">
-              <span className="text-[12px] font-semibold text-[#e3a72c]">Awaiting approval</span>
+              <span className="text-[12px] font-semibold text-[#e3a72c]">{building ? "Coming soon" : "Awaiting approval"}</span>
               {joined.has(p.id) ? (
                 <button
                   type="button"

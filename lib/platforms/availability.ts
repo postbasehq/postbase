@@ -6,6 +6,15 @@
  */
 export const COMING_SOON: Record<string, string> = {
   instagram: "Waiting on Meta’s app review. We’ll email you the day it opens.",
+  facebook: "Waiting on Meta’s app review. We’ll email you the day it opens.",
+};
+
+/**
+ * Platforms not built yet, shown as "Coming soon" with "Notify me". Unlike
+ * COMING_SOON there's nothing to connect, so early access doesn't unlock them.
+ */
+export const IN_DEVELOPMENT: Record<string, string> = {
+  threads: "We’re building it. We’ll email you when it’s ready.",
 };
 
 /**
@@ -25,7 +34,7 @@ export function tiktokCaveat(text = " (TikTok posts are private for now, until T
 }
 
 /** Platforms people can join the waitlist for (matches the DB check). */
-export const WAITLIST_PLATFORMS = ["instagram", "facebook", "tiktok"] as const;
+export const WAITLIST_PLATFORMS = ["instagram", "facebook", "threads", "tiktok"] as const;
 
 /**
  * Accounts let through the review gate early: emails also added as testers in
