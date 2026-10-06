@@ -92,27 +92,6 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Channel cards: a brand-tinted glow from the top-left corner (via --glow),
-   slightly stronger on hover. Drawn on a pseudo-element so it can fade. */
-.channel-card {
-  position: relative;
-  isolation: isolate;
-}
-.channel-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background-image: radial-gradient(120% 120% at 0% 0%, var(--glow, transparent), transparent 46%);
-  opacity: 0.2;
-  transition: opacity 220ms ease;
-  pointer-events: none;
-}
-.channel-card:hover::before {
-  opacity: 0.38;
-}
-
 /* Native date/time picker icon is black by default; lighten it in dark mode so
    it doesn't disappear against dark inputs. */
 :root[data-theme="dark"] input::-webkit-calendar-picker-indicator {

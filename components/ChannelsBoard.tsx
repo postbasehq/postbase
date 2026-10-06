@@ -31,56 +31,39 @@ type Kind = "oauth" | "bluesky" | "mastodon";
  * BRANDS map. Facebook is built but waits on Meta's app review (COMING_SOON);
  * Threads isn't built yet (IN_DEVELOPMENT), so it only takes sign-ups.
  */
-const PLATFORMS: { id: string; kind: Kind; desc: string; note?: string; access?: string[] }[] = [
-  { id: "x", kind: "oauth", desc: "Publish posts and threads to your X account." },
+// `short` is the card's one line; `desc` is the fuller line in the connect dialog.
+const PLATFORMS: { id: string; kind: Kind; desc: string; short: string; note?: string; access?: string[] }[] = [
+  { id: "x", kind: "oauth", desc: "Publish posts and threads to your X account.", short: "Posts and threads." },
   {
     id: "instagram",
     kind: "oauth",
     desc: "Post to a Business or Creator account.",
+    short: "Business and Creator accounts.",
     note: "Requires a Business/Creator account linked to a Facebook Page.",
   },
-  { id: "facebook", kind: "oauth", desc: "Publish posts to a Facebook Page you manage." },
-  { id: "threads", kind: "oauth", desc: "Publish posts and threads to your Threads profile." },
-  { id: "linkedin", kind: "oauth", desc: "Publish posts to your LinkedIn profile." },
+  { id: "facebook", kind: "oauth", desc: "Publish posts to a Facebook Page you manage.", short: "Pages you manage." },
+  { id: "threads", kind: "oauth", desc: "Publish posts and threads to your Threads profile.", short: "Posts and threads." },
+  { id: "linkedin", kind: "oauth", desc: "Publish posts to your LinkedIn profile.", short: "Posts to your profile." },
   {
     id: "tiktok",
     kind: "oauth",
     desc: "Post videos or photo carousels.",
+    short: "Videos and photo carousels.",
     note: "Video and photo posts only — TikTok doesn’t allow text-only posts.",
   },
   {
     id: "youtube",
     kind: "oauth",
     desc: "Upload videos to your channel.",
+    short: "Videos and Shorts.",
     note: "Video uploads only.",
     access: ["Upload videos to your channel", "Set thumbnails on the videos you post", "See your channel name and your videos' stats"],
   },
-  { id: "bluesky", kind: "bluesky", desc: "Connect with your handle and an app password." },
-  { id: "mastodon", kind: "mastodon", desc: "Connect any instance — approve on your server." },
+  { id: "bluesky", kind: "bluesky", desc: "Connect with your handle and an app password.", short: "Handle and app password." },
+  { id: "mastodon", kind: "mastodon", desc: "Connect any instance — approve on your server.", short: "Any server." },
 ];
 
 const TITLE_ID = "channel-connect-title";
-
-// A representative accent per platform for the card's corner glow. X has no
-// brand colour, so it gets a soft neutral; the rest use a colour that reads on
-// both light and dark surfaces.
-const GLOW: Record<string, string> = {
-  x: "#8a9099",
-  threads: "#8a9099",
-  facebook: "#1877F2",
-  linkedin: "#0A66C2",
-  instagram: "#E1306C",
-  tiktok: "#FE2C55",
-  youtube: "#FF0000",
-  bluesky: "#0085FF",
-  mastodon: "#6364FF",
-};
-
-// Feed the brand accent to the card's glow (drawn/animated in CSS).
-function cardGlow(platform: string): React.CSSProperties {
-  const c = GLOW[platform];
-  return c ? ({ "--glow": c } as React.CSSProperties) : {};
-}
 
 const RED = "#d14a3e";
 const AMBER = "#e3a72c";
@@ -183,186 +166,179 @@ export function ChannelsBoard({
   const connectedPlatforms = filtered.filter((p) => (accountsByPlatform[p.id]?.length ?? 0) > 0);
   const availablePlatforms = filtered.filter((p) => (accountsByPlatform[p.id]?.length ?? 0) === 0);
 
+  // Small outlined action, the same for every state: one quiet button per card
+  // instead of a wall of filled ones.
+  const actionCls =
+    "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 py-1.5 text-[13px] font-semibold text-ink transition-colors hover:border-ink";
+
   const renderCard = (p: (typeof PLATFORMS)[number]) => {
     const brand = BRANDS[p.id];
+    const label = brand?.label ?? p.id;
     const accounts = accountsByPlatform[p.id] ?? [];
     const connected = accounts.length > 0;
     const building = IN_DEVELOPMENT[p.id];
     const comingSoon = building ?? (earlyAccess ? undefined : COMING_SOON[p.id]);
     const limited = LIMITED[p.id];
+    const health = accounts.some((a) => a.health === "reconnect")
+      ? "reconnect"
+      : accounts.some((a) => a.health === "expiring")
+        ? "expiring"
+        : "active";
+
+    // One status, said once. The long explanation is the badge's tooltip.
+    const badge = connected
+      ? null
+      : building
+        ? { text: "Coming soon", why: building }
+        : comingSoon
+          ? { text: "In review", why: comingSoon }
+          : limited
+            ? { text: "Private for now", why: limited }
+            : null;
+
     return (
-      <div
-        key={p.id}
-        style={cardGlow(p.id)}
-        className="channel-card flex flex-col rounded-2xl border border-line bg-surface p-5 shadow-sm"
-      >
-        <div className="flex items-start gap-3.5">
-          <BrandTile platform={p.id} size={44} radius={11} />
-          <div className="min-w-0">
-            <div className="font-display text-[15px] font-semibold tracking-[-0.01em]">
-              {brand?.label ?? p.id}
-            </div>
-            <p className="mt-0.5 text-[13px] leading-snug text-muted">{p.desc}</p>
-            {comingSoon && !connected ? (
-              <p className="mt-1 text-[12px] font-medium leading-snug text-muted">{comingSoon}</p>
-            ) : null}
-            {limited ? (
-              <p className="mt-1 text-[12px] font-medium leading-snug text-muted">
-                {limited}{" "}
-                {waitlistAction ? (
-                  <button
-                    type="button"
-                    onClick={() => toggleNotify(p.id)}
-                    className="font-semibold text-blue-ink underline decoration-line underline-offset-2 hover:decoration-current"
-                  >
-                    {joined.has(p.id) ? "We’ll email you. Undo" : "Email me when it does"}
-                  </button>
-                ) : null}
-              </p>
+      <div key={p.id} className="flex flex-col rounded-[20px] border border-line bg-surface p-1.5 shadow-sm">
+        {/* Zone 1: which network, and its state */}
+        <div className="flex items-center gap-3 rounded-[14px] border border-line bg-surface-2 px-3.5 py-3">
+          <BrandTile platform={p.id} size={36} radius={9} />
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-display text-[15px] font-semibold tracking-[-0.01em] text-ink">{label}</div>
+            {connected ? (
+              <div className="mt-0.5">
+                <StatusPill status={health} />
+              </div>
             ) : null}
           </div>
-          {connected ? (
-            <span className="ml-auto shrink-0">
-              <StatusPill
-                status={
-                  accounts.some((a) => a.health === "reconnect")
-                    ? "reconnect"
-                    : accounts.some((a) => a.health === "expiring")
-                      ? "expiring"
-                      : "active"
-                }
-              />
+          {badge ? (
+            <span
+              title={badge.why}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-[11px] font-semibold text-muted"
+            >
+              <span className="size-1.5 rounded-full" style={{ background: AMBER }} />
+              {badge.text}
             </span>
+          ) : connected ? (
+            <button type="button" onClick={() => setActive(p.id)} className={actionCls}>
+              Add account
+            </button>
           ) : null}
         </div>
 
         {connected ? (
-          <div className="mt-4 flex flex-col gap-2">
-            {accounts.map((a) => {
+          <div className="flex flex-col px-1.5 pb-1 pt-1.5">
+            {accounts.map((a, i) => {
               const primary = a.displayName || a.handle || "Connected account";
-              const secondary = a.displayName && a.handle ? a.handle : null;
+              const secondary = a.displayName && a.handle && a.handle !== a.displayName ? a.handle : null;
               const issue = a.health === "reconnect" || a.health === "expiring" ? a.health : null;
               return (
-                <div
-                  key={a.id}
-                  className="rounded-xl border border-line/70 bg-surface-2/50 px-2.5 py-2"
-                  style={{ borderColor: issue === "reconnect" ? RED : issue === "expiring" ? AMBER : undefined }}
-                >
-                <div className="flex items-center gap-3">
-                  {a.avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={a.avatarUrl}
-                      alt=""
-                      className="size-9 shrink-0 rounded-full object-cover ring-1 ring-line"
-                    />
-                  ) : (
-                    <span className="grid size-9 shrink-0 place-items-center rounded-full ring-1 ring-line">
-                      <BrandTile platform={p.id} size={24} radius={12} />
-                    </span>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1">
-                      <span className="truncate text-[13px] font-semibold text-ink">{primary}</span>
-                      {a.verified ? <VerifiedTick /> : null}
-                      {a.status !== "active" && a.status !== "reconnect" ? (
-                        <span className="ml-1">
-                          <StatusPill status={a.status} />
-                        </span>
-                      ) : null}
+                <div key={a.id} className={i > 0 ? "border-t border-line" : ""}>
+                  <div className="flex items-center gap-3 px-2 py-2.5">
+                    {a.avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={a.avatarUrl} alt="" className="size-8 shrink-0 rounded-full object-cover ring-1 ring-line" />
+                    ) : (
+                      <span className="grid size-8 shrink-0 place-items-center">
+                        <BrandTile platform={p.id} size={28} radius={14} />
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1">
+                        <span className="truncate text-[13px] font-semibold text-ink">{primary}</span>
+                        {a.verified ? <VerifiedTick /> : null}
+                        {a.status !== "active" && a.status !== "reconnect" ? (
+                          <span className="ml-1">
+                            <StatusPill status={a.status} />
+                          </span>
+                        ) : null}
+                      </div>
+                      {secondary ? <div className="truncate text-xs text-muted">{secondary}</div> : null}
                     </div>
-                    {secondary ? (
-                      <div className="truncate text-xs text-muted">{secondary}</div>
+                    {disconnectAction ? (
+                      <DisconnectButton
+                        action={disconnectAction}
+                        channelId={a.id}
+                        label={`${label}${a.handle ? ` (${a.handle})` : ""}`}
+                        quiet
+                      />
                     ) : null}
                   </div>
-                  {disconnectAction ? (
-                    <DisconnectButton
-                      action={disconnectAction}
-                      channelId={a.id}
-                      label={`${brand?.label ?? p.id}${a.handle ? ` (${a.handle})` : ""}`}
-                    />
-                  ) : null}
-                </div>
-                {issue ? (
-                  <div className="mt-2 flex flex-wrap items-end gap-x-3 gap-y-2 border-t border-line/70 pt-2">
-                    <div className="min-w-0 flex-1 text-[12px] leading-snug">
-                      <div className="font-semibold" style={{ color: issue === "reconnect" ? RED : "var(--ink)" }}>
-                        {issue === "reconnect"
-                          ? "Posts to this account can’t go out"
-                          : `Reconnect by ${formatReconnectBy(a.reconnectBy!)}`}
+                  {issue ? (
+                    <div className="mx-2 mb-2.5 flex flex-wrap items-end gap-x-3 gap-y-2 rounded-xl border px-3 py-2.5" style={{ borderColor: issue === "reconnect" ? RED : AMBER }}>
+                      <div className="min-w-0 flex-1 text-[12px] leading-snug">
+                        <div className="font-semibold" style={{ color: issue === "reconnect" ? RED : "var(--ink)" }}>
+                          {issue === "reconnect"
+                            ? "Posts to this account can’t go out"
+                            : `Reconnect by ${formatReconnectBy(a.reconnectBy!)}`}
+                        </div>
+                        <div className="mt-0.5 text-muted">
+                          {issue === "reconnect"
+                            ? a.reason
+                            : "LinkedIn connections last 60 days. Reconnect before then to keep posting."}
+                          {a.waiting ? ` ${a.waiting} ${a.waiting === 1 ? "post is" : "posts are"} waiting on it.` : ""}
+                        </div>
                       </div>
-                      <div className="mt-0.5 text-muted">
-                        {issue === "reconnect"
-                          ? a.reason
-                          : "LinkedIn connections last 60 days. Reconnect before then to keep posting."}
-                        {a.waiting ? ` ${a.waiting} ${a.waiting === 1 ? "post is" : "posts are"} waiting on it.` : ""}
-                      </div>
+                      {p.kind === "oauth" ? (
+                        <a
+                          href={`/api/connect/${p.id}`}
+                          className="shrink-0 rounded-full bg-[#2b59d9] px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-shadow hover:shadow-md"
+                        >
+                          Reconnect
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setActive(p.id)}
+                          className="shrink-0 rounded-full bg-[#2b59d9] px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-shadow hover:shadow-md"
+                        >
+                          Reconnect
+                        </button>
+                      )}
                     </div>
-                    {p.kind === "oauth" ? (
-                      <a
-                        href={`/api/connect/${p.id}`}
-                        className="shrink-0 rounded-full bg-[#2b59d9] px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-shadow hover:shadow-md"
-                      >
-                        Reconnect
-                      </a>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setActive(p.id)}
-                        className="shrink-0 rounded-full bg-[#2b59d9] px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-shadow hover:shadow-md"
-                      >
-                        Reconnect
-                      </button>
-                    )}
-                  </div>
-                ) : null}
+                  ) : null}
                 </div>
               );
             })}
           </div>
-        ) : null}
-
-        {/* Pinned to the bottom so buttons line up across a row of cards. */}
-        <div className="mt-auto flex pt-5">
-          {comingSoon && !connected ? (
-            <div className="flex w-full items-center justify-between gap-2.5 whitespace-nowrap">
-              <span className="text-[12px] font-semibold text-[#e3a72c]">{building ? "Coming soon" : "Awaiting approval"}</span>
-              {joined.has(p.id) ? (
+        ) : (
+          /* Zone 2: what it does, and the one thing you can do */
+          <div className="flex flex-1 items-center gap-3 px-3 pb-2 pt-3">
+            <div className="min-w-0 flex-1 text-[13px] leading-snug text-muted">
+              <p>{p.short}</p>
+              {limited && waitlistAction ? (
                 <button
                   type="button"
                   onClick={() => toggleNotify(p.id)}
-                  title="Stop the email"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 text-sm font-semibold text-muted transition-colors hover:bg-surface-2"
+                  className="mt-0.5 text-[12px] font-semibold text-blue-ink underline decoration-line underline-offset-2 hover:decoration-current"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                    <path d="M20 6 9 17l-5-5" />
-                  </svg>
-                  On the list
+                  {joined.has(p.id) ? "We’ll email you. Undo" : "Email me when posts can be public"}
                 </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => toggleNotify(p.id)}
-                  className="rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
-                >
-                  Notify me
-                </button>
-              )}
+              ) : null}
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setActive(p.id)}
-              className={
-                connected
-                  ? "ml-auto rounded-full border border-line px-4 py-2 text-sm font-semibold text-blue-ink transition-colors hover:bg-surface-2"
-                  : "ml-auto rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
-              }
-            >
-              {connected ? "Add another" : `Connect ${brand?.label ?? ""}`.trim()}
-            </button>
-          )}
-        </div>
+            {comingSoon ? (
+              <button
+                type="button"
+                onClick={() => toggleNotify(p.id)}
+                title={joined.has(p.id) ? "Stop the email" : comingSoon}
+                className={joined.has(p.id) ? `${actionCls} text-muted` : actionCls}
+              >
+                {joined.has(p.id) ? (
+                  <>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                    On the list
+                  </>
+                ) : (
+                  "Notify me"
+                )}
+              </button>
+            ) : (
+              <button type="button" onClick={() => setActive(p.id)} className={actionCls}>
+                Connect
+              </button>
+            )}
+          </div>
+        )}
       </div>
     );
   };
@@ -370,7 +346,7 @@ export function ChannelsBoard({
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="flex min-w-0 max-w-md flex-1 items-center gap-2 rounded-xl border border-line bg-surface px-3.5 focus-within:border-blue">
+        <div className="flex min-w-[12rem] max-w-md flex-1 basis-full items-center gap-2 rounded-xl border border-line bg-surface px-3.5 focus-within:border-blue sm:basis-auto">
           <svg
             width="16"
             height="16"
@@ -463,7 +439,8 @@ export function ChannelsBoard({
             {showConnected ? (
               <section>
                 <h3 className="mb-3 text-sm font-semibold text-muted">Connected</h3>
-                <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+                {/* Each card as tall as its accounts: no stretched dead space. */}
+                <div className="grid grid-cols-1 items-start gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
                   {connectedPlatforms.map(renderCard)}
                 </div>
               </section>

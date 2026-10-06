@@ -15,10 +15,13 @@ export function DisconnectButton({
   action,
   channelId,
   label,
+  quiet = false,
 }: {
   action: (formData: FormData) => Promise<void>;
   channelId: string;
   label: string;
+  /** Plain text trigger (no border), for account rows. */
+  quiet?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -40,7 +43,11 @@ export function DisconnectButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-full border border-line px-2.5 py-1 text-xs font-medium text-muted hover:border-[#d14a3e] hover:text-[#d14a3e]"
+        className={
+          quiet
+            ? "shrink-0 rounded-full px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:text-[#d14a3e]"
+            : "rounded-full border border-line px-2.5 py-1 text-xs font-medium text-muted hover:border-[#d14a3e] hover:text-[#d14a3e]"
+        }
       >
         Disconnect
       </button>
