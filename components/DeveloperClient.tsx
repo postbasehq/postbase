@@ -19,6 +19,8 @@ type KeyRow = {
   key_hint: string | null;
   created_at: string;
   last_used_at: string | null;
+  /** Members manage only keys they created; owners and admins manage all (0059). */
+  canManage: boolean;
 };
 
 type ConnectedApp = {
@@ -448,6 +450,9 @@ export function DeveloperClient({
                       Created {fmt(k.created_at)} · last used {fmt(k.last_used_at)}
                     </div>
                   </div>
+                  {!k.canManage ? (
+                    <span className="ml-auto text-xs text-muted">Created by a teammate</span>
+                  ) : (
                   <div className="ml-auto flex items-center gap-1">
                     <button
                       type="button"
@@ -470,6 +475,7 @@ export function DeveloperClient({
                       Revoke
                     </button>
                   </div>
+                  )}
                 </div>
               ))}
             </div>

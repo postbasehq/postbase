@@ -6,6 +6,8 @@ import { getCurrentOrgId } from "@/lib/org";
 import { generateApiKey, hashApiKey, maskApiKey } from "@/lib/apikey";
 import { revokeToken } from "@/lib/oauth";
 
+const NOT_YOURS = "Only the person who created this key, or an owner or admin, can change it.";
+
 export type CreateKeyState = { key?: string; label?: string; error?: string };
 
 /** Create an API key. Returns the plaintext ONCE (only the hash is stored). */
@@ -57,8 +59,13 @@ export async function rotateApiKey(
   });
   if (insertError) return { error: insertError.message };
 
-  // Best-effort: remove the old key. The new one is already live either way.
-  await supabase.from("api_keys").delete().eq("id", id).eq("org_id", orgId);
+  // Remove the old key. Members can only remove keys they created (0059): if
+  // this one isn't theirs, take the new key back and say so.
+  const { data: removed } = await supabase.from("api_keys").delete().eq("id", id).eq("org_id", orgId).select("id");
+  if (!removed?.length) {
+    await supabase.from("api_keys").delete().eq("hashed_key", hashApiKey(key)).eq("org_id", orgId);
+    return { error: NOT_YOURS };
+  }
 
   revalidatePath("/api-keys");
   return { key, label };
@@ -87,12 +94,14 @@ export async function revokeApiKey(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("Missing key id.");
 
-  const { error } = await supabase
+  const { data: removed, error } = await supabase
     .from("api_keys")
     .delete()
     .eq("id", id)
-    .eq("org_id", orgId);
+    .eq("org_id", orgId)
+    .select("id");
   if (error) throw new Error(error.message);
+  if (!removed?.length) throw new Error(NOT_YOURS);
 
   revalidatePath("/api-keys");
 }

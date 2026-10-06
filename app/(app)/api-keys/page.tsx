@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { getUserOrgs, scopeOrgId } from "@/lib/org";
+import { canManageOrg, getOrgRole, getUserOrgs, scopeOrgId } from "@/lib/org";
 import { DeveloperClient } from "@/components/DeveloperClient";
 import { publicMcpUrl, listConnectedApps } from "@/lib/oauth";
 
@@ -9,13 +9,15 @@ export default async function DevelopersPage() {
   // Never select hashed_key.
   const { data: keys } = await supabase
     .from("api_keys")
-    .select("id, label, key_hint, created_at, last_used_at")
+    .select("id, label, key_hint, created_at, last_used_at, created_by")
     .eq("org_id", orgId)
     .order("created_at", { ascending: false });
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const manager = orgId ? canManageOrg(await getOrgRole(orgId)) : false;
+  const rows = (keys ?? []).map(({ created_by, ...k }) => ({ ...k, canManage: manager || (!!user && created_by === user.id) }));
   const connectedApps = user ? (await listConnectedApps(user.id)).filter((a) => a.orgId === orgId) : [];
 
   // Keys and connections belong to one workspace; say which, since plans cover several.
@@ -32,7 +34,7 @@ export default async function DevelopersPage() {
         </p>
       ) : null}
       <DeveloperClient
-        keys={keys ?? []}
+        keys={rows}
         mcpUrl={publicMcpUrl()}
         connectedApps={connectedApps}
         workspace={workspace}

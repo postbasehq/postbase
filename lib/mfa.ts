@@ -1,4 +1,5 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { isSafePath } from "@/lib/safe-path";
 
 /**
  * Two-factor sign-in (TOTP authenticator apps, via Supabase Auth MFA).
@@ -34,7 +35,7 @@ export async function needsTwoFactor(supabase: SupabaseClient, user: User | null
 
 /** Only same-origin relative paths survive a ?next= (no open redirect). */
 export function safeNext(next: string | null | undefined, fallback = "/calendar"): string {
-  return next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith(VERIFY_PATH) ? next : fallback;
+  return isSafePath(next) && !next.startsWith(VERIFY_PATH) ? next : fallback;
 }
 
 export function verifyUrl(next: string): string {

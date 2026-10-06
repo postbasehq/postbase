@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { isSafePath } from "@/lib/safe-path";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { createClient } from "@/lib/supabase/client";
 import { Analytics } from "@/components/Analytics";
@@ -34,7 +35,7 @@ export default function LoginPage() {
   function callbackUrl(): string {
     const params = new URLSearchParams(window.location.search);
     const next = params.get("next");
-    const suffix = next && next.startsWith("/") && !next.startsWith("//")
+    const suffix = isSafePath(next)
       ? `?next=${encodeURIComponent(next)}`
       : "";
     return `${window.location.origin}/auth/callback${suffix}`;

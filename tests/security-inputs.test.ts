@@ -52,3 +52,21 @@ describe("MCP OAuth redirect URIs", () => {
     (u) => expect(isSafeRedirectUri(u)).toBe(true),
   );
 });
+
+import { isSafePath } from "@/lib/safe-path";
+import { safeNext } from "@/lib/mfa";
+
+describe("redirect targets stay on Postbase", () => {
+  it("refuses paths a browser would treat as another site", () => {
+    for (const bad of ["//evil.com", "/\\evil.com", "/\\/evil.com", "/\t/evil.com", "/\n/evil.com", "https://evil.com", "evil.com", "", null, undefined]) {
+      expect(isSafePath(bad as string)).toBe(false);
+      expect(safeNext(bad as string)).toBe("/calendar");
+    }
+  });
+  it("keeps ordinary paths", () => {
+    for (const ok of ["/queue", "/oauth/authorize?client_id=a&redirect_uri=https%3A%2F%2Fx", "/billing#plans"]) {
+      expect(isSafePath(ok)).toBe(true);
+      expect(safeNext(ok)).toBe(ok);
+    }
+  });
+});

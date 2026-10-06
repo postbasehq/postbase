@@ -1,6 +1,7 @@
 "use server";
 
 import { createHash, randomBytes } from "node:crypto";
+import { isSafePath } from "@/lib/safe-path";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -208,5 +209,5 @@ export async function setActiveOrg(formData: FormData) {
   revalidatePath("/", "layout");
   // Optional same-site page to land on (e.g. /billing); anything else goes to the queue.
   const next = String(formData.get("next") ?? "");
-  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/queue");
+  redirect(isSafePath(next) ? next : "/queue");
 }

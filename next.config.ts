@@ -18,6 +18,24 @@ const nextConfig: NextConfig = {
   // live under /well-known/* and are exposed at the real /.well-known/* paths
   // (RFC 8414 / 9728) via rewrites. The protected-resource doc also answers any
   // resource-suffixed path that MCP clients probe.
+  // Baseline security headers on every response. frame-ancestors 'none':
+  // nothing embeds Postbase, so it can't be framed for clickjacking (e.g. the
+  // OAuth consent or billing pages).
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+          { key: "Strict-Transport-Security", value: "max-age=63072000" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), browsing-topics=()" },
+        ],
+      },
+    ];
+  },
   async rewrites() {
     // mcp.postbase.so serves the MCP server at /mcp (and /). beforeFiles so
     // "/" on that host doesn't hit the marketing homepage.
