@@ -8,6 +8,7 @@ import { MCP_FAQS, MCP_GLANCE, MCP_NETWORKS, MCP_SCENES } from "@/lib/seo/mcp";
 import { CtaBand, FaqList, wrap } from "@/components/marketing/ui";
 import { LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
 import { McpInActionDemo } from "@/components/marketing/seo/McpDemo";
+import { McpHeroDecor } from "@/components/marketing/seo/McpHeroDecor";
 import { GlanceTiles, McpConnect, McpTools } from "@/components/marketing/seo/McpTools";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
@@ -33,6 +34,7 @@ export default function McpPage() {
           cta={{ label: "Connect in a minute", href: "/login" }}
           secondary={{ label: "Tool reference", href: "https://docs.postbase.so/mcp/tools" }}
           frame="Claude scheduling through Postbase, live on your calendar"
+          decor={<McpHeroDecor />}
         >
           <McpInActionDemo scene={MCP_SCENES.hub} />
         </SeoHero>

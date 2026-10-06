@@ -68,6 +68,7 @@ export function SeoHero({
   secondary,
   note = "Cancel anytime · or self-host for free",
   frame,
+  decor,
   children,
 }: {
   trail: { label: string; href?: string }[];
@@ -81,9 +82,11 @@ export function SeoHero({
   note?: string | null;
   /** Caption above the product shot. */
   frame?: string;
+  /** A full-width backdrop behind the hero (it positions itself). */
+  decor?: React.ReactNode;
   children?: React.ReactNode;
 }) {
-  return (
+  const hero = (
     <section className={`${wrap} pt-10 text-center md:pt-14`}>
       <Breadcrumbs trail={trail} />
       <h1 className="mx-auto mt-8 max-w-[17ch] font-display text-[clamp(40px,6.2vw,76px)] font-semibold leading-[1.04] tracking-[-0.04em] text-ink text-balance">
@@ -123,6 +126,14 @@ export function SeoHero({
         </div>
       ) : null}
     </section>
+  );
+  return decor ? (
+    <div className="relative isolate">
+      {decor}
+      {hero}
+    </div>
+  ) : (
+    hero
   );
 }
 
