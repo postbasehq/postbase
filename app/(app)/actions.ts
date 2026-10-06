@@ -18,7 +18,7 @@ import { connectBluesky } from "@/lib/platforms/bluesky";
 import { isRepeatEvery } from "@/lib/publish/repeat";
 import { getTimeZone, zonedTimeToUtc } from "@/lib/tz";
 import { firstBlockingProblem, pastTimeProblem } from "@/lib/post-validation";
-import { cancelPostForOrg } from "@/lib/publish/cancel";
+import { cancelPostForOrg, holdPostForEdit } from "@/lib/publish/cancel";
 import {
   generateSoulImage,
   higgsfieldConfigured,
@@ -386,14 +386,26 @@ export async function updatePost(formData: FormData) {
   // duplicates. Retrying a failed channel is handled by the queue Retry.
   const { data: current } = await supabase
     .from("posts")
-    .select("status, post_targets(status, platform_post_id, thread_ids)")
+    .select("status, post_targets(status, platform_post_id, pending_ref, thread_ids)")
     .eq("id", postId)
     .eq("org_id", orgId)
     .maybeSingle();
   if (!current) redirect("/queue"); // not ours / gone — bounce with feedback
   const anyDelivered = (
-    (current.post_targets ?? []) as { status: string; platform_post_id: string | null; thread_ids: string[] | null }[]
-  ).some((t) => t.status === "published" || t.status === "publishing" || t.platform_post_id || (t.thread_ids?.length ?? 0) > 0);
+    (current.post_targets ?? []) as {
+      status: string;
+      platform_post_id: string | null;
+      pending_ref: string | null;
+      thread_ids: string[] | null;
+    }[]
+  ).some(
+    (t) =>
+      t.status === "published" ||
+      t.status === "publishing" ||
+      t.platform_post_id ||
+      t.pending_ref || // still processing on the network (e.g. a TikTok upload)
+      (t.thread_ids?.length ?? 0) > 0,
+  );
   if (current.status === "published" || current.status === "publishing" || anyDelivered) {
     redirect("/queue");
   }
@@ -412,6 +424,25 @@ export async function updatePost(formData: FormData) {
   }
   assertOwnMedia(formData, orgId);
   if (scheduledAt) await assertSendable(supabase, orgId, channelIds, segments, scheduledAt, formData);
+
+  // Validate channels belong to this workspace before writing anything.
+  if (channelIds.length > 0) {
+    const { data: owned } = await supabase
+      .from("channels")
+      .select("id")
+      .eq("org_id", orgId)
+      .in("id", channelIds);
+    const ownedIds = new Set((owned ?? []).map((c) => c.id));
+    if (channelIds.some((id) => !ownedIds.has(id))) {
+      throw new Error("Invalid channel selection.");
+    }
+  }
+
+  // The check above is a separate read: the publisher could claim a target
+  // before the rewrite below, which would then send it again at the new time.
+  // Hold the post still (unsendable) first; bail if anything is already sending.
+  const hold = await holdPostForEdit(orgId, postId);
+  if (!hold.ok) redirect("/queue");
 
   // Update the post, scoped to the org, and confirm it was ours.
   const { data: updated, error } = await writeDb()
@@ -432,22 +463,15 @@ export async function updatePost(formData: FormData) {
     })
     .eq("id", postId)
     .eq("org_id", orgId)
+    .eq("status", "draft") // held above
     .select("id");
-  if (error) throw new Error(error.message);
-  if (!updated || updated.length === 0) redirect("/queue");
-
-  // Validate channels belong to this workspace, then replace the targets.
-  if (channelIds.length > 0) {
-    const { data: owned } = await supabase
-      .from("channels")
-      .select("id")
-      .eq("org_id", orgId)
-      .in("id", channelIds);
-    const ownedIds = new Set((owned ?? []).map((c) => c.id));
-    if (channelIds.some((id) => !ownedIds.has(id))) {
-      throw new Error("Invalid channel selection.");
-    }
+  if (error || !updated || updated.length === 0) {
+    await hold.release();
+    if (error) throw new Error(error.message);
+    redirect("/queue");
   }
+
+  // Replace the targets (all unsent and held as drafts, so none is mid-send).
   await writeDb().from("post_targets").delete().eq("post_id", postId);
   if (channelIds.length > 0) {
     const variants = parseVariants(formData);
