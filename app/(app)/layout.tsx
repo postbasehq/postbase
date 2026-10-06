@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Suspense } from "react";
+import { NavProgress } from "@/components/NavProgress";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AppNav } from "@/components/AppNav";
@@ -153,7 +155,11 @@ export default async function AppLayout({
 
         {/* floating content panel — inset from the edges, elevated over the backdrop */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col p-2 md:py-3 md:pl-0 md:pr-3">
-          <div className="flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_18px_50px_-20px_rgba(16,24,40,0.35)]">
+          <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_18px_50px_-20px_rgba(16,24,40,0.35)]">
+            {/* While the next page loads, the current one stays put with this bar. */}
+            <Suspense fallback={null}>
+              <NavProgress />
+            </Suspense>
             <div className="flex min-w-0 flex-1 flex-col">
               <header className="flex h-16 shrink-0 items-center gap-2 px-3 md:gap-3 md:px-6">
                 {/* Phones: the sidebar is hidden, so it opens as a drawer from here. */}

@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
-import type { ComponentType } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import { AgentSparkIcon } from "@/components/AgentSparkIcon";
 import { BugGlyph, FeedbackNavButton } from "@/components/FeedbackDialog";
 
@@ -68,7 +68,10 @@ export function AppNav({
   frozen?: boolean;
 } = {}) {
   const livePathname = usePathname() ?? "";
-  const pathname = active ?? livePathname;
+  // The item just clicked shows as active straight away, while its page loads.
+  const [clicked, setClicked] = useState<string | null>(null);
+  useEffect(() => setClicked(null), [livePathname]);
+  const pathname = active ?? clicked ?? livePathname;
   return (
     <nav className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {SECTIONS.map((section, i) => (
@@ -147,6 +150,9 @@ export function AppNav({
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={(e) => {
+                  if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey && !active) setClicked(item.href);
+                }}
                 className={`${cls} ${
                   active
                     ? "bg-blue-soft text-blue-ink"
@@ -154,6 +160,7 @@ export function AppNav({
                 }`}
               >
                 {inner}
+                <LinkPending />
               </Link>
             );
           })}
@@ -161,6 +168,16 @@ export function AppNav({
       ))}
     </nav>
   );
+}
+
+/** A small spinner on a nav item while the page it opens is loading. */
+function LinkPending() {
+  const { pending } = useLinkStatus();
+  return pending ? (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="ml-auto shrink-0 animate-spin" aria-label="Loading">
+      <path d="M21 12a9 9 0 1 1-6.2-8.5" />
+    </svg>
+  ) : null;
 }
 
 // ── Icons (Lucide-style, 16px, inherit currentColor) ────────────────────────
