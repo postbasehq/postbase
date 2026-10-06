@@ -1,5 +1,4 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { atChannelLimit } from "@/lib/billing-guard";
 import { encryptJson, decryptJson } from "@/lib/crypto";
 import {
   listInstagramAccounts,
@@ -7,6 +6,7 @@ import {
   type FacebookTokens,
   type MetaTokens,
 } from "@/lib/platforms/meta";
+import { saveChannel } from "@/lib/channel-store";
 
 /**
  * Connecting Instagram or Facebook: one Facebook login can reach many Pages and
@@ -143,21 +143,13 @@ export async function saveMetaChannels(
       // find these channels, and disconnect tell whether the login is shared.
       provider_user_id: pick.fbUserId,
     };
-    const { data: existing } = await supabase
-      .from("channels")
-      .select("id")
-      .eq("org_id", orgId)
-      .eq("platform", pick.platform)
-      .eq("handle", r.handle)
-      .maybeSingle();
-    if (!existing && (await atChannelLimit(supabase, orgId))) {
+    // Saved with the service role, scoped to this workspace (lib/channel-store.ts).
+    const stored = await saveChannel(orgId, pick.platform, r.handle, fields);
+    if (stored.limit) {
       limitHit = true;
       break;
     }
-    const { error } = existing
-      ? await supabase.from("channels").update(fields).eq("id", existing.id)
-      : await supabase.from("channels").insert({ org_id: orgId, platform: pick.platform, handle: r.handle, ...fields });
-    if (error) failed = true;
+    if (stored.error) failed = true;
     else saved++;
   }
   return { saved, limitHit, failed };

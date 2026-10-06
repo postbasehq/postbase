@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { getCurrentOrgId } from "@/lib/org";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { canManageOrg, getCurrentOrgId, getOrgRole } from "@/lib/org";
 import { decryptJson } from "@/lib/crypto";
 import { getMe as xGetMe, type XTokens } from "@/lib/platforms/x";
 import { getMe as liGetMe, type LinkedInTokens } from "@/lib/platforms/linkedin";
@@ -22,11 +22,14 @@ type Profile = { display_name?: string | null; avatar_url?: string | null; verif
  * decrypts each channel's stored tokens.
  */
 export async function POST() {
-  const supabase = await createClient();
   const orgId = await getCurrentOrgId();
   if (!orgId) return NextResponse.json({ error: "No workspace." }, { status: 401 });
+  // An admin utility that decrypts every channel's tokens: owners/admins only,
+  // and tokens are read server-side (members can't select them, migration 0057).
+  if (!canManageOrg(await getOrgRole(orgId))) return NextResponse.json({ error: "Owners and admins only." }, { status: 403 });
+  const db = createAdminClient();
 
-  const { data: channels } = await supabase
+  const { data: channels } = await db
     .from("channels")
     .select("id, platform, encrypted_tokens, display_name, avatar_url, verified")
     .eq("org_id", orgId);
@@ -40,14 +43,15 @@ export async function POST() {
     try {
       const profile = await fetchProfile(c.platform, c.encrypted_tokens);
       if (profile && (profile.display_name || profile.avatar_url)) {
-        await supabase
+        await db
           .from("channels")
           .update({
             display_name: c.display_name ?? profile.display_name ?? null,
             avatar_url: c.avatar_url ?? profile.avatar_url ?? null,
             ...(profile.verified != null ? { verified: profile.verified } : {}),
           })
-          .eq("id", c.id);
+          .eq("id", c.id)
+          .eq("org_id", orgId);
         updated += 1;
         results.push({ platform: c.platform, ok: true });
       } else {

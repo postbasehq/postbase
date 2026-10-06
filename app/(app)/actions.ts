@@ -9,8 +9,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { canManageOrg, getCurrentOrgId, getOrgRole } from "@/lib/org";
 import { encryptJson } from "@/lib/crypto";
 import { revokeChannelAccess } from "@/lib/channel-revoke";
+import { saveChannel } from "@/lib/channel-store";
 import { type YouTubePostOptions } from "@/lib/platforms/youtube";
-import { atChannelLimit, hasAccess, NO_PLAN_MESSAGE, releaseAiGeneration, reserveAiGeneration } from "@/lib/billing-guard";
+import { hasAccess, NO_PLAN_MESSAGE, releaseAiGeneration, reserveAiGeneration } from "@/lib/billing-guard";
 import { connectBluesky } from "@/lib/platforms/bluesky";
 import { isRepeatEvery } from "@/lib/publish/repeat";
 import { getTimeZone, zonedTimeToUtc } from "@/lib/tz";
@@ -199,7 +200,8 @@ export async function disconnectChannel(formData: FormData) {
 
   // Best-effort: revoke the grant on the provider's side before we drop the row,
   // so disconnect truly de-authorizes Postbase (not just a local token delete).
-  const { data: channel } = await supabase
+  // Tokens are read server-side (members can't select them, migration 0057).
+  const { data: channel } = await createAdminClient()
     .from("channels")
     .select("id, org_id, platform, encrypted_tokens, provider_user_id")
     .eq("id", channelId)
@@ -722,22 +724,12 @@ export async function connectBlueskyChannel(
     display_name: profile?.displayName ?? null,
     avatar_url: profile?.avatarUrl ?? null,
   };
-  const { data: existing } = await supabase
-    .from("channels")
-    .select("id")
-    .eq("org_id", orgId)
-    .eq("platform", "bluesky")
-    .eq("handle", chHandle)
-    .maybeSingle();
-
-  if (!existing && (await atChannelLimit(supabase, orgId))) {
+  // Saved with the service role, scoped to this workspace (lib/channel-store.ts).
+  const saved = await saveChannel(orgId, "bluesky", chHandle, fields);
+  if (saved.limit) {
     return { error: "You've reached your plan's channel limit. Upgrade in Billing to connect more." };
   }
-
-  const { error } = existing
-    ? await supabase.from("channels").update(fields).eq("id", existing.id)
-    : await supabase.from("channels").insert({ org_id: orgId, platform: "bluesky", handle: chHandle, ...fields });
-  if (error) return { error: "Couldn't save the channel — please try again." };
+  if (saved.error) return { error: "Couldn't save the channel — please try again." };
 
   revalidatePath("/channels");
   return { ok: true };

@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
-import { atChannelLimit } from "@/lib/billing-guard";
 import { encryptJson } from "@/lib/crypto";
 import { exchangeCode, getChannel, hasRequiredScopes, type YouTubeTokens } from "@/lib/platforms/youtube";
+import { saveChannel } from "@/lib/channel-store";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -66,19 +66,10 @@ export async function GET(request: Request) {
       avatar_url: channel.avatar_url ?? null,
     };
 
-    const { data: existing } = await supabase
-      .from("channels")
-      .select("id")
-      .eq("org_id", orgId)
-      .eq("platform", "youtube")
-      .eq("handle", handle)
-      .maybeSingle();
-
-    if (!existing && (await atChannelLimit(supabase, orgId))) return fail("channel_limit");
-
-    const { error } = existing
-      ? await supabase.from("channels").update(fields).eq("id", existing.id)
-      : await supabase.from("channels").insert({ org_id: orgId, platform: "youtube", handle, ...fields });
+    // Saved with the service role, scoped to this workspace (lib/channel-store.ts).
+    const saved = await saveChannel(orgId, "youtube", handle, fields);
+    if (saved.limit) return fail("channel_limit");
+    const error = saved.error ? { message: saved.error } : null;
     if (error) {
       console.error("[youtube callback] save failed:", error.message);
       return fail("save_failed");

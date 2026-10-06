@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
-import { atChannelLimit } from "@/lib/billing-guard";
 import { encryptJson } from "@/lib/crypto";
 import { exchangeCode, getUser, type TikTokTokens } from "@/lib/platforms/tiktok";
+import { saveChannel } from "@/lib/channel-store";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -61,19 +61,10 @@ export async function GET(request: Request) {
       avatar_url: me.avatar_url ?? null,
     };
 
-    const { data: existing } = await supabase
-      .from("channels")
-      .select("id")
-      .eq("org_id", orgId)
-      .eq("platform", "tiktok")
-      .eq("handle", handle)
-      .maybeSingle();
-
-    if (!existing && (await atChannelLimit(supabase, orgId))) return fail("channel_limit");
-
-    const { error } = existing
-      ? await supabase.from("channels").update(fields).eq("id", existing.id)
-      : await supabase.from("channels").insert({ org_id: orgId, platform: "tiktok", handle, ...fields });
+    // Saved with the service role, scoped to this workspace (lib/channel-store.ts).
+    const saved = await saveChannel(orgId, "tiktok", handle, fields);
+    if (saved.limit) return fail("channel_limit");
+    const error = saved.error ? { message: saved.error } : null;
     if (error) return fail("save_failed");
   } catch {
     return fail("tt_connect_failed");

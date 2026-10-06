@@ -33,7 +33,9 @@ export async function POST(req: Request) {
   const channelId = String(body.channel_id ?? "");
   if (!channelId) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
-  const { data: channel } = await supabase
+  // Members can't read encrypted_tokens (migration 0057): read it server-side,
+  // scoped to the caller's workspace.
+  const { data: channel } = await createAdminClient()
     .from("channels")
     .select("id, encrypted_tokens, token_expiry")
     .eq("id", channelId)
@@ -62,10 +64,11 @@ export async function POST(req: Request) {
       info = await creatorInfo(tokens.access_token);
     } catch {
       // Re-read: the refresh above may have rotated the stored tokens.
-      const { data: latest } = await supabase
+      const { data: latest } = await createAdminClient()
         .from("channels")
         .select("encrypted_tokens")
         .eq("id", channel.id)
+        .eq("org_id", orgId)
         .single();
       tokens = await freshTikTokTokens(channel.id, latest?.encrypted_tokens ?? channel.encrypted_tokens, null, {
         force: true,
