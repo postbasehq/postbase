@@ -10,6 +10,7 @@
  */
 
 import { readTokenResponse, TokenError } from "@/lib/platforms/token-error";
+import { sendPublish } from "@/lib/platforms/send-unconfirmed";
 const AUTHORIZE_URL = "https://www.linkedin.com/oauth/v2/authorization";
 const TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken";
 const API = "https://api.linkedin.com";
@@ -223,11 +224,11 @@ export async function createPost(
     body.content = { multiImage: { images: imageUrns.map((id) => ({ id })) } };
   }
 
-  const res = await fetch(`${API}/rest/posts`, {
-    method: "POST",
-    headers: restHeaders(accessToken),
-    body: JSON.stringify(body),
-  });
+  const res = await sendPublish(
+    `${API}/rest/posts`,
+    { method: "POST", headers: restHeaders(accessToken), body: JSON.stringify(body) },
+    "LinkedIn",
+  );
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { message?: string };
     throw new Error(err.message ?? `LinkedIn post error ${res.status}`);

@@ -110,3 +110,30 @@ describe("TikTok: a post still processing isn't reported as published", () => {
     expect((failed as { pendingRef?: string }).pendingRef).toBeUndefined();
   });
 });
+
+describe("a post whose outcome is unclear is never sent again automatically", () => {
+  const send = async (platform: "x" | "linkedin" | "facebook", reply: () => Response) => {
+    net?.restore();
+    net = installFakeNet((r) => {
+      if (r.url.pathname.endsWith("/tweets") || r.url.pathname.endsWith("/rest/posts") || r.url.pathname.endsWith("/feed")) return reply();
+    });
+    const enc = encryptJson({ access_token: "t", author_urn: "urn:li:person:me", page_id: "pg" });
+    return publish({ ...base, threadTail: [], body: "hello", platform, encryptedTokens: enc, tokenExpiry: null });
+  };
+  it("a server error or a lost reply is uncertain (the post may be live)", async () => {
+    for (const platform of ["x", "linkedin", "facebook"] as const) {
+      expect(await send(platform, () => json({ title: "Service Unavailable" }, 503))).toMatchObject({ ok: false, uncertain: true });
+      expect(await send(platform, () => { throw new TypeError("fetch failed (socket hang up)"); })).toMatchObject({ ok: false, uncertain: true });
+    }
+    expect(await send("x", () => new Response("<html>", { status: 200 }))).toMatchObject({ ok: false, uncertain: true });
+  });
+  it("a refusal or a request that never left is an ordinary (retryable) failure", async () => {
+    for (const platform of ["x", "linkedin", "facebook"] as const) {
+      const refused = await send(platform, () => json({ detail: "nope", message: "nope", error: { message: "nope" } }, 400));
+      expect(refused.ok).toBe(false);
+      expect((refused as { uncertain?: boolean }).uncertain).toBeFalsy();
+    }
+    const dns = await send("x", () => { throw Object.assign(new TypeError("fetch failed"), { cause: { code: "ENOTFOUND" } }); });
+    expect((dns as { uncertain?: boolean }).uncertain).toBeFalsy();
+  });
+});

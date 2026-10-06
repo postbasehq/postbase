@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { SendUnconfirmed } from "@/lib/platforms/send-unconfirmed";
 import { decryptJson } from "@/lib/crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { postThread, uploadMedia, refreshTokens, X_MAX_IMAGES, type XTokens } from "@/lib/platforms/x";
+import { ThreadError, postThread, uploadMedia, refreshTokens, X_MAX_IMAGES, type XTokens } from "@/lib/platforms/x";
 import {
   createCarouselContainer,
   createImageContainer,
@@ -166,6 +167,7 @@ async function publishToX(input: PublishInput): Promise<PublishResult> {
     });
     return { ok: true, platformPostId: id };
   } catch (e) {
+    if (e instanceof SendUnconfirmed || (e instanceof ThreadError && e.unconfirmed)) return { ok: false, error: e.message, uncertain: true };
     return { ok: false, error: e instanceof Error ? e.message : "X publish failed." };
   }
 }
@@ -365,6 +367,7 @@ async function publishToLinkedIn(input: PublishInput): Promise<PublishResult> {
     }
     return { ok: true, platformPostId: id || "urn:li:share:unknown" };
   } catch (e) {
+    if (e instanceof SendUnconfirmed) return { ok: false, error: e.message, uncertain: true };
     return { ok: false, error: e instanceof Error ? e.message : "LinkedIn publish failed." };
   }
 }
@@ -561,6 +564,7 @@ async function publishToFacebook(input: PublishInput): Promise<PublishResult> {
     }
     return { ok: true, platformPostId: id };
   } catch (e) {
+    if (e instanceof SendUnconfirmed) return { ok: false, error: e.message, uncertain: true };
     return { ok: false, error: e instanceof Error ? e.message : "Facebook publish failed." };
   }
 }

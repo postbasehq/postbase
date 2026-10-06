@@ -14,6 +14,7 @@
  */
 
 import crypto from "node:crypto";
+import { publishJson, sendPublish } from "@/lib/platforms/send-unconfirmed";
 
 const SCOPES = [
   "instagram_basic",
@@ -114,6 +115,16 @@ export function authorizeUrl(
 }
 
 type GraphError = { error?: { message?: string; type?: string; code?: number } };
+
+/** graphJson for calls that publish: an unclear outcome is SendUnconfirmed. */
+async function graphPublish<T>(url: string, init: RequestInit, label: string): Promise<T> {
+  const res = await sendPublish(url, init, label);
+  const json = await publishJson<T & GraphError>(res, label);
+  if (!res.ok || json.error) {
+    throw new Error(json.error?.message ?? `Meta Graph error ${res.status}`);
+  }
+  return json;
+}
 
 async function graphJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
@@ -225,9 +236,10 @@ export async function resolvePages(
 
 /** Publish a text post to a Page feed. Returns the post id. */
 export async function postPageFeed(pageToken: string, pageId: string, message: string): Promise<string> {
-  const json = await graphJson<{ id?: string }>(
+  const json = await graphPublish<{ id?: string }>(
     `${graph()}/${pageId}/feed`,
     form({ message, access_token: pageToken }),
+    "Facebook",
   );
   if (!json.id) throw new Error("Facebook feed post returned no id.");
   return json.id;
@@ -240,9 +252,10 @@ export async function postPagePhoto(
   imageUrl: string,
   caption: string,
 ): Promise<string> {
-  const json = await graphJson<{ id?: string; post_id?: string }>(
+  const json = await graphPublish<{ id?: string; post_id?: string }>(
     `${graph()}/${pageId}/photos`,
     form({ url: imageUrl, caption, access_token: pageToken }),
+    "Facebook",
   );
   const id = json.post_id ?? json.id;
   if (!id) throw new Error("Facebook photo post returned no id.");
@@ -274,7 +287,7 @@ export async function postPageWithPhotos(
   mediaFbids.forEach((id, i) => {
     params[`attached_media[${i}]`] = JSON.stringify({ media_fbid: id });
   });
-  const json = await graphJson<{ id?: string }>(`${graph()}/${pageId}/feed`, form(params));
+  const json = await graphPublish<{ id?: string }>(`${graph()}/${pageId}/feed`, form(params), "Facebook");
   if (!json.id) throw new Error("Facebook post returned no id.");
   return json.id;
 }
@@ -286,9 +299,10 @@ export async function postPageVideo(
   videoUrl: string,
   description: string,
 ): Promise<string> {
-  const json = await graphJson<{ id?: string }>(
+  const json = await graphPublish<{ id?: string }>(
     `${graph()}/${pageId}/videos`,
     form({ file_url: videoUrl, description, access_token: pageToken }),
+    "Facebook",
   );
   if (!json.id) throw new Error("Facebook video post returned no id.");
   return json.id;

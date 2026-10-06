@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { SendUnconfirmed, publishJson, sendPublish, unconfirmedMessage } from "@/lib/platforms/send-unconfirmed";
 import { readTokenResponse } from "@/lib/platforms/token-error";
 
 /**
@@ -241,12 +242,17 @@ export async function postTweet(
   } = { text };
   if (inReplyToId) body.reply = { in_reply_to_tweet_id: inReplyToId };
   if (mediaIds && mediaIds.length) body.media = { media_ids: mediaIds };
-  const res = await fetch(`${API}/tweets`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const json = (await res.json()) as { data?: { id: string }; detail?: string; title?: string };
+  const res = await sendPublish(
+    `${API}/tweets`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+    "X",
+  );
+  const json = await publishJson<{ data?: { id: string }; detail?: string; title?: string }>(res, "X");
+  if (res.ok && !json.data) throw new SendUnconfirmed(unconfirmedMessage("X"));
   if (!res.ok || !json.data) throw new Error(json.detail ?? json.title ?? `X post error ${res.status}`);
   return { id: json.data.id };
 }
@@ -318,7 +324,12 @@ export async function getTweetsMetrics(
 
 /** A thread that failed part-way: `ids` are the posts that did go out, in order. */
 export class ThreadError extends Error {
-  constructor(message: string, readonly ids: string[]) {
+  constructor(
+    message: string,
+    readonly ids: string[],
+    /** The failing part may have gone out (SendUnconfirmed). */
+    readonly unconfirmed = false,
+  ) {
     super(message);
   }
 }
@@ -341,7 +352,7 @@ export async function postThread(
       const { id } = await postTweet(accessToken, texts[i], ids[i - 1], i === 0 ? mediaIds : undefined);
       ids.push(id);
     } catch (e) {
-      throw new ThreadError(e instanceof Error ? e.message : "X post failed.", ids);
+      throw new ThreadError(e instanceof Error ? e.message : "X post failed.", ids, e instanceof SendUnconfirmed);
     }
     await opts.onPosted?.([...ids]);
   }
