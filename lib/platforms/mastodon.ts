@@ -17,6 +17,10 @@ export type MastodonTokens = {
   access_token: string;
   account_id: string;
   handle: string; // @user@instance
+  // The per-instance OAuth app this token was issued to: needed to revoke it
+  // on disconnect. Missing on channels connected before it was stored.
+  client_id?: string;
+  client_secret?: string;
 };
 
 export type MastodonMedia = { url: string; type: string };
@@ -81,6 +85,18 @@ export async function verifyAccount(
     display_name: account.display_name,
     avatar_url: account.avatar,
   };
+}
+
+/** Revoke the access token on its instance (best-effort; needs the app's credentials). */
+export async function revokeAccess(tokens: MastodonTokens): Promise<void> {
+  if (!tokens.client_id || !tokens.client_secret) return;
+  await fetch(`${normalizeInstance(tokens.instance)}/oauth/revoke`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ client_id: tokens.client_id, client_secret: tokens.client_secret, token: tokens.access_token }),
+    redirect: "error",
+    signal: AbortSignal.timeout(10_000),
+  });
 }
 
 /**

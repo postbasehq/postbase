@@ -199,6 +199,20 @@ export async function postComment(
   }
 }
 
+/** Revoke a member token (best-effort), so a disconnect de-authorises Postbase on LinkedIn. */
+export async function revokeAccess(token: string): Promise<void> {
+  await fetch("https://www.linkedin.com/oauth/v2/revoke", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: process.env.LINKEDIN_CLIENT_ID ?? "",
+      client_secret: process.env.LINKEDIN_CLIENT_SECRET ?? "",
+      token,
+    }),
+    signal: AbortSignal.timeout(10_000),
+  });
+}
+
 /** Create a member post (text, single image, or multi-image). Returns the post URN. */
 export async function createPost(
   accessToken: string,

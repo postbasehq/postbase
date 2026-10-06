@@ -59,6 +59,9 @@ export async function GET(request: Request) {
       reconnect_by: token.refresh_token ? null : tokenExpiry,
       display_name: me.name ?? null,
       avatar_url: me.picture ?? null,
+      // The LinkedIn member: a disconnect only revokes Postbase's access when
+      // no other channel uses the same member (lib/channel-revoke.ts).
+      provider_user_id: me.sub,
     };
 
     // Reconnecting the same member updates the existing channel instead of duplicating it.

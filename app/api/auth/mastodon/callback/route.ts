@@ -61,7 +61,14 @@ export async function GET(request: Request) {
       accessToken,
     );
 
-    const tokens: MastodonTokens = { instance, access_token: accessToken, account_id, handle };
+    const tokens: MastodonTokens = {
+      instance,
+      access_token: accessToken,
+      account_id,
+      handle,
+      client_id: pending.client_id,
+      client_secret: pending.client_secret,
+    };
     const fields = {
       encrypted_tokens: encryptJson(tokens),
       status: "active",
