@@ -123,7 +123,7 @@ export function AppNav({
             }
             if (item.feedback) {
               return (
-                <FeedbackNavButton key={item.href} className={`${cls} text-muted hover:bg-surface-2 hover:text-ink`}>
+                <FeedbackNavButton key={item.href} className={`${cls} w-full text-left text-muted hover:bg-surface-2 hover:text-ink`}>
                   {inner}
                 </FeedbackNavButton>
               );

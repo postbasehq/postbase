@@ -8,6 +8,7 @@ import { UserMenu } from "@/components/UserMenu";
 import { SidebarSearch } from "@/components/SidebarSearch";
 import { HeaderTitle } from "@/components/HeaderTitle";
 import { AgentSparkIcon } from "@/components/AgentSparkIcon";
+import { BugGlyph, FeedbackNavButton } from "@/components/FeedbackDialog";
 import { SidebarSwitcher } from "@/components/SidebarSwitcher";
 import { MobileNav } from "@/components/MobileNav";
 import { AgentProposalDock } from "@/components/AgentProposalDock";
@@ -189,6 +190,14 @@ export default async function AppLayout({
                   >
                     <AgentSparkIcon size={18} />
                   </Link>
+                  <FeedbackNavButton
+                    label="Report a bug or send feedback"
+                    className="flex size-9 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-ink"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <BugGlyph />
+                    </svg>
+                  </FeedbackNavButton>
                   <NotificationBell items={notices} channelIssues={channelIssues} />
                   {/* On phones the theme toggle lives in the menu drawer. */}
                   <div className="hidden md:block">

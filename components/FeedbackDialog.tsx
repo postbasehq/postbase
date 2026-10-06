@@ -211,8 +211,17 @@ function KindPicker({ value, onChange }: { value: FeedbackKind; onChange: (k: Fe
   );
 }
 
-/** The sidebar's Feedback item: opens the bug/feedback form. */
-export function FeedbackNavButton({ className, children }: { className: string; children: ReactNode }) {
+/** Opens the bug/feedback form (sidebar Feedback item, header bug button). */
+export function FeedbackNavButton({
+  className,
+  label,
+  children,
+}: {
+  className: string;
+  /** Accessible name + tooltip, for icon-only triggers. */
+  label?: string;
+  children: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   // Remount the form on each open so it starts fresh after a send.
   const [session, setSession] = useState(0);
@@ -224,7 +233,9 @@ export function FeedbackNavButton({ className, children }: { className: string; 
           setSession((s) => s + 1);
           setOpen(true);
         }}
-        className={`${className} w-full text-left`}
+        aria-label={label}
+        title={label}
+        className={className}
       >
         {children}
       </button>
