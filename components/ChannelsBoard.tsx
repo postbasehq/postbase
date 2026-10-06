@@ -7,6 +7,7 @@ import { BrandTile, BRANDS } from "@/components/BrandTile";
 import { BlueskyForm } from "@/components/BlueskyForm";
 import { DisconnectButton } from "@/components/DisconnectButton";
 import { Modal } from "@/components/Modal";
+import { CANCEL_CLS, PRIMARY_CLS } from "@/components/dialog-buttons";
 import { formatReconnectBy } from "@/lib/channel-health";
 import { COMING_SOON, IN_DEVELOPMENT, LIMITED } from "@/lib/platforms/availability";
 
@@ -49,7 +50,7 @@ const PLATFORMS: { id: string; kind: Kind; desc: string; short: string; note?: s
     kind: "oauth",
     desc: "Post videos or photo carousels.",
     short: "Videos and photo carousels.",
-    note: "Video and photo posts only — TikTok doesn’t allow text-only posts.",
+    note: "Video and photo posts only. TikTok doesn’t allow text-only posts.",
   },
   {
     id: "youtube",
@@ -57,13 +58,23 @@ const PLATFORMS: { id: string; kind: Kind; desc: string; short: string; note?: s
     desc: "Upload videos to your channel.",
     short: "Videos and Shorts.",
     note: "Video uploads only.",
-    access: ["Upload videos to your channel", "Set thumbnails on the videos you post", "See your channel name and your videos' stats"],
+    access: ["Upload the videos you schedule", "Set thumbnails on those videos", "See your channel name and your videos’ stats"],
   },
   { id: "bluesky", kind: "bluesky", desc: "Connect with your handle and an app password.", short: "Handle and app password." },
-  { id: "mastodon", kind: "mastodon", desc: "Connect any instance — approve on your server.", short: "Any server." },
+  { id: "mastodon", kind: "mastodon", desc: "Connect any server and approve it there.", short: "Any server." },
 ];
 
 const TITLE_ID = "channel-connect-title";
+
+// The connect dialog's one line of context under the title.
+const MODAL_LINE: Record<Kind, (label: string) => string> = {
+  oauth: (label) => `You’ll sign in on ${label} and approve access.`,
+  bluesky: () => "Uses an app password, never your main password.",
+  mastodon: () => "Works with any Mastodon server.",
+};
+// What Postbase can do once connected, when a platform doesn't list its own.
+const DEFAULT_ACCESS = ["Publish the posts you schedule", "Read their likes, replies and views"];
+
 
 const RED = "#d14a3e";
 const AMBER = "#e3a72c";
@@ -460,78 +471,63 @@ export function ChannelsBoard({
         );
       })()}
 
-      <Modal open={active !== null} onClose={close} labelledBy={TITLE_ID}>
+      <Modal
+        open={active !== null}
+        onClose={close}
+        labelledBy={TITLE_ID}
+        panelClassName="border border-line bg-surface p-1.5 shadow-lg"
+      >
         {current ? (
           <>
-            <div className="flex items-center gap-3.5">
-              <BrandTile platform={current.id} size={46} radius={12} />
+            {/* Zone 1: which network, in one line of context */}
+            <div className="flex items-center gap-3.5 rounded-[14px] border border-line bg-surface-2 px-4 py-3.5">
+              <BrandTile platform={current.id} size={40} radius={10} />
               <div className="min-w-0">
-                <h3
-                  id={TITLE_ID}
-                  className="font-display text-lg font-semibold tracking-[-0.01em]"
-                >
+                <h3 id={TITLE_ID} className="font-display text-[17px] font-semibold tracking-[-0.01em] text-ink">
                   Connect {BRANDS[current.id]?.label ?? current.id}
                 </h3>
-                <p className="text-[13px] text-muted">
-                  {current.kind === "oauth"
-                    ? "Authorize Postbase to publish for you."
-                    : current.desc}
-                </p>
+                <p className="text-[13px] text-muted">{MODAL_LINE[current.kind](BRANDS[current.id]?.label ?? current.id)}</p>
               </div>
             </div>
 
-            {current.kind === "oauth" ? (
-              <div className="mt-4">
-                <p className="text-sm text-muted">
-                  You’ll be sent to {BRANDS[current.id]?.label} to sign in and approve access.
-                  Postbase only asks for the access it needs to publish your posts and show
-                  their stats. You can disconnect any time.
-                </p>
-                {current.access ? (
-                  <div className="mt-3 rounded-xl bg-surface-2 px-3.5 py-3 text-[13px]">
-                    <div className="font-semibold text-ink">Postbase will be able to:</div>
-                    <ul className="mt-1.5 flex flex-col gap-1 text-muted">
-                      {current.access.map((a) => (
-                        <li key={a} className="flex items-start gap-2">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2b59d9" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0" aria-hidden>
-                            <path d="M20 6 9 17l-5-5" />
-                          </svg>
-                          {a}
+            <div className="px-3.5 pb-3 pt-4">
+              {current.kind === "oauth" ? (
+                <>
+                  <div className="text-[13px] font-semibold text-ink">Postbase will be able to</div>
+                  <ul className="mt-2 flex flex-col gap-1.5 text-[13px] text-muted">
+                    {(current.access ?? DEFAULT_ACCESS).map((a) => (
+                      <li key={a} className="flex items-start gap-2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2b59d9" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="mt-[3px] shrink-0" aria-hidden>
+                          <path d="M20 6 9 17l-5-5" />
+                        </svg>
+                        {a}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 pl-[22px] text-[13px] text-muted">Nothing else, and you can disconnect any time.</p>
+                  {/* Anything worth knowing first, as plain lines under a hairline. */}
+                  {current.note || LIMITED[current.id] ? (
+                    <ul className="mt-4 flex flex-col gap-1.5 border-t border-line pt-3.5 text-[13px] text-muted">
+                      {[current.note, LIMITED[current.id]].filter(Boolean).map((n) => (
+                        <li key={n} className="flex items-start gap-2">
+                          <span className="mt-[7px] size-1.5 shrink-0 rounded-full" style={{ background: AMBER }} />
+                          {n}
                         </li>
                       ))}
                     </ul>
+                  ) : null}
+                  <div className="mt-5 flex items-center justify-end gap-2">
+                    <button type="button" onClick={close} className={CANCEL_CLS}>
+                      Cancel
+                    </button>
+                    <a href={`/api/connect/${current.id}`} className={PRIMARY_CLS}>
+                      Continue to {BRANDS[current.id]?.label}
+                    </a>
                   </div>
-                ) : null}
-                {current.note ? (
-                  <p className="mt-3 rounded-xl bg-surface-2 px-3.5 py-3 text-[13px] text-muted">
-                    {current.note}
-                  </p>
-                ) : null}
-                {LIMITED[current.id] ? (
-                  <p className="mt-3 rounded-xl bg-surface-2 px-3.5 py-3 text-[13px] text-muted">
-                    {LIMITED[current.id]}
-                  </p>
-                ) : null}
-                <div className="mt-5 flex justify-end gap-2.5">
-                  <button
-                    type="button"
-                    onClick={close}
-                    className="rounded-full border border-line px-4 py-2 text-sm font-medium text-muted hover:bg-surface-2 hover:text-ink"
-                  >
-                    Cancel
-                  </button>
-                  <a
-                    href={`/api/connect/${current.id}`}
-                    className="rounded-full bg-blue px-5 py-2 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
-                  >
-                    Continue to {BRANDS[current.id]?.label}
-                  </a>
-                </div>
-              </div>
-            ) : null}
+                </>
+              ) : null}
 
-            {current.kind === "bluesky" ? (
-              <div className="mt-4">
+              {current.kind === "bluesky" ? (
                 <BlueskyForm
                   onConnected={() => {
                     close();
@@ -539,49 +535,42 @@ export function ChannelsBoard({
                   }}
                   onCancel={close}
                 />
-              </div>
-            ) : null}
+              ) : null}
 
-            {current.kind === "mastodon" ? (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  goMastodon();
-                }}
-                className="mt-4 flex flex-col gap-2"
-              >
-                <span className="text-[13px] font-medium text-muted">Your Mastodon server</span>
-                <div className="flex items-center rounded-xl border border-line bg-ground px-3.5 focus-within:border-blue">
-                  <span className="text-sm text-muted">https://</span>
-                  <input aria-label="Mastodon server"
-                    value={instance}
-                    onChange={(e) => setInstance(e.target.value)}
-                    autoFocus
-                    spellCheck={false}
-                    placeholder="mastodon.social"
-                    className="min-w-0 flex-1 bg-transparent py-2.5 pl-1 text-sm outline-none"
-                  />
-                </div>
-                <span className="text-xs text-muted">
-                  You’ll approve access on your Mastodon server, then come back — no app to create.
-                </span>
-                <div className="mt-1 flex justify-end gap-2.5">
-                  <button
-                    type="button"
-                    onClick={close}
-                    className="rounded-full border border-line px-4 py-2 text-sm font-medium text-muted hover:bg-surface-2 hover:text-ink"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="rounded-full bg-blue px-5 py-2 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
-                  >
-                    Continue
-                  </button>
-                </div>
-              </form>
-            ) : null}
+              {current.kind === "mastodon" ? (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    goMastodon();
+                  }}
+                  className="flex flex-col"
+                >
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-[13px] font-semibold text-ink">Your server</span>
+                    <div className="flex items-center rounded-xl border border-line bg-ground px-3.5 focus-within:border-blue">
+                      <span className="text-sm text-muted">https://</span>
+                      <input
+                        value={instance}
+                        onChange={(e) => setInstance(e.target.value)}
+                        autoFocus
+                        spellCheck={false}
+                        placeholder="mastodon.social"
+                        className="min-w-0 flex-1 bg-transparent py-2.5 pl-1 text-sm outline-none"
+                      />
+                    </div>
+                  </label>
+                  <p className="mt-2 text-[13px] text-muted">You’ll approve access on your server, then come straight back.</p>
+                  <div className="mt-5 flex items-center justify-end gap-2">
+                    <button type="button" onClick={close} className={CANCEL_CLS}>
+                      Cancel
+                    </button>
+                    <button type="submit" disabled={!instance.trim()} className={PRIMARY_CLS}>
+                      Continue
+                    </button>
+                  </div>
+                </form>
+              ) : null}
+            </div>
           </>
         ) : null}
       </Modal>

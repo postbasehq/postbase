@@ -7,6 +7,7 @@ import { BrandTile, BRANDS } from "@/components/BrandTile";
 import { BlueskyForm } from "@/components/BlueskyForm";
 import { DisconnectButton } from "@/components/DisconnectButton";
 import { Modal } from "@/components/Modal";
+import { CANCEL_CLS, PRIMARY_CLS } from "@/components/dialog-buttons";
 
 type Account = { id: string; handle: string | null; status: string };
 type Kind = "oauth" | "bluesky" | "mastodon";
@@ -26,7 +27,7 @@ const PLATFORMS: { id: string; kind: Kind; desc: string; note?: string; access?:
     id: "tiktok",
     kind: "oauth",
     desc: "Post videos or photo carousels.",
-    note: "Video and photo posts only — TikTok doesn’t allow text-only posts.",
+    note: "Video and photo posts only. TikTok doesn’t allow text-only posts.",
   },
   {
     id: "youtube",
@@ -36,7 +37,7 @@ const PLATFORMS: { id: string; kind: Kind; desc: string; note?: string; access?:
     access: ["Upload videos to your channel", "Set thumbnails on the videos you post", "See your channel name and your videos' stats"],
   },
   { id: "bluesky", kind: "bluesky", desc: "Connect with your handle and an app password." },
-  { id: "mastodon", kind: "mastodon", desc: "Connect any instance — approve on your server." },
+  { id: "mastodon", kind: "mastodon", desc: "Connect any server and approve it there." },
 ];
 
 const TITLE_ID = "calendar-channel-title";
@@ -125,24 +126,31 @@ export function CalendarChannelsBar({
         </div>
       </div>
 
-      <Modal open={active !== null} onClose={close} labelledBy={TITLE_ID}>
+      <Modal
+        open={active !== null}
+        onClose={close}
+        labelledBy={TITLE_ID}
+        panelClassName="border border-line bg-surface p-1.5 shadow-lg"
+      >
         {current ? (
           <>
-            <div className="flex items-center gap-3.5">
-              <BrandTile platform={current.id} size={46} radius={12} />
+            {/* Same two-zone dialog as Channels: header panel, then content. */}
+            <div className="flex items-center gap-3.5 rounded-[14px] border border-line bg-surface-2 px-4 py-3.5">
+              <BrandTile platform={current.id} size={40} radius={10} />
               <div className="min-w-0">
-                <h3 id={TITLE_ID} className="font-display text-lg font-semibold tracking-[-0.01em]">
+                <h3 id={TITLE_ID} className="font-display text-[17px] font-semibold tracking-[-0.01em] text-ink">
                   {connected ? `Manage ${brand?.label ?? current.id}` : `Connect ${brand?.label ?? current.id}`}
                 </h3>
                 <p className="text-[13px] text-muted">{current.desc}</p>
               </div>
             </div>
+            <div className="px-3.5 pb-3 pt-4">
 
             {/* Connected accounts — manage / disconnect */}
             {connected ? (
-              <div className="mt-4 flex flex-col gap-2">
-                {accounts.map((a) => (
-                  <div key={a.id} className="flex items-center gap-2.5 rounded-xl bg-surface-2 px-3 py-2">
+              <div className="mb-4 flex flex-col border-b border-line pb-1.5">
+                {accounts.map((a, i) => (
+                  <div key={a.id} className={`flex items-center gap-2.5 py-2.5 ${i > 0 ? "border-t border-line" : ""}`}>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[13px] font-medium">{a.handle ?? "Connected account"}</span>
                       {a.status === "reconnect" ? (
@@ -168,6 +176,7 @@ export function CalendarChannelsBar({
                         action={disconnectAction}
                         channelId={a.id}
                         label={`${brand?.label ?? current.id}${a.handle ? ` (${a.handle})` : ""}`}
+                        quiet
                       />
                     ) : null}
                   </div>
@@ -177,45 +186,36 @@ export function CalendarChannelsBar({
 
             {/* Connect flow — OAuth link, or the Bluesky / Mastodon forms */}
             {current.kind === "oauth" ? (
-              <div className="mt-4">
+              <div>
                 {!connected ? (
-                  <p className="text-sm text-muted">
-                    You’ll be sent to {brand?.label} to sign in and approve access. Postbase only
-                    asks for the access it needs to publish your posts and show their stats.
-                  </p>
-                ) : null}
-                {current.access ? (
-                  <div className="mt-3 rounded-xl bg-surface-2 px-3.5 py-3 text-[13px]">
-                    <div className="font-semibold text-ink">Postbase will be able to:</div>
-                    <ul className="mt-1.5 flex flex-col gap-1 text-muted">
-                      {current.access.map((a) => (
+                  <>
+                    <div className="text-[13px] font-semibold text-ink">Postbase will be able to</div>
+                    <ul className="mt-2 flex flex-col gap-1.5 text-[13px] text-muted">
+                      {(current.access ?? ["Publish the posts you schedule", "Read their likes, replies and views"]).map((a) => (
                         <li key={a} className="flex items-start gap-2">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2b59d9" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0" aria-hidden>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2b59d9" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="mt-[3px] shrink-0" aria-hidden>
                             <path d="M20 6 9 17l-5-5" />
                           </svg>
                           {a}
                         </li>
                       ))}
                     </ul>
-                  </div>
+                    <p className="mt-2 pl-[22px] text-[13px] text-muted">Nothing else, and you can disconnect any time.</p>
+                  </>
                 ) : null}
-                {current.note ? (
-                  <p className="mt-3 rounded-xl bg-surface-2 px-3.5 py-3 text-[13px] text-muted">
-                    {current.note}
-                  </p>
+                {current.note && !connected ? (
+                  <ul className="mt-4 border-t border-line pt-3.5 text-[13px] text-muted">
+                    <li className="flex items-start gap-2">
+                      <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-[#e3a72c]" />
+                      {current.note}
+                    </li>
+                  </ul>
                 ) : null}
-                <div className="mt-5 flex justify-end gap-2.5">
-                  <button
-                    type="button"
-                    onClick={close}
-                    className="rounded-full border border-line px-4 py-2 text-sm font-medium text-muted hover:bg-surface-2 hover:text-ink"
-                  >
+                <div className="mt-5 flex items-center justify-end gap-2">
+                  <button type="button" onClick={close} className={CANCEL_CLS}>
                     {connected ? "Done" : "Cancel"}
                   </button>
-                  <a
-                    href={`/api/connect/${current.id}`}
-                    className="rounded-full bg-blue px-5 py-2 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
-                  >
+                  <a href={`/api/connect/${current.id}`} className={PRIMARY_CLS}>
                     {connected ? "Add another" : `Continue to ${brand?.label}`}
                   </a>
                 </div>
@@ -223,7 +223,7 @@ export function CalendarChannelsBar({
             ) : null}
 
             {current.kind === "bluesky" ? (
-              <div className="mt-4">
+              <div>
                 <BlueskyForm
                   onConnected={() => {
                     close();
@@ -240,10 +240,10 @@ export function CalendarChannelsBar({
                   e.preventDefault();
                   goMastodon();
                 }}
-                className="mt-4 flex flex-col gap-2"
+                className="flex flex-col gap-2"
               >
-                <span className="text-[13px] font-medium text-muted">
-                  {connected ? "Connect another server" : "Your Mastodon server"}
+                <span className="text-[13px] font-semibold text-ink">
+                  {connected ? "Connect another server" : "Your server"}
                 </span>
                 <div className="flex items-center rounded-xl border border-line bg-ground px-3.5 focus-within:border-blue">
                   <span className="text-sm text-muted">https://</span>
@@ -256,26 +256,18 @@ export function CalendarChannelsBar({
                     className="min-w-0 flex-1 bg-transparent py-2.5 pl-1 text-sm outline-none"
                   />
                 </div>
-                <span className="text-xs text-muted">
-                  You’ll approve access on your Mastodon server, then come back — no app to create.
-                </span>
-                <div className="mt-1 flex justify-end gap-2.5">
-                  <button
-                    type="button"
-                    onClick={close}
-                    className="rounded-full border border-line px-4 py-2 text-sm font-medium text-muted hover:bg-surface-2 hover:text-ink"
-                  >
+                <span className="text-[13px] text-muted">You’ll approve access on your server, then come straight back.</span>
+                <div className="mt-3 flex items-center justify-end gap-2">
+                  <button type="button" onClick={close} className={CANCEL_CLS}>
                     {connected ? "Done" : "Cancel"}
                   </button>
-                  <button
-                    type="submit"
-                    className="rounded-full bg-blue px-5 py-2 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
-                  >
+                  <button type="submit" disabled={!instance.trim()} className={PRIMARY_CLS}>
                     Continue
                   </button>
                 </div>
               </form>
             ) : null}
+            </div>
           </>
         ) : null}
       </Modal>

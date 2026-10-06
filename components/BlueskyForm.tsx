@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { connectBlueskyChannel, type ConnectBlueskyState } from "@/app/(app)/actions";
+import { CANCEL_CLS, PRIMARY_CLS } from "@/components/dialog-buttons";
 
 /**
  * The Bluesky connect form (handle + app password). Reused on the Channels page
@@ -33,35 +34,35 @@ export function BlueskyForm({
   }, [state, onConnected]);
 
   return (
-    <form action={action} className="flex flex-col gap-2.5 text-left">
-      <div className="rounded-xl bg-surface-2 p-3.5">
-        <div className="text-[13px] font-semibold">To connect Bluesky:</div>
-        <ol className="mt-1.5 flex flex-col gap-1 text-xs text-muted">
-          <li>
-            <span className="font-semibold text-ink">1.</span> On Bluesky (web), go to{" "}
-            <span className="font-medium text-ink">Settings → Privacy and security → App passwords</span> and click{" "}
-            <span className="font-medium text-ink">Add App Password</span>
-          </li>
-          <li>
-            <span className="font-semibold text-ink">2.</span> Copy the generated password (
-            <code className="rounded bg-surface px-1 py-0.5 text-[11px]">xxxx-xxxx-xxxx-xxxx</code>)
-          </li>
-          <li>
-            <span className="font-semibold text-ink">3.</span> Paste it below with your handle
-          </li>
-        </ol>
-        <a
-          href="https://bsky.app/settings/app-passwords"
-          target="_blank"
-          rel="noreferrer"
-          className="mt-2.5 inline-flex items-center gap-1 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-blue-ink hover:bg-surface-2"
-        >
-          Open Bluesky App Passwords ↗
-        </a>
-      </div>
+    <form action={action} className="flex flex-col gap-3.5 text-left">
+      <ol className="flex flex-col gap-1.5 text-[13px] text-muted">
+        <li className="flex gap-2.5">
+          <span className="font-semibold text-ink">1</span>
+          <span>
+            Open{" "}
+            <a
+              href="https://bsky.app/settings/app-passwords"
+              target="_blank"
+              rel="noreferrer"
+              className="font-semibold text-blue-ink underline decoration-line underline-offset-2 hover:decoration-current"
+            >
+              App passwords
+            </a>{" "}
+            in Bluesky (Settings → Privacy and security).
+          </span>
+        </li>
+        <li className="flex gap-2.5">
+          <span className="font-semibold text-ink">2</span>
+          <span>Add one and copy it.</span>
+        </li>
+        <li className="flex gap-2.5">
+          <span className="font-semibold text-ink">3</span>
+          <span>Paste it below with your handle.</span>
+        </li>
+      </ol>
 
       <label className="flex flex-col gap-1">
-        <span className="text-[13px] font-medium text-muted">Handle</span>
+        <span className="text-[13px] font-semibold text-ink">Handle</span>
         <div className="flex items-center overflow-x-auto rounded-xl border border-line bg-ground px-3.5 py-2.5 text-sm focus-within:border-blue">
           <span
             ref={measureRef}
@@ -83,13 +84,11 @@ export function BlueskyForm({
           />
           <span className="shrink-0 text-muted">.bsky.social</span>
         </div>
-        <span className="text-xs text-muted">
-          Just your username. Using a custom domain? Type your full handle.
-        </span>
+        <span className="text-xs text-muted">Using your own domain? Type the full handle.</span>
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-[13px] font-medium text-muted">App password</span>
+        <span className="text-[13px] font-semibold text-ink">App password</span>
         <input
           name="app_password"
           type="password"
@@ -99,28 +98,17 @@ export function BlueskyForm({
           className="rounded-xl border border-line bg-ground px-3.5 py-2.5 text-sm outline-none focus-visible:border-blue"
         />
       </label>
-      <p className="text-xs text-muted">
-        This is an app-specific password, not your main Bluesky password. Revoke it anytime.
-      </p>
       {state?.error ? <p className="text-[13px] text-[#d14a3e]">{state.error}</p> : null}
 
-      <div className="flex items-center gap-3 pt-1">
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm disabled:opacity-60"
-        >
-          {pending ? "Connecting…" : "Connect"}
-        </button>
+      <div className="mt-1.5 flex items-center justify-end gap-2">
         {onCancel ? (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="text-sm font-medium text-muted hover:text-ink"
-          >
+          <button type="button" onClick={onCancel} className={CANCEL_CLS}>
             Cancel
           </button>
         ) : null}
+        <button type="submit" disabled={pending} className={PRIMARY_CLS}>
+          {pending ? "Connecting…" : "Connect"}
+        </button>
       </div>
     </form>
   );
