@@ -1,10 +1,12 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { needsTwoFactor, verifyUrl } from "@/lib/mfa";
 
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
 /**
- * Refreshes the Supabase auth session on every request and guards /queue.
+ * Refreshes the Supabase auth session on every request, guards the app routes,
+ * and holds 2FA users at /login/verify until the session is verified (aal2).
  * If Supabase env vars are not set yet, it no-ops so the marketing site still runs.
  */
 export async function updateSession(request: NextRequest) {
@@ -47,6 +49,18 @@ export async function updateSession(request: NextRequest) {
     redirectUrl.pathname = "/login";
     redirectUrl.search = `?next=${encodeURIComponent(path + request.nextUrl.search)}`;
     return NextResponse.redirect(redirectUrl);
+  }
+
+  // Two-factor step-up. The session APIs (matched in middleware.ts) answer 401;
+  // pages, server actions and the MCP consent page go to the code prompt.
+  const stepUp = [...protectedPrefixes, "/oauth", "/api"];
+  if (user && stepUp.some((p) => path === p || path.startsWith(`${p}/`)) && (await needsTwoFactor(supabase, user))) {
+    const held = path.startsWith("/api/")
+      ? NextResponse.json({ error: "Two-factor verification required." }, { status: 401 })
+      : NextResponse.redirect(new URL(verifyUrl(path + request.nextUrl.search), request.url));
+    // Keep any refreshed session cookies, or the rotated refresh token is lost.
+    response.cookies.getAll().forEach((c) => held.cookies.set(c));
+    return held;
   }
 
   return response;

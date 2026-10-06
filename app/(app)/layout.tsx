@@ -19,6 +19,7 @@ import { PlanGate } from "@/components/PlanGate";
 import { billingEnforced, billingGroup, orgHasAccess } from "@/lib/billing-guard";
 import { PLANS, WORKSPACE_LIMIT, nextWorkspacePlan } from "@/lib/plans";
 import { createClient } from "@/lib/supabase/server";
+import { needsTwoFactor, VERIFY_PATH } from "@/lib/mfa";
 import { getUserOrgs, getCurrentOrgId } from "@/lib/org";
 import { setActiveOrg } from "./team-actions";
 
@@ -33,6 +34,7 @@ export default async function AppLayout({
   let email = "";
   let displayName = "";
   let avatarUrl: string | undefined;
+  let stepUp = false;
   try {
     const supabase = await createClient();
     const {
@@ -44,9 +46,13 @@ export default async function AppLayout({
     displayName =
       (meta.full_name as string) || (meta.name as string) || (meta.user_name as string) || "";
     avatarUrl = (meta.avatar_url as string) || (meta.picture as string) || undefined;
+    // Middleware already holds unverified 2FA sessions at the code prompt; this
+    // is the backstop.
+    stepUp = await needsTwoFactor(supabase, user);
   } catch {
     redirect("/login");
   }
+  if (stepUp) redirect(VERIFY_PATH);
 
   const [orgs, activeId] = await Promise.all([getUserOrgs(), getCurrentOrgId()]);
 

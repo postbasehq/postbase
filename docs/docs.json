@@ -26,7 +26,8 @@
           "using/composer",
           "using/calendar",
           "using/media",
-          "using/analytics"
+          "using/analytics",
+          "using/two-factor"
         ]
       },
       {

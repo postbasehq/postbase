@@ -1,0 +1,68 @@
+---
+title: Two-factor authentication
+description: "Ask for a code from an authenticator app every time you sign in."
+---
+
+Two-factor authentication (2FA) adds a second step to signing in. After Google,
+GitHub or your email link, Postbase asks for a 6-digit code from an
+authenticator app on your phone. It's optional and free on every plan.
+
+Any app that supports time-based codes (TOTP) works: 1Password, Google
+Authenticator, Microsoft Authenticator, Authy, Bitwarden and others. SMS codes
+aren't supported.
+
+## Turning it on
+
+1. Open **Settings → Security** and click **Turn on**.
+2. Name the device (for example "iPhone") so you can tell your devices apart.
+3. Scan the QR code with your authenticator app, or type in the key shown
+   under it.
+4. Enter the 6-digit code the app shows and click **Verify and turn on**.
+
+From then on, every new sign-in stops at **Enter your code** until you type a
+current code. Sessions you're already signed in on stay signed in.
+
+## Backup devices
+
+Postbase doesn't issue backup codes. Instead, add a second device as your
+backup: **Settings → Security → Add a backup device**, and scan the new QR code
+with another phone, a tablet, or a password manager that stores codes. When you
+sign in, pick whichever device you have to hand.
+
+You can add up to 5 devices.
+
+<Tip>
+  A password manager that syncs codes (such as 1Password or Bitwarden) makes a
+  good backup, since it survives losing your phone.
+</Tip>
+
+## Removing a device or turning 2FA off
+
+In **Settings → Security**, click **Remove** next to a device and enter a current
+code. If that device is lost, a code from any of your other devices works.
+Removing your last device turns 2FA off.
+
+## If you've lost every device
+
+Email [team@postbase.so](mailto:team@postbase.so?subject=Two-factor%20reset)
+from the address you sign in with. We'll confirm it's you, then turn 2FA off on
+your account so you can sign in and set it up again. Your scheduled posts keep
+going out in the meantime.
+
+## API keys and AI tools
+
+2FA protects signing in to the app. It also applies when you connect an AI tool
+like Claude or Cursor: the consent screen asks for your code before you can
+approve it.
+
+[API keys](/api/authentication) and AI tools you've already connected keep
+working after you turn 2FA on, since they don't use your sign-in. Revoke any you
+don't recognise on the **AI & API** page.
+
+## Self-hosting
+
+2FA uses Supabase Auth's TOTP support, which is on by default in every Supabase
+project. Run the migrations in `supabase/migrations` so the database requires a
+verified session for workspace data when a user has 2FA on. To reset a user who
+has lost every device, delete their factors under **Authentication → Users** in
+the Supabase dashboard.

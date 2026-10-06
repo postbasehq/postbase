@@ -4,6 +4,7 @@ import { ClientLogo } from "@/components/ClientLogo";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId, getUserOrgs } from "@/lib/org";
 import { getClient } from "@/lib/oauth";
+import { needsTwoFactor, verifyUrl } from "@/lib/mfa";
 import { approveAuthorization, denyAuthorization } from "./actions";
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -81,21 +82,23 @@ export default async function AuthorizePage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) {
-    const qs = new URLSearchParams(
-      Object.entries({
-        response_type: responseType,
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        code_challenge: codeChallenge,
-        code_challenge_method: codeChallengeMethod,
-        state,
-        scope,
-        resource,
-      }).filter(([, v]) => v),
-    ).toString();
-    redirect(`/login?next=${encodeURIComponent(`/oauth/authorize?${qs}`)}`);
-  }
+  const qs = new URLSearchParams(
+    Object.entries({
+      response_type: responseType,
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      code_challenge: codeChallenge,
+      code_challenge_method: codeChallengeMethod,
+      state,
+      scope,
+      resource,
+    }).filter(([, v]) => v),
+  ).toString();
+  if (!user) redirect(`/login?next=${encodeURIComponent(`/oauth/authorize?${qs}`)}`);
+  // With 2FA on, connecting a tool needs a verified (aal2) session, same as the
+  // app. The tool's own token isn't tied to the session, so it keeps working
+  // after sign-out until it's revoked under AI & API.
+  if (await needsTwoFactor(supabase, user)) redirect(verifyUrl(`/oauth/authorize?${qs}`));
 
   const [orgId, orgs] = await Promise.all([getCurrentOrgId(), getUserOrgs()]);
   const defaultOrgId = orgId ?? orgs[0]?.id ?? "";

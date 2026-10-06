@@ -9,6 +9,8 @@ import { workspaceInitial, workspaceTile } from "@/lib/workspace-tile";
 import { WorkspaceNameForm } from "@/components/settings/WorkspaceNameForm";
 import { ThemePicker } from "@/components/settings/ThemePicker";
 import { AccountData } from "@/components/settings/AccountData";
+import { TwoFactor } from "@/components/settings/TwoFactor";
+import { MAX_FACTORS, verifiedTotpFactors } from "@/lib/mfa";
 import { WorkspaceRemoval } from "@/components/settings/WorkspaceRemoval";
 import { planWorkspaceRemoval } from "@/lib/account/workspace";
 import { planAccountDeletion } from "@/lib/account/delete";
@@ -61,6 +63,7 @@ export default async function SettingsPage() {
   const appNames = [...new Set(orgApps.map((a) => a.appName))];
   const keyList = keys ?? [];
   const lastKeyUse = keyList.map((k) => k.last_used_at).filter(Boolean).sort().at(-1) as string | undefined;
+  const devices = verifiedTotpFactors(user).map((f) => ({ id: f.id, name: f.friendly_name || "Authenticator app", added: fmtDate(f.created_at) }));
   const tz = decodeURIComponent((await cookies()).get("pb_tz")?.value ?? "") || "UTC";
 
   return (
@@ -166,6 +169,19 @@ export default async function SettingsPage() {
               </form>
             </div>
           </div>
+        </Card>
+
+        {/* Security: two-factor sign-in */}
+        <Card
+          panel={
+            <div>
+              <div className="text-[13px] font-medium text-muted">Security</div>
+              <div className="font-display text-[22px] font-semibold leading-tight tracking-[-0.02em] text-ink">Two-factor authentication</div>
+              <div className="mt-1 text-[13px] text-muted">A code from your phone on top of your usual sign-in.</div>
+            </div>
+          }
+        >
+          <TwoFactor devices={devices} max={MAX_FACTORS} />
         </Card>
 
         {/* Developers */}

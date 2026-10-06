@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId, getOrgRole } from "@/lib/org";
 import { getClient, isSafeRedirectUri, issueCode } from "@/lib/oauth";
+import { needsTwoFactor } from "@/lib/mfa";
 
 /** Build a redirect back to the client with query params appended. */
 function backTo(redirectUri: string, params: Record<string, string>): string {
@@ -55,6 +56,8 @@ export async function approveAuthorization(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+  // No code for a session that still owes its 2FA code.
+  if (await needsTwoFactor(supabase, user)) redirect(reAuthorizeUrl(formData));
 
   // Resolve the workspace to authorize: the picked one if the user is actually a
   // member of it (never trust the form), else their active/default org.

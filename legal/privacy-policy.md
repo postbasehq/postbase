@@ -7,7 +7,7 @@
 
 # Privacy Policy
 
-**Last updated: 5 October 2026**
+**Last updated: 6 October 2026**
 
 This Privacy Policy explains how **Berkway Group Limited** ("Berkway", "we", "us"),
 trading as **Postbase**, collects, uses, and protects personal data when you use the
@@ -140,6 +140,8 @@ you belong to are deleted straight away, and remaining copies in backups are rem
 - OAuth tokens are **encrypted at rest**; API keys are stored **hashed**, never in
   plaintext, and are never written to logs.
 - All access is over HTTPS/TLS.
+- You can turn on two-factor authentication (a code from an authenticator app) for
+  your account in Settings.
 - Access to production data is restricted and scoped by organisation.
 
 No system is perfectly secure, but we take reasonable technical and organisational
