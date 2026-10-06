@@ -219,7 +219,7 @@ function Features() {
 function Channels({ cards }: { cards?: React.ReactNode }) {
   // One run is the networks repeated to fill a wide screen; the track holds two
   // runs so shifting it by -50% loops seamlessly.
-  const networks = [...NETWORKS, "facebook", "threads"];
+  const networks = [...NETWORKS, "facebook"];
   const run = [...networks, ...networks, ...networks];
   return (
     <section id="channels" className="scroll-mt-28 pt-28 md:pt-36">

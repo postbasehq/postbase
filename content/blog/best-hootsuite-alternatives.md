@@ -38,7 +38,7 @@ Simple, well-loved, with a real free plan and per-channel pricing. Great for two
 
 ### Postbase
 
-That's us, so weigh this one accordingly. A calendar for X, LinkedIn, Bluesky, Mastodon, TikTok and YouTube, an AI agent built in, and an MCP server so Claude and other AI tools can schedule posts. Team is $39/month for 15 channels with team seats, and each client can have their own workspace. Instagram, Facebook and Threads are waiting on Meta's review, and there's no inbox or listening.
+That's us, so weigh this one accordingly. A calendar for X, LinkedIn, Bluesky, Mastodon, TikTok and YouTube, an AI agent built in, and an MCP server so Claude and other AI tools can schedule posts. Team is $39/month for 15 channels with team seats, and each client can have their own workspace. Instagram and Facebook are waiting on Meta's review, Threads isn't supported, and there's no inbox or listening.
 
 [Postbase vs Hootsuite →](/alternatives/hootsuite)
 

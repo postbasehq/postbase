@@ -28,7 +28,7 @@ const TONES = ["#2b59d9", "#e3a72c", "#d14a3e"];
 const AMBER = "#e3a72c";
 
 // Solid-colour networks only (Instagram's gradient doesn't suit a canvas fill).
-const NETWORKS = ["x", "linkedin", "tiktok", "youtube", "bluesky", "mastodon", "threads", "facebook"];
+const NETWORKS = ["x", "linkedin", "tiktok", "youtube", "bluesky", "mastodon", "facebook"];
 
 type Obstacle = { x: number; size: number; stack: number; brand: string };
 type Platform = { x: number; w: number; h: number; tone: string };

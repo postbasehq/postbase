@@ -34,7 +34,7 @@ That's us, so weigh this one accordingly. Postbase schedules to X, LinkedIn, Blu
 
 - **Price:** $29/month for 5 channels; $39/month for 15 channels and team seats.
 - **vs Buffer:** cheaper from about six channels up, open source, and built for AI agents.
-- **Not yet:** Instagram, Facebook and Threads (waiting on Meta's review), and no free plan beyond the trial.
+- **Not yet:** Instagram and Facebook (waiting on Meta's review), no Threads, and no free plan beyond the trial.
 
 [Postbase vs Buffer →](/alternatives/buffer)
 

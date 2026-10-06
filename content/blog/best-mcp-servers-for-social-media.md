@@ -45,7 +45,7 @@ Postbase's MCP server is hosted at a single URL. You add it to [Claude](/ai/clau
 
 The agent gets four tools: list channels, create a post or thread (as a draft or scheduled), list the queue, and cancel a scheduled post. It can't delete anything or change your account. Everything it schedules appears on the same calendar as your own posts, and each connected tool can be revoked from the AI & API page.
 
-**Worth knowing:** the MCP tools are text only today, so for TikTok and YouTube the agent drafts the caption and you add the video. Instagram, Facebook and Threads are waiting on Meta's app review. Postbase is open source and free to self-host.
+**Worth knowing:** the MCP tools are text only today, so for TikTok and YouTube the agent drafts the caption and you add the video. Instagram and Facebook are waiting on Meta's app review. Postbase is open source and free to self-host.
 
 ## 2. Buffer
 
