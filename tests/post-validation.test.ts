@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { charCount, checkForPlatform, firstBlockingProblem, pastTimeProblem, tiktokSettingsProblem } from "@/lib/post-validation";
+import { charCount, checkForPlatform, firstBlockingProblem, NOTHING_TO_POST, pastTimeProblem, tiktokSettingsProblem } from "@/lib/post-validation";
 
 const img = (n: number, type = "image/jpeg") => Array.from({ length: n }, () => ({ type }));
 const vid = [{ type: "video/mp4" }];
@@ -80,5 +80,18 @@ describe("TikTok settings are re-checked on the server", () => {
     expect(tiktokSettingsProblem("PUBLIC_TO_EVERYONE", { brandedContent: true })).toBeNull();
     expect(tiktokSettingsProblem("PUBLIC_TO_EVERYONE", { brandedContent: true }, "SELF_ONLY")).toMatch(/private for now/);
     expect(tiktokSettingsProblem("SELF_ONLY", { brandedContent: false }, "SELF_ONLY")).toBeNull();
+  });
+});
+
+describe("media on its own is a post", () => {
+  it("is fine everywhere but LinkedIn, which needs text", () => {
+    for (const p of ["x", "bluesky", "mastodon", "facebook", "instagram", "tiktok"]) {
+      expect(texts(p, [], img(1)).filter((t) => t.startsWith("error"))).toEqual([]);
+    }
+    expect(texts("linkedin", [], img(1))).toContain("error: LinkedIn posts need text");
+  });
+  it("no text and no media is nothing to post", () => {
+    expect(texts("x", [], [])).toEqual([`error: ${NOTHING_TO_POST}`]);
+    expect(texts("x", ["  "], [])).toEqual([`error: ${NOTHING_TO_POST}`]);
   });
 });

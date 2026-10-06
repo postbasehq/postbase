@@ -141,6 +141,7 @@ async function publishToX(input: PublishInput): Promise<PublishResult> {
   }
 
   const texts = xTexts(input.body, input.threadTail);
+  if (texts.length === 0) texts.push(""); // media on its own: one post
   const resumeIds = input.threadIds ?? [];
   if (resumeIds.length >= texts.length && resumeIds[0]) return { ok: true, platformPostId: resumeIds[0] };
   try {
@@ -601,6 +602,7 @@ async function publishToBluesky(input: PublishInput): Promise<PublishResult> {
   // Each segment is its own post (300-grapheme cap); a thread becomes a reply
   // chain. Media rides on the lead post only, mirroring the X adapter.
   const segments = [input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean);
+  if (segments.length === 0) segments.push(""); // media on its own: one post
   // Bluesky counts graphemes (lib/post-validation blocks longer posts before they
   // get here). Only trim as a last resort, by graphemes, so emoji survive intact.
   const clip = (s: string) => clipTo("bluesky", s, BLUESKY_MAX_CHARS);
@@ -646,6 +648,7 @@ async function publishToMastodon(input: PublishInput): Promise<PublishResult> {
   }
 
   const segments = [input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean);
+  if (segments.length === 0) segments.push(""); // media on its own: one post
   // Mastodon counts a URL as 23; only trim when its own count is over the limit.
   const clip = (s: string) => clipTo("mastodon", s, MASTODON_MAX_CHARS);
 
@@ -685,8 +688,9 @@ function clipTo(platform: string, text: string, limit: number): string {
 }
 
 export async function publish(input: PublishInput): Promise<PublishResult> {
-  if (!input.body.trim()) {
-    return { ok: false, error: "Post body is empty." };
+  // Media on its own is a post (validation keeps LinkedIn to text).
+  if (!xTexts(input.body, input.threadTail).length && input.media.length === 0) {
+    return { ok: false, error: "Nothing to post: no text or media." };
   }
 
   switch (input.platform) {

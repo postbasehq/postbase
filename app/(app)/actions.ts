@@ -145,6 +145,14 @@ async function saveOrError(what: string, run: () => Promise<void>): Promise<Save
 }
 
 const NO_CHANNELS = "Pick at least one channel to schedule this post, or save it as a draft.";
+const NOTHING_TO_SAVE = "Write something or add media to post.";
+
+/** No text, media or per-channel caption: there's nothing to save. */
+function nothingToSave(segments: string[], channelIds: string[], formData: FormData): boolean {
+  if (segments.length > 0 || parseMedia(formData).length > 0) return false;
+  const variants = parseVariants(formData);
+  return !channelIds.some((id) => variants[id]);
+}
 
 /** Only channels in this workspace; RLS alone would also accept the user's other workspaces'. */
 async function assertOwnChannels(
@@ -223,6 +231,13 @@ async function assertSendable(
       process.env.TIKTOK_PRIVACY_LEVEL?.trim() || undefined,
     );
     if (tiktok) throw new FormError(tiktok);
+  }
+  // With no text, the video's title can't come from the post's first line.
+  const youtubeUntitled = (chans ?? []).some(
+    (c) => c.platform === "youtube" && !(variants[c.id] ?? segments[0] ?? "").trim(),
+  );
+  if (youtubeUntitled && !String(formData.get("youtube_title") ?? "").trim()) {
+    throw new FormError("Give the YouTube video a title. The post has no text to take it from.");
   }
 }
 
@@ -335,9 +350,9 @@ async function createPostOrThrow(formData: FormData) {
   } = await supabase.auth.getUser();
 
   const segments = parseThread(formData);
-  if (segments.length === 0) throw new FormError("Write something to post.");
   const scheduledRaw = String(formData.get("scheduled_at") ?? "").trim();
   const channelIds = formData.getAll("channels").map(String).filter(Boolean);
+  if (nothingToSave(segments, channelIds, formData)) throw new FormError(NOTHING_TO_SAVE);
 
   const scheduledAt = scheduledRaw ? new Date(scheduledRaw).toISOString() : null;
   const status = scheduledAt ? "scheduled" : "draft";
@@ -352,13 +367,16 @@ async function createPostOrThrow(formData: FormData) {
   // Backstop against double-submits: if an identical post was created in this
   // workspace in the last 15s, treat this as a duplicate click and don't insert
   // another. (The client also disables the button while submitting.)
-  const { data: recent } = await supabase
-    .from("posts")
-    .select("id")
-    .eq("org_id", orgId)
-    .eq("body", segments[0])
-    .gte("created_at", new Date(Date.now() - 15_000).toISOString())
-    .limit(1);
+  // (Media-only posts have no text to match on; the disabled button covers them.)
+  const { data: recent } = segments.length
+    ? await supabase
+        .from("posts")
+        .select("id")
+        .eq("org_id", orgId)
+        .eq("body", segments[0])
+        .gte("created_at", new Date(Date.now() - 15_000).toISOString())
+        .limit(1)
+    : { data: null };
   if (recent && recent.length > 0) {
     revalidatePath("/queue");
     redirect("/queue");
@@ -372,7 +390,7 @@ async function createPostOrThrow(formData: FormData) {
     {
       org_id: orgId,
       author_id: user?.id ?? null,
-      body: segments[0],
+      body: segments[0] ?? "",
       thread_tail: segments.slice(1),
       scheduled_at: scheduledAt,
       tiktok_privacy_level: parseTiktokPrivacy(formData),
@@ -438,9 +456,9 @@ async function updatePostOrThrow(formData: FormData) {
   }
 
   const segments = parseThread(formData);
-  if (segments.length === 0) throw new FormError("Write something to post.");
   const scheduledRaw = String(formData.get("scheduled_at") ?? "").trim();
   const channelIds = formData.getAll("channels").map(String).filter(Boolean);
+  if (nothingToSave(segments, channelIds, formData)) throw new FormError(NOTHING_TO_SAVE);
 
   const scheduledAt = scheduledRaw ? new Date(scheduledRaw).toISOString() : null;
   const status = scheduledAt ? "scheduled" : "draft";
@@ -466,7 +484,7 @@ async function updatePostOrThrow(formData: FormData) {
   const { data: updated, error } = await writeDb()
     .from("posts")
     .update({
-      body: segments[0],
+      body: segments[0] ?? "",
       thread_tail: segments.slice(1),
       scheduled_at: scheduledAt,
       tiktok_privacy_level: parseTiktokPrivacy(formData),

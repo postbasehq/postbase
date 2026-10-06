@@ -10,7 +10,7 @@ import { Modal } from "@/components/Modal";
 import { countXLinkPosts } from "@/lib/x-link-count";
 import { BrandTile } from "@/components/BrandTile";
 import { DateTimePicker } from "@/components/DateTimePicker";
-import { charCount, checkForPlatform, PAST_GRACE_MS } from "@/lib/post-validation";
+import { charCount, checkForPlatform, NOTHING_TO_POST, PAST_GRACE_MS } from "@/lib/post-validation";
 import { channelHealth } from "@/lib/channel-health";
 import { TikTokSettings, type TikTokInitial } from "@/components/TikTokSettings";
 import { YouTubeSettings, type YouTubePrivacy } from "@/components/YouTubeSettings";
@@ -336,6 +336,11 @@ export function PostForm({
   }
   const isDraft = !utc;
 
+  const bodyEmpty = cleanTweets.length === 0;
+  // Media on its own (or only per-channel captions) is a post; checks per
+  // channel catch a channel left with nothing, and LinkedIn, which needs text.
+  const nothingYet = bodyEmpty && !hasMedia && !selectedChannels.some((c) => variants[c.id]?.trim());
+
   function checkPlatform(platform: string): Note[] {
     const meta = PLATFORM[platform];
     if (!meta) return [];
@@ -346,7 +351,8 @@ export function PostForm({
     for (const c of selectedChannels.filter((ch) => ch.platform === platform)) {
       const variant = variants[c.id]?.trim();
       for (const n of checkForPlatform(platform, variant ? [variant] : cleanTweets, media)) {
-        if (seen.has(n.text)) continue;
+        // An untouched composer already says so in the editor.
+        if (seen.has(n.text) || (nothingYet && n.text === NOTHING_TO_POST)) continue;
         seen.add(n.text);
         notes.push(n);
       }
@@ -376,7 +382,6 @@ export function PostForm({
   // A time already gone would publish on the next run, not when the user meant.
   const inPast = !!utc && Date.parse(utc) < Date.now() - PAST_GRACE_MS;
   const hasBlocking = inPast || checks.some((c) => c.notes.some((n) => n.level === "error"));
-  const bodyEmpty = cleanTweets.length === 0;
   // The first selected TikTok account drives the compliant TikTok settings.
   const tiktokChannel = selectedChannels.find((c) => c.platform === "tiktok") ?? null;
   const youtubeChannel = selectedChannels.find((c) => c.platform === "youtube") ?? null;
@@ -406,7 +411,7 @@ export function PostForm({
   // Saving mid-upload would drop the file (it's only attached once it lands).
   const uploading = busy || thumbBusy;
   const canSubmit =
-    !bodyEmpty && !uploading && (isDraft || (!noChannels && !hasBlocking && tiktokOk && canSchedule));
+    !nothingYet && !uploading && (isDraft || (!noChannels && !hasBlocking && tiktokOk && canSchedule));
   // Not ready to publish if a platform check fails OR the TikTok settings are
   // incomplete — keep the status indicator consistent with the disabled button.
   const notReady = hasBlocking || !tiktokOk;
@@ -1146,8 +1151,8 @@ export function PostForm({
             </span>
           ) : uploading ? (
             <span className="text-xs text-muted">Waiting for the upload to finish.</span>
-          ) : bodyEmpty ? (
-            <span className="hidden text-xs text-muted sm:inline">Write something to continue.</span>
+          ) : nothingYet ? (
+            <span className="hidden text-xs text-muted sm:inline">Write something or add media to continue.</span>
           ) : noChannels && !isDraft ? (
             <span className="text-xs text-[#d14a3e]">Pick a channel, or clear the time to save a draft.</span>
           ) : notReady && !isDraft ? (

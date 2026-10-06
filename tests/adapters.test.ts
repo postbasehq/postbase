@@ -171,3 +171,29 @@ describe("TikTok: the audience is never changed behind the user's back", () => {
     expect((res as { error?: string }).error ?? "").not.toMatch(/no longer allows/);
   });
 });
+
+describe("a media-only post goes out as one post with no text", () => {
+  it("X: one tweet carrying the media, no text field", async () => {
+    const tweets: Record<string, unknown>[] = [];
+    net?.restore();
+    net = installFakeNet((r) => {
+      if (r.url.host === "cdn.test") return new Response(new Uint8Array([1, 2, 3]), { headers: { "content-type": "image/png", "content-length": "3" } });
+      if (r.url.pathname.startsWith("/2/media/upload")) return json({ data: { id: "m1" } });
+      if (r.url.pathname.endsWith("/tweets")) {
+        tweets.push(r.body as Record<string, unknown>);
+        return json({ data: { id: "t1" } });
+      }
+    });
+    const enc = encryptJson({ access_token: "t", refresh_token: "r" });
+    const res = await publish({ ...base, threadTail: [], body: "", media: [{ url: "https://cdn.test/a.png", type: "image/png" }], platform: "x", encryptedTokens: enc });
+    expect(res).toMatchObject({ ok: true, platformPostId: "t1" });
+    expect(tweets).toEqual([{ media: { media_ids: ["m1"] } }]);
+  });
+  it("nothing at all is refused before contacting the network", async () => {
+    net?.restore();
+    net = installFakeNet(() => undefined);
+    const enc = encryptJson({ access_token: "t" });
+    expect(await publish({ ...base, threadTail: [" "], body: "", platform: "x", encryptedTokens: enc })).toMatchObject({ ok: false });
+    expect(net.log).toEqual([]);
+  });
+});

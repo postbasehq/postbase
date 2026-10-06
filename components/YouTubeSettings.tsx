@@ -137,9 +137,14 @@ export function YouTubeSettings({
           placeholder={fallbackTitle ? fallbackTitle.slice(0, TITLE_MAX) : "Your video title"}
           className="rounded-xl border border-line bg-ground px-3 py-2 text-sm text-ink placeholder:text-muted/70 focus:border-blue focus:outline-none"
         />
-        <span className="text-xs text-muted">
-          Leave it empty to use the first line of your post. The post text becomes the video description.
-        </span>
+        {!title.trim() && !fallbackTitle ? (
+          // A media-only post: there's no first line to fall back to.
+          <span className="text-xs text-[#d14a3e]">Add a title. Your post has no text to take it from.</span>
+        ) : (
+          <span className="text-xs text-muted">
+            Leave it empty to use the first line of your post. The post text becomes the video description.
+          </span>
+        )}
       </div>
 
       <div className="flex flex-col gap-1.5">

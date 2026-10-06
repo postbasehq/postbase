@@ -29,13 +29,18 @@ type Rules = {
   maxImages: number;
   video: "alone" | "first" | "dropped" | "required";
   needsMedia?: boolean;
+  /** Can't post media on its own (the API needs text). */
+  needsText?: boolean;
 };
+
+/** A channel would get neither text nor media. */
+export const NOTHING_TO_POST = "Nothing to post: write something or add media";
 
 const RULES: Record<string, Rules> = {
   x: { label: "X", limit: 280, rule: "x", shape: "thread", maxImages: 4, video: "alone" },
   bluesky: { label: "Bluesky", limit: 300, rule: "graphemes", shape: "thread", maxImages: 4, video: "dropped" },
   mastodon: { label: "Mastodon", limit: 500, rule: "mastodon", shape: "thread", maxImages: 4, video: "alone" },
-  linkedin: { label: "LinkedIn", limit: 3000, rule: "codepoints", shape: "lead+comment", maxImages: 20, video: "dropped" },
+  linkedin: { label: "LinkedIn", limit: 3000, rule: "codepoints", shape: "lead+comment", maxImages: 20, video: "dropped", needsText: true },
   instagram: { label: "Instagram", limit: 2200, rule: "codepoints", shape: "caption", join: "\n\n", maxImages: 10, video: "first", needsMedia: true },
   facebook: { label: "Facebook", limit: 63206, rule: "codepoints", shape: "caption", join: "\n\n", maxImages: 10, video: "first" },
   tiktok: { label: "TikTok", limit: 2200, rule: "codepoints", shape: "caption", join: " ", maxImages: 35, video: "first", needsMedia: true },
@@ -64,6 +69,12 @@ export function checkForPlatform(platform: string, parts: string[], media: Media
   if (!r) return [];
   const out: Check[] = [];
   const text = parts.map((t) => t.trim()).filter(Boolean);
+
+  // Media on its own is a post everywhere except LinkedIn.
+  if (text.length === 0) {
+    if (media.length === 0) return [{ level: "error", text: NOTHING_TO_POST }];
+    if (r.needsText) out.push({ level: "error", text: `${r.label} posts need text` });
+  }
 
   // Bound the work before counting: this runs on the server for every
   // scheduled post, and network-accurate counting (URL matching, grapheme

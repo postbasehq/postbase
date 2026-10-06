@@ -236,10 +236,10 @@ export async function postTweet(
   mediaIds?: string[],
 ): Promise<{ id: string }> {
   const body: {
-    text: string;
+    text?: string;
     reply?: { in_reply_to_tweet_id: string };
     media?: { media_ids: string[] };
-  } = { text };
+  } = text ? { text } : {}; // media on its own: X takes no text field
   if (inReplyToId) body.reply = { in_reply_to_tweet_id: inReplyToId };
   if (mediaIds && mediaIds.length) body.media = { media_ids: mediaIds };
   const res = await sendPublish(
