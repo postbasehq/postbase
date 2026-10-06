@@ -785,7 +785,7 @@ export function MediaLibrary({
                   href={`/composer?media=${preview.id}`}
                   className="rounded-full bg-blue px-4 py-2 font-display text-[13px] font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
                 >
-                  Use in a new post →
+                  Use in a new post
                 </Link>
                 <button
                   type="button"

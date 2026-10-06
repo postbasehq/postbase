@@ -131,7 +131,6 @@ export function CompareTable({ item: c, link = false }: { item: CompareItem; lin
           className="flex items-center justify-center gap-1.5 bg-surface-2 py-3.5 text-[14px] font-semibold text-blue-ink hover:underline"
         >
           Read Postbase vs {c.name}
-          <span aria-hidden>→</span>
         </a>
       ) : null}
     </div>

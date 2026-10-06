@@ -51,7 +51,7 @@ export function AccountData({
               onClick={() => setOpen(true)}
               className="rounded-full border border-[#d14a3e] px-4 py-2 font-display text-sm font-semibold text-[#d14a3e] transition-colors hover:bg-[#d14a3e] hover:text-white"
             >
-              Delete account…
+              Delete account
             </button>
           ) : null}
         </div>

@@ -164,7 +164,7 @@ export function AgentProposalPanel({
               <div className="flex flex-wrap items-center gap-2">
                 {channels.length === 0 ? (
                   <Link href="/channels" className="text-[13px] font-medium text-blue">
-                    Connect a channel →
+                    Connect a channel
                   </Link>
                 ) : (
                   channels.map((c) => {

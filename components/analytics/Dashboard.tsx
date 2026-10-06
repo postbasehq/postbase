@@ -334,7 +334,7 @@ export function EmptyState() {
             Schedule a post
           </Link>
           <Link href="/channels" className="text-[13px] font-semibold text-blue-ink hover:underline">
-            Connect a channel →
+            Connect a channel
           </Link>
         </div>
       </div>

@@ -41,7 +41,7 @@ function Headline({ e }: { e: Entry }) {
           {e.summary}
         </p>
         <span className="mt-6 inline-flex items-center gap-1.5 text-[14px] font-semibold underline-offset-4 group-hover:underline" style={{ color: t.ink }}>
-          Read more <span aria-hidden>→</span>
+          Read more
         </span>
       </div>
       {e.demo ? (
@@ -85,7 +85,7 @@ function Row({ e, open, onToggle }: { e: Entry; open: boolean; onToggle: () => v
         <div className="swap-in px-4 pb-5 pl-[4.25rem]">
           <div className="prose-blog max-w-[64ch] text-[15px]" dangerouslySetInnerHTML={{ __html: e.html }} />
           <Link href={`/changelog/${e.slug}`} className="mt-1 inline-flex items-center gap-1.5 text-[14px] font-semibold text-blue-ink hover:underline">
-            Link to this change <span aria-hidden>→</span>
+            Link to this change
           </Link>
         </div>
       ) : null}

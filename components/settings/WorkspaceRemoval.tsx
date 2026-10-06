@@ -22,13 +22,13 @@ export function WorkspaceRemoval({ plan }: { plan: Plan }) {
 
   return (
     <div className="mt-5 border-t border-line pt-5">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <button
           type="button"
           onClick={() => setMode(mode === "leave" ? "none" : "leave")}
           className="rounded-full border border-line px-4 py-2 font-display text-sm font-semibold text-ink transition-colors hover:border-ink"
         >
-          Leave workspace…
+          Leave workspace
         </button>
         {isOwner ? (
           <button
@@ -36,7 +36,7 @@ export function WorkspaceRemoval({ plan }: { plan: Plan }) {
             onClick={() => setMode(mode === "delete" ? "none" : "delete")}
             className="rounded-full border border-[#d14a3e] px-4 py-2 font-display text-sm font-semibold text-[#d14a3e] transition-colors hover:bg-[#d14a3e] hover:text-white"
           >
-            Delete workspace…
+            Delete workspace
           </button>
         ) : null}
       </div>

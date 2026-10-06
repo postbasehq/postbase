@@ -284,7 +284,7 @@ function Row({ label, value, note, href, cta, last }: { label: string; value: st
       </div>
       {href && cta ? (
         <Link href={href} className="text-[13px] font-semibold text-blue-ink hover:underline">
-          {cta} →
+          {cta}
         </Link>
       ) : null}
     </div>

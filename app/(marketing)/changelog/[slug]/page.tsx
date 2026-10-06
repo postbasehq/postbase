@@ -137,7 +137,7 @@ export default async function ChangelogEntryPage({ params }: { params: Params })
                 className="group flex flex-col rounded-[22px] border border-line bg-surface p-2 shadow-sm transition-colors hover:border-ink"
               >
                 <span className="flex items-center justify-between rounded-2xl border border-line bg-surface-2 px-4 py-3">
-                  <span className="text-[13px] font-semibold text-muted">{label === "Earlier" ? "← Earlier" : "Later →"}</span>
+                  <span className="text-[13px] font-semibold text-muted">{label}</span>
                   <TypePill type={x.type} />
                 </span>
                 <span className="px-4 pb-3 pt-3.5 font-display text-[17px] font-semibold text-ink group-hover:text-blue-ink">{x.title}</span>
@@ -150,7 +150,7 @@ export default async function ChangelogEntryPage({ params }: { params: Params })
 
         <div className={`${wrap} pt-8`}>
           <Link href="/changelog" className="text-[14px] font-semibold text-blue-ink hover:underline">
-            ← The full changelog
+            The full changelog
           </Link>
         </div>
 

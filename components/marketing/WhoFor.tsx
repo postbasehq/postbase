@@ -144,7 +144,7 @@ export function WhoFor() {
                         x.audience === "developers" ? "text-terra" : "text-blue-ink"
                       }`}
                     >
-                      {x.cta} →
+                      {x.cta}
                     </button>
                   ) : null}
                   <div className="mb-5 ml-[60px] mt-4 h-[3px] overflow-hidden rounded-full bg-surface-2">
