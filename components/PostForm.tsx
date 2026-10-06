@@ -10,6 +10,8 @@ import { Modal } from "@/components/Modal";
 import { countXLinkPosts } from "@/lib/x-link-count";
 import { BrandTile } from "@/components/BrandTile";
 import { DateTimePicker } from "@/components/DateTimePicker";
+import { EmptyState } from "@/components/EmptyState";
+import { LogoMark } from "@/components/marketing/Decor";
 import { charCount, checkForPlatform, NOTHING_TO_POST, PAST_GRACE_MS, partBudget } from "@/lib/post-validation";
 import { channelHealth } from "@/lib/channel-health";
 import { TikTokSettings, type TikTokInitial } from "@/components/TikTokSettings";
@@ -1500,77 +1502,120 @@ export function PostForm({
         </div>
       </Modal>
 
-      <Modal open={draftsOpen} onClose={() => setDraftsOpen(false)} labelledBy="drafts-picker-title" size="lg" {...BRAND_GLASS_PANEL}>
-        <div className="flex items-center gap-2">
-          <h3 id="drafts-picker-title" className="font-display text-lg font-semibold tracking-[-0.01em]">
-            Load a draft
-          </h3>
-          <Link href="/drafts" className="ml-auto text-xs font-medium text-blue-ink hover:underline">
-            Manage drafts
-          </Link>
+      <Modal
+        open={draftsOpen}
+        onClose={() => setDraftsOpen(false)}
+        labelledBy="drafts-picker-title"
+        size="lg"
+        panelClassName="rounded-[22px] border border-line bg-surface p-2 shadow-lg"
+      >
+        {/* Zone 1: what this is, and finding one */}
+        <div className="relative isolate overflow-hidden rounded-2xl border border-line bg-surface-2 p-5">
+          <LogoMark
+            color="currentColor"
+            className="pointer-events-none absolute right-24 top-0 -z-10 w-[88px] text-ink opacity-[0.05]"
+          />
+          <div className="flex items-start gap-3">
+            <div className="min-w-0">
+              <h3 id="drafts-picker-title" className="font-display text-[20px] font-semibold tracking-[-0.02em] text-ink">
+                Open a draft
+              </h3>
+              <p className="mt-0.5 text-[13px] text-muted">
+                {otherDrafts.length === 0
+                  ? "No other drafts saved"
+                  : `${otherDrafts.length} ${otherDrafts.length === 1 ? "draft" : "drafts"} saved, newest first`}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDraftsOpen(false)}
+              aria-label="Close"
+              className="ml-auto grid size-8 shrink-0 place-items-center rounded-full border border-line bg-surface text-muted transition-colors hover:text-ink"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          {otherDrafts.length > 3 ? (
+            <label className="mt-4 flex items-center gap-2 rounded-xl border border-line bg-surface px-3 focus-within:border-[#2b59d9]">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted" aria-hidden>
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+              <input
+                type="text"
+                value={draftQuery}
+                onChange={(e) => setDraftQuery(e.target.value)}
+                placeholder="Search your drafts"
+                aria-label="Search drafts"
+                className="min-w-0 flex-1 bg-transparent py-2.5 text-sm text-ink outline-none placeholder:text-muted"
+              />
+            </label>
+          ) : null}
         </div>
 
-        {otherDrafts.length > 6 ? (
-          <div className="mt-4 flex items-center gap-2 rounded-lg border border-line bg-surface/60 px-3 focus-within:border-blue">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted" aria-hidden>
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
-            <input
-              type="text"
-              value={draftQuery}
-              onChange={(e) => setDraftQuery(e.target.value)}
-              placeholder="Search drafts…"
-              aria-label="Search drafts"
-              className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-none placeholder:text-muted"
-            />
-          </div>
-        ) : null}
-
+        {/* Zone 2: the drafts */}
         {filteredDrafts.length === 0 ? (
-          <p className="mt-5 rounded-xl border border-dashed border-line bg-surface/40 px-4 py-10 text-center text-sm text-muted">
-            {draftQuery.trim() ? `No drafts match “${draftQuery.trim()}”.` : "No other drafts to load."}
-          </p>
+          draftQuery.trim() ? (
+            <EmptyState kind="search" title={`No drafts match “${draftQuery.trim()}”`} body="Try other words from the post." compact />
+          ) : (
+            <EmptyState kind="drafts" title="Nothing else saved yet" body="Posts you save without a time show up here." compact />
+          )
         ) : (
-          <div className="mt-4 overflow-hidden rounded-xl border border-line bg-surface/60">
-            <div className="grid grid-cols-[1fr_auto] gap-3 border-b border-line bg-surface-2/50 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted">
-              <span>Draft</span>
-              <span>Updated</span>
-            </div>
-            <div className="max-h-[52vh] divide-y divide-line/70 overflow-y-auto">
-              {filteredDrafts.map((d) => (
+          <ul className="max-h-[52vh] overflow-y-auto px-1 py-2">
+            {filteredDrafts.map((d) => (
+              <li key={d.id}>
                 <Link
-                  key={d.id}
                   href={`/composer/${d.id}`}
-                  className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-2/60"
+                  className="flex items-start gap-3.5 rounded-xl px-3 py-3 transition-colors hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:outline-none"
                 >
-                  <span className="flex min-w-0 items-center gap-2.5">
+                  <span className="mt-0.5 flex w-[46px] shrink-0">
                     {d.platforms.length > 0 ? (
-                      <span className="flex shrink-0 -space-x-1.5">
+                      <span className="flex -space-x-2">
                         {d.platforms.slice(0, 3).map((pl) => (
-                          <span key={pl} className="rounded-[6px] bg-surface p-[1.5px] shadow-sm ring-1 ring-line">
-                            <BrandTile platform={pl} size={18} radius={5} />
+                          <span key={pl} className="rounded-[7px] ring-2 ring-surface">
+                            <BrandTile platform={pl} size={22} radius={6} />
                           </span>
                         ))}
                       </span>
-                    ) : null}
-                    <span className="min-w-0 truncate text-sm text-ink">
-                      {d.thread_len > 0 ? (
-                        <span className="mr-1.5 rounded bg-surface-2 px-1.5 py-0.5 text-[11px] font-medium text-muted">
-                          🧵 {d.thread_len + 1}
-                        </span>
-                      ) : null}
-                      {d.body || <span className="text-muted">(empty draft)</span>}
+                    ) : (
+                      <span className="size-[22px] rounded-[6px] border border-dashed border-line" title="No channels yet" />
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="line-clamp-2 text-[14px] leading-snug text-ink">
+                      {d.body || <span className="text-muted">Media only, no text</span>}
+                    </span>
+                    <span className="mt-1 block text-[12px] text-muted">
+                      {[
+                        d.thread_len > 0 ? `Thread of ${d.thread_len + 1}` : null,
+                        d.platforms.length === 0 ? "No channels yet" : d.platforms.map(label).join(", "),
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </span>
                   </span>
-                  <span className="whitespace-nowrap text-xs font-medium text-muted tabular-nums">
+                  <span className="mt-0.5 shrink-0 whitespace-nowrap text-[12px] font-medium text-muted tabular-nums">
                     {draftTimeAgo(d.updated_at)}
                   </span>
                 </Link>
-              ))}
-            </div>
-          </div>
+              </li>
+            ))}
+          </ul>
         )}
+
+        <div className="flex flex-wrap items-center gap-3 border-t border-line px-3 pb-1.5 pt-3">
+          {!nothingYet ? (
+            <span className="flex items-center gap-2 text-[12px] text-muted">
+              <span className="size-1.5 shrink-0 rounded-full bg-[#e3a72c]" aria-hidden />
+              Opening a draft replaces what&apos;s in the composer now.
+            </span>
+          ) : null}
+          <Link href="/drafts" className="ml-auto text-[13px] font-semibold text-blue-ink hover:underline">
+            Manage drafts
+          </Link>
+        </div>
       </Modal>
 
       {/* hidden fields for the server action */}
