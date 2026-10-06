@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BRANDS } from "@/components/BrandTile";
-import { LOGOS } from "@/components/ClientLogo";
+import { ClientLogo, LOGOS } from "@/components/ClientLogo";
 import { FactUI } from "@/components/marketing/seo/FactUI";
 import type { FactUi } from "@/lib/seo/networks";
 import { Breadcrumbs, PrimaryButton, SecondaryButton, Underlined, card, wrap } from "@/components/marketing/ui";
@@ -224,43 +224,74 @@ export function NetworkFacts({
   );
 }
 
-const STEP_TONES = ["#2b59d9", "#e3a72c", "#d14a3e"];
-
 /** Numbered how-to steps. */
+// Solid tiles per step, as on the MCP page's glance tiles: fill, text and a darker mark.
+const STEP_TILES = [
+  { bg: "#2b59d9", ink: "#ffffff", mark: "#2148b3" },
+  { bg: "#e3a72c", ink: "#14161a", mark: "#c98e17" },
+  { bg: "#d14a3e", ink: "#ffffff", mark: "#b23a2f" },
+];
+
+/** Numbered how-to steps, each on a solid brand tile. */
 export function Steps({ items }: { items: { title: string; body: string }[] }) {
   return (
-    <ol className="grid gap-4 md:grid-cols-3">
-      {items.map((s, i) => (
-        <li key={s.title} className={`${card} p-7`}>
-          <span
-            className="grid size-10 place-items-center rounded-full font-display text-[16px] font-semibold"
-            style={{ backgroundColor: STEP_TONES[i % 3], color: i % 3 === 1 ? "#202124" : "#fff" }}
-          >
-            {i + 1}
-          </span>
-          <h3 className="mt-5 font-display text-[20px] font-semibold tracking-[-0.01em] text-ink">{s.title}</h3>
-          <p className="mt-2 text-[15px] leading-relaxed text-muted">{s.body}</p>
-        </li>
-      ))}
+    <ol className="grid gap-5 md:grid-cols-3">
+      {items.map((s, i) => {
+        const t = STEP_TILES[i % 3];
+        return (
+          <li key={s.title} className="relative isolate flex min-h-[240px] flex-col overflow-hidden rounded-[24px] p-8" style={{ background: t.bg }}>
+            <LogoMark color={t.mark} className="pointer-events-none absolute -bottom-10 -right-10 -z-10 w-[200px] -rotate-12" />
+            <span className="self-start rounded-full bg-white px-3 py-1 font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-[#14161a]">
+              Step {i + 1}
+            </span>
+            <h3 className="mt-5 font-display text-[clamp(22px,2vw,26px)] font-semibold leading-[1.15] tracking-[-0.02em]" style={{ color: t.ink }}>
+              {s.title}
+            </h3>
+            <p className="mt-2.5 text-[15px] leading-relaxed" style={{ color: t.ink }}>
+              {s.body}
+            </p>
+          </li>
+        );
+      })}
     </ol>
   );
 }
 
-/** Example requests for an agent, as quote cards. */
-export function Prompts({ items }: { items: string[] }) {
+/**
+ * Example requests for an agent, as a chat: the AI tool's logo and name, each
+ * request as a solid blue message bubble, and the composer underneath. Two-zone
+ * card, like the pricing cards.
+ */
+export function Prompts({ items, client }: { items: string[]; client?: { logo: string; name: string } }) {
   return (
-    <ul className="grid gap-4 md:grid-cols-2">
-      {items.map((p) => (
-        <li key={p} className={`${card} flex gap-3.5 p-6`}>
-          <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full bg-blue text-on-blue" aria-hidden>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
+    <div className="mx-auto max-w-[860px] rounded-[22px] border border-line bg-surface p-2 shadow-sm">
+      <div className="rounded-2xl border border-line bg-surface-2 p-5 md:p-7">
+        <div className="flex items-center gap-2.5">
+          {client ? <ClientLogo id={client.logo} size={28} /> : null}
+          <span className="font-display text-[15px] font-semibold text-ink">{client ? `Ask ${client.name}` : "Ask your agent"}</span>
+          <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-[12px] font-semibold text-ink">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/postbase-icon.png" alt="" className="size-3.5 rounded-[3px]" />
+            Postbase connected
           </span>
-          <p className="text-[16px] leading-relaxed text-ink">&ldquo;{p}&rdquo;</p>
-        </li>
-      ))}
-    </ul>
+        </div>
+        <ul className="mt-6 flex flex-col items-end gap-3">
+          {items.map((p) => (
+            <li key={p} className="max-w-[88%] rounded-2xl rounded-br-md bg-[#2b59d9] px-4 py-3 text-[15px] leading-relaxed text-white shadow-sm">
+              {p}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="flex items-center gap-3 px-4 py-3">
+        <span className="min-w-0 flex-1 truncate text-[14px] text-muted">Ask {client?.name ?? "your agent"} to draft or schedule a post…</span>
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#2b59d9] text-white" aria-hidden>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 19V5M5 12l7-7 7 7" />
+          </svg>
+        </span>
+      </div>
+    </div>
   );
 }
 

@@ -99,7 +99,7 @@ export default async function ComboPage({ params }: { params: Params }) {
 
         <section className={section}>
           <SectionHead title={`What to ask ${client.name}`} sub={`A few ${n.name} requests that work well.`} />
-          <Prompts items={prompts} />
+          <Prompts items={prompts} client={{ logo: client.logo, name: client.name }} />
         </section>
 
         <section className={section}>

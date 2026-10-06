@@ -64,7 +64,7 @@ export default async function AiClientPage({ params }: { params: Promise<{ slug:
             }
             sub="Plain language works. These are a few things people ask for."
           />
-          <Prompts items={c.prompts} />
+          <Prompts items={c.prompts} client={{ logo: c.logo, name: c.name }} />
         </section>
 
         <section className={section}>
