@@ -331,14 +331,64 @@ function SelfHostCard() {
     };
   }, []);
 
+  const starIcon = (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="#e3a72c" aria-hidden>
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    </svg>
+  );
+
   return (
-    <div className="relative isolate flex flex-wrap items-center gap-5 overflow-hidden rounded-2xl border border-line bg-surface px-6 py-6 shadow-sm md:flex-nowrap md:px-7">
-      {/* Right-hand panel in Postbase blue, split off by a diagonal squiggle (md+) */}
+    <>
+    {/* Phones and tablets: two zones, a solid blue head (mark, title, stars) and the copy with two equal buttons */}
+    <div className="rounded-[22px] border border-line bg-surface p-2 shadow-sm lg:hidden">
+      <div className="relative isolate flex items-center gap-3.5 overflow-hidden rounded-2xl bg-[#2b59d9] p-5">
+        <LogoMark color="#2148b3" edge="top" className="pointer-events-none absolute right-5 top-0 -z-10 w-[84px]" />
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-[14px] bg-white text-[#14161a]">
+          <GitHubMark size={26} />
+        </span>
+        <div className="min-w-0">
+          <h3 className="font-display text-[19px] font-semibold text-white">Self-host for free</h3>
+          {stars != null ? (
+            <span className="mt-0.5 inline-flex items-center gap-1 text-[13px] font-semibold tabular-nums text-white">
+              {starIcon}
+              {stars} {stars === 1 ? "star" : "stars"} on GitHub
+            </span>
+          ) : (
+            <span className="mt-0.5 block text-[13px] font-semibold text-white">Open source on GitHub</span>
+          )}
+        </div>
+      </div>
+      <div className="px-3 pb-3 pt-4">
+        <p className="text-[14px] leading-relaxed text-muted">
+          Run the same product on your own servers, with your own platform API keys. The plans above are for the hosted version, where we
+          look after the servers, app approvals and updates.
+        </p>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <a
+            href="https://docs.postbase.so/self-hosting/installation"
+            className="rounded-full border border-line px-3 py-2.5 text-center font-display text-[14px] font-semibold text-ink transition-colors hover:border-ink"
+          >
+            Install guide
+          </a>
+          <a
+            href="https://github.com/postbasehq/postbase"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-ink px-3 py-2.5 font-display text-[14px] font-semibold text-surface shadow-sm"
+          >
+            <GitHubMark size={16} />
+            GitHub
+          </a>
+        </div>
+      </div>
+    </div>
+
+    {/* Laptops and up: one row, with the blue panel behind the buttons */}
+    <div className="relative isolate hidden items-center gap-5 overflow-hidden rounded-2xl border border-line bg-surface px-7 py-6 shadow-sm lg:flex">
+      {/* Right-hand panel in Postbase blue, split off by a diagonal squiggle */}
       <svg
         aria-hidden
         viewBox="0 0 400 160"
         preserveAspectRatio="none"
-        className="pointer-events-none absolute inset-y-0 right-0 -z-10 hidden h-full w-[420px] md:block"
+        className="pointer-events-none absolute inset-y-0 right-0 -z-10 h-full w-[420px]"
       >
         <path
           d="M92 0C74 18 102 34 84 54S54 84 72 104S46 136 54 160H400V0Z"
@@ -348,7 +398,7 @@ function SelfHostCard() {
       <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-ink text-surface">
         <GitHubMark size={28} />
       </span>
-      <div className="min-w-0 flex-1 md:pr-6">
+      <div className="min-w-0 flex-1 pr-6">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="font-display text-[18px] font-semibold text-ink">Self-host for free</h3>
           {stars != null ? (
@@ -362,26 +412,27 @@ function SelfHostCard() {
         </div>
         <p className="mt-1.5 text-[14px] leading-relaxed text-muted">
           Run the same product on your own servers, with your own platform API keys. The plans above
-          <br className="hidden md:block" /> are for the hosted version, where we look after the servers, app
+          <br className="hidden xl:block" /> are for the hosted version, where we look after the servers, app
           approvals and updates.
         </p>
       </div>
-      <div className="relative flex w-full shrink-0 flex-wrap items-center gap-2 md:w-auto md:pl-4">
+      <div className="relative flex shrink-0 items-center gap-2 pl-4">
         <a
           href="https://docs.postbase.so/self-hosting/installation"
-          className="rounded-full border border-line px-4 py-2.5 font-display text-[14px] font-semibold text-ink transition-colors hover:border-ink md:border-white md:text-white md:hover:bg-white md:hover:text-[#2b59d9]"
+          className="rounded-full border border-white px-4 py-2.5 font-display text-[14px] font-semibold text-white transition-colors hover:bg-white hover:text-[#2b59d9]"
         >
           Install guide
         </a>
         <a
           href="https://github.com/postbasehq/postbase"
-          className="inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 font-display text-[14px] font-semibold text-surface shadow-sm transition-shadow hover:shadow-md md:bg-white md:text-[#14161a]"
+          className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 font-display text-[14px] font-semibold text-[#14161a] shadow-sm transition-shadow hover:shadow-md"
         >
           <GitHubMark size={16} />
           View on GitHub
         </a>
       </div>
     </div>
+    </>
   );
 }
 
