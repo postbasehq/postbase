@@ -3,6 +3,7 @@ title: "TikTok Content Posting API: how to post videos and pass the audit"
 seo_title: TikTok Content Posting API: post and pass the audit
 description: How to post to TikTok from your own app: Direct Post vs Upload, creator_info, video and photo uploads, and the UX rules TikTok's audit checks.
 date: 2026-09-26
+updated: 2026-10-06
 category: Developers
 related: /integrations/tiktok, /integrations/youtube
 ---
@@ -116,4 +117,4 @@ TikTok's [content sharing guidelines](https://developers.tiktok.com/doc/content-
 
 ## Or skip the audit
 
-If you want to schedule TikToks without building and auditing your own integration, Postbase has passed the audit. Connect your TikTok account, upload the video in the composer, choose your settings and schedule it alongside [YouTube](/integrations/youtube) and everything else. See [TikTok scheduling in Postbase](/integrations/tiktok).
+If you want to schedule TikToks without building and auditing your own integration, use Postbase: connect your TikTok account, upload the video in the composer, choose your settings and schedule it alongside [YouTube](/integrations/youtube) and everything else. Postbase has passed TikTok's app review; its Direct Post audit for public posting is still in progress, so for now posts go out as private and you switch them to public in the TikTok app. See [TikTok scheduling in Postbase](/integrations/tiktok).
