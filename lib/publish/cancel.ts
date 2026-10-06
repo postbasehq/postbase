@@ -17,6 +17,9 @@ export type CancelOutcome =
  *    post (a failure re-queued a retry). The publisher now also drops retries
  *    of draft posts, and editing is blocked while anything is still sending.
  *  - Targets that already went out stay published.
+ *  - A target still processing on the network (pending_ref, e.g. a TikTok
+ *    upload) can't be stopped either: it's left as is, counted as still
+ *    sending, and the publisher keeps checking it so its outcome is recorded.
  */
 export async function cancelPostForOrg(orgId: string, postId: string): Promise<CancelOutcome> {
   if (!postId) return { ok: false, reason: "not_found" };
@@ -47,14 +50,15 @@ export async function cancelPostForOrg(orgId: string, postId: string): Promise<C
     .update({ status: "draft", next_attempt_at: null })
     .eq("post_id", postId)
     .in("status", ["scheduled", "failed"])
-    .is("platform_post_id", null);
+    .is("platform_post_id", null)
+    .is("pending_ref", null);
   if (targetErr) throw new Error(targetErr.message);
 
   const { data: sending } = await db
     .from("post_targets")
     .select("id")
     .eq("post_id", postId)
-    .eq("status", "publishing");
+    .or("status.eq.publishing,pending_ref.not.is.null");
   return { ok: true, stillSending: sending?.length ?? 0 };
 }
 

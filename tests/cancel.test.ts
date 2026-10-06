@@ -11,7 +11,7 @@ function setup(postStatus: string | null, sending = 0) {
     if (r.url.host !== "db.test") return undefined;
     const q = r.url.searchParams;
     if (r.table === "posts" && r.method === "GET") return postStatus ? json({ status: postStatus }) : json(null);
-    if (r.table === "post_targets" && r.method === "GET" && q.get("status") === "eq.publishing") return json(Array.from({ length: sending }, (_, i) => ({ id: `t${i}` })));
+    if (r.table === "post_targets" && r.method === "GET" && q.get("or") === "(status.eq.publishing,pending_ref.not.is.null)") return json(Array.from({ length: sending }, (_, i) => ({ id: `t${i}` })));
     return json([]);
   });
   return net;
@@ -26,7 +26,15 @@ describe("cancelling a post", () => {
     const targetWrite = n.log.find((r) => r.table === "post_targets" && r.method === "PATCH")!;
     expect(targetWrite.url.searchParams.get("status")).toBe("in.(scheduled,failed)");
     expect(targetWrite.url.searchParams.get("platform_post_id")).toBe("is.null");
+    // An upload still processing on the network is left to finish.
+    expect(targetWrite.url.searchParams.get("pending_ref")).toBe("is.null");
     expect(targetWrite.body).toMatchObject({ status: "draft", next_attempt_at: null });
+  });
+  it("counts an upload still processing on the network as still sending", async () => {
+    const n = setup("publishing", 1);
+    expect(await cancelPostForOrg(O, "p1")).toEqual({ ok: true, stillSending: 1 });
+    const check = n.log.find((r) => r.table === "post_targets" && r.method === "GET")!;
+    expect(check.url.searchParams.get("or")).toContain("pending_ref.not.is.null");
   });
   it("says when a channel was already mid-send", async () => {
     setup("publishing", 1);

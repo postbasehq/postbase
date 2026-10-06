@@ -685,13 +685,19 @@ export async function deletePost(formData: FormData) {
   // `publishing` so we never delete a post mid-send and race the live poller.
   const { data: post } = await supabase
     .from("posts")
-    .select("id, status, post_targets(status)")
+    .select("id, status, post_targets(status, pending_ref)")
     .eq("id", postId)
     .eq("org_id", orgId)
     .maybeSingle();
   if (!post || post.status === "publishing") return;
-  // A cancelled post can still have a channel mid-send (lib/publish/cancel.ts).
-  if (((post.post_targets ?? []) as { status: string }[]).some((t) => t.status === "publishing")) return;
+  // A cancelled post can still have a channel mid-send, or an upload the network
+  // is still processing (which may pull its media from our storage).
+  if (
+    ((post.post_targets ?? []) as { status: string; pending_ref: string | null }[]).some(
+      (t) => t.status === "publishing" || t.pending_ref,
+    )
+  )
+    return;
 
   // Remove any media files from the bucket (rows cascade with the post). Storage
   // deletes need the admin client — the bucket only allows authenticated uploads.

@@ -425,7 +425,7 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
   for (const r of due ?? []) touched.add(r.id as string);
 
   // 3. Queue: first attempts (targets of publishing posts), then due retries.
-  const [{ data: firstAttempts }, { data: retries }] = await Promise.all([
+  const [{ data: firstAttempts }, { data: retries }, { data: settling }] = await Promise.all([
     db
       .from("post_targets")
       .select("id, post_id, posts!inner(status)")
@@ -442,10 +442,22 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
       .not("next_attempt_at", "is", null)
       .lte("next_attempt_at", nowIso)
       .limit(200),
+    // ...except an upload still processing on the network: cancelling can't
+    // stop it, so keep checking it until its outcome is recorded.
+    db
+      .from("post_targets")
+      .select("id, post_id, posts!inner(status)")
+      .eq("status", "failed")
+      .eq("posts.status", "draft")
+      .not("pending_ref", "is", null)
+      .lt("attempts", MAX_ATTEMPTS)
+      .not("next_attempt_at", "is", null)
+      .lte("next_attempt_at", nowIso)
+      .limit(50),
   ]);
   const queue = [
     ...(firstAttempts ?? []).map((t) => ({ id: t.id as string, postId: t.post_id as string, from: "scheduled" as const })),
-    ...(retries ?? []).map((t) => ({ id: t.id as string, postId: t.post_id as string, from: "failed" as const })),
+    ...[...(retries ?? []), ...(settling ?? [])].map((t) => ({ id: t.id as string, postId: t.post_id as string, from: "failed" as const })),
   ];
 
   // 4. Claim + send one target at a time, within the time budget.
@@ -476,8 +488,9 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
         await releaseClaim(db, item.id, item.from);
         continue;
       }
-      if (loaded.post.status === "draft") {
+      if (loaded.post.status === "draft" && !target.pending_ref) {
         // Cancelled between queueing and claiming: park the target with it.
+        // (One still processing on the network carries on, to record its outcome.)
         await db.from("post_targets").update({ status: "draft", next_attempt_at: null }).eq("id", item.id).eq("status", "publishing");
         continue;
       }

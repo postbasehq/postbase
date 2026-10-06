@@ -102,6 +102,13 @@ describe("a cancelled post stays cancelled", () => {
     const retryRead = net.log.find((r) => r.table === "post_targets" && r.method === "GET" && r.url.searchParams.get("status") === "eq.failed");
     expect(retryRead?.url.searchParams.get("posts.status")).toBe("neq.draft");
   });
+  it("an upload still processing on the network keeps being checked after a cancel", async () => {
+    await publishDuePosts();
+    const settling = net.log.find(
+      (r) => r.table === "post_targets" && r.method === "GET" && r.url.searchParams.get("posts.status") === "eq.draft",
+    );
+    expect(settling?.url.searchParams.get("pending_ref")).toBe("not.is.null");
+  });
 });
 
 describe("repeating posts", () => {
