@@ -43,25 +43,6 @@ const ALLOWED = [
 ];
 const ACCEPT = ALLOWED.join(",");
 
-// Faint / stronger Postbase brand washes for the dropzone (blue, amber, terracotta).
-const WASH_IDLE = [
-  "radial-gradient(90% 130% at 0% 0%, #2b59d914, transparent 60%)",
-  "radial-gradient(80% 130% at 100% 0%, #e3a72c12, transparent 55%)",
-  "radial-gradient(90% 130% at 100% 100%, #d14a3e12, transparent 60%)",
-].join(",");
-const WASH_ACTIVE = [
-  "radial-gradient(90% 130% at 0% 0%, #2b59d930, transparent 62%)",
-  "radial-gradient(80% 130% at 100% 0%, #e3a72c26, transparent 58%)",
-  "radial-gradient(90% 130% at 100% 100%, #d14a3e26, transparent 62%)",
-].join(",");
-
-// Cards rotate through the three brand colours for a lively hover accent.
-const ACCENTS = [
-  "hover:border-[#2b59d9]/50 hover:shadow-[0_16px_36px_-16px_rgba(43,89,217,0.5)]",
-  "hover:border-[#e3a72c]/55 hover:shadow-[0_16px_36px_-16px_rgba(227,167,44,0.5)]",
-  "hover:border-[#d14a3e]/50 hover:shadow-[0_16px_36px_-16px_rgba(209,74,62,0.5)]",
-];
-
 function formatBytes(n: number): string {
   if (n >= 1024 ** 3) return `${(n / 1024 ** 3).toFixed(1)} GB`;
   if (n >= 1024 ** 2) return `${(n / 1024 ** 2).toFixed(1)} MB`;
@@ -133,6 +114,9 @@ export function MediaLibrary({
   const currentFolder = folders.find((f) => f.id === view) ?? null;
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [dragOver, setDragOver] = useState(false);
+  // dragenter/leave fire for every child crossed: count them so the overlay
+  // doesn't flicker while a file moves over the grid.
+  const dragDepth = useRef(0);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -393,7 +377,43 @@ export function MediaLibrary({
 
   return (
     <>
-      <div className="flex flex-col gap-5 md:flex-row md:items-start">
+      <div
+        className="relative flex flex-col gap-5 md:flex-row md:items-start"
+        // Drop files anywhere on the library to upload them (into the open folder).
+        onDragEnter={(e) => {
+          if (!e.dataTransfer.types.includes("Files")) return;
+          dragDepth.current++;
+          setDragOver(true);
+        }}
+        onDragOver={(e) => {
+          if (e.dataTransfer.types.includes("Files")) e.preventDefault();
+        }}
+        onDragLeave={(e) => {
+          if (!e.dataTransfer.types.includes("Files")) return;
+          dragDepth.current = Math.max(0, dragDepth.current - 1);
+          if (dragDepth.current === 0) setDragOver(false);
+        }}
+        onDrop={(e) => {
+          if (!e.dataTransfer.types.includes("Files")) return;
+          e.preventDefault();
+          dragDepth.current = 0;
+          setDragOver(false);
+          handleFiles(e.dataTransfer.files);
+        }}
+      >
+      {dragOver ? (
+        <div className="pointer-events-none absolute -inset-2 z-30 flex flex-col items-center justify-center rounded-[22px] border-2 border-dashed border-[#2b59d9] bg-surface">
+          <span className="grid size-11 place-items-center rounded-full bg-[#2b59d9] text-white">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M12 19V5M5 12l7-7 7 7" />
+            </svg>
+          </span>
+          <span className="mt-3 font-display text-[16px] font-semibold text-ink">
+            Drop to upload{currentFolder ? ` to ${currentFolder.name}` : ""}
+          </span>
+          <span className="mt-1 text-sm text-muted">Images and video, up to 1&nbsp;GB each</span>
+        </div>
+      ) : null}
       <FolderRail
         folders={folders}
         view={view}
@@ -408,74 +428,43 @@ export function MediaLibrary({
         onDropFiles={(ids, folderId) => void moveTo(ids, folderId)}
       />
       <div className="min-w-0 flex-1">
-      {/* dropzone */}
-      <div
-        onDragOver={(e) => {
-          // Only files from the computer; dragging a library card is a move.
-          if (!e.dataTransfer.types.includes("Files")) return;
-          e.preventDefault();
-          setDragOver(true);
+      <input
+        ref={inputRef}
+        type="file"
+        accept={ACCEPT}
+        multiple
+        hidden
+        onChange={(e) => {
+          handleFiles(e.target.files);
+          e.target.value = "";
         }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragOver(false);
-          handleFiles(e.dataTransfer.files);
-        }}
-        style={{ backgroundImage: dragOver ? WASH_ACTIVE : WASH_IDLE }}
-        className={`relative flex flex-col items-center overflow-hidden rounded-2xl border-2 border-dashed bg-surface px-6 py-12 text-center transition-all duration-200 ${
-          dragOver ? "scale-[1.01] border-blue" : "border-line hover:border-blue/40"
-        }`}
-      >
-        <input
-          ref={inputRef}
-          type="file"
-          accept={ACCEPT}
-          multiple
-          hidden
-          onChange={(e) => {
-            handleFiles(e.target.files);
-            e.target.value = "";
-          }}
-        />
-        <svg
-          width="34"
-          height="34"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className={`transition-all duration-200 ${dragOver ? "-translate-y-0.5 text-blue" : "text-blue-ink"}`}
-          aria-hidden
+      />
+
+      {/* Empty library: the upload area is the empty state (one, not two). */}
+      {empty ? (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="flex w-full flex-col items-center rounded-2xl border-2 border-dashed border-line bg-surface px-6 py-16 text-center transition-colors hover:border-[#2b59d9]"
         >
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <path d="M17 8l-5-5-5 5" />
-          <path d="M12 3v12" />
-        </svg>
-        <div className="mt-4 font-display text-[15px] font-semibold tracking-[-0.01em]">
-          {dragOver ? "Drop to upload" : "Drag & drop your media"}
-          {currentFolder ? <span className="text-muted"> into {currentFolder.name}</span> : null}
-        </div>
-        <p className="mt-1 text-sm text-muted">
-          or{" "}
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="font-semibold text-blue-ink underline underline-offset-2 hover:no-underline"
-          >
-            browse files
-          </button>
-        </p>
-        <p className="mt-3 text-xs text-muted">
-          Images &amp; video up to 1&nbsp;GB · MP4, MOV, WebM, JPG, PNG, WebP, GIF
-        </p>
-      </div>
+          <span className="grid size-11 place-items-center rounded-full bg-[#2b59d9] text-white">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M12 19V5M5 12l7-7 7 7" />
+            </svg>
+          </span>
+          <span className="mt-4 font-display text-[16px] font-semibold tracking-[-0.01em] text-ink">
+            Upload your first image or video
+          </span>
+          <span className="mt-1 text-sm text-muted">
+            Drop files here, or <span className="font-semibold text-blue-ink underline underline-offset-2">browse</span>. Up to 1&nbsp;GB each.
+          </span>
+          <span className="mt-3 text-xs text-muted">MP4, MOV, WebM, JPG, PNG, WebP, GIF</span>
+        </button>
+      ) : null}
 
       {/* active uploads */}
       {uploads.length > 0 ? (
-        <div className="mt-4 flex flex-col gap-2">
+        <div className={`${empty ? "" : "mb-4"} mt-4 flex flex-col gap-2 first:mt-0`}>
           {uploads.map((u) => (
             <div key={u.id} className="flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3">
               <div className="min-w-0 flex-1">
@@ -509,8 +498,8 @@ export function MediaLibrary({
 
       {/* toolbar */}
       {items.length > 0 ? (
-        <div className="mt-6 flex flex-wrap items-center gap-2.5">
-          <div className="flex min-w-0 max-w-xs flex-1 items-center gap-2 rounded-lg border border-line bg-surface px-3 focus-within:border-blue">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex min-w-[12rem] max-w-xs flex-1 basis-full items-center gap-2 rounded-lg border border-line bg-surface px-3 focus-within:border-blue sm:basis-auto">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted" aria-hidden>
               <circle cx="11" cy="11" r="8" />
               <path d="m21 21-4.3-4.3" />
@@ -557,26 +546,28 @@ export function MediaLibrary({
           >
             {selectMode ? "Done" : "Select"}
           </button>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#2b59d9] px-4 py-2 text-[13px] font-semibold text-white shadow-sm transition-shadow hover:shadow-md"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M12 19V5M5 12l7-7 7 7" />
+            </svg>
+            {currentFolder ? `Upload to ${currentFolder.name}` : "Upload"}
+          </button>
         </div>
       ) : null}
 
       {/* grid */}
-      {empty ? (
-        <div className="mt-6 rounded-2xl border border-line bg-surface shadow-sm">
-          <EmptyState
-            kind="media"
-            title="No media yet"
-            body="Upload images and videos once, then reuse them in any post. Drop files in the box above, or click it to choose."
-          />
-        </div>
-      ) : visible.length === 0 && !query.trim() && typeFilter === "all" ? (
+      {empty ? null : visible.length === 0 && !query.trim() && typeFilter === "all" ? (
         <div className="mt-6 rounded-2xl border border-line bg-surface shadow-sm">
           <EmptyState
             kind="media"
             title={currentFolder ? `${currentFolder.name} is empty` : "Every file is in a folder"}
             body={
               currentFolder
-                ? "Upload into it above, or drag files onto the folder from All media."
+                ? "Upload into it, or drag files onto the folder from All media."
                 : "Files you haven't put in a folder show up here."
             }
             compact
@@ -588,7 +579,7 @@ export function MediaLibrary({
         </div>
       ) : (
         <div className="mt-4 grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-4">
-          {visible.map((item, i) => {
+          {visible.map((item) => {
             const isVideo = item.type.startsWith("video/");
             const isSelected = selected.has(item.id);
             return (
@@ -601,10 +592,8 @@ export function MediaLibrary({
                   e.dataTransfer.setData(DRAG_TYPE, JSON.stringify(ids));
                   e.dataTransfer.effectAllowed = "move";
                 }}
-                className={`group flex flex-col overflow-hidden rounded-2xl border bg-surface shadow-sm transition-all duration-200 ${
-                  isSelected
-                    ? "border-blue ring-2 ring-blue/40"
-                    : `border-line hover:-translate-y-0.5 ${ACCENTS[i % ACCENTS.length]}`
+                className={`group flex flex-col rounded-[20px] border bg-surface p-1.5 shadow-sm transition-shadow duration-200 ${
+                  isSelected ? "border-[#2b59d9] ring-2 ring-[#2b59d9]" : "border-line hover:shadow-md"
                 }`}
               >
                 <button
@@ -617,7 +606,7 @@ export function MediaLibrary({
                       setPreview(item);
                     }
                   }}
-                  className="relative block aspect-video w-full overflow-hidden bg-surface-2"
+                  className="relative block aspect-video w-full overflow-hidden rounded-[14px] border border-line bg-surface-2"
                   aria-label={selectMode ? `Select ${item.name}` : `Preview ${item.name}`}
                 >
                   {isVideo ? (
@@ -653,7 +642,7 @@ export function MediaLibrary({
                   )}
                 </button>
 
-                <div className="flex items-center gap-2 p-3">
+                <div className="flex items-center gap-2 px-2 pb-1 pt-2.5">
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[13px] font-medium">{item.name}</div>
                     <div className="text-xs text-muted">{formatBytes(item.size_bytes)}</div>
@@ -662,9 +651,20 @@ export function MediaLibrary({
                     <button
                       type="button"
                       onClick={() => copyUrl(item)}
-                      className="shrink-0 rounded-full border border-line px-2.5 py-1 text-xs font-medium text-muted hover:text-ink"
+                      aria-label={copiedId === item.id ? "Link copied" : `Copy link to ${item.name}`}
+                      title={copiedId === item.id ? "Copied" : "Copy link"}
+                      className="grid size-7 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-ink"
                     >
-                      {copiedId === item.id ? "Copied" : "Copy"}
+                      {copiedId === item.id ? (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2b59d9" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <path d="M20 6 9 17l-5-5" />
+                        </svg>
+                      ) : (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7" />
+                          <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" />
+                        </svg>
+                      )}
                     </button>
                   ) : null}
                 </div>
@@ -984,7 +984,7 @@ function FolderRail({
   });
 
   const row = (active: boolean, over: boolean) =>
-    `group flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[14px] transition-colors md:w-full ${
+    `group flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[14px] transition-colors md:w-full ${
       over ? "bg-[#2b59d9] text-white" : active ? "bg-surface-2 font-semibold text-ink" : "text-muted hover:bg-surface-2 hover:text-ink"
     }`;
   const count = (n: number | undefined, over: boolean) => (
@@ -1011,8 +1011,7 @@ function FolderRail({
 
   return (
     <nav aria-label="Folders" className="md:sticky md:top-0 md:w-56 md:shrink-0">
-      <div className="flex gap-1.5 overflow-x-auto pb-1 md:flex-col md:gap-0.5 md:overflow-visible md:rounded-2xl md:border md:border-line md:bg-surface md:p-2 md:shadow-sm">
-        <div className="hidden px-3 pb-1.5 pt-1 text-[11px] font-medium uppercase tracking-wide text-muted md:block">Library</div>
+      <div className="flex gap-1.5 overflow-x-auto pb-1 md:flex-col md:gap-0.5 md:overflow-visible">
         <button type="button" onClick={() => onView("all")} className={`${row(view === "all", false)} shrink-0 whitespace-nowrap`}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
             <rect x="3" y="3" width="7" height="7" rx="1.5" />
@@ -1034,7 +1033,11 @@ function FolderRail({
           </button>
         ) : null}
 
-        <div className="hidden px-3 pb-1.5 pt-4 text-[11px] font-medium uppercase tracking-wide text-muted md:block">Folders</div>
+        {folders.length > 0 ? (
+          <div className="hidden px-3 pb-1.5 pt-4 text-[12px] font-semibold text-muted md:block">Folders</div>
+        ) : (
+          <div className="hidden pt-2 md:block" />
+        )}
         {folders.map((f) =>
           editing === f.id ? (
             <div key={f.id} className="shrink-0">
