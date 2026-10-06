@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CHANNEL_LIMIT, PLANS, SEAT_LIMIT, WORKSPACE_LIMIT, planIsActive, type PlanId } from "@/lib/plans";
-import { agentUsage, aiUsage, billingGroup, seatUsage } from "@/lib/billing-guard";
+import { PAST_DUE_NOTE, agentUsage, aiUsage, billingEnforced, billingGroup, overPlanMessage, seatUsage } from "@/lib/billing-guard";
 import { getStripe, stripeConfigured } from "@/lib/stripe";
 import { xLinkUsage } from "@/lib/x-links";
 import type { Meter } from "@/components/BillingStatus";
@@ -63,6 +63,9 @@ export async function loadBillingStatus(orgId: string | null) {
     { label: "AI videos", monthly: true, used: ai?.video.used ?? 0, limit: ai?.video.limit ?? 0 },
     ...(xLinks?.enforced ? [{ label: "X posts with links", monthly: true, used: xLinks.used, limit: xLinks.limit }] : []),
   ];
+  // More channels, workspaces or people than the plan includes (e.g. after a
+  // downgrade): scheduling is paused until it fits (schedulingProblem).
+  const overPlan = group && active && !comped && billingEnforced() ? await overPlanMessage(group).catch(() => null) : null;
   const now = new Date();
   const resets = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toLocaleDateString(undefined, {
     day: "numeric",
@@ -114,7 +117,9 @@ export async function loadBillingStatus(orgId: string | null) {
         ? status === "trialing"
           ? "You won't be charged. Changed your mind? Resume the trial from Manage subscription."
           : "It won't renew. Changed your mind? Resume it from Manage subscription."
-        : undefined,
+        : status === "past_due" && !comped
+          ? `${PAST_DUE_NOTE} Posts keep going out meanwhile; AI and X posts with links are at trial level.`
+          : (overPlan ?? undefined),
       meters,
       resets,
     },

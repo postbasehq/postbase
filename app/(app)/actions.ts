@@ -13,7 +13,7 @@ import { ownStoragePath } from "@/lib/media-paths";
 import { isOwnMediaUrl } from "@/lib/media-urls";
 import { saveChannel } from "@/lib/channel-store";
 import { type YouTubePostOptions } from "@/lib/platforms/youtube";
-import { hasAccess, NO_PLAN_MESSAGE, releaseAiGeneration, reserveAiGeneration } from "@/lib/billing-guard";
+import { hasAccess, NO_PLAN_MESSAGE, releaseAiGeneration, reserveAiGeneration, schedulingProblem } from "@/lib/billing-guard";
 import { connectBluesky } from "@/lib/platforms/bluesky";
 import { isRepeatEvery } from "@/lib/publish/repeat";
 import { getTimeZone, zonedTimeToUtc } from "@/lib/tz";
@@ -282,7 +282,10 @@ export async function createPost(formData: FormData) {
   const scheduledAt = scheduledRaw ? new Date(scheduledRaw).toISOString() : null;
   const status = scheduledAt ? "scheduled" : "draft";
   // Drafts are always allowed; scheduling needs an active plan.
-  if (status === "scheduled" && !(await hasAccess(supabase, orgId))) throw new Error(NO_PLAN_MESSAGE);
+  if (status === "scheduled") {
+    const blocked = await schedulingProblem(orgId);
+    if (blocked) throw new Error(blocked);
+  }
   assertOwnMedia(formData, orgId);
   if (scheduledAt) await assertSendable(supabase, orgId, channelIds, segments, scheduledAt, formData);
 
@@ -394,7 +397,10 @@ export async function updatePost(formData: FormData) {
   const scheduledAt = scheduledRaw ? new Date(scheduledRaw).toISOString() : null;
   const status = scheduledAt ? "scheduled" : "draft";
   // Drafts are always allowed; scheduling needs an active plan.
-  if (status === "scheduled" && !(await hasAccess(supabase, orgId))) throw new Error(NO_PLAN_MESSAGE);
+  if (status === "scheduled") {
+    const blocked = await schedulingProblem(orgId);
+    if (blocked) throw new Error(blocked);
+  }
   assertOwnMedia(formData, orgId);
   if (scheduledAt) await assertSendable(supabase, orgId, channelIds, segments, scheduledAt, formData);
 
@@ -485,7 +491,8 @@ export async function retryTarget(formData: FormData) {
 
   const targetId = String(formData.get("target_id") ?? "");
   if (!targetId) throw new Error("Missing target id.");
-  if (!(await hasAccess(supabase, orgId))) throw new Error(NO_PLAN_MESSAGE);
+  const blocked = await schedulingProblem(orgId);
+  if (blocked) throw new Error(blocked);
 
   // Reset the attempt counter and make it due now. RLS scopes this to the
   // caller's org, so a target id from another tenant hits nothing.
@@ -589,7 +596,8 @@ export async function repostPost(
 
   const scheduledAt = zonedTimeToUtc(dayKey, hour, minute, await getTimeZone());
   if (Date.parse(scheduledAt) <= Date.now()) return { ok: false, error: "That time has already passed." };
-  if (!(await hasAccess(supabase, orgId))) return { ok: false, error: NO_PLAN_MESSAGE };
+  const blocked = await schedulingProblem(orgId);
+  if (blocked) return { ok: false, error: blocked };
 
   const { data: src } = await supabase
     .from("posts")

@@ -79,7 +79,7 @@ export async function reserveXLinks(orgId: string, targetId: string, count: numb
     p_since: xLinkPeriodStart().toISOString(),
   });
   if (error) return unavailable;
-  if (!data) return { ok: false, error: overLimitMessage(limit, count, g.trialing) };
+  if (!data) return { ok: false, error: overLimitMessage(limit, count, g.pastDue ? "past_due" : g.trialing ? "trial" : "plan") };
   return { ok: true, id: data as string };
 }
 
@@ -94,9 +94,12 @@ export async function settleXLinks(id: string | null, actual: number): Promise<v
   else await db.from("x_link_usage").update({ count: actual }).eq("id", id);
 }
 
-export function overLimitMessage(limit: number, needed = 1, trialing = false): string {
+export function overLimitMessage(limit: number, needed = 1, mode: "plan" | "trial" | "past_due" = "plan"): string {
   const what = needed > 1 ? `This thread has ${needed} posts with links, and your` : "Your";
-  if (trialing) {
+  if (mode === "past_due") {
+    return `Your last payment didn't go through, so X posts with links are limited to ${limit} this month${needed > 1 ? ` (this thread has ${needed})` : ""}. Update your card on the Billing page, then hit Retry. Posts without links are unlimited.`;
+  }
+  if (mode === "trial") {
     return `${what} free trial's ${limit} X posts with links are used up. Remove the link and hit Retry, or start your plan early on the Billing page for its full allowance. Posts without links are unlimited.`;
   }
   return `${what} plan's ${limit} X posts with links for this month are used up. Remove the link and hit Retry, or retry after ${formatResetDate(xLinkResetsAt())} when the allowance resets. Posts without links are unlimited.`;

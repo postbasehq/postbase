@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { getCurrentOrgId } from "@/lib/org";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { billingGroup, reserveAgentMessage, aiUsage, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
+import { billingGroup, reserveAgentMessage, aiUsage, NO_PLAN_MESSAGE, PAST_DUE_NOTE } from "@/lib/billing-guard";
 import { AGENT_DAILY_CAP } from "@/lib/plans";
 import { higgsfieldConfigured } from "@/lib/higgsfield";
 import { systemPrompt } from "@/lib/agent/config";
@@ -111,10 +111,14 @@ export async function POST(req: Request) {
       JSON.stringify({
         error:
           limit === "daily"
-            ? group.trialing
+            ? group.pastDue
+              ? `${PAST_DUE_NOTE} Until then, the AI agent is limited to ${AGENT_DAILY_CAP[group.usagePlan]} messages a day.${viaMcp}`
+              : group.trialing
               ? `You've reached today's AI agent limit for your free trial (${AGENT_DAILY_CAP[group.usagePlan]} messages). It resets at midnight UTC, or start your plan early on the Billing page for its full limit.${viaMcp}`
               : `You've reached today's AI agent limit for your plan (${AGENT_DAILY_CAP[group.usagePlan]} messages). It resets at midnight UTC.${viaMcp}`
-            : `Your plan has reached this month's fair-use limit for the AI agent. It resets on the 1st. If you need more, email team@postbase.so.${viaMcp}`,
+            : group.pastDue
+              ? `${PAST_DUE_NOTE} Until then, the AI agent's monthly limit is lower.${viaMcp}`
+              : `Your plan has reached this month's fair-use limit for the AI agent. It resets on the 1st. If you need more, email team@postbase.so.${viaMcp}`,
       }),
       { status: 429, headers: { "Content-Type": "application/json" } },
     );

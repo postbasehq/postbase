@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { firstBlockingProblem, pastTimeProblem } from "@/lib/post-validation";
 import { isOwnMediaUrl } from "@/lib/media-urls";
 import { getCurrentOrgId } from "@/lib/org";
-import { hasAccess, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
+import { schedulingProblem } from "@/lib/billing-guard";
 
 /**
  * Commits a post the agent proposed. This is the ONLY path that actually writes
@@ -47,8 +47,9 @@ export async function scheduleProposedPost(
   }
   const scheduledIso = scheduledAt ? scheduledAt.toISOString() : null;
   const status = scheduledIso ? "scheduled" : "draft";
-  if (status === "scheduled" && !(await hasAccess(supabase, orgId))) {
-    return { ok: false, error: NO_PLAN_MESSAGE };
+  if (status === "scheduled") {
+    const blocked = await schedulingProblem(orgId);
+    if (blocked) return { ok: false, error: blocked };
   }
 
   // Only allow targeting channels in this workspace; RLS alone would also accept

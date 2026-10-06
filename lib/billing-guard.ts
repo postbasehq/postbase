@@ -6,6 +6,8 @@ import {
   AI_IMAGE_LIMIT,
   AI_VIDEO_LIMIT,
   CHANNEL_LIMIT,
+  PLANS,
+  SEAT_LIMIT,
   WORKSPACE_LIMIT,
   planIsActive,
   type PlanId,
@@ -50,10 +52,15 @@ export type BillingGroup = {
    * The plan whose per-use allowances apply (AI generations, X posts with
    * links, the agent's backstops): "trial" while the subscription is still in
    * its free trial, so a trial can't spend a top plan's allowance before
-   * anything is paid. Channels, workspaces, seats and storage use `plan`.
+   * anything is paid. Also "trial" while a payment has failed (past_due): the
+   * workspace keeps publishing during Stripe's retries, but paid-per-use extras
+   * drop to trial level until the card works. Channels, workspaces, seats and
+   * storage use `plan`.
    */
   usagePlan: PlanId;
   trialing: boolean;
+  /** The last payment failed and Stripe is retrying it. */
+  pastDue: boolean;
   subscription_status: string | null;
   comped: boolean;
   /** True when the workspace asked about is covered by another's plan. */
@@ -84,13 +91,15 @@ export async function billingGroup(orgId: string): Promise<BillingGroup> {
   const plan = ((root?.plan as PlanId | undefined) ?? "trial") as PlanId;
   const comped = Boolean(root?.comped);
   const trialing = root?.subscription_status === "trialing" && !comped;
+  const pastDue = root?.subscription_status === "past_due" && !comped;
   return {
     rootId,
     rootName: (root?.name as string) ?? "",
     orgIds: [rootId, ...(members ?? []).map((m) => m.id as string)],
     plan,
-    usagePlan: trialing ? "trial" : plan,
+    usagePlan: trialing || pastDue ? "trial" : plan,
     trialing,
+    pastDue,
     subscription_status: (root?.subscription_status as string | null) ?? null,
     comped,
     linked: rootId !== orgId,
@@ -127,6 +136,54 @@ export async function hasAccess(_db: SupabaseClient, orgId: string): Promise<boo
 export const NO_PLAN_MESSAGE =
   "This workspace has no active plan. Start your 7-day free trial on the Billing page to schedule posts.";
 
+export const PAST_DUE_NOTE = "Your last payment didn't go through. Update your card on the Billing page to restore your plan's full allowance.";
+
+/**
+ * Why the workspace can't schedule (or retry) posts right now, or null:
+ * no active plan, or more channels, workspaces or people than the plan
+ * includes, e.g. after a downgrade. Limits are only checked when adding
+ * things, so this is what makes a smaller plan actually apply. Posts already
+ * scheduled still go out (and repeating series continue); new ones wait until
+ * the workspace fits the plan again.
+ */
+export async function schedulingProblem(orgId: string): Promise<string | null> {
+  if (!billingEnforced()) return null;
+  const g = await billingGroup(orgId);
+  if (!orgHasAccess(g)) return NO_PLAN_MESSAGE;
+  if (g.comped) return null;
+  return overPlanMessage(g);
+}
+
+/** The first allowance the plan's workspaces are over, as a message, or null. */
+export async function overPlanMessage(g: BillingGroup): Promise<string | null> {
+  const planName = g.plan === "trial" ? "current" : PLANS[g.plan].name;
+  const fix = "or upgrade on the Billing page to schedule posts.";
+  const [{ count: channels, error }, seats] = await Promise.all([
+    createAdminClient().from("channels").select("id", { count: "exact", head: true }).in("org_id", g.orgIds),
+    countSeats(g),
+  ]);
+  if (error) throw new Error(`overPlanMessage(${g.rootId}): ${error.message}`);
+  const over = (used: number, limit: number) => (used > limit ? used - limit : 0);
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+  const workspaceLimit = WORKSPACE_LIMIT[g.plan] ?? 1;
+  const extraWorkspaces = over(g.orgIds.length, workspaceLimit);
+  if (extraWorkspaces) {
+    return `Your ${planName} plan includes ${plural(workspaceLimit, "workspace", "workspaces")} and you have ${g.orgIds.length}. Delete ${extraWorkspaces} in Settings, ${fix}`;
+  }
+  const channelLimit = CHANNEL_LIMIT[g.plan] ?? CHANNEL_LIMIT.trial;
+  const extraChannels = over(channels ?? 0, channelLimit);
+  if (extraChannels) {
+    return `Your ${planName} plan includes ${plural(channelLimit, "channel", "channels")} and you have ${channels} connected. Disconnect ${extraChannels} on the Channels page, ${fix}`;
+  }
+  const seatLimit = SEAT_LIMIT[g.plan] ?? 1;
+  const extraSeats = over(seats, seatLimit);
+  if (extraSeats) {
+    return `Your ${planName} plan includes ${plural(seatLimit, "person", "people")} and there are ${seats} (counting pending invites). Remove ${extraSeats} on the Team page, ${fix}`;
+  }
+  return null;
+}
+
 /**
  * Whether the org has hit its plan's channel allowance. Used to gate connecting
  * a NEW channel (reconnecting an existing one updates in place and is exempt).
@@ -146,6 +203,8 @@ export type AiUsage = {
   plan: PlanId;
   /** In the free trial: limits are trial-level until the first payment. */
   trialing: boolean;
+  /** A payment failed: limits are trial-level until it goes through. */
+  pastDue: boolean;
   image: { used: number; limit: number; remaining: number };
   video: { used: number; limit: number; remaining: number };
 };
@@ -175,6 +234,7 @@ export async function aiUsage(_db: SupabaseClient, orgId: string): Promise<AiUsa
   return {
     plan,
     trialing: g.trialing,
+    pastDue: g.pastDue,
     image: { used: iu, limit: imgLimit, remaining: Math.max(0, imgLimit - iu) },
     video: { used: vu, limit: vidLimit, remaining: Math.max(0, vidLimit - vu) },
   };
@@ -189,6 +249,7 @@ export async function aiLimitMessage(db: SupabaseClient, orgId: string, kind: Ai
   const u = await aiUsage(db, orgId);
   if (u[kind].remaining > 0) return null;
   const noun = kind === "image" ? "AI images" : "AI videos";
+  if (u.pastDue) return `${PAST_DUE_NOTE} Until then, AI is limited to ${u[kind].limit} ${noun} a month.`;
   if (u.trialing) {
     const full = (kind === "image" ? AI_IMAGE_LIMIT : AI_VIDEO_LIMIT)[u.plan] ?? 0;
     return `Your free trial includes ${u[kind].limit} ${noun}. To get your plan's ${full} a month now, start your plan early on the Billing page.`;
@@ -303,6 +364,10 @@ export async function reserveAgentMessage(
  */
 export async function seatUsage(orgId: string): Promise<{ used: number; group: BillingGroup }> {
   const g = await billingGroup(orgId);
+  return { used: await countSeats(g), group: g };
+}
+
+async function countSeats(g: BillingGroup): Promise<number> {
   const db = createAdminClient();
   const [{ data: members }, { data: invites }] = await Promise.all([
     db.from("org_members").select("user_id").in("org_id", g.orgIds),
@@ -311,5 +376,5 @@ export async function seatUsage(orgId: string): Promise<{ used: number; group: B
   ]);
   const users = new Set((members ?? []).map((m) => m.user_id as string));
   const emails = new Set((invites ?? []).map((i) => String(i.email).toLowerCase()));
-  return { used: users.size + emails.size, group: g };
+  return users.size + emails.size;
 }

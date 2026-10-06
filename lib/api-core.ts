@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { cancelPostForOrg, type CancelOutcome } from "@/lib/publish/cancel";
 import { firstBlockingProblem, pastTimeProblem } from "@/lib/post-validation";
-import { hasAccess, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
+import { schedulingProblem } from "@/lib/billing-guard";
 import { xLinkWarningFor } from "@/lib/x-links";
 
 /**
@@ -69,7 +69,10 @@ export async function createPost(orgId: string, input: CreatePostInput) {
 
   const scheduledAt = input.scheduledAt ? new Date(input.scheduledAt).toISOString() : null;
   const status = scheduledAt ? "scheduled" : "draft";
-  if (status === "scheduled" && !(await hasAccess(db, orgId))) throw new Error(NO_PLAN_MESSAGE);
+  if (status === "scheduled") {
+    const blocked = await schedulingProblem(orgId);
+    if (blocked) throw new Error(blocked);
+  }
   if (scheduledAt) {
     // Same checks as the composer: fail now, not when it's due. API posts
     // carry no media, so networks that need it (Instagram, TikTok, YouTube)
