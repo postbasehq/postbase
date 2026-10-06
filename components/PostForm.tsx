@@ -380,13 +380,16 @@ export function PostForm({
   const needsPlan = !isDraft && !canSchedule;
   // A scheduled post needs somewhere to go; a draft can wait for its channels.
   const noChannels = selectedChannels.length === 0;
+  // TikTokSettings reports its validity while mounted; deselecting TikTok
+  // unmounts it, so its last report (maybe "invalid") must not linger.
+  const tiktokOk = !tiktokChannel || tiktokValid;
   // Saving mid-upload would drop the file (it's only attached once it lands).
   const uploading = busy || thumbBusy;
   const canSubmit =
-    !bodyEmpty && !uploading && (isDraft || (!noChannels && !hasBlocking && tiktokValid && canSchedule));
+    !bodyEmpty && !uploading && (isDraft || (!noChannels && !hasBlocking && tiktokOk && canSchedule));
   // Not ready to publish if a platform check fails OR the TikTok settings are
   // incomplete — keep the status indicator consistent with the disabled button.
-  const notReady = hasBlocking || !tiktokValid;
+  const notReady = hasBlocking || !tiktokOk;
 
   /* actions */
   const updateTweet = (i: number, v: string) =>
@@ -846,7 +849,7 @@ export function PostForm({
                   <VariantTab
                     key={p}
                     active={activeSettings === p}
-                    dot={p === "tiktok" && !tiktokValid}
+                    dot={p === "tiktok" && !tiktokOk}
                     dotClassName="bg-[#d14a3e]"
                     onClick={() => setSettingsTab(p)}
                   >
