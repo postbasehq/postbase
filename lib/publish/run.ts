@@ -7,7 +7,7 @@ import type { TikTokPostOptions } from "@/lib/platforms/tiktok";
 import type { YouTubePostOptions } from "@/lib/platforms/youtube";
 import { isRepeatEvery, nextOccurrence } from "@/lib/publish/repeat";
 import { insertPostWhole } from "@/lib/publish/save-post";
-import { NO_PLAN_MESSAGE, accessRowFor, orgHasAccess } from "@/lib/billing-guard";
+import { schedulingProblem } from "@/lib/billing-guard";
 import { notifyPostsFailed, notifyReconnect } from "@/lib/email/notify";
 import { isOwnMediaUrl } from "@/lib/media-urls";
 
@@ -310,7 +310,7 @@ async function recomputePostStatus(db: Db, postId: string): Promise<string | nul
  * If a post that repeats has finished (published, or failed on some or all
  * channels: one bad occurrence mustn't end the series), spawn the next
  * occurrence one cadence step ahead (same body, channels and media). Not for a
- * workspace without an active plan, which would only queue more failures. The claim flips
+ * workspace that can't schedule (no plan, or over its plan), which would only queue more failures. The claim flips
  * `repeat_next_spawned` atomically so a repeating post is never cloned twice,
  * even if the status is recomputed on a later run.
  */
@@ -325,10 +325,11 @@ async function spawnRepeatIfDue(db: Db, postId: string): Promise<void> {
     .select("org_id, author_id, body, thread_tail, tiktok_privacy_level, tiktok_options, youtube_privacy, youtube_options, scheduled_at, repeat_every, timezone")
     .maybeSingle();
   if (!origin || !isRepeatEvery(origin.repeat_every)) return;
-  // A failed billing read spawns anyway (nothing would retry this later); the
+  // Not for a workspace that can't schedule (no plan, or over its plan). A
+  // failed billing read spawns anyway (nothing would retry this later); the
   // occurrence is checked against the plan again when it's due.
-  const access = await accessRowFor(origin.org_id as string).catch(() => null);
-  if (access && !orgHasAccess(access)) return;
+  const blocked = await schedulingProblem(origin.org_id as string).catch(() => null);
+  if (blocked) return;
 
   // Stepped in the author's timezone so the local time survives DST changes.
   const nextAt = nextOccurrence(
@@ -462,7 +463,9 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
 
   // 4. Claim + send one target at a time, within the time budget.
   const posts = new Map<string, { post: PostRow; media: MediaItem[] } | null>();
-  const access = new Map<string, boolean>();
+  // Per workspace: why it can't publish now (no plan, or over its plan's
+  // workspaces/channels/people after a downgrade), or null.
+  const blockedBy = new Map<string, string | null>();
   let processed = 0;
   for (const item of queue) {
     if (Date.now() - startedAt > START_BUDGET_MS) break;
@@ -474,7 +477,7 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
     // target back for the next run (results are only cached on success).
     let loaded: { post: PostRow; media: MediaItem[] } | null;
     let target: TargetRow | null;
-    let allowed: boolean;
+    let blocked: string | null;
     try {
       if (!posts.has(item.postId)) {
         const { data: post, error } = await db.from("posts").select(POST_COLUMNS).eq("id", item.postId).maybeSingle();
@@ -495,12 +498,13 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
         continue;
       }
       const orgId = loaded.post.org_id;
-      if (!access.has(orgId)) {
-        // The plan may belong to the workspace this one is billed through.
-        // accessRowFor throws on a database error, which lands in the catch.
-        access.set(orgId, orgHasAccess(await accessRowFor(orgId)));
+      if (!blockedBy.has(orgId)) {
+        // The same rule as scheduling, so posts queued before a downgrade don't
+        // keep going out over the new plan. The plan may belong to the workspace
+        // this one is billed through. A database error lands in the catch.
+        blockedBy.set(orgId, await schedulingProblem(orgId));
       }
-      allowed = access.get(orgId)!;
+      blocked = blockedBy.get(orgId)!;
     } catch (e) {
       console.error(`[publish] retrying ${item.id} next run:`, e instanceof Error ? e.message : e);
       await releaseClaim(db, item.id, item.from);
@@ -537,10 +541,12 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
       continue;
     }
 
-    if (!allowed) {
+    // An upload the network is already processing is only being checked on:
+    // it's out of our hands, so record its outcome whatever the plan.
+    if (blocked && !target.pending_ref) {
       await db
         .from("post_targets")
-        .update({ status: "failed", error: NO_PLAN_MESSAGE, next_attempt_at: null })
+        .update({ status: "failed", error: blocked, next_attempt_at: null })
         .eq("id", target.id);
       continue;
     }

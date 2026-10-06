@@ -162,6 +162,8 @@ type PostFormProps = {
   submitLabel: string;
   /** False when the workspace has no plan: drafts save, scheduling prompts a trial. */
   canSchedule?: boolean;
+  /** Why this workspace can't schedule though it has a plan (over its limits), or null. */
+  overPlan?: string | null;
   /** Prefill the schedule field with a local wall-clock time (YYYY-MM-DDTHH:MM). */
   defaultScheduleLocal?: string;
   /** Reusable assets from the media library, for the "Pick from library" picker. */
@@ -206,6 +208,7 @@ function utcToLocalInput(utc?: string | null): string {
 
 export function PostForm({
   canSchedule = true,
+  overPlan = null,
   channels,
   action,
   submitLabel,
@@ -411,10 +414,10 @@ export function PostForm({
   // Saving mid-upload would drop the file (it's only attached once it lands).
   const uploading = busy || thumbBusy;
   const canSubmit =
-    !nothingYet && !uploading && (isDraft || (!noChannels && !hasBlocking && tiktokOk && canSchedule));
+    !nothingYet && !uploading && (isDraft || (!noChannels && !hasBlocking && tiktokOk && canSchedule && !overPlan));
   // Not ready to publish if a platform check fails OR the TikTok settings are
   // incomplete — keep the status indicator consistent with the disabled button.
-  const notReady = hasBlocking || !tiktokOk;
+  const notReady = hasBlocking || !tiktokOk || !!overPlan;
 
   /* actions */
   const updateTweet = (i: number, v: string) =>
@@ -607,6 +610,18 @@ export function PostForm({
             className="ml-auto rounded-full bg-blue px-4 py-1.5 font-display text-xs font-semibold text-on-blue shadow-sm"
           >
             Start free trial
+          </Link>
+        </div>
+      ) : overPlan ? (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-[#d14a3e] bg-surface-2 px-4 py-3 text-sm">
+          <span className="text-ink">
+            <span className="font-semibold">Drafts only for now.</span> <span className="text-muted">{overPlan}</span>
+          </span>
+          <Link
+            href="/billing"
+            className="ml-auto rounded-full bg-blue px-4 py-1.5 font-display text-xs font-semibold text-on-blue shadow-sm"
+          >
+            View plans
           </Link>
         </div>
       ) : null}
@@ -1149,6 +1164,8 @@ export function PostForm({
               </Link>{" "}
               or clear the time to save a draft.
             </span>
+          ) : overPlan && !isDraft ? (
+            <span className="text-xs text-[#d14a3e]">Over your plan&apos;s limits. Clear the time to save a draft.</span>
           ) : uploading ? (
             <span className="text-xs text-muted">Waiting for the upload to finish.</span>
           ) : nothingYet ? (

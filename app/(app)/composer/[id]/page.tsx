@@ -7,7 +7,7 @@ import { type YouTubePrivacy } from "@/components/YouTubeSettings";
 import type { YouTubePostOptions } from "@/lib/platforms/youtube";
 import { higgsfieldConfigured } from "@/lib/higgsfield";
 import { getCurrentOrgId } from "@/lib/org";
-import { aiUsage, hasAccess } from "@/lib/billing-guard";
+import { aiUsage, hasAccess, schedulingProblem } from "@/lib/billing-guard";
 import { xLinkUsage } from "@/lib/x-links";
 import { updatePost } from "../../actions";
 
@@ -97,6 +97,9 @@ export default async function EditPostPage({
   // Without a plan the composer still works for drafts; scheduling is gated.
   const accessOrgId = await getCurrentOrgId();
   const canSchedule = accessOrgId ? await hasAccess(supabase, accessOrgId) : true;
+  // Over the plan's workspaces/channels/people (e.g. after a downgrade): say so
+  // up front, the same rule the server applies when scheduling and sending.
+  const overPlan = canSchedule && accessOrgId ? await schedulingProblem(accessOrgId) : null;
 
   const aiEnabled = higgsfieldConfigured();
   let aiRemaining: { image: number; video: number } | undefined;
@@ -122,6 +125,7 @@ export default async function EditPostPage({
       </p>
       <PostForm
         channels={channels ?? []}
+        overPlan={overPlan}
         action={updatePost}
         submitLabel="Save changes"
         libraryItems={library ?? []}

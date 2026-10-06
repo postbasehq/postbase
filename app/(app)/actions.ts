@@ -619,13 +619,14 @@ export async function reschedulePost(
   ) {
     return { ok: false, error: "That isn't a valid time." };
   }
-  const supabase = await createClient();
   const orgId = await getCurrentOrgId();
   if (!orgId) return { ok: false, error: "No workspace found for this user." };
 
   const scheduledAt = zonedTimeToUtc(dayKey, hour, minute, await getTimeZone());
   if (Date.parse(scheduledAt) <= Date.now()) return { ok: false, error: "That time has already passed." };
-  if (!(await hasAccess(supabase, orgId))) return { ok: false, error: NO_PLAN_MESSAGE };
+  // The same rule as scheduling: no plan, or over its plan after a downgrade.
+  const blocked = await schedulingProblem(orgId);
+  if (blocked) return { ok: false, error: blocked };
 
   // Scoped to the org and to posts that are still waiting, so a post the
   // publisher has already picked up (or another tenant's post) never moves.

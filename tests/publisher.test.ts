@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { installFakeNet, json, type FakeRequest } from "./helpers/fake-net";
+import { counted, installFakeNet, json, type FakeRequest } from "./helpers/fake-net";
 import { publishDuePosts } from "@/lib/publish/run";
 
 const P = "11111111-1111-4111-8111-111111111111";
@@ -11,6 +11,8 @@ let failRecompute: boolean;
 let channelOrg: string;
 let mediaRows: { storage_url: string; type: string }[];
 let postStatus: string;
+let channelCount: number;
+let pendingRef: string | null;
 let net: ReturnType<typeof installFakeNet>;
 
 function db(r: FakeRequest) {
@@ -23,12 +25,13 @@ function db(r: FakeRequest) {
   if (r.table === "post_targets" && r.method === "GET" && q.get("status") === "eq.scheduled") return json([{ id: T, post_id: P, posts: { status: "publishing" } }]);
   if (r.table === "post_targets" && r.method === "PATCH" && q.get("id") === `eq.${T}`) return json([{ id: T }]);
   if (r.table === "post_targets" && r.method === "GET" && q.get("id") === `eq.${T}`) {
-    return rows([{ id: T, status: "publishing", platform_post_id: null, variant_body: null, attempts: 0, pending_ref: null, pending_since: null, thread_ids: null, channels: { id: "c", org_id: channelOrg, platform: "bluesky", handle: "@x", encrypted_tokens: null, token_expiry: null } }]);
+    return rows([{ id: T, status: "publishing", platform_post_id: null, variant_body: null, attempts: 0, pending_ref: pendingRef, pending_since: null, thread_ids: null, channels: { id: "c", org_id: channelOrg, platform: "bluesky", handle: "@x", encrypted_tokens: null, token_expiry: null } }]);
   }
   if (r.table === "post_targets" && r.method === "GET" && q.get("post_id") === `eq.${P}`) {
     return failRecompute ? json({ code: "08006", message: "boom" }, 400) : json([{ status: "scheduled", next_attempt_at: null, platform_post_id: null }]);
   }
   if (r.table === "media" && r.method === "GET") return json(mediaRows);
+  if (r.table === "channels" && r.method === "HEAD") return counted(channelCount);
   if (r.table === "orgs" && q.get("id") === `eq.${O}`) return rows([org]);
   return json([]);
 }
@@ -41,6 +44,8 @@ beforeEach(() => {
   channelOrg = O;
   mediaRows = [];
   postStatus = "publishing";
+  channelCount = 1;
+  pendingRef = null;
   net = installFakeNet(db);
 });
 afterEach(() => {
@@ -116,5 +121,21 @@ describe("repeating posts", () => {
     await publishDuePosts();
     const spawn = net.log.find((r) => r.table === "posts" && r.method === "PATCH" && (r.body as Record<string, unknown>)?.repeat_next_spawned === true);
     expect(spawn?.url.searchParams.get("status")).toBe("in.(published,failed)");
+  });
+});
+
+describe("a smaller plan is enforced when posts go out, not only when they're scheduled", () => {
+  it("posts queued before a downgrade fail with the reason instead of sending", async () => {
+    channelCount = 8; // Creator includes 5
+    await publishDuePosts();
+    expect(targetWrites().at(-1)).toMatchObject({ status: "failed", next_attempt_at: null });
+    expect(String(targetWrites().at(-1)?.error)).toMatch(/includes 5 channels and you have 8 connected/);
+    expect(net.log.some((r) => r.url.host !== "db.test")).toBe(false); // nothing sent
+  });
+  it("an upload the network is already processing is still checked on", async () => {
+    channelCount = 8;
+    pendingRef = "at://pending";
+    await publishDuePosts();
+    expect(String(targetWrites().at(-1)?.error ?? "")).not.toMatch(/includes 5 channels/);
   });
 });
