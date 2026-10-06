@@ -1,6 +1,7 @@
 import { LIVE_NETWORKS } from "@/lib/seo/networks";
 import { CLIENTS } from "@/lib/seo/clients";
 import { COMPETITORS } from "@/lib/seo/competitors";
+import { MCP_NETWORKS } from "@/lib/seo/mcp";
 import { listPosts } from "@/lib/blog";
 import type { LinkCard } from "@/components/marketing/seo/sections";
 
@@ -35,6 +36,12 @@ export function relatedCard(href: string): LinkCard | null {
   if (kind === "ai") {
     const c = CLIENTS.find((x) => x.slug === slug);
     return c ? { href, title: c.eyebrow, client: c.logo, body: c.blurb } : null;
+  }
+  if (kind === "mcp") {
+    if (!slug) return { href, title: "The MCP server", mark: "#2b59d9", body: "Endpoint, sign-in, the four tools and their limits." };
+    const m = MCP_NETWORKS.find((x) => x.slug === slug);
+    const n = LIVE_NETWORKS.find((x) => x.slug === slug);
+    return m && n ? { href, title: `${n.name} MCP server`, brand: n.id, body: m.behaviour[0].value } : null;
   }
   if (kind === "alternatives") {
     const c = COMPETITORS.find((x) => x.slug === slug);

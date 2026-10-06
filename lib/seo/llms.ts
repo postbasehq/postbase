@@ -2,6 +2,7 @@ import { SITE_URL } from "@/lib/site";
 import { PLANS, PLAN_ORDER, aiFeature, xLinkFeature } from "@/lib/plans";
 import { NETWORKS } from "@/lib/seo/networks";
 import { CLIENTS, MCP_URL } from "@/lib/seo/clients";
+import { MCP_NETWORKS } from "@/lib/seo/mcp";
 import { COMPETITORS } from "@/lib/seo/competitors";
 import { PERSONAS } from "@/lib/seo/personas";
 import { listPosts } from "@/lib/blog";
@@ -63,6 +64,8 @@ export function llmsTxt({ full = false } = {}): string {
     [
       `- Hosted MCP server: ${MCP_URL} (OAuth sign-in, no API key needed). Also on npm as @postbasehq/mcp for API-key setups.`,
       `- Tools: list_channels, create_post (single posts or threads, scheduled or as a draft), list_scheduled, cancel_post.`,
+      link("/mcp", "The MCP server", "endpoint, sign-in, tools and limits"),
+      ...MCP_NETWORKS.map((m) => link(`/mcp/${m.slug}`, m.metaTitle)),
       link("/ai", "Connect an AI tool"),
       ...CLIENTS.map((c) => link(`/ai/${c.slug}`, `Postbase in ${c.name}`)),
       link("/tools/mcp-config", "MCP config generator"),

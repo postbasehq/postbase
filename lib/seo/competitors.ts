@@ -592,6 +592,304 @@ export const COMPETITORS: Competitor[] = [
       { label: "Post Bridge API", url: "https://support.post-bridge.com/api/post-bridge-api-overview-access-and-pricing" },
     ],
   },
+  {
+    slug: "postiz",
+    name: "Postiz",
+    blurb: "The established open-source scheduler, with 30+ networks.",
+    checked: "6 October 2026",
+    metaTitle: "Postiz alternative: open source, simpler",
+    metaDescription:
+      "Postbase vs Postiz: two open-source AGPL schedulers compared on price per channel, networks, MCP, API and AI. An honest look at when Postiz is better.",
+    h1: ["A simpler", "Postiz alternative"],
+    sub: "Both are open source under AGPL, with an API, a hosted MCP server and an AI agent. Postbase is a smaller app with more channels on its middle plans.",
+    them: "Postiz is the most established open-source social scheduler, with 30+ networks, AI image and video generation, and a large self-hosting community.",
+    chooseUs: [
+      "You want more channels for the money: 15 for $39/month and 50 for $59/month. Postiz Team is 10 channels for $39, and Pro is 30 for $49.",
+      "You want a smaller app focused on writing, scheduling and publishing, with fewer settings to learn.",
+      "You run several brands and want separate workspaces on one plan: Agency is $99/month for 100 channels across 20 workspaces.",
+    ],
+    chooseThem: [
+      "You need Instagram, Facebook, Threads, Pinterest, Reddit, Discord or any of Postiz's 30+ networks today.",
+      "You want AI image and video generation and video clipping included in your plan.",
+      "You want the more mature project, with a large community of self-hosters and contributors.",
+    ],
+    rows: [
+      { label: "Starting price", key: "price", them: "$29/month for 5 channels (Standard), or $23/month billed yearly" },
+      { label: "Free plan", key: "free", them: "No: a 7-day trial, or self-host for free" },
+      { label: "How pricing scales", key: "scaling", them: "Per plan: 10 channels for $39, 30 for $49, 100 for $99 a month" },
+      {
+        label: "Networks",
+        key: "networks",
+        them: "30+, including X, LinkedIn, Bluesky, Mastodon, TikTok, YouTube, Instagram, Facebook, Threads, Pinterest, Reddit, Discord, Slack, Telegram",
+      },
+      { label: "MCP server", key: "mcp", them: "Yes, on every plan. Hosted, with OAuth sign-in or an API key" },
+      { label: "Public API", key: "api", them: "Yes, on every plan, with webhooks" },
+      { label: "Open source", key: "oss", them: "Yes, AGPL-3.0. Self-host for free" },
+    ],
+    switchSteps: SWITCH("Postiz"),
+    faqs: [
+      [
+        "How is Postbase different from Postiz?",
+        "They're close: both are open source under AGPL-3.0, and both include an API, a hosted MCP server and an in-app AI agent. Postiz supports far more networks, and its MCP server can attach images and video. Postbase is a smaller app; its MCP tools post text to X, LinkedIn, Bluesky and Mastodon.",
+      ],
+      [
+        "Which is cheaper?",
+        "Both start at $29/month for 5 channels. At $39 Postbase gives you 15 channels to Postiz's 10. Postiz Pro is $49 for 30 channels; Postbase Pro is $59 for 50. Postiz's AI image and video allowances are included in its price.",
+      ],
+      [
+        "Can I self-host either?",
+        "Yes. Both are AGPL-3.0, so you can run either on your own servers with your own platform API keys.",
+      ],
+      [
+        "Does Postbase support Instagram like Postiz?",
+        "Not yet. Instagram, Facebook and Threads are waiting on Meta's app review. If you need them today, Postiz is the better pick.",
+      ],
+    ],
+    sources: [
+      { label: "Postiz pricing", url: "https://postiz.com/pricing" },
+      { label: "Postiz MCP server", url: "https://postiz.com/mcp" },
+      { label: "Postiz MCP docs", url: "https://docs.postiz.com/mcp/introduction" },
+      { label: "Postiz AI generation", url: "https://docs.postiz.com/general/composer/ai-and-imports" },
+      { label: "Postiz on GitHub", url: "https://github.com/gitroomhq/postiz-app" },
+    ],
+  },
+  {
+    slug: "zernio",
+    name: "Zernio",
+    blurb: "A unified social media API for developers, priced per account.",
+    checked: "6 October 2026",
+    metaTitle: "Zernio alternative with a calendar and agent",
+    metaDescription:
+      "Postbase vs Zernio (formerly Late): per-account API pricing vs flat plans, networks, MCP sign-in and open source. When each one is the better pick.",
+    h1: ["A Zernio alternative with", "a calendar built in"],
+    sub: "Zernio is an API to build on. Postbase is a scheduler with a calendar, a composer and an AI agent, plus an API and MCP server for your own accounts.",
+    them: "Zernio, formerly Late, is a developer-first unified API for posting, inboxes, analytics and ads across 15+ networks, priced per connected account.",
+    chooseUs: [
+      "You want an app to plan and write in, with a calendar and composer, not just an API.",
+      "You post to Mastodon, or want to self-host.",
+      "You manage a dozen or more channels and want a flat price: 15 channels is $39/month on Postbase and $63/month on Zernio.",
+    ],
+    chooseThem: [
+      "You're building a product that posts for your users and need a large API with SDKs in many languages.",
+      "You need Instagram, Facebook, Threads, Reddit, WhatsApp or Telegram today.",
+      "You need DMs, comments, analytics or ads through one API, or want your first two accounts free.",
+    ],
+    rows: [
+      { label: "Starting price", key: "price", them: "Free for 2 accounts, then $6 per account per month" },
+      { label: "Free plan", key: "free", them: "Yes: 2 accounts with unlimited posts and full API access" },
+      { label: "How pricing scales", key: "scaling", them: "Per account: $6 each up to 10, $3 each up to 100, then $1. 10 accounts is $48/month" },
+      {
+        label: "Networks",
+        key: "networks",
+        them: "X, LinkedIn, Bluesky, TikTok, YouTube, Instagram, Facebook, Threads, Pinterest, Reddit, Telegram, WhatsApp, Google Business. No Mastodon",
+      },
+      { label: "MCP server", key: "mcp", them: "Yes, hosted, with OAuth sign-in or an API key" },
+      { label: "Public API", key: "api", them: "Yes, it's the core product, on every account" },
+      { label: "Open source", key: "oss", them: "No. Some client tools are open source; the API is hosted only" },
+    ],
+    switchSteps: SWITCH("Zernio"),
+    faqs: [
+      [
+        "Is Postbase a drop-in replacement for the Zernio API?",
+        "No. Postbase's API is smaller: list channels, create posts and threads, list and cancel scheduled posts. Zernio also covers DMs, comments, analytics and ads.",
+      ],
+      [
+        "Which is cheaper?",
+        "For one or two accounts, Zernio: they're free. At 5 accounts Zernio is $18/month against Postbase's $29. From nine accounts up, Postbase's flat plans cost less: 15 channels is $39/month on Postbase and $63/month on Zernio.",
+      ],
+      [
+        "Do both work with Claude?",
+        "Yes. Both have a hosted MCP server you can sign in to with OAuth. Postbase's MCP tools post text to X, LinkedIn, Bluesky and Mastodon; Zernio's cover much more of its API.",
+      ],
+      [
+        "Is Late the same as Zernio?",
+        "Yes. Late (getlate.dev) renamed itself Zernio in 2026. The API and team stayed the same, and old Late URLs redirect to Zernio.",
+      ],
+    ],
+    sources: [
+      { label: "Zernio pricing", url: "https://zernio.com/pricing" },
+      { label: "Zernio MCP docs", url: "https://docs.zernio.com/mcp" },
+      { label: "Late is now Zernio", url: "https://zernio.com/rebrand" },
+    ],
+  },
+  {
+    slug: "upload-post",
+    name: "Upload-Post",
+    blurb: "An upload API for video creators, with MCP and Claude skills.",
+    checked: "6 October 2026",
+    metaTitle: "Upload-Post alternative with a calendar",
+    metaDescription:
+      "Postbase vs Upload-Post: price, free plan, networks, MCP server and Claude Code skills, API and open source. An honest look at when each is better.",
+    h1: ["An Upload-Post alternative with", "a calendar and agent"],
+    sub: "Upload-Post is an API for pushing video and posts out to 22 networks. Postbase gives you a calendar, a composer and an AI agent, plus an API and MCP server.",
+    them: "Upload-Post is an API-first upload service for video creators and developers, with an open-source MCP server, Claude Code skills and a free plan.",
+    chooseUs: [
+      "You want an app to plan, write and review posts on a calendar, not only an API.",
+      "You want to self-host, or read the code that posts for you.",
+      "You want an AI agent inside the app that drafts and schedules after you confirm.",
+    ],
+    chooseThem: [
+      "You push video to many networks from code or Claude Code, and want ready-made skills and FFmpeg processing.",
+      "You need Instagram, Facebook, Threads, Pinterest, Reddit or another of its 22 networks today.",
+      "You want a free plan, or the lowest price for a few profiles: Basic is $24/month.",
+    ],
+    rows: [
+      { label: "Starting price", key: "price", them: "$24/month for 5 profiles (Basic), or $192 billed yearly" },
+      { label: "Free plan", key: "free", them: "Yes: 2 profiles and 10 uploads a month, no TikTok" },
+      { label: "How pricing scales", key: "scaling", them: "Tiers by profile: 25 for $50, 75 for $147, 225 for $438 a month" },
+      {
+        label: "Networks",
+        key: "networks",
+        them: "22, including X, LinkedIn, Bluesky, Mastodon, TikTok, YouTube, Instagram, Facebook, Threads, Pinterest, Reddit, Discord, Telegram",
+      },
+      { label: "MCP server", key: "mcp", them: "Yes, hosted, with OAuth or an API key. The server is open source (MIT)" },
+      { label: "Public API", key: "api", them: "Yes, it's the core product, with Python and JavaScript SDKs" },
+      { label: "Open source", key: "oss", them: "The MCP server and skills are. The upload service isn't" },
+    ],
+    switchSteps: SWITCH("Upload-Post"),
+    faqs: [
+      [
+        "Can Postbase post video like Upload-Post?",
+        "Yes, from the composer: Postbase posts video to TikTok, YouTube and X. Its MCP tools are text-only, so if you want Claude to upload video for you, Upload-Post is the better fit.",
+      ],
+      [
+        "Do both work with Claude Code?",
+        "Yes. Both have a hosted MCP server, and Upload-Post also publishes Claude Code skills. Postbase's MCP server creates text posts and threads for X, LinkedIn, Bluesky and Mastodon.",
+      ],
+      [
+        "Which is cheaper?",
+        "Upload-Post: Basic is $24/month for 5 profiles (a profile links your connected accounts), and there's a free plan. Postbase starts at $29/month for 5 channels, with the calendar, composer and AI agent included.",
+      ],
+      [
+        "Is Upload-Post open source?",
+        "Its MCP server (MIT) and skills are on GitHub; the upload service itself is hosted. Postbase is open source under AGPL-3.0 and can be self-hosted.",
+      ],
+    ],
+    sources: [
+      { label: "Upload-Post pricing", url: "https://www.upload-post.com/pricing" },
+      { label: "Upload-Post plans and platforms", url: "https://www.upload-post.com/llms-full.txt" },
+      { label: "Upload-Post for AI agents", url: "https://www.upload-post.com/ai-agents/" },
+      { label: "Upload-Post Claude Code skills", url: "https://www.upload-post.com/skills/claude-code/" },
+    ],
+  },
+  {
+    slug: "opentweet",
+    name: "OpenTweet",
+    blurb: "An X scheduler built for AI agents, with an MCP server.",
+    checked: "6 October 2026",
+    metaTitle: "OpenTweet alternative for X and beyond",
+    metaDescription:
+      "Postbase vs OpenTweet: X-first vs multi-network scheduling, price, link-post limits, MCP and API, and open source. When each one is the better pick.",
+    h1: ["An OpenTweet alternative", "beyond X"],
+    sub: "OpenTweet is built around X. Postbase schedules X posts and threads alongside LinkedIn, Bluesky, Mastodon, TikTok and YouTube, with an MCP server and an agent.",
+    them: "OpenTweet is an X-focused scheduler for creators, developers and AI agents, with a large MCP toolset for X and cross-posting to Bluesky and LinkedIn.",
+    chooseUs: [
+      "You post to Mastodon, TikTok or YouTube as well as X.",
+      "You manage more than a few accounts and want a flat plan: 15 channels and team seats for $39/month.",
+      "You want to self-host, or read the code that posts for you.",
+    ],
+    chooseThem: [
+      "X is your main network and you want X-specific tools like articles, evergreen recycling and X analytics over MCP.",
+      "You post a lot of links on X: Pro allows 10 link posts a day, while Postbase caps X link posts at 20 a month on Creator.",
+      "You only post to one X account and want the lowest price.",
+    ],
+    rows: [
+      { label: "Starting price", key: "price", them: "$15.99/month for 1 X account (Pro), or $11.99/month billed yearly" },
+      { label: "Free plan", key: "free", them: "No: a 7-day trial" },
+      { label: "How pricing scales", key: "scaling", them: "Tiers by X account: 3 for $39.99, 10 for $79.99 a month" },
+      {
+        label: "Networks",
+        key: "networks",
+        them: "X, with cross-posting to Bluesky and LinkedIn personal profiles. No TikTok, YouTube or Mastodon",
+      },
+      { label: "MCP server", key: "mcp", them: "Yes, hosted or via npm, authenticated with your API key" },
+      { label: "Public API", key: "api", them: "Yes, on every plan, with daily request limits by plan" },
+      { label: "Open source", key: "oss", them: "Not listed as open source" },
+    ],
+    switchSteps: SWITCH("OpenTweet"),
+    faqs: [
+      [
+        "Can Postbase schedule X threads like OpenTweet?",
+        "Yes. Add up to 25 posts to a thread in the composer, or ask Claude to create one over MCP. Bluesky and Mastodon threads work the same way.",
+      ],
+      [
+        "Does Postbase limit X posts?",
+        "Plain posts and threads are unlimited. Posts with links are capped per plan, from 20 a month on Creator to 75 on Agency. OpenTweet's limits are daily: 20 posts, 10 of them with links, on Pro.",
+      ],
+      [
+        "Do both work with Claude?",
+        "Yes. OpenTweet's MCP server uses an API key. Postbase's hosted server lets you sign in with OAuth, or you can use the npm package with an API key.",
+      ],
+      [
+        "Which is cheaper?",
+        "For a single X account, OpenTweet: Pro is $15.99/month. If you post to several networks or more than 3 accounts, Postbase's Team plan is $39/month for 15 channels.",
+      ],
+    ],
+    sources: [
+      { label: "OpenTweet pricing", url: "https://opentweet.io/pricing" },
+      { label: "OpenTweet docs", url: "https://opentweet.io/docs" },
+      { label: "OpenTweet", url: "https://opentweet.io/" },
+    ],
+  },
+  {
+    slug: "blotato",
+    name: "Blotato",
+    blurb: "An AI content studio that repurposes and schedules for creators.",
+    checked: "6 October 2026",
+    metaTitle: "Blotato alternative: open source, with Mastodon",
+    metaDescription:
+      "Postbase vs Blotato: AI repurposing vs focused scheduling, price, networks, MCP and API access, and open source. When each one is the better pick.",
+    h1: ["An open-source", "Blotato alternative"],
+    sub: "Blotato turns sources into posts, images and videos with AI. Postbase focuses on writing and scheduling, is open source, and posts to Mastodon.",
+    them: "Blotato is an AI content studio for creators: it repurposes videos, articles and posts into new content with AI images, video and voices, then schedules it.",
+    chooseUs: [
+      "You write your own posts and mainly need scheduling, a calendar and an API.",
+      "You post to Mastodon, or want to self-host.",
+      "You want an AI agent inside the app that drafts and schedules after you confirm.",
+    ],
+    chooseThem: [
+      "You want AI to repurpose videos, articles and posts into new content, with AI images, video and voiceovers.",
+      "You need Instagram, Facebook, Threads or Pinterest today.",
+      "You want 20 accounts on the starting plan: Starter is $29/month.",
+    ],
+    rows: [
+      { label: "Starting price", key: "price", them: "$29/month (Starter): 20 accounts and 1,250 AI credits" },
+      { label: "Free plan", key: "free", them: "No: a 7-day trial, without API or MCP access" },
+      { label: "How pricing scales", key: "scaling", them: "Tiers by AI credits and accounts: Creator is $97/month for 40 accounts" },
+      {
+        label: "Networks",
+        key: "networks",
+        them: "X, LinkedIn, Bluesky, TikTok, YouTube, Instagram, Facebook, Threads, Pinterest. No Mastodon",
+      },
+      { label: "MCP server", key: "mcp", them: "Yes, hosted, on paid plans. OAuth in Claude, an API key elsewhere" },
+      { label: "Public API", key: "api", them: "Yes, on paid plans. Not included in the trial" },
+      { label: "Open source", key: "oss", them: "No" },
+    ],
+    switchSteps: SWITCH("Blotato"),
+    faqs: [
+      [
+        "Does Postbase repurpose content like Blotato?",
+        "Not in the same way. Postbase's agent drafts posts from what you tell it and schedules them after you confirm, but it doesn't turn videos or articles into new media. If repurposing is your workflow, Blotato is the better fit.",
+      ],
+      [
+        "Which is cheaper?",
+        "Both start at $29/month. Blotato's Starter includes 20 accounts and AI credits. Postbase's Creator includes 5 channels, and Team is $39/month for 15 channels with team seats.",
+      ],
+      [
+        "Do both work with Claude?",
+        "Yes, both have a hosted MCP server with OAuth sign-in for Claude. Blotato's can post images and video to its nine networks; Postbase's MCP tools post text to X, LinkedIn, Bluesky and Mastodon.",
+      ],
+      [
+        "Can I self-host Postbase?",
+        "Yes. Postbase is open source; run it on your own servers with your own platform API keys.",
+      ],
+    ],
+    sources: [
+      { label: "Blotato pricing", url: "https://www.blotato.com/pricing" },
+      { label: "Blotato MCP server", url: "https://www.blotato.com/mcp" },
+      { label: "Blotato MCP FAQs", url: "https://help.blotato.com/start-with-an-ai-agent/mcp/faqs.md" },
+    ],
+  },
 ];
 
 export const competitorBySlug = (slug: string) => COMPETITORS.find((c) => c.slug === slug);

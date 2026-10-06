@@ -10,6 +10,7 @@ import { CtaBand, FaqList, Underlined, card, wrap } from "@/components/marketing
 import { NetworkFacts, LinkCards, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
 import { NetworkComposerDemo, NetworkTiles } from "@/components/marketing/seo/demos";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
+import { mcpNetwork } from "@/lib/seo/mcp";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 
 export const dynamicParams = false;
@@ -75,12 +76,17 @@ export default async function IntegrationPage({ params }: { params: Promise<{ sl
             sub="Add the Postbase MCP server to the AI tool you already use and ask it to schedule posts for you."
           />
           <LinkCards
-            items={CLIENTS.map((c) => ({
-              href: `/ai/${c.slug}`,
-              title: c.name,
-              client: c.logo,
-              body: c.kind === "chat" ? "Add Postbase as a connector." : c.kind === "terminal" ? "One command in your terminal." : "Add the server to your editor.",
-            }))}
+            items={[
+              ...CLIENTS.map((c) => ({
+                href: `/ai/${c.slug}`,
+                title: c.name,
+                client: c.logo,
+                body: c.kind === "chat" ? "Add Postbase as a connector." : c.kind === "terminal" ? "One command in your terminal." : "Add the server to your editor.",
+              })),
+              ...(mcpNetwork(n.slug)
+                ? [{ href: `/mcp/${n.slug}`, title: `${n.name} MCP server`, brand: n.id, body: "Tools, limits and example calls." }]
+                : []),
+            ]}
           />
         </section>
 

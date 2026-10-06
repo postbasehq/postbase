@@ -9,7 +9,7 @@ import { ClientSetupDemo, ClientTiles } from "@/components/marketing/seo/demos";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 
-const TITLE = "Social media MCP server for AI agents";
+const TITLE = "Let Claude, ChatGPT or Cursor post to social media";
 const DESCRIPTION =
   "Connect Claude, Claude Code, Cursor, VS Code, Windsurf or Gemini CLI to Postbase over MCP and let your AI schedule posts to X, LinkedIn and more.";
 const TRAIL = [{ label: "Home", href: "/" }, { label: "AI tools" }];
@@ -38,7 +38,10 @@ export default function AiPage() {
         <section className={section}>
           <SectionHead title="Pick your AI tool" sub="Each one takes about a minute to set up." />
           <LinkCards
-            items={CLIENTS.map((c) => ({ href: `/ai/${c.slug}`, title: c.name, client: c.logo, body: c.blurb }))}
+            items={[
+              ...CLIENTS.map((c) => ({ href: `/ai/${c.slug}`, title: c.name, client: c.logo, body: c.blurb })),
+              { href: "/mcp", title: "The MCP server", mark: "#2b59d9", body: "Endpoint, sign-in, the four tools and their limits." },
+            ]}
           />
         </section>
 
