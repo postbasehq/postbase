@@ -17,14 +17,18 @@ import { CyclingLogos } from "@/components/marketing/seo/CyclingLogos";
 export const section = `${wrap} pt-24 md:pt-32`;
 
 /** The brand logo in a small tilted white tile, sized to sit inside a heading. */
-function TitleTile({ brand, client, brands, tilt }: { brand?: string; client?: string; brands?: string[]; tilt: number }) {
+function TitleTile({ brand, client, brands, img, tilt }: { brand?: string; client?: string; brands?: string[]; img?: string; tilt: number }) {
   return (
     <span
       aria-hidden
       style={{ transform: `rotate(${tilt}deg)` }}
-      className="mx-[0.08em] inline-flex size-[0.92em] -translate-y-[0.06em] items-center justify-center overflow-hidden rounded-[0.2em] border border-line bg-surface align-middle shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]"
+      // Image logos (competitors) always sit on white, so dark marks show in dark mode.
+      className={`mx-[0.08em] inline-flex size-[0.92em] -translate-y-[0.06em] items-center justify-center overflow-hidden rounded-[0.2em] border border-line align-middle shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] ${img ? "bg-white" : "bg-surface"}`}
     >
-      {brands ? (
+      {img ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={img} alt="" className="size-[0.56em] object-contain" />
+      ) : brands ? (
         <CyclingLogos items={brands.map((b) => <BigLogo key={b} brand={b} size="0.5em" />)} />
       ) : (
         <BigLogo brand={brand} client={client} size="0.5em" />
@@ -33,8 +37,8 @@ function TitleTile({ brand, client, brands, tilt }: { brand?: string; client?: s
   );
 }
 
-/** `brands` instead of `brand`/`client` makes the tile cycle through those logos. */
-type HeroIcon = { before: string; brand?: string; client?: string; brands?: string[] };
+/** `brands` instead of `brand`/`client` makes the tile cycle through those logos; `img` is an image logo. */
+type HeroIcon = { before: string; brand?: string; client?: string; brands?: string[]; img?: string };
 
 /** Puts a logo tile before the first word of `text` that matches an icon. */
 function withIcons(text: string, icons: HeroIcon[], used: Set<HeroIcon>) {
@@ -48,7 +52,7 @@ function withIcons(text: string, icons: HeroIcon[], used: Set<HeroIcon>) {
       <span key={i}>
         {i ? " " : ""}
         <span className="whitespace-nowrap">
-          <TitleTile brand={icon.brand} client={icon.client} brands={icon.brands} tilt={used.size % 2 ? 6 : -6} /> {w}
+          <TitleTile brand={icon.brand} client={icon.client} brands={icon.brands} img={icon.img} tilt={used.size % 2 ? 6 : -6} /> {w}
         </span>
       </span>,
     ];
@@ -93,7 +97,7 @@ export function SeoHero({
               {first}{" "}
               {tail ? (
                 <span className="whitespace-nowrap">
-                  <TitleTile brand={tail.brand} client={tail.client} brands={tail.brands} tilt={used.size % 2 ? -6 : 6} />{" "}
+                  <TitleTile brand={tail.brand} client={tail.client} brands={tail.brands} img={tail.img} tilt={used.size % 2 ? -6 : 6} />{" "}
                   <Underlined>{h1[1]}</Underlined>
                 </span>
               ) : (

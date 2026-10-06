@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { pageMeta } from "@/lib/site";
-import { CHECKED, COMPETITORS, US, competitorBySlug, competitorCard, type Competitor } from "@/lib/seo/competitors";
+import { CHECKED, COMPETITORS, COMPETITOR_LOGO, US, competitorBySlug, competitorCard, type Competitor } from "@/lib/seo/competitors";
 import { CtaBand, FaqList, card, wrap } from "@/components/marketing/ui";
 import { LinkCards, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
 import { AlternativeTiles, CalendarHeroDemo } from "@/components/marketing/seo/demos";
@@ -36,6 +36,7 @@ export default async function AlternativePage({ params }: { params: Promise<{ sl
         <SeoHero
           trail={trail}
           h1={c.h1}
+          icons={[{ before: c.name.split(" ")[0], img: COMPETITOR_LOGO[c.slug].src }]}
           sub={c.sub}
           secondary={{ label: "See pricing", href: "/pricing" }}
           frame="Your whole week in one calendar"
