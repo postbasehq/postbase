@@ -8,9 +8,9 @@ import { COMBO_CLIENTS } from "@/lib/seo/combos";
 import { LIVE_NETWORKS } from "@/lib/seo/networks";
 import { MCP_NETWORKS, MCP_SCENES, mcpNetwork } from "@/lib/seo/mcp";
 import { CtaBand, FaqList, wrap } from "@/components/marketing/ui";
-import { Facts, LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
+import { LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
 import { McpInActionDemo } from "@/components/marketing/seo/McpDemo";
-import { McpTools } from "@/components/marketing/seo/McpTools";
+import { ChecksPanel, McpFacts, McpTools } from "@/components/marketing/seo/McpTools";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 
@@ -61,12 +61,11 @@ export default async function McpNetworkPage({ params }: { params: Params }) {
 
         <section className={section}>
           <SectionHead title={`How posting to ${n.name} works`} />
-          <Facts items={m.behaviour} />
+          <McpFacts network={n.id} items={m.behaviour} />
         </section>
 
         <section className={section}>
-          <SectionHead title="Checked before it's queued" sub="Problems come back to the agent when it calls the tool, not hours later when the post is due." />
-          <Facts items={m.checks} />
+          <ChecksPanel items={m.checks} />
         </section>
 
         <section className={section}>

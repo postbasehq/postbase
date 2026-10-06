@@ -4,11 +4,11 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { pageMeta } from "@/lib/site";
 import { CLIENTS } from "@/lib/seo/clients";
 import { LIVE_NETWORKS } from "@/lib/seo/networks";
-import { MCP_FACTS, MCP_FAQS, MCP_NETWORKS, MCP_SCENES } from "@/lib/seo/mcp";
+import { MCP_FAQS, MCP_GLANCE, MCP_NETWORKS, MCP_SCENES } from "@/lib/seo/mcp";
 import { CtaBand, FaqList, wrap } from "@/components/marketing/ui";
-import { Facts, LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
+import { LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
 import { McpInActionDemo } from "@/components/marketing/seo/McpDemo";
-import { McpConnect, McpTools } from "@/components/marketing/seo/McpTools";
+import { GlanceTiles, McpConnect, McpTools } from "@/components/marketing/seo/McpTools";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 
@@ -39,7 +39,7 @@ export default function McpPage() {
 
         <section className={section}>
           <SectionHead title="The server at a glance" />
-          <Facts items={MCP_FACTS} />
+          <GlanceTiles items={MCP_GLANCE} />
         </section>
 
         <section className={section}>

@@ -1,6 +1,7 @@
 import { MCP_URL } from "@/lib/seo/clients";
 import { API_LIMITS } from "@/lib/api-limits";
 import { X_LINK_LIMIT } from "@/lib/plans";
+import type { FactUi } from "@/lib/seo/networks";
 
 /*
  * The MCP server pages: /mcp (the server itself: endpoint, sign-in, tools and
@@ -40,13 +41,20 @@ export const MCP_TOOLS: { name: string; kind: "read" | "write"; summary: string;
   },
 ];
 
-export const MCP_FACTS = [
-  { label: "Endpoint", value: `${MCP_URL}, over Streamable HTTP.` },
-  { label: "Sign-in", value: "OAuth (\"Sign in with Postbase\"), so there's no key to paste. Or an API key from the AI & API page." },
-  { label: "Scope", value: "Each connection is tied to one workspace. Revoke it from the AI & API page at any time." },
+/** The server at a glance, as solid brand tiles. */
+export const MCP_GLANCE: { label: string; stat: string; value: string; tone: "blue" | "amber" | "red" }[] = [
+  { label: "Endpoint", stat: "mcp.postbase.so", value: "Hosted for you over Streamable HTTP. There's nothing to install or run.", tone: "blue" },
+  {
+    label: "Sign-in",
+    stat: "OAuth",
+    value: "Sign in with Postbase and pick one workspace, or use an API key. Revoke either from the AI & API page at any time.",
+    tone: "amber",
+  },
   {
     label: "Limits",
-    value: `${API_LIMITS.postsPerHour} posts an hour and ${API_LIMITS.requestsPerMinute} requests a minute per workspace, shared with the REST API.`,
+    stat: `${API_LIMITS.postsPerHour} posts an hour`,
+    value: `And ${API_LIMITS.requestsPerMinute} requests a minute per workspace, shared with the REST API.`,
+    tone: "red",
   },
 ];
 
@@ -83,8 +91,8 @@ export type McpNetwork = {
   metaDescription: string;
   h1: [string, string];
   sub: string;
-  /** How create_post behaves on this network. */
-  behaviour: { label: string; value: string }[];
+  /** How create_post behaves on this network, each with a small product preview. */
+  behaviour: { label: string; stat: string; ui: FactUi; value: string }[];
   /** What gets refused or flagged when the agent calls the tool. */
   checks: { label: string; value: string }[];
   faqs: [string, string][];
@@ -101,10 +109,10 @@ export const MCP_NETWORKS: McpNetwork[] = [
     h1: ["The X", "MCP server"],
     sub: "Let Claude, ChatGPT, Cursor or any MCP client schedule tweets and threads on X through the official API, without an X developer account of your own.",
     behaviour: [
-      { label: "Length", value: "280 characters per post, counted the way X counts: links are 23 and most emoji are 2." },
-      { label: "Threads", value: "Send a thread array and Postbase publishes it as a chain of replies, up to 25 posts." },
-      { label: "Links", value: `X charges per post with a link, so those are capped at ${xLinks} a month depending on plan. Plain posts and threads are unlimited.` },
-      { label: "API access", value: "Postbase posts through its own X API app, so you don't need X API keys or a paid X developer tier." },
+      { label: "Length", stat: "280", ui: { kind: "count", used: 262, limit: 280 }, value: "Characters per post, counted the way X counts: links are 23 and most emoji are 2." },
+      { label: "Threads", stat: "25 posts", ui: { kind: "thread", parts: 3 }, value: "Send a thread array and Postbase publishes it as a chain of replies." },
+      { label: "Links", stat: `${xLinks} a month`, ui: { kind: "count", used: 18, limit: X_LINK_LIMIT.creator, what: "Posts with links" }, value: "X charges per post with a link, so those are capped by plan. Plain posts and threads are unlimited." },
+      { label: "API access", stat: "Included", ui: { kind: "account" }, value: "Postbase posts through its own X API app, so you don't need X API keys or a paid developer tier." },
     ],
     checks: [
       { label: "Too long", value: "A scheduled post over 280 weighted characters is refused when the agent calls the tool, with the reason, so it can shorten it." },
@@ -134,10 +142,9 @@ export const MCP_NETWORKS: McpNetwork[] = [
     h1: ["The LinkedIn", "MCP server"],
     sub: "Let Claude, ChatGPT, Cursor or any MCP client write and schedule LinkedIn posts, with the link in the first comment, through LinkedIn's official API.",
     behaviour: [
-      { label: "Length", value: "Up to 3,000 characters. Only the first few lines show before \"see more\"." },
-      { label: "First comment", value: "Send two parts as a thread and the second is published as the post's first comment." },
-      { label: "Text", value: "Posted exactly as written. Hashtags and @mentions appear as plain text, not links." },
-      { label: "Profiles", value: "Posts go to personal LinkedIn profiles. Company pages aren't supported yet." },
+      { label: "Length", stat: "3,000", ui: { kind: "count", used: 1842, limit: 3000 }, value: "Characters per post. Only the first few lines show before \"see more\"." },
+      { label: "First comment", stat: "Built in", ui: { kind: "firstComment" }, value: "Send two parts as a thread and the second is published as the post's first comment." },
+      { label: "Profiles", stat: "Personal", ui: { kind: "account" }, value: "Posts go out from your own profile. Company pages aren't supported yet." },
     ],
     checks: [
       { label: "Too long", value: "A scheduled post over 3,000 characters is refused when the agent calls the tool, with the reason." },
@@ -167,10 +174,9 @@ export const MCP_NETWORKS: McpNetwork[] = [
     h1: ["The Bluesky", "MCP server"],
     sub: "Bluesky has no built-in scheduling. Let Claude, ChatGPT, Cursor or any MCP client schedule Bluesky posts and threads through the AT Protocol instead.",
     behaviour: [
-      { label: "Length", value: "300 characters per post, counted as you'd count them by eye." },
-      { label: "Links", value: "Bluesky needs extra markup to make a link clickable. Postbase adds it when the post goes out." },
-      { label: "Threads", value: "Send a thread array and each post is published as a reply to the one before." },
-      { label: "Connecting", value: "Connect Bluesky to Postbase with your handle and an app password, not your main password." },
+      { label: "Length", stat: "300", ui: { kind: "count", used: 268, limit: 300 }, value: "Characters per post, counted as you'd count them by eye. Links are made clickable for you." },
+      { label: "Threads", stat: "Threads", ui: { kind: "thread", parts: 3 }, value: "Send a thread array and each post is published as a reply to the one before." },
+      { label: "Connecting", stat: "App password", ui: { kind: "password" }, value: "Connect Bluesky to Postbase with your handle and an app password, not your main password." },
     ],
     checks: [
       { label: "Too long", value: "A scheduled post over 300 characters is refused when the agent calls the tool, with the reason." },
@@ -200,10 +206,9 @@ export const MCP_NETWORKS: McpNetwork[] = [
     h1: ["The Mastodon", "MCP server"],
     sub: "Let Claude, ChatGPT, Cursor or any MCP client schedule posts and threads on any Mastodon instance, from mastodon.social to your own server.",
     behaviour: [
-      { label: "Length", value: "500 characters per post, the default on most instances." },
-      { label: "Instances", value: "Works with any instance you've connected: mastodon.social, fosstodon.org or your own." },
-      { label: "Threads", value: "Send a thread array and each post is published as a reply to the one before." },
-      { label: "Hashtags", value: "Posted as written, so hashtags work the way they do when you type them." },
+      { label: "Length", stat: "500", ui: { kind: "count", used: 412, limit: 500 }, value: "Characters per post, the default on most instances. Hashtags work as you type them." },
+      { label: "Instances", stat: "Any server", ui: { kind: "server" }, value: "Works with any instance you've connected: mastodon.social, fosstodon.org or your own." },
+      { label: "Threads", stat: "Threads", ui: { kind: "thread", parts: 3 }, value: "Send a thread array and each post is published as a reply to the one before." },
     ],
     checks: [
       { label: "Too long", value: "A scheduled post over 500 characters is refused when the agent calls the tool, with the reason." },
