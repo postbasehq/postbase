@@ -11,6 +11,7 @@ import { CalendarDemo } from "@/components/marketing/CalendarDemo";
 import { CreatorGrid } from "@/components/marketing/CreatorGrid";
 import { DevGrid, McpOrRest } from "@/components/marketing/DevGrid";
 import { HeroDecor } from "@/components/marketing/Decor";
+import { DevFlow } from "@/components/marketing/DevFlow";
 import { Fit } from "@/components/marketing/Fit";
 import { WhoFor as WhoForList } from "@/components/marketing/WhoFor";
 import { PlanPicker } from "@/components/PlanPicker";
@@ -106,13 +107,13 @@ function Hero() {
   const h = HERO[audience];
   return (
     <section className="relative isolate">
-      <HeroDecor />
+      {audience === "developers" ? <DevFlow /> : <HeroDecor />}
       <div className={`${wrap} pt-14 text-center md:pt-20`}>
         <Swap k={audience}>
-          <h1 className="mx-auto max-w-[15ch] font-display text-[clamp(42px,6.8vw,84px)] font-semibold leading-[1.04] tracking-[-0.04em] text-ink">
+          <h1 data-hero-avoid className="mx-auto max-w-[15ch] font-display text-[clamp(42px,6.8vw,84px)] font-semibold leading-[1.04] tracking-[-0.04em] text-ink">
             {h.title}
           </h1>
-          <p className="mx-auto mt-6 max-w-[54ch] text-[17px] leading-relaxed text-muted text-balance md:text-[19px]">
+          <p data-hero-avoid className="mx-auto mt-6 max-w-[54ch] text-[17px] leading-relaxed text-muted text-balance md:text-[19px]">
             {h.sub}
           </p>
         </Swap>
@@ -125,7 +126,7 @@ function Hero() {
           ))}
         </div>
 
-        <div className="mt-8">
+        <div data-hero-avoid className="mx-auto mt-8 w-fit">
           <a
             href={h.cta.href}
             className="inline-flex items-center gap-2 rounded-full bg-blue px-7 py-3.5 font-display text-[15px] font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"

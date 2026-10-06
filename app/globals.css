@@ -683,3 +683,27 @@ body {
     transform: translateX(100%);
   }
 }
+
+/* Developers hero (DevFlow): a short light runs along each connector. Paths
+   use pathLength=100; the dash travels start to end in half the loop, then
+   rests off the end. */
+.flow-light {
+  stroke-dasharray: 7 193;
+  stroke-dashoffset: 7;
+  animation: flow-shoot 4.8s linear infinite;
+  filter: drop-shadow(0 0 3px currentColor);
+}
+@keyframes flow-shoot {
+  0% {
+    stroke-dashoffset: 7;
+  }
+  50%,
+  100% {
+    stroke-dashoffset: -100;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flow-light {
+    display: none;
+  }
+}
