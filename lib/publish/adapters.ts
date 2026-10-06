@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { decryptJson, encryptJson } from "@/lib/crypto";
+import { decryptJson } from "@/lib/crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { postThread, uploadMedia, refreshTokens, X_MAX_IMAGES, type XTokens } from "@/lib/platforms/x";
 import {
@@ -55,6 +55,7 @@ import {
 } from "@/lib/platforms/mastodon";
 import { freshTikTokTokens } from "@/lib/platforms/tiktok-session";
 import { charCount } from "@/lib/post-validation";
+import { refreshChannelTokens, refreshFailureMessage } from "@/lib/platforms/token-refresh";
 import { fetchMedia, MAX_IMAGE_BYTES, MAX_VIDEO_BYTES } from "@/lib/platforms/fetch-media";
 
 const MEDIA_BUCKET = "post-media";
@@ -127,21 +128,13 @@ async function publishToX(input: PublishInput): Promise<PublishResult> {
     };
   }
 
-  // Refresh an expiring access token and persist the new tokens.
+  // Refresh an expiring access token (one refresh per channel at a time; X
+  // refresh tokens are single-use). "Reconnect" only if X truly refused it.
   if (isExpiring(input.tokenExpiry) && tokens.refresh_token) {
     try {
-      const refreshed = await refreshTokens(tokens.refresh_token);
-      tokens = { ...tokens, ...refreshed };
-      const db = createAdminClient();
-      await db
-        .from("channels")
-        .update({
-          encrypted_tokens: encryptJson(tokens),
-          token_expiry: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
-        })
-        .eq("id", input.channelId);
-    } catch {
-      return { ok: false, error: "X token refresh failed — reconnect the channel." };
+      ({ tokens } = await refreshChannelTokens<XTokens>({ channelId: input.channelId, encrypted: input.encryptedTokens, refresh: refreshTokens, label: "X" }));
+    } catch (e) {
+      return { ok: false, error: refreshFailureMessage(e, "X") };
     }
   }
 
@@ -338,24 +331,9 @@ async function publishToLinkedIn(input: PublishInput): Promise<PublishResult> {
   // Refresh an expiring access token when a refresh token is available.
   if (isExpiring(input.tokenExpiry) && tokens.refresh_token) {
     try {
-      const refreshed = await liRefreshTokens(tokens.refresh_token);
-      tokens = {
-        ...tokens,
-        access_token: refreshed.access_token!,
-        refresh_token: refreshed.refresh_token ?? tokens.refresh_token,
-      };
-      const db = createAdminClient();
-      await db
-        .from("channels")
-        .update({
-          encrypted_tokens: encryptJson(tokens),
-          token_expiry: refreshed.expires_in
-            ? new Date(Date.now() + refreshed.expires_in * 1000).toISOString()
-            : null,
-        })
-        .eq("id", input.channelId);
-    } catch {
-      return { ok: false, error: "LinkedIn token expired — reconnect the channel." };
+      ({ tokens } = await refreshChannelTokens<LinkedInTokens>({ channelId: input.channelId, encrypted: input.encryptedTokens, refresh: liRefreshTokens, label: "LinkedIn" }));
+    } catch (e) {
+      return { ok: false, error: refreshFailureMessage(e, "LinkedIn") };
     }
   }
 
@@ -401,8 +379,8 @@ async function publishToTikTok(input: PublishInput): Promise<PublishResult> {
   let tokens: TikTokTokens;
   try {
     tokens = await freshTikTokTokens(input.channelId, input.encryptedTokens, input.tokenExpiry);
-  } catch {
-    return { ok: false, error: "TikTok token expired — reconnect the channel." };
+  } catch (e) {
+    return { ok: false, error: refreshFailureMessage(e, "TikTok") };
   }
 
   const images = input.media.filter((m) => m.type.startsWith("image/"));
@@ -480,20 +458,9 @@ async function publishToYouTube(input: PublishInput): Promise<PublishResult> {
   // Google access tokens last ~1h — refresh when expiring.
   if (isExpiring(input.tokenExpiry) && tokens.refresh_token) {
     try {
-      const refreshed = await ytRefreshTokens(tokens.refresh_token);
-      tokens = { ...tokens, access_token: refreshed.access_token! };
-      const db = createAdminClient();
-      await db
-        .from("channels")
-        .update({
-          encrypted_tokens: encryptJson(tokens),
-          token_expiry: refreshed.expires_in
-            ? new Date(Date.now() + refreshed.expires_in * 1000).toISOString()
-            : null,
-        })
-        .eq("id", input.channelId);
-    } catch {
-      return { ok: false, error: "YouTube token expired — reconnect the channel." };
+      ({ tokens } = await refreshChannelTokens<YouTubeTokens>({ channelId: input.channelId, encrypted: input.encryptedTokens, refresh: ytRefreshTokens, label: "YouTube" }));
+    } catch (e) {
+      return { ok: false, error: refreshFailureMessage(e, "YouTube") };
     }
   }
 

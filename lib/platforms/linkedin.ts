@@ -9,6 +9,7 @@
  * (+ optional LINKEDIN_API_VERSION in YYYYMM format, default 202609).
  */
 
+import { readTokenResponse, TokenError } from "@/lib/platforms/token-error";
 const AUTHORIZE_URL = "https://www.linkedin.com/oauth/v2/authorization";
 const TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken";
 const API = "https://api.linkedin.com";
@@ -60,10 +61,8 @@ async function tokenRequest(body: URLSearchParams): Promise<TokenResponse> {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
   });
-  const json = (await res.json()) as TokenResponse;
-  if (!res.ok || !json.access_token) {
-    throw new Error(json.error_description ?? json.error ?? `LinkedIn token error ${res.status}`);
-  }
+  const json = await readTokenResponse<TokenResponse>(res, "LinkedIn");
+  if (!json.access_token) throw new TokenError("LinkedIn returned no access token.", res.status, null);
   return json;
 }
 

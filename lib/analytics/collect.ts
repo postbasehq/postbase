@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { decryptJson, encryptJson } from "@/lib/crypto";
+import { decryptJson } from "@/lib/crypto";
+import { refreshChannelTokens } from "@/lib/platforms/token-refresh";
 import { getTweetMetrics, getTweetsMetrics, refreshTokens as xRefresh } from "@/lib/platforms/x";
 import { getMediaInsights, getPagePostMetrics } from "@/lib/platforms/meta";
 import { getSocialActions, refreshTokens as liRefresh } from "@/lib/platforms/linkedin";
@@ -102,32 +103,26 @@ async function ensureToken(db: SupabaseClient, ch: Channel, tokens: Tokens): Pro
   ) {
     return tokens.access_token;
   }
-  let refreshed: { access_token?: string; refresh_token?: string; expires_in?: number };
+  const refresh =
+    ch.platform === "x" ? xRefresh
+    : ch.platform === "tiktok" ? ttRefresh
+    : ch.platform === "linkedin" ? liRefresh
+    : ch.platform === "youtube" ? ytRefresh
+    : null;
+  if (!refresh || !ch.encrypted_tokens) return tokens.access_token;
   try {
-    if (ch.platform === "x") refreshed = await xRefresh(tokens.refresh_token);
-    else if (ch.platform === "tiktok") refreshed = await ttRefresh(tokens.refresh_token);
-    else if (ch.platform === "linkedin") refreshed = await liRefresh(tokens.refresh_token);
-    else if (ch.platform === "youtube") refreshed = await ytRefresh(tokens.refresh_token);
-    else return tokens.access_token;
+    // Shared with the publisher: one refresh per channel at a time (X refresh
+    // tokens are single-use, so racing the publisher used to break the channel).
+    const { tokens: next } = await refreshChannelTokens<Tokens>({
+      channelId: ch.id,
+      encrypted: ch.encrypted_tokens,
+      refresh,
+      label: ch.platform,
+    });
+    return next.access_token;
   } catch {
     return tokens.access_token; // fall back; the read may still work or fail gracefully
   }
-  if (!refreshed.access_token) return tokens.access_token;
-  const next = {
-    ...tokens,
-    access_token: refreshed.access_token,
-    refresh_token: refreshed.refresh_token ?? tokens.refresh_token,
-  };
-  await db
-    .from("channels")
-    .update({
-      encrypted_tokens: encryptJson(next),
-      token_expiry: refreshed.expires_in
-        ? new Date(Date.now() + refreshed.expires_in * 1000).toISOString()
-        : null,
-    })
-    .eq("id", ch.id);
-  return next.access_token;
 }
 
 async function fetchMetrics(

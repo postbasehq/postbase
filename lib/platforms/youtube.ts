@@ -11,6 +11,7 @@
  * choose its own visibility).
  */
 
+import { readTokenResponse, TokenError } from "@/lib/platforms/token-error";
 const AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const API = "https://www.googleapis.com/youtube/v3";
@@ -91,10 +92,8 @@ async function tokenRequest(body: URLSearchParams): Promise<TokenResponse> {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
   });
-  const json = (await res.json()) as TokenResponse;
-  if (!res.ok || !json.access_token) {
-    throw new Error(json.error_description ?? json.error ?? `Google token error ${res.status}`);
-  }
+  const json = await readTokenResponse<TokenResponse>(res, "Google");
+  if (!json.access_token) throw new TokenError("Google returned no access token.", res.status, null);
   return json;
 }
 

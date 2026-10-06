@@ -20,6 +20,7 @@
  */
 
 import crypto from "node:crypto";
+import { readTokenResponse, TokenError } from "@/lib/platforms/token-error";
 
 const AUTHORIZE_URL = "https://www.tiktok.com/v2/auth/authorize/";
 const TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/";
@@ -140,10 +141,8 @@ async function tokenRequest(body: URLSearchParams): Promise<TokenResponse> {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
   });
-  const json = (await res.json()) as TokenResponse;
-  if (!res.ok || json.error || !json.access_token) {
-    throw new Error(json.error_description ?? json.error ?? `TikTok token error ${res.status}`);
-  }
+  const json = await readTokenResponse<TokenResponse>(res, "TikTok");
+  if (!json.access_token) throw new TokenError("TikTok returned no access token.", res.status, null);
   return json;
 }
 

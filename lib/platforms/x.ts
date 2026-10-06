@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { readTokenResponse } from "@/lib/platforms/token-error";
 
 /**
  * X (Twitter) OAuth 2.0 (PKCE, confidential client) + posting helpers.
@@ -69,9 +70,7 @@ async function tokenRequest(body: URLSearchParams): Promise<XTokens> {
     },
     body,
   });
-  const json = (await res.json()) as XTokens & { error?: string; error_description?: string };
-  if (!res.ok) throw new Error(json.error_description ?? json.error ?? `X token error ${res.status}`);
-  return json;
+  return readTokenResponse<XTokens & { error?: string; error_description?: string }>(res, "X");
 }
 
 export function exchangeCode(code: string, verifier: string): Promise<XTokens> {

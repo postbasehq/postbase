@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId } from "@/lib/org";
 import { creatorInfo, type TikTokTokens } from "@/lib/platforms/tiktok";
 import { freshTikTokTokens } from "@/lib/platforms/tiktok-session";
+import { TokenAuthLost, refreshFailureMessage } from "@/lib/platforms/token-refresh";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { flagReconnect, needsReconnect } from "@/lib/channel-health";
 
@@ -51,8 +52,12 @@ export async function POST(req: Request) {
   let tokens: TikTokTokens;
   try {
     tokens = await freshTikTokTokens(channel.id, channel.encrypted_tokens, channel.token_expiry);
-  } catch {
-    if (await flagReconnect(createAdminClient(), channel.id, "TikTok token expired — reconnect the channel.")) {
+  } catch (e) {
+    // Only a refused refresh token means reconnect; an outage is temporary.
+    if (!(e instanceof TokenAuthLost)) {
+      return NextResponse.json({ error: "creator_info_failed", message: refreshFailureMessage(e, "TikTok") }, { status: 503 });
+    }
+    if (await flagReconnect(createAdminClient(), channel.id, e.message)) {
       await notifyReconnect(channel.id);
     }
     return NextResponse.json({ error: "reconnect_required" }, { status: 401 });
