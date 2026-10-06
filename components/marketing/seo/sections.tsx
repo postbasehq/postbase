@@ -138,36 +138,6 @@ export function SectionHead({ title, sub }: { title: React.ReactNode; sub?: Reac
   );
 }
 
-/** "What Postbase supports on X": label/value cards. */
-export function Facts({ items }: { items: { label: string; value: string; stat?: string }[] }) {
-  return (
-    <dl className={`grid gap-4 sm:grid-cols-2 ${items.length === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
-      {items.map((f) => (
-        <FactCard key={f.label} fact={f} />
-      ))}
-    </dl>
-  );
-}
-
-/** One fact: small label, the key number or phrase big, the detail underneath. */
-function FactCard({ fact: f }: { fact: { label: string; value: string; stat?: string } }) {
-  return (
-    <div className={`${card} flex flex-col p-6`}>
-      <dt className="font-display text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">{f.label}</dt>
-      {f.stat ? (
-        <>
-          <dd className="mt-3 font-display text-[clamp(28px,3vw,38px)] font-semibold leading-none tracking-[-0.03em] text-ink">
-            {f.stat}
-          </dd>
-          <dd className="mt-2.5 text-[14px] leading-snug text-muted">{f.value}</dd>
-        </>
-      ) : (
-        <dd className="mt-2.5 text-[16px] leading-snug text-ink">{f.value}</dd>
-      )}
-    </div>
-  );
-}
-
 /**
  * "What Postbase does on {network}": the network's standout feature on a tile in
  * its brand colour (logo drawn large, cropped by the corner), beside its facts.
@@ -236,19 +206,26 @@ const STEP_TILES = [
   { bg: "#d14a3e", ink: "#ffffff", mark: "#b23a2f" },
 ];
 
-/** Numbered how-to steps, each on a solid brand tile. */
-export function Steps({ items }: { items: { title: string; body: string }[] }) {
+/** Numbered how-to steps, each on a solid brand tile. `badge: null` drops the "Step N" label (for non-steps). */
+export function Steps({ items, badge = (i) => `Step ${i + 1}` }: { items: { title: string; body: string }[]; badge?: ((i: number) => string) | null }) {
   return (
     <ol className="grid gap-5 md:grid-cols-3">
       {items.map((s, i) => {
         const t = STEP_TILES[i % 3];
         return (
           <li key={s.title} className="relative isolate flex min-h-[240px] flex-col overflow-hidden rounded-[24px] p-8" style={{ background: t.bg }}>
-            <LogoMark color={t.mark} edge="top" className="pointer-events-none absolute right-6 top-0 -z-10 w-[104px]" />
-            <span className="self-start rounded-full bg-white px-3 py-1 font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-[#14161a]">
-              Step {i + 1}
-            </span>
-            <h3 className="mt-5 font-display text-[clamp(22px,2vw,26px)] font-semibold leading-[1.15] tracking-[-0.02em]" style={{ color: t.ink }}>
+            {/* Flush with the top edge beside the badge; without one, the title starts at the top, so it hangs from the bottom edge. */}
+            <LogoMark
+              color={t.mark}
+              edge="top"
+              className={`pointer-events-none absolute right-6 -z-10 w-[104px] ${badge ? "top-0" : "bottom-0 -scale-y-100"}`}
+            />
+            {badge ? (
+              <span className="mb-5 self-start rounded-full bg-white px-3 py-1 font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-[#14161a]">
+                {badge(i)}
+              </span>
+            ) : null}
+            <h3 className="font-display text-[clamp(22px,2vw,26px)] font-semibold leading-[1.15] tracking-[-0.02em]" style={{ color: t.ink }}>
               {s.title}
             </h3>
             <p className="mt-2.5 text-[15px] leading-relaxed" style={{ color: t.ink }}>

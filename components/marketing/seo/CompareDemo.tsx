@@ -90,35 +90,50 @@ export function CompareDemo({ items }: { items: CompareItem[] }) {
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-[20px] border border-line bg-surface">
-        {/* Column heads */}
-        <div className="grid grid-cols-2 border-b border-line md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.1fr)_minmax(0,1.1fr)]">
-          <div className="hidden p-5 md:block" />
-          <div className="flex items-center gap-2.5 bg-[#2b59d9] p-4 md:p-5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/postbase-icon.png" alt="" className="size-8 rounded-[8px]" />
-            <span className="font-display text-[17px] font-semibold text-white">Postbase</span>
+      <CompareTable item={c} link />
+    </div>
+  );
+}
+
+/** The comparison table: Postbase in a solid blue column beside the competitor, under its logo. */
+export function CompareTable({ item: c, link = false }: { item: CompareItem; link?: boolean }) {
+  const cols = "md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.1fr)_minmax(0,1.1fr)]";
+  return (
+    <div className="overflow-hidden rounded-[20px] border border-line bg-surface">
+      {/* Column heads */}
+      <div className={`grid grid-cols-2 border-b border-line ${cols}`}>
+        <div className="hidden p-5 md:block" />
+        <div className="flex items-center gap-2.5 bg-[#2b59d9] p-4 md:p-5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/postbase-icon.png" alt="" className="size-8 rounded-[8px]" />
+          <span className="font-display text-[17px] font-semibold text-white">Postbase</span>
+        </div>
+        <div key={c.slug} className="swap-in flex items-center gap-2.5 bg-surface-2 p-4 md:p-5">
+          <LogoTile src={c.logo} size={32} />
+          <span className="truncate font-display text-[17px] font-semibold text-ink">{c.name}</span>
+        </div>
+      </div>
+      {c.rows.map((r) => (
+        <div key={r.label} className={`grid grid-cols-2 border-b border-line last:border-b-0 ${cols}`}>
+          {/* On phones the label is a heading row above the two values. */}
+          <div className="col-span-2 px-4 pb-1 pt-3.5 text-[12px] font-semibold uppercase tracking-[0.06em] text-muted md:col-span-1 md:p-5 md:text-[13px]">
+            {r.label}
           </div>
-          <div key={c.slug} className="swap-in flex items-center gap-2.5 bg-surface-2 p-4 md:p-5">
-            <LogoTile src={c.logo} size={32} />
-            <span className="truncate font-display text-[17px] font-semibold text-ink">{c.name}</span>
+          <div className="p-4 text-[14px] leading-snug text-ink md:p-5">{r.us}</div>
+          <div key={c.slug} className="swap-in bg-surface-2 p-4 text-[14px] leading-snug text-ink md:p-5">
+            {r.them}
           </div>
         </div>
-        {c.rows.map((r) => (
-          <div key={r.label} className="grid grid-cols-2 border-b border-line last:border-b-0 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.1fr)_minmax(0,1.1fr)]">
-            {/* On phones the label is a heading row above the two values. */}
-            <div className="col-span-2 px-4 pb-1 pt-3.5 text-[12px] font-semibold uppercase tracking-[0.06em] text-muted md:col-span-1 md:p-5 md:text-[13px]">{r.label}</div>
-            <div className="p-4 text-[14px] leading-snug text-ink md:p-5">{r.us}</div>
-            <div key={c.slug} className="swap-in bg-surface-2 p-4 text-[14px] leading-snug text-ink md:p-5">
-              {r.them}
-            </div>
-          </div>
-        ))}
-        <a href={`/alternatives/${c.slug}`} className="flex items-center justify-center gap-1.5 bg-surface-2 py-3.5 text-[14px] font-semibold text-blue-ink hover:underline">
+      ))}
+      {link ? (
+        <a
+          href={`/alternatives/${c.slug}`}
+          className="flex items-center justify-center gap-1.5 bg-surface-2 py-3.5 text-[14px] font-semibold text-blue-ink hover:underline"
+        >
           Read Postbase vs {c.name}
           <span aria-hidden>→</span>
         </a>
-      </div>
+      ) : null}
     </div>
   );
 }

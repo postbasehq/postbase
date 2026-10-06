@@ -8,8 +8,8 @@ import { PERSONAS, personaBySlug, type Persona } from "@/lib/seo/personas";
 import { CLIENTS } from "@/lib/seo/clients";
 import { LIVE_NETWORKS } from "@/lib/seo/networks";
 import { relatedCards } from "@/lib/seo/related";
-import { CtaBand, FaqList, Underlined, card, wrap } from "@/components/marketing/ui";
-import { LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
+import { CtaBand, FaqList, Underlined, wrap } from "@/components/marketing/ui";
+import { LinkCards, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
 import { CalendarHeroDemo, ClientSetupDemo, NetworkComposerDemo } from "@/components/marketing/seo/demos";
 import { FeatureTiles } from "@/components/marketing/seo/FeatureTiles";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
@@ -63,15 +63,7 @@ export default async function PersonaPage({ params }: { params: Promise<{ slug: 
 
         <section className={section}>
           <SectionHead title="Sound familiar?" />
-          <div className="grid gap-4 md:grid-cols-3">
-            {p.problems.map((pr, i) => (
-              <div key={pr.title} className={`${card} p-7`}>
-                <span className="block h-1.5 w-10 rounded-full" style={{ backgroundColor: PROBLEM_TONES[i % 3] }} aria-hidden />
-                <h3 className="mt-5 font-display text-[20px] font-semibold tracking-[-0.01em] text-ink">{pr.title}</h3>
-                <p className="mt-2 text-[15px] leading-relaxed text-muted">{pr.body}</p>
-              </div>
-            ))}
-          </div>
+          <Steps items={p.problems} badge={null} />
         </section>
 
         <section className={section}>
