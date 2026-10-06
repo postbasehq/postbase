@@ -1,4 +1,7 @@
 {
+  "regions": [
+    "dub1"
+  ],
   "crons": [
     {
       "path": "/api/cron/publish",
