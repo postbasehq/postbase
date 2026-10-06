@@ -77,6 +77,10 @@ export async function scheduleProposedPost(
     if ((owned ?? []).some((c) => c.platform === "tiktok")) {
       return { ok: false, error: "Schedule TikTok posts from the composer, so you can choose who sees them." };
     }
+    // Likewise YouTube's required "made for kids" declaration.
+    if ((owned ?? []).some((c) => c.platform === "youtube")) {
+      return { ok: false, error: "Schedule YouTube videos from the composer, so you can set the audience." };
+    }
   }
 
   // Written with the service role (members can only read posts, 0061),

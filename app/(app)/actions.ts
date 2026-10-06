@@ -272,6 +272,11 @@ async function assertSendable(
     );
     if (tiktok) throw new FormError(tiktok);
   }
+  // YouTube requires the uploader to declare whether a video is made for kids.
+  const madeForKids = String(formData.get("youtube_made_for_kids") ?? "");
+  if ((chans ?? []).some((c) => c.platform === "youtube") && madeForKids !== "true" && madeForKids !== "false") {
+    throw new FormError("Choose whether the YouTube video is made for kids.");
+  }
   // With no text, the video's title can't come from the post's first line.
   const youtubeUntitled = (chans ?? []).some(
     (c) => c.platform === "youtube" && !(variants[c.id] ?? segments[0] ?? "").trim(),

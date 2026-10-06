@@ -255,6 +255,7 @@ export function PostForm({
     if (activeTab !== "base" && !selected.has(activeTab)) setActiveTab("base");
   }, [selected, activeTab]);
   const [tiktokValid, setTiktokValid] = useState(true);
+  const [youtubeValid, setYoutubeValid] = useState(true);
   const [settingsTab, setSettingsTab] = useState<"tiktok" | "youtube">("tiktok");
   const [scheduleLocal, setScheduleLocal] = useState(
     () => utcToLocalInput(initial?.scheduledAt) || defaultScheduleLocal || "",
@@ -404,6 +405,7 @@ export function PostForm({
   // TikTokSettings reports its validity while mounted; deselecting TikTok
   // unmounts it, so its last report (maybe "invalid") must not linger.
   const tiktokOk = !tiktokChannel || tiktokValid;
+  const youtubeOk = !youtubeChannel || youtubeValid; // the audience is chosen
   // TikTok's settings turning invalid while its tab is hidden (e.g. a video
   // longer than the account allows) would only show as a dot: bring them up.
   const prevTiktokOk = useRef(tiktokOk);
@@ -411,13 +413,15 @@ export function PostForm({
     if (prevTiktokOk.current && !tiktokOk) setSettingsTab("tiktok");
     prevTiktokOk.current = tiktokOk;
   }, [tiktokOk]);
+  // Network settings still to finish, by name, for the footer.
+  const unfinished = [...(tiktokOk ? [] : ["TikTok"]), ...(youtubeOk ? [] : ["YouTube"])];
   // Saving mid-upload would drop the file (it's only attached once it lands).
   const uploading = busy || thumbBusy;
   const canSubmit =
-    !nothingYet && !uploading && (isDraft || (!noChannels && !hasBlocking && tiktokOk && canSchedule && !overPlan));
+    !nothingYet && !uploading && (isDraft || (!noChannels && !hasBlocking && tiktokOk && youtubeOk && canSchedule && !overPlan));
   // Not ready to publish if a platform check fails OR the TikTok settings are
   // incomplete — keep the status indicator consistent with the disabled button.
-  const notReady = hasBlocking || !tiktokOk || !!overPlan;
+  const notReady = hasBlocking || !tiktokOk || !youtubeOk || !!overPlan;
 
   /* actions */
   const updateTweet = (i: number, v: string) =>
@@ -910,7 +914,7 @@ export function PostForm({
                   <VariantTab
                     key={p}
                     active={activeSettings === p}
-                    dot={p === "tiktok" && !tiktokOk}
+                    dot={p === "tiktok" ? !tiktokOk : !youtubeOk}
                     dotClassName="bg-[#d14a3e]"
                     onClick={() => setSettingsTab(p)}
                   >
@@ -945,8 +949,12 @@ export function PostForm({
                   channelHandle={youtubeChannel.handle}
                   initial={initial?.youtubePrivacy}
                   initialOptions={initial?.youtubeOptions}
-                  fallbackTitle={cleanTweets[0]?.split("\n").map((l) => l.trim()).find(Boolean) ?? ""}
+                  // The publisher titles the video from this channel's own caption when it has one.
+                  fallbackTitle={
+                    (variants[youtubeChannel.id]?.trim() || cleanTweets[0] || "").split("\n").map((l) => l.trim()).find(Boolean) ?? ""
+                  }
                   onBusyChange={setThumbBusy}
+                  onValidChange={setYoutubeValid}
                 />
               </div>
             ) : null}
@@ -1176,7 +1184,7 @@ export function PostForm({
             <span className="hidden text-xs text-[#d14a3e] sm:inline">
               {hasBlocking
                 ? "Fix the flagged channels, or clear the time to save a draft."
-                : "Finish the TikTok settings, or clear the time to save a draft."}
+                : `Finish the ${unfinished.join(" and ")} settings, or clear the time to save a draft.`}
             </span>
           ) : null}
           <Link href="/queue" className="text-sm font-medium text-muted hover:text-ink">

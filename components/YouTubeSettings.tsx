@@ -65,6 +65,7 @@ export function YouTubeSettings({
   initialOptions,
   fallbackTitle = "",
   onBusyChange,
+  onValidChange,
 }: {
   channelHandle?: string | null;
   initial?: YouTubePrivacy | null;
@@ -73,11 +74,17 @@ export function YouTubeSettings({
   fallbackTitle?: string;
   /** A thumbnail is uploading: the post can't be saved until it lands. */
   onBusyChange?: (busy: boolean) => void;
+  /** The audience has been chosen (required before scheduling). */
+  onValidChange?: (valid: boolean) => void;
 }) {
   const [privacy, setPrivacy] = useState<YouTubePrivacy>(initial ?? "public");
   const [title, setTitle] = useState(initialOptions?.title ?? "");
   const [thumb, setThumb] = useState<string | null>(initialOptions?.thumbnailUrl ?? null);
-  const [madeForKids, setMadeForKids] = useState(initialOptions?.madeForKids === true);
+  // No default: YouTube requires the uploader to declare the audience (a saved
+  // post keeps its answer).
+  const [madeForKids, setMadeForKids] = useState<boolean | null>(
+    typeof initialOptions?.madeForKids === "boolean" ? initialOptions.madeForKids : null,
+  );
   const [thumbBusy, setThumbBusy] = useState(false);
   const [thumbError, setThumbError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -87,6 +94,9 @@ export function YouTubeSettings({
   useEffect(() => busyRef.current?.(thumbBusy), [thumbBusy]);
   // Removed mid-upload (YouTube deselected): don't leave the composer blocked.
   useEffect(() => () => busyRef.current?.(false), []);
+  const validRef = useRef(onValidChange);
+  validRef.current = onValidChange;
+  useEffect(() => validRef.current?.(madeForKids !== null), [madeForKids]);
 
   async function uploadThumb(file: File) {
     setThumbError(null);
@@ -267,15 +277,15 @@ export function YouTubeSettings({
             );
           })}
         </div>
-        <span className="text-xs text-muted">
-          YouTube requires this on every video. Made-for-kids videos have comments and some features turned off.
+        <span className={`text-xs ${madeForKids === null ? "text-[#d14a3e]" : "text-muted"}`}>
+          {madeForKids === null ? "Choose one. " : ""}YouTube requires this on every video. Made-for-kids videos have comments and some features turned off.
         </span>
       </div>
 
       <input type="hidden" name="youtube_privacy" value={privacy} />
       <input type="hidden" name="youtube_title" value={title} />
       <input type="hidden" name="youtube_thumbnail_url" value={thumb ?? ""} />
-      <input type="hidden" name="youtube_made_for_kids" value={String(madeForKids)} />
+      <input type="hidden" name="youtube_made_for_kids" value={madeForKids === null ? "" : String(madeForKids)} />
     </div>
   );
 }
