@@ -5,7 +5,9 @@ import { pageMeta } from "@/lib/site";
 import { CLIENTS } from "@/lib/seo/clients";
 import { CtaBand, wrap } from "@/components/marketing/ui";
 import { LinkCards, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
-import { ClientSetupDemo, ClientTiles } from "@/components/marketing/seo/demos";
+import { ClientTiles } from "@/components/marketing/seo/demos";
+import { McpInActionDemo } from "@/components/marketing/seo/McpDemo";
+import { MCP_SCENES } from "@/lib/seo/mcp-scenes";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 import { AiHeroDecor, ClientIconRow } from "@/components/marketing/seo/HeroWidgets";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
@@ -16,8 +18,6 @@ const DESCRIPTION =
 const TRAIL = [{ label: "Home", href: "/" }, { label: "AI tools" }];
 
 export const metadata: Metadata = { title: TITLE, description: DESCRIPTION, ...pageMeta("/ai", { ownImage: true }) };
-
-const claude = CLIENTS[0];
 
 export default function AiPage() {
   return (
@@ -31,11 +31,12 @@ export default function AiPage() {
           sub="Postbase has a hosted MCP server. Add it to the AI tool you already use, sign in, and ask it to schedule posts for you."
           cta={{ label: "Connect in a minute", href: "/login" }}
           secondary={{ label: "Read the docs", href: "https://docs.postbase.so/mcp/connect" }}
-          frame="Connect your AI tool from the AI & API page"
+          frame="Ask your AI, and it lands on your Postbase calendar"
           decor={<AiHeroDecor />}
           eyebrow={<ClientIconRow />}
         >
-          <ClientSetupDemo client={{ logo: claude.logo, name: claude.name, setup: claude.setup }} />
+          {/* The AI doing the job (not its setup screen): one announcement, a version sized for each network. */}
+          <McpInActionDemo scene={MCP_SCENES.bluesky} />
         </SeoHero>
 
         <section className={section}>
