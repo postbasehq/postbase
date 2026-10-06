@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { createMediaUpload } from "@/app/(app)/media-upload-actions";
 import type { YouTubePostOptions } from "@/lib/platforms/youtube";
@@ -64,12 +64,15 @@ export function YouTubeSettings({
   initial,
   initialOptions,
   fallbackTitle = "",
+  onBusyChange,
 }: {
   channelHandle?: string | null;
   initial?: YouTubePrivacy | null;
   initialOptions?: YouTubePostOptions | null;
   /** The post's first line, used as the title when none is typed. */
   fallbackTitle?: string;
+  /** A thumbnail is uploading: the post can't be saved until it lands. */
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const [privacy, setPrivacy] = useState<YouTubePrivacy>(initial ?? "public");
   const [title, setTitle] = useState(initialOptions?.title ?? "");
@@ -78,6 +81,12 @@ export function YouTubeSettings({
   const [thumbBusy, setThumbBusy] = useState(false);
   const [thumbError, setThumbError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const busyRef = useRef(onBusyChange);
+  busyRef.current = onBusyChange;
+  useEffect(() => busyRef.current?.(thumbBusy), [thumbBusy]);
+  // Removed mid-upload (YouTube deselected): don't leave the composer blocked.
+  useEffect(() => () => busyRef.current?.(false), []);
 
   async function uploadThumb(file: File) {
     setThumbError(null);

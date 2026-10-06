@@ -257,6 +257,7 @@ export function PostForm({
   );
   const [repeatEvery, setRepeatEvery] = useState(initial?.repeatEvery ?? "");
   const [busy, setBusy] = useState(false);
+  const [thumbBusy, setThumbBusy] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [libraryFolder, setLibraryFolder] = useState<string>("all");
@@ -379,7 +380,10 @@ export function PostForm({
   const needsPlan = !isDraft && !canSchedule;
   // A scheduled post needs somewhere to go; a draft can wait for its channels.
   const noChannels = selectedChannels.length === 0;
-  const canSubmit = !bodyEmpty && (isDraft || (!noChannels && !hasBlocking && tiktokValid && canSchedule));
+  // Saving mid-upload would drop the file (it's only attached once it lands).
+  const uploading = busy || thumbBusy;
+  const canSubmit =
+    !bodyEmpty && !uploading && (isDraft || (!noChannels && !hasBlocking && tiktokValid && canSchedule));
   // Not ready to publish if a platform check fails OR the TikTok settings are
   // incomplete — keep the status indicator consistent with the disabled button.
   const notReady = hasBlocking || !tiktokValid;
@@ -878,6 +882,7 @@ export function PostForm({
                   initial={initial?.youtubePrivacy}
                   initialOptions={initial?.youtubeOptions}
                   fallbackTitle={cleanTweets[0]?.split("\n").map((l) => l.trim()).find(Boolean) ?? ""}
+                  onBusyChange={setThumbBusy}
                 />
               </div>
             ) : null}
@@ -1086,6 +1091,8 @@ export function PostForm({
               </Link>{" "}
               or clear the time to save a draft.
             </span>
+          ) : uploading ? (
+            <span className="text-xs text-muted">Waiting for the upload to finish.</span>
           ) : bodyEmpty ? (
             <span className="hidden text-xs text-muted sm:inline">Write something to continue.</span>
           ) : noChannels && !isDraft ? (
