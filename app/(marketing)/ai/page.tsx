@@ -7,6 +7,7 @@ import { CtaBand, wrap } from "@/components/marketing/ui";
 import { LinkCards, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
 import { ClientSetupDemo, ClientTiles } from "@/components/marketing/seo/demos";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
+import { AiHeroDecor, ClientIconRow } from "@/components/marketing/seo/HeroWidgets";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 
 const TITLE = "Let Claude, ChatGPT or Cursor post to social media";
@@ -31,6 +32,8 @@ export default function AiPage() {
           cta={{ label: "Connect in a minute", href: "/login" }}
           secondary={{ label: "Read the docs", href: "https://docs.postbase.so/mcp/connect" }}
           frame="Connect your AI tool from the AI & API page"
+          decor={<AiHeroDecor />}
+          eyebrow={<ClientIconRow />}
         >
           <ClientSetupDemo client={{ logo: claude.logo, name: claude.name, setup: claude.setup }} />
         </SeoHero>
