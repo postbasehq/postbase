@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Reorder, motion, useDragControls } from "framer-motion";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -157,7 +157,8 @@ type Note = { level: "error" | "info"; text: string };
 
 type PostFormProps = {
   channels: Channel[];
-  action: (formData: FormData) => Promise<void>;
+  /** Saves the post: redirects on success, returns the problem otherwise. */
+  action: (formData: FormData) => Promise<{ error: string } | undefined | void>;
   submitLabel: string;
   /** False when the workspace has no plan: drafts save, scheduling prompts a trial. */
   canSchedule?: boolean;
@@ -257,6 +258,14 @@ export function PostForm({
   );
   const [repeatEvery, setRepeatEvery] = useState(initial?.repeatEvery ?? "");
   const [busy, setBusy] = useState(false);
+  // A rejected save comes back as a message, keeping everything typed (a thrown
+  // error would replace the composer with the error page).
+  const [saveError, formAction] = useActionState(async (_prev: string | null, fd: FormData) => {
+    // The time may have passed while the tab sat open.
+    const at = String(fd.get("scheduled_at") ?? "");
+    if (at && Date.parse(at) < Date.now() - PAST_GRACE_MS) return "That time has passed. Pick a later one.";
+    return (await action(fd))?.error ?? null;
+  }, null);
   const [thumbBusy, setThumbBusy] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -550,7 +559,7 @@ export function PostForm({
 
   return (
     <form
-      action={action}
+      action={formAction}
       // Enter in a one-line field (YouTube title, draft search, time, AI prompt
       // in a modal) would submit the form, i.e. schedule the post. Only the
       // Schedule/Save button submits; textareas keep Enter for new lines.
@@ -1039,6 +1048,15 @@ export function PostForm({
       {/* ── Action bar (fixed footer, spans the whole panel) ──── */}
       <div className="fixed bottom-3 left-0 right-3 z-30 rounded-b-2xl border border-line bg-surface shadow-[0_-4px_14px_-10px_rgba(16,24,40,0.22)] md:left-60">
         <div className="mx-auto flex w-full max-w-[1248px] flex-wrap items-center gap-x-4 gap-y-3 px-6 py-3.5">
+        {saveError ? (
+          <p role="alert" className="flex basis-full items-center gap-2 rounded-lg border border-[#d14a3e] px-3 py-2 text-sm text-ink">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[#d14a3e]" aria-hidden>
+              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+              <path d="M12 9v4M12 17h.01" />
+            </svg>
+            {saveError}
+          </p>
+        ) : null}
         <DateTimePicker value={scheduleLocal} onChange={setScheduleLocal} timeZone={tz} />
         {inPast ? <span className="text-xs font-medium text-[#d14a3e]">That time has passed. Pick a later one.</span> : null}
 

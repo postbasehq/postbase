@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { cookies } from "next/headers";
 import { openPick, PICK_COOKIE, saveMetaChannels } from "@/lib/meta-connect";
 import { createClient } from "@/lib/supabase/server";
@@ -122,6 +122,28 @@ async function orphanedStoragePaths(
  */
 const writeDb = () => createAdminClient();
 
+/** A problem the person can fix; its message is shown in the composer. */
+class FormError extends Error {}
+
+/** What the composer gets back when a save fails (success redirects). */
+export type SaveResult = { error: string } | undefined;
+
+/**
+ * Run a composer save, returning its problem instead of throwing: a thrown
+ * error replaces the page with the error screen, losing everything typed.
+ */
+async function saveOrError(what: string, run: () => Promise<void>): Promise<SaveResult> {
+  try {
+    await run();
+    return undefined;
+  } catch (e) {
+    unstable_rethrow(e); // redirect() on success
+    if (e instanceof FormError) return { error: e.message };
+    console.error(`[${what}]`, e);
+    return { error: "Something went wrong saving the post. Your work is still here, so try again." };
+  }
+}
+
 const NO_CHANNELS = "Pick at least one channel to schedule this post, or save it as a draft.";
 
 /** Only channels in this workspace; RLS alone would also accept the user's other workspaces'. */
@@ -134,7 +156,7 @@ async function assertOwnChannels(
   const { data: owned, error } = await supabase.from("channels").select("id").eq("org_id", orgId).in("id", channelIds);
   if (error) throw new Error(error.message);
   const ownedIds = new Set((owned ?? []).map((c) => c.id));
-  if (channelIds.some((id) => !ownedIds.has(id))) throw new Error("Invalid channel selection.");
+  if (channelIds.some((id) => !ownedIds.has(id))) throw new FormError("One of the selected channels isn't in this workspace any more. Refresh the page and pick again.");
 }
 
 /** Parse the composer's `thread` JSON field into non-empty, trimmed tweet segments. */
@@ -184,23 +206,23 @@ async function assertSendable(
   formData: FormData,
 ): Promise<void> {
   const past = pastTimeProblem(scheduledAt);
-  if (past) throw new Error(past);
+  if (past) throw new FormError(past);
   // With no channels it would "publish" with nothing sent (and repeat forever).
-  if (channelIds.length === 0) throw new Error(NO_CHANNELS);
+  if (channelIds.length === 0) throw new FormError(NO_CHANNELS);
   const { data: chans } = await supabase.from("channels").select("id, platform").eq("org_id", orgId).in("id", channelIds);
   const variants = parseVariants(formData);
   const problem = firstBlockingProblem(
     (chans ?? []).map((c) => ({ platform: c.platform as string, parts: variants[c.id] ? [variants[c.id]] : segments })),
     parseMedia(formData),
   );
-  if (problem) throw new Error(problem);
+  if (problem) throw new FormError(problem);
   if ((chans ?? []).some((c) => c.platform === "tiktok")) {
     const tiktok = tiktokSettingsProblem(
       parseTiktokPrivacy(formData),
       parseTiktokOptions(formData),
       process.env.TIKTOK_PRIVACY_LEVEL?.trim() || undefined,
     );
-    if (tiktok) throw new Error(tiktok);
+    if (tiktok) throw new FormError(tiktok);
   }
 }
 
@@ -211,7 +233,7 @@ async function assertSendable(
  */
 function assertOwnMedia(formData: FormData, orgId: string): void {
   if (parseMedia(formData).some((m) => !isOwnMediaUrl(m.url, orgId))) {
-    throw new Error("One of the attached files isn't from this workspace's storage. Remove it and attach it again.");
+    throw new FormError("One of the attached files isn't from this workspace's storage. Remove it and attach it again.");
   }
 }
 
@@ -299,17 +321,21 @@ export async function disconnectChannel(formData: FormData) {
 }
 
 /** Create a post targeting the selected channels, scheduled or draft. */
-export async function createPost(formData: FormData) {
+export async function createPost(formData: FormData): Promise<SaveResult> {
+  return saveOrError("createPost", () => createPostOrThrow(formData));
+}
+
+async function createPostOrThrow(formData: FormData) {
   const supabase = await createClient();
   const orgId = await getCurrentOrgId();
-  if (!orgId) throw new Error("No workspace found for this user.");
+  if (!orgId) throw new FormError("No workspace found for this user.");
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   const segments = parseThread(formData);
-  if (segments.length === 0) throw new Error("Write something to post.");
+  if (segments.length === 0) throw new FormError("Write something to post.");
   const scheduledRaw = String(formData.get("scheduled_at") ?? "").trim();
   const channelIds = formData.getAll("channels").map(String).filter(Boolean);
 
@@ -318,7 +344,7 @@ export async function createPost(formData: FormData) {
   // Drafts are always allowed; scheduling needs an active plan.
   if (status === "scheduled") {
     const blocked = await schedulingProblem(orgId);
-    if (blocked) throw new Error(blocked);
+    if (blocked) throw new FormError(blocked);
   }
   assertOwnMedia(formData, orgId);
   if (scheduledAt) await assertSendable(supabase, orgId, channelIds, segments, scheduledAt, formData);
@@ -370,13 +396,17 @@ export async function createPost(formData: FormData) {
 }
 
 /** Edit a post: update body/channels/schedule. The poller picks up the new time. */
-export async function updatePost(formData: FormData) {
+export async function updatePost(formData: FormData): Promise<SaveResult> {
+  return saveOrError("updatePost", () => updatePostOrThrow(formData));
+}
+
+async function updatePostOrThrow(formData: FormData) {
   const supabase = await createClient();
   const orgId = await getCurrentOrgId();
-  if (!orgId) throw new Error("No workspace found for this user.");
+  if (!orgId) throw new FormError("No workspace found for this user.");
 
   const postId = String(formData.get("post_id") ?? "");
-  if (!postId) throw new Error("Missing post id.");
+  if (!postId) throw new FormError("Missing post id.");
 
   // Guard: never edit a post that has already published to any channel (or is
   // mid-publish) — re-saving deletes/recreates targets and would republish
@@ -408,7 +438,7 @@ export async function updatePost(formData: FormData) {
   }
 
   const segments = parseThread(formData);
-  if (segments.length === 0) throw new Error("Write something to post.");
+  if (segments.length === 0) throw new FormError("Write something to post.");
   const scheduledRaw = String(formData.get("scheduled_at") ?? "").trim();
   const channelIds = formData.getAll("channels").map(String).filter(Boolean);
 
@@ -417,7 +447,7 @@ export async function updatePost(formData: FormData) {
   // Drafts are always allowed; scheduling needs an active plan.
   if (status === "scheduled") {
     const blocked = await schedulingProblem(orgId);
-    if (blocked) throw new Error(blocked);
+    if (blocked) throw new FormError(blocked);
   }
   assertOwnMedia(formData, orgId);
   if (scheduledAt) await assertSendable(supabase, orgId, channelIds, segments, scheduledAt, formData);
@@ -483,7 +513,7 @@ export async function updatePost(formData: FormData) {
     );
   } catch (e) {
     console.error(`[updatePost] ${postId} left as a draft:`, e);
-    throw new Error("Couldn't save every change, so the post was kept as a draft. Open it from Drafts and save again.");
+    throw new FormError("Couldn't save every change, so the post was kept as a draft. Open it from Drafts and save again.");
   }
 
   // Only delete files no other post (e.g. a repeat occurrence) still references.
