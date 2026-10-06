@@ -250,6 +250,42 @@ export function FactUI({ ui, network }: { ui?: FactUi; network: string }) {
           </div>
         </Surface>
       );
+    case "text":
+      // A post whose last line is links or hashtags: blue and underlined when the network makes them clickable.
+      return (
+        <Surface className="w-full p-3.5">
+          <div className="flex items-center gap-2">
+            <Avatar network={network} />
+            <Lines widths={["70%"]} />
+          </div>
+          <div className="mt-3">
+            <Lines widths={["100%", "84%"]} />
+          </div>
+          <div className="mt-2.5 flex flex-wrap gap-x-2 text-[12px] font-medium">
+            {ui.words.map((w) => (
+              <span key={w} className={ui.linked ? "text-[#2b59d9] underline underline-offset-2" : "text-ink"}>
+                {w}
+              </span>
+            ))}
+          </div>
+        </Surface>
+      );
+    case "schedule":
+      return (
+        <Surface className="flex w-full flex-col gap-2 p-3">
+          <div className="flex items-center gap-2 rounded-lg border border-line px-2.5 py-2 text-[12px] text-ink">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+              <rect x="3" y="5" width="18" height="16" rx="2" />
+              <path d="M3 10h18M8 3v4M16 3v4" />
+            </svg>
+            Tue 9:00
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-center text-[12px] font-semibold">
+            <span className="rounded-lg border border-line px-2 py-2 text-ink">Save draft</span>
+            <span className="rounded-lg bg-[#2b59d9] px-2 py-2 text-white">Schedule</span>
+          </div>
+        </Surface>
+      );
     case "password":
       return (
         <Surface className="w-full p-3">

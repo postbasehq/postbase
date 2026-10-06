@@ -1,5 +1,5 @@
 import { CLIENTS, type AiClient } from "@/lib/seo/clients";
-import { LIVE_NETWORKS, type Network } from "@/lib/seo/networks";
+import { LIVE_NETWORKS, type FactUi, type Network } from "@/lib/seo/networks";
 
 /*
  * "Post to <network> from <AI client>" pages: /ai/[client]/[network]. Only
@@ -15,7 +15,8 @@ export const COMBO_NETWORKS = ["x", "linkedin", "bluesky", "mastodon"] as const;
 type NetworkNotes = {
   /** What "post" means there, for headings: "tweets and threads". */
   what: string;
-  notes: { label: string; value: string }[];
+  /** Each with a big figure and a small product preview (components/marketing/seo/FactUI). */
+  notes: { label: string; stat: string; ui: FactUi; value: string }[];
   tips: string[];
   faqs: [string, string][];
 };
@@ -24,9 +25,9 @@ const NOTES: Record<(typeof COMBO_NETWORKS)[number], NetworkNotes> = {
   x: {
     what: "tweets and threads",
     notes: [
-      { label: "Length", value: "280 characters per post. Links count as 23 and emoji as 2, so ask for a little under the limit." },
-      { label: "Threads", value: "Ask for a thread and the agent sends the posts as one list. Postbase publishes them as a chain of replies, up to 25." },
-      { label: "Timing", value: "Give a time and it's scheduled; leave it out and it's saved as a draft." },
+      { label: "Length", stat: "280", ui: { kind: "count", used: 262, limit: 280 }, value: "280 characters per post. Links count as 23 and emoji as 2, so ask for a little under the limit." },
+      { label: "Threads", stat: "25 posts", ui: { kind: "thread", parts: 3 }, value: "Ask for a thread and the agent sends the posts as one list. Postbase publishes them as a chain of replies, up to 25." },
+      { label: "Timing", stat: "Time or draft", ui: { kind: "schedule" }, value: "Give a time and it's scheduled; leave it out and it's saved as a draft." },
     ],
     tips: [
       "Ask for the hook first: \"make the first post work on its own\".",
@@ -47,9 +48,9 @@ const NOTES: Record<(typeof COMBO_NETWORKS)[number], NetworkNotes> = {
   linkedin: {
     what: "LinkedIn posts",
     notes: [
-      { label: "Length", value: "Up to 3,000 characters, but only the first few lines show before \"see more\", so the opening matters." },
-      { label: "First comment", value: "Ask for a two-part post and the second part is published as the first comment, the usual home for links on LinkedIn." },
-      { label: "Hashtags", value: "Postbase posts your text exactly as written, so hashtags and @mentions show as plain text rather than links." },
+      { label: "Length", stat: "3,000", ui: { kind: "count", used: 1842, limit: 3000 }, value: "Up to 3,000 characters, but only the first few lines show before \"see more\", so the opening matters." },
+      { label: "First comment", stat: "Built in", ui: { kind: "firstComment" }, value: "Ask for a two-part post and the second part is published as the first comment, the usual home for links on LinkedIn." },
+      { label: "Hashtags", stat: "Plain text", ui: { kind: "text", words: ["#hiring", "#design"], linked: false }, value: "Postbase posts your text exactly as written, so hashtags and @mentions show as plain text rather than links." },
     ],
     tips: [
       "Ask for short paragraphs and no emoji bullets unless that's your style.",
@@ -70,9 +71,9 @@ const NOTES: Record<(typeof COMBO_NETWORKS)[number], NetworkNotes> = {
   bluesky: {
     what: "Bluesky posts and threads",
     notes: [
-      { label: "Length", value: "300 characters per post, counted the way you'd count them by eye." },
-      { label: "Links", value: "Bluesky doesn't make links clickable on its own. Postbase does it for you when the post goes out." },
-      { label: "Threads", value: "Ask for a thread and each post is published as a reply to the one before, in order." },
+      { label: "Length", stat: "300", ui: { kind: "count", used: 268, limit: 300 }, value: "300 characters per post, counted the way you'd count them by eye." },
+      { label: "Links", stat: "Clickable", ui: { kind: "text", words: ["postbase.so/blog"], linked: true }, value: "Bluesky doesn't make links clickable on its own. Postbase does it for you when the post goes out." },
+      { label: "Threads", stat: "Threads", ui: { kind: "thread", parts: 3 }, value: "Ask for a thread and each post is published as a reply to the one before, in order." },
     ],
     tips: [
       "Bluesky is a little more casual than LinkedIn. Tell the agent the tone you want.",
@@ -93,9 +94,9 @@ const NOTES: Record<(typeof COMBO_NETWORKS)[number], NetworkNotes> = {
   mastodon: {
     what: "Mastodon posts and threads",
     notes: [
-      { label: "Length", value: "500 characters per post, the default on most instances." },
-      { label: "Instances", value: "Works with any server you've connected in Postbase: mastodon.social, fosstodon.org or your own." },
-      { label: "Threads", value: "Ask for a thread and each post is published as a reply to the one before." },
+      { label: "Length", stat: "500", ui: { kind: "count", used: 412, limit: 500 }, value: "500 characters per post, the default on most instances." },
+      { label: "Instances", stat: "Any server", ui: { kind: "server" }, value: "Works with any server you've connected in Postbase: mastodon.social, fosstodon.org or your own." },
+      { label: "Threads", stat: "Threads", ui: { kind: "thread", parts: 3 }, value: "Ask for a thread and each post is published as a reply to the one before." },
     ],
     tips: [
       "Mastodon readers expect plain, human posts. Ask for no marketing language.",

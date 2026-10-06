@@ -158,25 +158,35 @@ export function McpFacts({ network, items }: { network: string; items: { label: 
   );
 }
 
-/** What create_post refuses or flags, on one solid Postbase-blue panel. */
-export function ChecksPanel({ items }: { items: { label: string; value: string }[] }) {
+/**
+ * A solid Postbase-blue panel: a white badge, a big white heading and white cards
+ * inside. Items without a label are numbered.
+ */
+export function BluePanel({ badge, title, items }: { badge: string; title: string; items: { label?: string; value: string }[] }) {
   return (
     <div className="relative isolate overflow-hidden rounded-[24px] bg-[#2b59d9] p-8 md:p-10">
       <LogoMark color="#2148b3" className="pointer-events-none absolute -bottom-14 -right-12 -z-10 w-[300px] -rotate-12" />
       <span className="rounded-full bg-white px-3 py-1 font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-[#14161a]">
-        Checked first
+        {badge}
       </span>
-      <h3 className="mt-5 max-w-[24ch] font-display text-[clamp(26px,3vw,38px)] font-semibold leading-[1.08] tracking-[-0.02em] text-white">
-        Problems go back to the agent, not out to your followers
-      </h3>
+      <h3 className="mt-5 max-w-[24ch] font-display text-[clamp(26px,3vw,38px)] font-semibold leading-[1.08] tracking-[-0.02em] text-white">{title}</h3>
       <dl className="mt-7 grid gap-5 md:grid-cols-3">
-        {items.map((c) => (
-          <div key={c.label} className="rounded-2xl bg-white p-5">
-            <dt className="font-display text-[15px] font-semibold text-[#14161a]">{c.label}</dt>
-            <dd className="mt-1.5 text-[14px] leading-relaxed text-[#3d4048]">{c.value}</dd>
+        {items.map((c, i) => (
+          <div key={c.label ?? c.value} className="rounded-2xl bg-white p-5">
+            <dt className="font-display text-[15px] font-semibold text-[#14161a]">
+              {c.label ?? (
+                <span className="flex size-7 items-center justify-center rounded-full bg-[#2b59d9] text-[13px] text-white">{i + 1}</span>
+              )}
+            </dt>
+            <dd className="mt-2 text-[14px] leading-relaxed text-[#3d4048]">{c.value}</dd>
           </div>
         ))}
       </dl>
     </div>
   );
+}
+
+/** What create_post refuses or flags. */
+export function ChecksPanel({ items }: { items: { label: string; value: string }[] }) {
+  return <BluePanel badge="Checked first" title="Problems go back to the agent, not out to your followers" items={items} />;
 }

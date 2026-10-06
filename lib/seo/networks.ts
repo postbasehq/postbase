@@ -21,7 +21,9 @@ export type FactUi =
   | { kind: "visibility" }
   | { kind: "toggles"; items: string[] }
   | { kind: "server" }
-  | { kind: "password" };
+  | { kind: "password" }
+  | { kind: "text"; words: string[]; linked: boolean }
+  | { kind: "schedule" };
 
 export type Network = {
   slug: string;

@@ -6,9 +6,10 @@ import { pageMeta } from "@/lib/site";
 import { ALL_COMBOS, COMBO_CLIENTS, COMBO_NETWORKS, getCombo } from "@/lib/seo/combos";
 import { CLIENTS } from "@/lib/seo/clients";
 import { LIVE_NETWORKS } from "@/lib/seo/networks";
-import { CtaBand, FaqList, card, wrap } from "@/components/marketing/ui";
-import { CodeBlock, Facts, LinkCards, Prompts, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
+import { CtaBand, FaqList, wrap } from "@/components/marketing/ui";
+import { CodeBlock, LinkCards, Prompts, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
 import { ClientSetupDemo } from "@/components/marketing/seo/demos";
+import { BluePanel, McpFacts } from "@/components/marketing/seo/McpTools";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 
@@ -103,17 +104,9 @@ export default async function ComboPage({ params }: { params: Params }) {
 
         <section className={section}>
           <SectionHead title={`How ${client.name}'s posts work on ${n.name}`} />
-          <Facts items={notes.notes} />
-          <div className={`${card} mt-4 p-7`}>
-            <h3 className="font-display text-[20px] font-semibold tracking-[-0.01em] text-ink">Tips for better {n.name} posts</h3>
-            <ul className="mt-4 flex flex-col gap-2.5">
-              {notes.tips.map((t) => (
-                <li key={t} className="flex items-start gap-3 text-[15px] leading-relaxed text-ink">
-                  <span className="mt-2 size-1.5 shrink-0 rounded-full bg-blue" aria-hidden />
-                  {t}
-                </li>
-              ))}
-            </ul>
+          <McpFacts network={n.id} items={notes.notes} />
+          <div className="mt-5">
+            <BluePanel badge="Tips" title={`Tips for better ${n.name} posts`} items={notes.tips.map((t) => ({ value: t }))} />
           </div>
         </section>
 
