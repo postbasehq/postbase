@@ -6,6 +6,7 @@ import { GitHubButton } from "./GitHubButton";
 import { BrandTile } from "./BrandTile";
 import { ClientLogo } from "./ClientLogo";
 import { NavAuthButtons } from "./NavAuthButtons";
+import { MobileNav } from "./MobileNav";
 import { NETWORKS } from "@/lib/seo/networks";
 import { CLIENTS } from "@/lib/seo/clients";
 
@@ -25,7 +26,10 @@ export function SiteNav() {
         {/* Full width. On xl the links sit dead centre between logo and actions;
             on lg there isn't room for that, so they follow the logo. */}
         <div className="flex h-16 items-center gap-4 px-5 md:gap-6 md:px-8 xl:grid xl:grid-cols-[1fr_auto_1fr]">
-          <Logo />
+          <div className="flex items-center gap-2">
+            <SiteMobileMenu />
+            <Logo />
+          </div>
           <div className="hidden items-center gap-5 whitespace-nowrap lg:flex xl:gap-7">
             {BEFORE.map((l) => (
               <a key={l.label} href={l.href} className="text-[14px] font-medium text-muted transition-colors hover:text-ink">
@@ -41,8 +45,8 @@ export function SiteNav() {
             ))}
           </div>
           <div className="ml-auto flex items-center justify-end gap-3.5">
-            {/* Hidden on lg, where the nav links need the room. */}
-            <span className="lg:max-xl:hidden">
+            {/* Hidden on lg, where the nav links need the room, and on phones, where the menu has it. */}
+            <span className="max-sm:hidden lg:max-xl:hidden">
               <GitHubButton />
             </span>
             <ThemeToggle />
@@ -174,10 +178,92 @@ function AiMenu() {
       <MenuFooter
         note="Connect over MCP in a minute."
         links={[
+          { href: "/mcp", label: "MCP server" },
           { href: "/tools/mcp-config", label: "Config generator" },
-          { href: "/ai", label: "How it works" },
         ]}
       />
     </NavMenu>
+  );
+}
+
+const DRAWER_LINKS = [
+  { href: "/#features", label: "Features" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/alternatives", label: "Compare" },
+  { href: "/blog", label: "Blog" },
+  { href: "/tools", label: "Free tools" },
+  { href: "https://docs.postbase.so", label: "Docs" },
+  { href: "https://github.com/postbasehq/postbase", label: "GitHub" },
+  { href: "/login", label: "Log in" },
+];
+
+function DrawerHeading({ children }: { children: React.ReactNode }) {
+  return <p className="px-3 pb-1.5 pt-5 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">{children}</p>;
+}
+
+/**
+ * The marketing nav below lg, where the links and dropdowns are hidden: a menu
+ * button that opens the same sections as a drawer (the app's MobileNav).
+ */
+function SiteMobileMenu() {
+  return (
+    <MobileNav
+      hideAt="lg"
+      header={<Logo />}
+      footer={
+        <div className="border-t border-line p-4">
+          <Link
+            href="/login"
+            className="block rounded-full bg-blue px-4 py-3 text-center font-display text-[15px] font-semibold text-on-blue shadow-sm"
+          >
+            Start your 7-day free trial
+          </Link>
+        </div>
+      }
+    >
+      <div className="px-2 pb-4">
+        <DrawerHeading>Integrations</DrawerHeading>
+        <ul className="grid grid-cols-2 gap-0.5">
+          {NETWORKS.filter((n) => n.live).map((n) => (
+            <li key={n.slug}>
+              <Link href={`/integrations/${n.slug}`} className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-medium text-ink hover:bg-surface-2">
+                <BrandTile platform={n.id} size={22} radius={6} />
+                {n.name}
+              </Link>
+            </li>
+          ))}
+        </ul>
+
+        <DrawerHeading>AI agents</DrawerHeading>
+        <ul className="grid grid-cols-2 gap-0.5">
+          {CLIENTS.map((c) => (
+            <li key={c.slug}>
+              <Link href={`/ai/${c.slug}`} className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-medium text-ink hover:bg-surface-2">
+                <ClientLogo id={c.logo} size={22} />
+                {c.name}
+              </Link>
+            </li>
+          ))}
+          <li className="col-span-2">
+            <Link href="/mcp" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-semibold text-blue-ink hover:bg-surface-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/postbase-icon.png" alt="" className="size-[22px] rounded-[6px]" />
+              The MCP server
+            </Link>
+          </li>
+        </ul>
+
+        <DrawerHeading>Postbase</DrawerHeading>
+        <ul className="flex flex-col">
+          {DRAWER_LINKS.map((l) => (
+            <li key={l.label}>
+              <a href={l.href} className="block rounded-xl px-3 py-2.5 text-[15px] font-medium text-ink hover:bg-surface-2">
+                {l.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </MobileNav>
   );
 }

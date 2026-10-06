@@ -13,7 +13,21 @@ import { usePathname } from "next/navigation";
  * shortcuts (⌘K search) aren't registered twice. It closes on navigation,
  * Escape, a tap outside, or tapping a link (also when it's the current page).
  */
-export function MobileNav({ header, children, footer }: { header: React.ReactNode; children: React.ReactNode; footer: React.ReactNode }) {
+// Static class names per breakpoint, so Tailwind sees them.
+const HIDE = { md: "md:hidden", lg: "lg:hidden" } as const;
+
+export function MobileNav({
+  header,
+  children,
+  footer,
+  hideAt = "md",
+}: {
+  header: React.ReactNode;
+  children: React.ReactNode;
+  footer: React.ReactNode;
+  /** Breakpoint from which the full nav shows and this menu hides: md for the app, lg for the marketing site. */
+  hideAt?: keyof typeof HIDE;
+}) {
   const [open, setOpen] = useState(false);
   const [shown, setShown] = useState(false); // drives the slide-in after mount
   const pathname = usePathname();
@@ -53,7 +67,7 @@ export function MobileNav({ header, children, footer }: { header: React.ReactNod
         aria-label="Open menu"
         aria-expanded={open}
         aria-controls="mobile-nav"
-        className="-ml-1 flex size-9 shrink-0 items-center justify-center rounded-full text-ink transition hover:bg-surface-2 md:hidden"
+        className={`-ml-1 flex size-9 shrink-0 items-center justify-center rounded-full text-ink transition hover:bg-surface-2 ${HIDE[hideAt]}`}
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
           <path d="M4 7h16M4 12h16M4 17h16" />
@@ -62,7 +76,8 @@ export function MobileNav({ header, children, footer }: { header: React.ReactNod
 
       {open
         ? createPortal(
-            <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Menu" id="mobile-nav">
+            // z-[70]: above the cookie banner (z-60), which opens on the first tap.
+            <div className={`fixed inset-0 z-[70] ${HIDE[hideAt]}`} role="dialog" aria-modal="true" aria-label="Menu" id="mobile-nav">
               <div
                 className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${shown ? "opacity-100" : "opacity-0"}`}
                 onClick={() => setOpen(false)}
