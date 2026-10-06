@@ -9,6 +9,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { canManageOrg, getCurrentOrgId, getOrgRole } from "@/lib/org";
 import { encryptJson } from "@/lib/crypto";
 import { revokeChannelAccess } from "@/lib/channel-revoke";
+import { ownStoragePath } from "@/lib/media-paths";
 import { saveChannel } from "@/lib/channel-store";
 import { type YouTubePostOptions } from "@/lib/platforms/youtube";
 import { hasAccess, NO_PLAN_MESSAGE, releaseAiGeneration, reserveAiGeneration } from "@/lib/billing-guard";
@@ -92,8 +93,12 @@ async function orphanedStoragePaths(
   supabase: Awaited<ReturnType<typeof createClient>>,
   urls: string[],
   excludePostId: string,
+  orgId: string,
 ): Promise<string[]> {
-  const clean = urls.filter(Boolean);
+  // Only this workspace's own files are ever deletable: the caller deletes with
+  // the service role, and a post's media URL is caller-supplied, so a URL naming
+  // another workspace's folder must never turn into a path here.
+  const clean = urls.filter((u) => Boolean(u) && ownStoragePath(u, orgId) !== null);
   if (clean.length === 0) return [];
   const { data } = await supabase
     .from("media")
@@ -101,11 +106,9 @@ async function orphanedStoragePaths(
     .in("storage_url", clean)
     .neq("post_id", excludePostId);
   const stillUsed = new Set((data ?? []).map((m) => m.storage_url));
-  return clean
-    .filter((u) => !stillUsed.has(u))
-    .map((u) => u.split("/post-media/")[1])
-    .filter(Boolean) as string[];
+  return clean.filter((u) => !stillUsed.has(u)).map((u) => ownStoragePath(u, orgId)!);
 }
+
 
 /** Parse the composer's `thread` JSON field into non-empty, trimmed tweet segments. */
 function parseThread(formData: FormData): string[] {
@@ -442,7 +445,7 @@ export async function updatePost(formData: FormData) {
     .map((m) => m.storage_url)
     .filter((u) => u && !keptUrls.has(u)) as string[];
   // Only delete files no other post (e.g. a repeat occurrence) still references.
-  const removedPaths = await orphanedStoragePaths(supabase, removedUrls, postId);
+  const removedPaths = await orphanedStoragePaths(supabase, removedUrls, postId, orgId);
   if (removedPaths.length > 0) {
     await createAdminClient().storage.from("post-media").remove(removedPaths);
   }
@@ -676,6 +679,7 @@ export async function deletePost(formData: FormData) {
     supabase,
     (media ?? []).map((m) => m.storage_url).filter(Boolean) as string[],
     postId,
+    orgId,
   );
   if (paths.length > 0) {
     await createAdminClient().storage.from("post-media").remove(paths);
