@@ -99,19 +99,6 @@ function previewVars(platform: string, mode: "light" | "dark"): React.CSSPropert
   return (PREVIEW_PALETTES[platform] ?? PREVIEW_PALETTES.default)[mode] as React.CSSProperties;
 }
 
-// Shared glassy panel with the three Postbase brand colours washing across it,
-// reused by the composer's modals for a consistent, on-brand look.
-const BRAND_GLASS_PANEL: { panelClassName: string; panelStyle: React.CSSProperties } = {
-  panelClassName:
-    "border border-white/15 bg-surface/75 p-6 shadow-[0_28px_80px_-24px_rgba(16,24,40,0.7)] backdrop-blur-2xl",
-  panelStyle: {
-    backgroundImage: [
-      "radial-gradient(120% 90% at 0% 0%, #2b59d93d, transparent 55%)", // brand blue
-      "radial-gradient(110% 80% at 100% 4%, #e3a72c2e, transparent 52%)", // amber
-      "radial-gradient(120% 85% at 100% 100%, #d14a3e29, transparent 55%)", // terracotta
-    ].join(","),
-  },
-};
 
 // Compact relative time for the "Load draft" list (mirrors the drafts page).
 function draftTimeAgo(iso: string | null): string {
@@ -499,7 +486,7 @@ export function PostForm({
       if (!genPrompt.trim()) return;
       setGenBusy(true);
       setGenError(null);
-      setGenStage("Generating…");
+      setGenStage("Generating your image");
       try {
         const res = await generateAiImage(genPrompt, genAspect);
         // Charged either way, so the allowance counts it even if stopped.
@@ -525,7 +512,7 @@ export function PostForm({
     if (!genPrompt.trim() && !useImg) return;
     setGenBusy(true);
     setGenError(null);
-    setGenStage("Starting…");
+    setGenStage("Starting");
     try {
       const started = await startAiVideo(genPrompt, genAspect, useImg);
       if (started.ok) setAiLeft((l) => (l ? { ...l, video: Math.max(0, l.video - 1) } : l));
@@ -534,7 +521,7 @@ export function PostForm({
         setGenError(started.error);
         return;
       }
-      setGenStage("Generating video… this can take a minute");
+      setGenStage("Generating your video");
       const deadline = Date.now() + 5 * 60 * 1000;
       while (Date.now() < deadline) {
         await new Promise((r) => setTimeout(r, 3000));
@@ -1209,184 +1196,207 @@ export function PostForm({
         onClose={closeGen}
         labelledBy="gen-title"
         size="lg"
-        {...BRAND_GLASS_PANEL}
+        panelClassName="rounded-[22px] border border-line bg-surface p-2 shadow-lg"
       >
-        <div className="flex items-center gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center text-blue-ink" aria-hidden>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />
-            </svg>
-          </span>
-          <h3 id="gen-title" className="font-display text-xl font-semibold tracking-[-0.01em]">
-            Generate {genMode === "video" ? "a video" : "an image"}
-          </h3>
-        </div>
-
-        {genBusy ? (
-          <div className="mt-2">
-            {genPrompt.trim() ? (
-              <p className="line-clamp-2 text-sm italic text-muted">“{genPrompt.trim()}”</p>
-            ) : (
-              <p className="text-sm text-muted">Animating your uploaded image…</p>
-            )}
-            <p className="mt-1 text-xs text-muted">
-              {genMode === "video"
-                ? "This usually takes a minute or two — hang tight."
-                : "This usually takes a few seconds — hang tight."}
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* image / video mode */}
-            <div className="mt-3 inline-flex rounded-lg border border-line p-0.5 text-xs font-semibold">
-              {(["image", "video"] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => {
-                    setGenMode(m);
-                    setGenError(null);
-                    if (m === "video") setGenAspect("9:16");
-                  }}
-                  className={`rounded-md px-3 py-1.5 capitalize transition ${
-                    genMode === m ? "bg-blue-soft text-blue-ink" : "text-muted hover:text-ink"
-                  }`}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
-
-            <p className="mt-2 text-sm text-muted">
-              {genMode === "video"
-                ? "Describe the clip — we’ll generate a short video and add it to your post."
-                : "Describe what you want — we’ll create it and add it to your post."}
-            </p>
-
-            {aiLeft ? (
-              <p className={`mt-1 text-xs ${aiLeft[genMode] <= 0 ? "font-medium text-[#d14a3e]" : "text-muted"}`}>
-                {aiLeft[genMode] <= 0
-                  ? `No AI ${genMode}s left this month — upgrade your plan for more.`
-                  : `${aiLeft[genMode]} ${genMode}${aiLeft[genMode] === 1 ? "" : "s"} left this month`}
-              </p>
-            ) : null}
-
-            {genMode === "video" && firstImage ? (
-              <label className="mt-3 flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={genUseImage}
-                  onChange={(e) => setGenUseImage(e.target.checked)}
-                  style={{ accentColor: "var(--blue)" }}
-                  className="size-4"
+        {(() => {
+          const left = aiLeft ? aiLeft[genMode] : null;
+          const outOfAllowance = left != null && left <= 0;
+          const kind = genMode === "video" ? "video" : "image";
+          const canRun = genMode === "image" ? !!genPrompt.trim() : !!genPrompt.trim() || (genUseImage && !!firstImage);
+          return (
+            <>
+              {/* Zone 1: what this makes, and how many are left */}
+              <div className="relative isolate overflow-hidden rounded-2xl border border-line bg-surface-2 p-5">
+                <LogoMark
+                  color="currentColor"
+                  className="pointer-events-none absolute right-24 top-0 -z-10 w-[88px] text-ink opacity-[0.05]"
                 />
-                <span className="text-ink">Animate my uploaded image</span>
-              </label>
-            ) : null}
-          </>
-        )}
-
-        {genBusy ? (
-          <div className="mt-4 flex justify-center">
-            {/* A "developing" frame in the chosen aspect ratio: a slow rotating
-                Postbase-colour aurora behind a pulsing sparkle. */}
-            <div
-              className="relative flex items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[#0d0f16]"
-              style={{ height: 240, aspectRatio: genAspect.replace(":", " / "), maxWidth: "100%" }}
-            >
-              <div
-                className="absolute -inset-1/2 animate-[spin_7s_linear_infinite] opacity-80 blur-2xl"
-                style={{ backgroundImage: "conic-gradient(from 0deg, #2b59d9, #e3a72c, #d14a3e, #2b59d9)" }}
-                aria-hidden
-              />
-              <div className="absolute inset-0 bg-[#0d0f16]/55" aria-hidden />
-              <div className="relative flex flex-col items-center gap-3 px-5 text-center text-white">
-                <svg className="animate-pulse" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />
-                </svg>
-                <p className="text-xs font-medium text-white/90">{genStage ?? "Generating…"}</p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <>
-            <textarea aria-label={genMode === "video" ? "Describe the video" : "Describe the image"}
-              value={genPrompt}
-              onChange={(e) => setGenPrompt(e.target.value)}
-              rows={3}
-              placeholder={
-                genMode === "video"
-                  ? "e.g. slow push-in on a coffee cup, steam rising, warm morning light"
-                  : "e.g. a minimalist product shot of a phone on a pastel gradient, soft studio light"
-              }
-              className="mt-4 w-full resize-none rounded-xl border border-line bg-ground p-3 text-sm outline-none focus:border-blue"
-            />
-
-            <div className="mt-3">
-              <span className="text-xs font-medium text-muted">Aspect ratio</span>
-              <div className="mt-1.5 flex flex-wrap gap-1.5">
-                {ASPECT_RATIOS.map((a) => (
+                <div className="flex items-start gap-3">
+                  <div className="min-w-0">
+                    <h3 id="gen-title" className="font-display text-[20px] font-semibold tracking-[-0.02em] text-ink">
+                      Generate with AI
+                    </h3>
+                    <p className="mt-0.5 text-[13px] text-muted">
+                      {genMode === "video"
+                        ? "A short clip from your description, added to this post."
+                        : "An image from your description, added to this post."}
+                    </p>
+                  </div>
                   <button
-                    key={a.value}
                     type="button"
-                    onClick={() => setGenAspect(a.value)}
-                    className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition ${
-                      genAspect === a.value
-                        ? "border-blue bg-blue-soft text-blue-ink"
-                        : "border-line text-muted hover:bg-surface-2 hover:text-ink"
-                    }`}
+                    onClick={closeGen}
+                    aria-label={genBusy ? "Stop and close" : "Close"}
+                    className="ml-auto grid size-8 shrink-0 place-items-center rounded-full border border-line bg-surface text-muted transition-colors hover:text-ink"
                   >
-                    {a.label}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+                      <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
                   </button>
-                ))}
+                </div>
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <div className="inline-flex rounded-xl border border-line bg-surface p-1" role="group" aria-label="What to generate">
+                    {(["image", "video"] as const).map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        disabled={genBusy}
+                        aria-pressed={genMode === m}
+                        onClick={() => {
+                          setGenMode(m);
+                          setGenError(null);
+                          if (m === "video") setGenAspect("9:16");
+                        }}
+                        className={`rounded-lg px-3.5 py-1.5 text-[13px] font-semibold capitalize transition-colors disabled:cursor-not-allowed ${
+                          genMode === m ? "bg-[#2b59d9] text-white" : "text-muted hover:text-ink"
+                        }`}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                  {left != null ? (
+                    <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-[12px] font-semibold text-ink">
+                      <span className="size-2 rounded-full" style={{ background: outOfAllowance ? "#d14a3e" : "var(--green)" }} aria-hidden />
+                      {outOfAllowance ? `No ${kind}s left this month` : `${left} ${kind}${left === 1 ? "" : "s"} left this month`}
+                    </span>
+                  ) : null}
+                </div>
               </div>
-            </div>
-          </>
-        )}
-        {genError ? <p className="mt-3 text-xs text-[#d14a3e]">{genError}</p> : null}
 
-        <div className="mt-5 flex items-center justify-end gap-3">
-          <button type="button" onClick={closeGen} className="text-sm font-medium text-muted hover:text-ink">
-            {genBusy ? "Stop" : "Cancel"}
-          </button>
-          {aiLeft && aiLeft[genMode] <= 0 ? (
-            <Link
-              href="/billing"
-              onClick={closeGen}
-              className="inline-flex items-center gap-1.5 rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
-            >
-              Upgrade plan
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M5 12h14M13 6l6 6-6 6" />
-              </svg>
-            </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={runGenerate}
-              disabled={
-                genBusy ||
-                (genMode === "image"
-                  ? !genPrompt.trim()
-                  : !genPrompt.trim() && !(genUseImage && firstImage))
-              }
-              className="inline-flex items-center gap-2 rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {genBusy ? (
-                <>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="animate-spin" aria-hidden>
-                    <path d="M21 12a9 9 0 1 1-6.2-8.5" />
-                  </svg>
-                  Generating…
-                </>
-              ) : genMode === "video" ? (
-                "Generate video"
-              ) : (
-                "Generate image"
-              )}
-            </button>
-          )}
-        </div>
+              {/* Zone 2: the prompt, or the one being made */}
+              <div className="px-3 pb-1 pt-4">
+                {genBusy ? (
+                  <div className="flex flex-col items-center">
+                    <div
+                      className="relative flex max-w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border border-line bg-surface-2 px-5 text-center"
+                      style={{ height: 220, aspectRatio: genAspect.replace(":", " / ") }}
+                    >
+                      <svg className="animate-pulse text-[#2b59d9]" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />
+                      </svg>
+                      <p className="text-[12px] font-medium text-ink" role="status">{genStage ?? "Generating"}</p>
+                      <span className="absolute inset-x-0 bottom-0 h-1 overflow-hidden bg-line" aria-hidden>
+                        <span className="block h-full w-1/3 animate-[gen-slide_1.4s_ease-in-out_infinite] rounded-full bg-[#2b59d9]" />
+                      </span>
+                    </div>
+                    <p className="mt-3 line-clamp-2 max-w-[46ch] text-center text-[13px] text-muted">
+                      {genPrompt.trim() ? `“${genPrompt.trim()}”` : "Animating your uploaded image"}
+                    </p>
+                    <p className="mt-1 text-[12px] text-muted">
+                      {genMode === "video" ? "Videos usually take a minute or two." : "Images usually take a few seconds."}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <label htmlFor="gen-prompt" className="text-[12px] font-semibold text-muted">
+                      Describe the {kind}
+                    </label>
+                    <textarea
+                      id="gen-prompt"
+                      value={genPrompt}
+                      onChange={(e) => setGenPrompt(e.target.value)}
+                      rows={3}
+                      placeholder={
+                        genMode === "video"
+                          ? "Slow push-in on a coffee cup, steam rising, warm morning light"
+                          : "A minimal product shot of a phone on a pastel background, soft studio light"
+                      }
+                      className="mt-1.5 w-full resize-none rounded-xl border border-line bg-ground p-3 text-sm text-ink outline-none placeholder:text-muted focus:border-[#2b59d9]"
+                    />
+
+                    {genMode === "video" && firstImage ? (
+                      <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-xl border border-line p-2.5 text-[13px]">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={firstImage.url} alt="" className="size-9 shrink-0 rounded-lg object-cover" />
+                        <span className="flex-1">
+                          <span className="block font-semibold text-ink">Animate your uploaded image</span>
+                          <span className="block text-[12px] text-muted">The video starts from the first image in this post.</span>
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={genUseImage}
+                          onChange={(e) => setGenUseImage(e.target.checked)}
+                          style={{ accentColor: "#2b59d9" }}
+                          className="size-4 shrink-0"
+                        />
+                      </label>
+                    ) : null}
+
+                    <p className="mt-4 text-[12px] font-semibold text-muted">Shape</p>
+                    <div className="mt-1.5 grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-label="Aspect ratio">
+                      {ASPECT_RATIOS.map((a) => {
+                        const [w, h] = a.value.split(":").map(Number);
+                        const on = genAspect === a.value;
+                        const scale = 22 / Math.max(w, h);
+                        return (
+                          <button
+                            key={a.value}
+                            type="button"
+                            aria-pressed={on}
+                            onClick={() => setGenAspect(a.value)}
+                            className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-colors ${
+                              on ? "border-[#2b59d9] bg-surface" : "border-line hover:border-muted/60"
+                            }`}
+                          >
+                            <span className="grid size-6 shrink-0 place-items-center" aria-hidden>
+                              <span
+                                className={`block rounded-[3px] ${on ? "bg-[#2b59d9]" : "border-[1.5px] border-muted"}`}
+                                style={{ width: w * scale, height: h * scale }}
+                              />
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block text-[13px] font-semibold text-ink">{a.value}</span>
+                              <span className="block text-[11px] capitalize text-muted">{a.label.split("· ")[1]}</span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+                {genError ? <p className="mt-3 text-[13px] font-medium text-[#d14a3e]">{genError}</p> : null}
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-line px-3 pb-1.5 pt-3">
+                {outOfAllowance && !genBusy ? (
+                  <span className="text-[12px] text-muted">Upgrade for a bigger monthly allowance.</span>
+                ) : null}
+                <div className="ml-auto flex items-center gap-3">
+                  <button type="button" onClick={closeGen} className="text-[13px] font-semibold text-muted hover:text-ink">
+                    {genBusy ? "Stop" : "Cancel"}
+                  </button>
+                  {outOfAllowance && !genBusy ? (
+                    <Link
+                      href="/billing"
+                      onClick={closeGen}
+                      className="rounded-full bg-[#2b59d9] px-5 py-2 font-display text-sm font-semibold text-white shadow-sm transition-shadow hover:shadow-md"
+                    >
+                      Upgrade plan
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={runGenerate}
+                      disabled={genBusy || !canRun}
+                      className="inline-flex items-center gap-2 rounded-full bg-[#2b59d9] px-5 py-2 font-display text-sm font-semibold text-white shadow-sm transition-shadow hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {genBusy ? (
+                        <>
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="animate-spin" aria-hidden>
+                            <path d="M21 12a9 9 0 1 1-6.2-8.5" />
+                          </svg>
+                          Generating
+                        </>
+                      ) : (
+                        `Generate ${kind}`
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </>
+          );
+        })()}
       </Modal>
 
       <Modal

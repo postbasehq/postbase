@@ -2,8 +2,8 @@ import type { CSSProperties } from "react";
 
 /**
  * The Postbase "brand glass" surface — a frosted, translucent panel with the
- * three brand colours (blue, amber, terracotta) washing across it. Mirrors the
- * composer's BRAND_GLASS_PANEL so glassy surfaces look the same app-wide.
+ * three brand colours (blue, amber, terracotta) washing across it. (The
+ * composer's dialogs no longer use it: they're solid two-zone cards.)
  * Spread `style` and append `className` onto a rounded container.
  */
 export const BRAND_GLASS: { className: string; style: CSSProperties } = {

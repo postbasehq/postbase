@@ -667,3 +667,19 @@ body {
     animation: none;
   }
 }
+
+/* The AI generate dialog's progress bar: a solid segment sweeping across. */
+@keyframes gen-slide {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-\[gen-slide_1\.4s_ease-in-out_infinite\] {
+    animation: none;
+    transform: translateX(100%);
+  }
+}
