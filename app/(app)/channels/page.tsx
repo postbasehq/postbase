@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { canManageOrg, getOrgRole, scopeOrgId } from "@/lib/org";
+import { canManageOrg, getOrgRole, scopeOrgId, getSessionUser } from "@/lib/org";
 import { cookies } from "next/headers";
 import { cancelMetaPick, connectMetaAccounts, disconnectChannel } from "../actions";
 import { MetaAccountPicker } from "@/components/MetaAccountPicker";
@@ -72,26 +72,54 @@ export default async function ChannelsPage({
   let error = rest.error;
   const supabase = await createClient();
   const orgId = await scopeOrgId();
-  const canManage = canManageOrg(await getOrgRole(orgId));
 
   // Back from Facebook with several accounts to choose from.
-  let picker: { platform: MetaPlatform; options: MetaOption[] } | null = null;
-  if (pick === "instagram" || pick === "facebook") {
+  const loadPicker = async (): Promise<{
+    picker: { platform: MetaPlatform; options: MetaOption[] } | null;
+    pickError?: string;
+  }> => {
+    if (pick !== "instagram" && pick !== "facebook") return { picker: null };
     const parked = openPick((await cookies()).get(PICK_COOKIE)?.value, orgId);
-    if (!parked || parked.platform !== pick) error ??= "pick_expired";
-    else {
-      try {
-        picker = { platform: pick, options: await listMetaOptions(supabase, orgId, pick, parked.userToken) };
-      } catch {
-        error ??= pick === "instagram" ? "ig_connect_failed" : "fb_connect_failed";
-      }
+    if (!parked || parked.platform !== pick) return { picker: null, pickError: "pick_expired" };
+    try {
+      return { picker: { platform: pick, options: await listMetaOptions(supabase, orgId, pick, parked.userToken) } };
+    } catch {
+      return { picker: null, pickError: pick === "instagram" ? "ig_connect_failed" : "fb_connect_failed" };
     }
-  }
-  const { data: channels } = await supabase
-    .from("channels")
-    .select("id, platform, handle, status, status_error, reconnect_by, display_name, avatar_url, verified")
-    .eq("org_id", orgId)
-    .order("created_at", { ascending: true });
+  };
+  // The channels, then the scheduled posts held up by each broken one, so the
+  // prompt can say so (needs the channel ids first).
+  const loadChannels = async () => {
+    const { data: channels } = await supabase
+      .from("channels")
+      .select("id, platform, handle, status, status_error, reconnect_by, display_name, avatar_url, verified")
+      .eq("org_id", orgId)
+      .order("created_at", { ascending: true });
+    const broken = (channels ?? []).filter((c) => channelHealth(c) !== "ok").map((c) => c.id);
+    const waiting: Record<string, number> = {};
+    if (broken.length > 0) {
+      const { data: pending } = await supabase
+        .from("post_targets")
+        .select("channel_id")
+        .in("channel_id", broken)
+        .in("status", ["scheduled", "failed"]);
+      for (const t of pending ?? []) waiting[t.channel_id] = (waiting[t.channel_id] ?? 0) + 1;
+    }
+    return { channels, waiting };
+  };
+
+  // Everything at once: each is a round trip to the database.
+  // Platforms still in app review: who's asked to hear when they open, and
+  // whether this user is a Meta app tester allowed to connect early.
+  const [role, { picker, pickError }, { channels, waiting }, user, { data: waitlistRows }] = await Promise.all([
+    getOrgRole(orgId),
+    loadPicker(),
+    loadChannels(),
+    getSessionUser(),
+    supabase.from("platform_waitlist").select("platform"),
+  ]);
+  const canManage = canManageOrg(role);
+  error ??= pickError;
 
   // Group connected accounts by platform for the board.
   const accountsByPlatform: Record<
@@ -109,18 +137,6 @@ export default async function ChannelsPage({
       waiting: number;
     }[]
   > = {};
-
-  // Scheduled posts held up by each broken channel, so the prompt can say so.
-  const broken = (channels ?? []).filter((c) => channelHealth(c) !== "ok").map((c) => c.id);
-  const waiting: Record<string, number> = {};
-  if (broken.length > 0) {
-    const { data: pending } = await supabase
-      .from("post_targets")
-      .select("channel_id")
-      .in("channel_id", broken)
-      .in("status", ["scheduled", "failed"]);
-    for (const t of pending ?? []) waiting[t.channel_id] = (waiting[t.channel_id] ?? 0) + 1;
-  }
   for (const c of channels ?? []) {
     (accountsByPlatform[c.platform] ??= []).push({
       id: c.id,
@@ -136,13 +152,6 @@ export default async function ChannelsPage({
     });
   }
   const connectedCount = channels?.length ?? 0;
-
-  // Platforms still in app review: who's asked to hear when they open, and
-  // whether this user is a Meta app tester allowed to connect early.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const { data: waitlistRows } = await supabase.from("platform_waitlist").select("platform");
   const waitlisted = (waitlistRows ?? []).map((r) => r.platform as string);
   const earlyAccess = hasEarlyAccess(user?.email);
 

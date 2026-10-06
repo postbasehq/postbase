@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -67,7 +68,9 @@ export type BillingGroup = {
   linked: boolean;
 };
 
-export async function billingGroup(orgId: string): Promise<BillingGroup> {
+// Once per page render (the layout and page both ask, several times over); no
+// memoizing in server actions, webhooks or the publisher, which read fresh.
+export const billingGroup = cache(async (orgId: string): Promise<BillingGroup> => {
   const db = createAdminClient();
   // Query errors throw rather than reading as "trial, no access": a database
   // blip must never look like a lapsed plan (the publisher would fail every
@@ -104,7 +107,7 @@ export async function billingGroup(orgId: string): Promise<BillingGroup> {
     comped,
     linked: rootId !== orgId,
   };
-}
+});
 
 /** The plan's access row for a workspace: its own, or its billing workspace's. */
 export async function accessRowFor(orgId: string): Promise<OrgAccessRow> {

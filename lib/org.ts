@@ -1,4 +1,6 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
+import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -10,25 +12,41 @@ export const ACTIVE_ORG_COOKIE = "active_org";
 
 export type UserOrg = { id: string; name: string; role: string };
 
-async function userId(): Promise<string | null> {
+/*
+ * Request-scoped lookups. The layout and the page each ask who's signed in and
+ * which workspace is active, often several times; each ask was a round trip to
+ * Supabase. React's cache() runs them once per page render (it doesn't memoize
+ * in server actions or background jobs, which always read fresh).
+ */
+
+/** The signed-in user (auth.getUser verifies the session with Supabase Auth). */
+export const getSessionUser = cache(async (): Promise<User | null> => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  return user?.id ?? null;
+  return user;
+});
+
+async function userId(): Promise<string | null> {
+  return (await getSessionUser())?.id ?? null;
 }
 
-/** The current user's active org id — the cookie if they're a member, else owned/first. */
-export async function getCurrentOrgId(): Promise<string | null> {
+type Membership = { org_id: string; role: string; orgs: { id: string; name: string } | null };
+
+/** The user's workspace memberships, read once per render. */
+const memberships = cache(async (uid: string): Promise<Membership[]> => {
   const supabase = await createClient();
+  const { data } = await supabase.from("org_members").select("org_id, role, orgs(id, name)").eq("user_id", uid);
+  return (data ?? []) as unknown as Membership[];
+});
+
+/** The current user's active org id — the cookie if they're a member, else owned/first. */
+export const getCurrentOrgId = cache(async (): Promise<string | null> => {
   const uid = await userId();
   if (!uid) return null;
 
-  const { data: memberships } = await supabase
-    .from("org_members")
-    .select("org_id, role")
-    .eq("user_id", uid);
-  const mems = memberships ?? [];
+  const mems = await memberships(uid);
   if (mems.length === 0) return null;
 
   const jar = await cookies();
@@ -37,34 +55,22 @@ export async function getCurrentOrgId(): Promise<string | null> {
 
   const owned = mems.find((m) => m.role === "owner");
   return (owned ?? mems[0]).org_id;
-}
+});
 
 /** All orgs the current user belongs to, with their role (for the org switcher). */
-export async function getUserOrgs(): Promise<UserOrg[]> {
-  const supabase = await createClient();
+export const getUserOrgs = cache(async (): Promise<UserOrg[]> => {
   const uid = await userId();
   if (!uid) return [];
-  const { data } = await supabase
-    .from("org_members")
-    .select("role, orgs(id, name)")
-    .eq("user_id", uid);
-  return ((data ?? []) as unknown as { role: string; orgs: { id: string; name: string } | null }[])
+  return (await memberships(uid))
     .filter((m) => m.orgs)
     .map((m) => ({ id: m.orgs!.id, name: m.orgs!.name, role: m.role }));
-}
+});
 
 /** The current user's role in a given org (owner | admin | member), or null. */
 export async function getOrgRole(orgId: string): Promise<string | null> {
-  const supabase = await createClient();
   const uid = await userId();
   if (!uid) return null;
-  const { data } = await supabase
-    .from("org_members")
-    .select("role")
-    .eq("org_id", orgId)
-    .eq("user_id", uid)
-    .maybeSingle();
-  return data?.role ?? null;
+  return (await memberships(uid)).find((m) => m.org_id === orgId)?.role ?? null;
 }
 
 /** Owners and admins manage billing, channels and the team; members create and schedule. */

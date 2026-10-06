@@ -108,43 +108,51 @@ export default async function QueuePage({
   const requested = Math.max(1, Number(pageParam) || 1);
   const from = (requested - 1) * PAGE_SIZE;
 
-  // Channels connected in this org — populate the channel dropdown.
   const orgId = await scopeOrgId();
-  const { data: orgChannels } = await supabase
-    .from("channels")
-    .select("platform")
-    .eq("org_id", orgId)
-    .order("created_at", { ascending: true });
+
+  // The page of posts. The channel filter limits to posts that target a channel
+  // on the chosen platform (kept separate so the row still shows all of a
+  // post's channels), so its post ids are looked up first.
+  const loadPosts = async () => {
+    let channelPostIds: string[] | null = null;
+    if (channel) {
+      const { data: ct } = await supabase
+        .from("post_targets")
+        .select("post_id, channels!inner(platform, org_id)")
+        .eq("channels.org_id", orgId)
+        .eq("channels.platform", channel);
+      channelPostIds = Array.from(new Set((ct ?? []).map((r) => r.post_id)));
+    }
+
+    let query = supabase
+      .from("posts")
+      .select(
+        "id, body, thread_tail, scheduled_at, status, repeat_every, media(storage_url, type), post_targets(id, status, error, attempts, next_attempt_at, platform_post_id, thread_ids, metrics, metrics_updated_at, channels(platform, handle))",
+        { count: "exact" },
+      )
+      .eq("org_id", orgId)
+      .order("scheduled_at", { ascending: true, nullsFirst: false });
+    if (status !== "all") query = query.eq("status", status);
+    if (q) query = query.ilike("body", `%${q}%`);
+    if (channelPostIds !== null) {
+      query = query.in("id", channelPostIds.length ? channelPostIds : [NO_MATCH]);
+    }
+    return query.range(from, from + PAGE_SIZE - 1);
+  };
+
+  // Everything at once: each is a round trip to the database.
+  const [{ data: orgChannels }, { data: posts, count }] = await Promise.all([
+    // Channels connected in this org — populate the channel dropdown.
+    supabase
+      .from("channels")
+      .select("platform")
+      .eq("org_id", orgId)
+      .order("created_at", { ascending: true }),
+    loadPosts(),
+  ]);
   const channelOptions = Array.from(
     new Set((orgChannels ?? []).map((c) => c.platform)),
   ).map((p) => ({ value: p, label: PLATFORM_LABEL[p] ?? p }));
-
-  // Channel filter: limit to posts that target a channel on the chosen platform
-  // (kept separate so the row still shows all of a post's channels).
-  let channelPostIds: string[] | null = null;
-  if (channel) {
-    const { data: ct } = await supabase
-      .from("post_targets")
-      .select("post_id, channels!inner(platform, org_id)")
-      .eq("channels.org_id", orgId)
-      .eq("channels.platform", channel);
-    channelPostIds = Array.from(new Set((ct ?? []).map((r) => r.post_id)));
-  }
-
-  let query = supabase
-    .from("posts")
-    .select(
-      "id, body, thread_tail, scheduled_at, status, repeat_every, media(storage_url, type), post_targets(id, status, error, attempts, next_attempt_at, platform_post_id, thread_ids, metrics, metrics_updated_at, channels(platform, handle))",
-      { count: "exact" },
-    )
-    .eq("org_id", orgId)
-    .order("scheduled_at", { ascending: true, nullsFirst: false });
-  if (status !== "all") query = query.eq("status", status);
-  if (q) query = query.ilike("body", `%${q}%`);
-  if (channelPostIds !== null) {
-    query = query.in("id", channelPostIds.length ? channelPostIds : [NO_MATCH]);
-  }
-  const { data: posts, count } = await query.range(from, from + PAGE_SIZE - 1);
 
   const rows = (posts ?? []) as unknown as PostRow[];
   // Poll quickly while anything on this page is sending, retrying, or due

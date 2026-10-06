@@ -42,7 +42,6 @@ export default async function DraftsPage({
 }) {
   const supabase = await createClient();
   const orgId = await scopeOrgId();
-  const canManage = canManageOrg(await getOrgRole(orgId));
 
   const { page: pageParam, q: qParam } = await searchParams;
   const q = (qParam ?? "").trim();
@@ -56,16 +55,22 @@ export default async function DraftsPage({
     .eq("status", "draft")
     .order("updated_at", { ascending: false });
   if (q) query = query.ilike("body", `%${q}%`);
-  const { data, count } = await query.range(from, from + PAGE_SIZE - 1);
+
+  // Everything at once: each is a round trip to the database.
+  const [role, { data, count }, { data: channels }] = await Promise.all([
+    getOrgRole(orgId),
+    query.range(from, from + PAGE_SIZE - 1),
+    // Connected channels for the "Manage channels" bar under the table.
+    supabase
+      .from("channels")
+      .select("id, platform, handle, status")
+      .eq("org_id", orgId)
+      .order("created_at", { ascending: true }),
+  ]);
+  const canManage = canManageOrg(role);
 
   const rows = (data ?? []) as unknown as Row[];
 
-  // Connected channels for the "Manage channels" bar under the table.
-  const { data: channels } = await supabase
-    .from("channels")
-    .select("id, platform, handle, status")
-    .eq("org_id", orgId)
-    .order("created_at", { ascending: true });
   const accountsByPlatform: Record<
     string,
     { id: string; handle: string | null; status: string }[]

@@ -22,7 +22,7 @@ import { PLANS, WORKSPACE_LIMIT, nextWorkspacePlan } from "@/lib/plans";
 import { trialEligible } from "@/lib/trial";
 import { createClient } from "@/lib/supabase/server";
 import { needsTwoFactor, VERIFY_PATH } from "@/lib/mfa";
-import { getUserOrgs, getCurrentOrgId } from "@/lib/org";
+import { getUserOrgs, getCurrentOrgId, getSessionUser } from "@/lib/org";
 import { setActiveOrg } from "./team-actions";
 
 // The signed-in app is never indexed (robots.txt also disallows these paths).
@@ -39,9 +39,7 @@ export default async function AppLayout({
   let stepUp = false;
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getSessionUser();
     if (!user) redirect("/login");
     email = user.email ?? "";
     const meta = (user.user_metadata ?? {}) as Record<string, unknown>;

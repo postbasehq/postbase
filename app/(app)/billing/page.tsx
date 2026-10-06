@@ -16,16 +16,23 @@ export default async function BillingPage({
 }) {
   const { checkout, plan: chosenPlan, interval, start } = await searchParams;
   const orgId = await getCurrentOrgId();
-  const { plan, active, canManage, card, billedThrough, trialing } = await loadBillingStatus(orgId);
+  // Everything at once: each is a round trip to the database.
+  const [{ plan, active, canManage, card, billedThrough, trialing }, role] = await Promise.all([
+    loadBillingStatus(orgId),
+    orgId ? getOrgRole(orgId) : null,
+  ]);
   // Checkout and the Stripe portal are owner/admin only (enforced in billing-actions).
-  const isManager = orgId ? canManageOrg(await getOrgRole(orgId)) : false;
-  // Promise the free trial only if checkout would really start one (lib/trial.ts).
-  const trial = orgId && !active && isManager ? await trialEligible(orgId) : true;
+  const isManager = orgId ? canManageOrg(role) : false;
+  // These two need the status above, so they follow it (together).
+  const [trial, canSwitch] = await Promise.all([
+    // Promise the free trial only if checkout would really start one (lib/trial.ts).
+    orgId && !active && isManager ? trialEligible(orgId) : true,
+    // Only people in the paying workspace can open its billing.
+    billedThrough ? getOrgRole(billedThrough.id).then(Boolean) : false,
+  ]);
 
   // A workspace covered by another's plan has nothing to buy here: point to the one that pays.
   if (billedThrough) {
-    // Only people in the paying workspace can open its billing.
-    const canSwitch = Boolean(await getOrgRole(billedThrough.id));
     return (
       <div className="pb-16">
         <p className="text-sm text-muted">

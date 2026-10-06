@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getCurrentOrgId, getOrgRole } from "@/lib/org";
+import { getCurrentOrgId, getOrgRole, getSessionUser } from "@/lib/org";
 import { SEAT_LIMIT, type PlanId } from "@/lib/plans";
 import { LogoMark } from "@/components/marketing/Decor";
 import { workspaceInitial, workspaceTile } from "@/lib/workspace-tile";
@@ -24,27 +23,31 @@ const PROVIDER: Record<string, string> = { google: "Google", github: "GitHub", e
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 
 export default async function SettingsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const orgId = await getCurrentOrgId();
-  const role = orgId ? await getOrgRole(orgId) : null;
-  const canManage = role === "owner" || role === "admin";
+  const [user, orgId] = await Promise.all([getSessionUser(), getCurrentOrgId()]);
 
   const db = createAdminClient();
-  const billing = await loadBillingStatus(orgId);
-  const removal = user && orgId ? await planWorkspaceRemoval(user.id, orgId) : null;
-  const [{ data: org }, members, invites, { data: keys }, apps] = orgId
-    ? await Promise.all([
-        db.from("orgs").select("name, created_at, plan").eq("id", orgId).single(),
-        db.from("org_members").select("user_id", { count: "exact", head: true }).eq("org_id", orgId),
-        db.from("org_invites").select("id", { count: "exact", head: true }).eq("org_id", orgId).is("accepted_at", null).gt("expires_at", new Date().toISOString()),
-        // Never select hashed_key.
-        db.from("api_keys").select("id, label, key_hint, last_used_at").eq("org_id", orgId).order("created_at", { ascending: false }),
-        user ? listConnectedApps(user.id) : Promise.resolve([]),
-      ])
-    : [{ data: null }, null, null, { data: [] }, []];
+  const loadOrg = async () =>
+    orgId
+      ? Promise.all([
+          db.from("orgs").select("name, created_at, plan").eq("id", orgId).single(),
+          db.from("org_members").select("user_id", { count: "exact", head: true }).eq("org_id", orgId),
+          db.from("org_invites").select("id", { count: "exact", head: true }).eq("org_id", orgId).is("accepted_at", null).gt("expires_at", new Date().toISOString()),
+          // Never select hashed_key.
+          db.from("api_keys").select("id, label, key_hint, last_used_at").eq("org_id", orgId).order("created_at", { ascending: false }),
+          user ? listConnectedApps(user.id) : Promise.resolve([]),
+        ])
+      : ([{ data: null }, null, null, { data: [] }, []] as const);
+
+  // Everything at once: each is a round trip to the database.
+  const [role, billing, removal, [{ data: org }, members, invites, { data: keys }, apps], deletionPlan, jar] = await Promise.all([
+    orgId ? getOrgRole(orgId) : null,
+    loadBillingStatus(orgId),
+    user && orgId ? planWorkspaceRemoval(user.id, orgId) : null,
+    loadOrg(),
+    user?.email ? planAccountDeletion(user.id) : null,
+    cookies(),
+  ]);
+  const canManage = role === "owner" || role === "admin";
 
   const name = org?.name ?? "My workspace";
   // Seats and plan are shared across every workspace the plan covers.
@@ -64,7 +67,7 @@ export default async function SettingsPage() {
   const keyList = keys ?? [];
   const lastKeyUse = keyList.map((k) => k.last_used_at).filter(Boolean).sort().at(-1) as string | undefined;
   const devices = verifiedTotpFactors(user).map((f) => ({ id: f.id, name: f.friendly_name || "Authenticator app", added: fmtDate(f.created_at) }));
-  const tz = decodeURIComponent((await cookies()).get("pb_tz")?.value ?? "") || "UTC";
+  const tz = decodeURIComponent(jar.get("pb_tz")?.value ?? "") || "UTC";
 
   return (
     <div className="pb-16">
@@ -250,7 +253,7 @@ export default async function SettingsPage() {
               </div>
             }
           >
-            <AccountData email={user.email} plan={await planAccountDeletion(user.id)} />
+            <AccountData email={user.email} plan={deletionPlan!} />
           </Card>
         ) : null}
       </div>

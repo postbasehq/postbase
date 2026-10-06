@@ -1,27 +1,34 @@
 import { createClient } from "@/lib/supabase/server";
-import { canManageOrg, getOrgRole, getUserOrgs, scopeOrgId } from "@/lib/org";
+import { canManageOrg, getOrgRole, getUserOrgs, scopeOrgId, getSessionUser } from "@/lib/org";
 import { DeveloperClient } from "@/components/DeveloperClient";
 import { publicMcpUrl, listConnectedApps } from "@/lib/oauth";
 
 export default async function DevelopersPage() {
   const supabase = await createClient();
   const orgId = await scopeOrgId();
-  // Never select hashed_key.
-  const { data: keys } = await supabase
-    .from("api_keys")
-    .select("id, label, key_hint, created_at, last_used_at, created_by")
-    .eq("org_id", orgId)
-    .order("created_at", { ascending: false });
+  const loadConnectedApps = async () => {
+    const user = await getSessionUser();
+    return user ? (await listConnectedApps(user.id)).filter((a) => a.orgId === orgId) : [];
+  };
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const manager = orgId ? canManageOrg(await getOrgRole(orgId)) : false;
+  // Everything at once: each is a round trip to the database.
+  const [{ data: keys }, user, role, connectedApps, orgs] = await Promise.all([
+    // Never select hashed_key.
+    supabase
+      .from("api_keys")
+      .select("id, label, key_hint, created_at, last_used_at, created_by")
+      .eq("org_id", orgId)
+      .order("created_at", { ascending: false }),
+    getSessionUser(),
+    orgId ? getOrgRole(orgId) : null,
+    loadConnectedApps(),
+    getUserOrgs(),
+  ]);
+
+  const manager = orgId ? canManageOrg(role) : false;
   const rows = (keys ?? []).map(({ created_by, ...k }) => ({ ...k, canManage: manager || (!!user && created_by === user.id) }));
-  const connectedApps = user ? (await listConnectedApps(user.id)).filter((a) => a.orgId === orgId) : [];
 
   // Keys and connections belong to one workspace; say which, since plans cover several.
-  const orgs = await getUserOrgs();
   const workspace = orgs.find((o) => o.id === orgId)?.name ?? "this workspace";
 
   return (
