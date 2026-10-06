@@ -820,15 +820,19 @@ export async function startAiVideo(
   const slot = await reserveAiGeneration(orgId, "video");
   if (!slot.ok) return { ok: false, error: slot.error };
 
+  let statusUrl: string;
   try {
-    const { statusUrl } = await startVideo({ prompt: clean, aspectRatio: ratio, imageUrl });
-    const { error } = await createAdminClient().from("ai_generations").update({ ref: statusUrl }).eq("id", slot.id);
-    if (error) throw new Error("Couldn't track the video job. Try again.");
-    return { ok: true, statusUrl };
+    ({ statusUrl } = await startVideo({ prompt: clean, aspectRatio: ratio, imageUrl }));
   } catch (e) {
+    // Never started, so never charged: give the slot back.
     await releaseAiGeneration(slot.id);
     return { ok: false, error: e instanceof Error ? e.message : "Couldn't start the video." };
   }
+  // Started (and charged) from here on, so the slot stays used even if
+  // tracking the job fails.
+  const { error } = await createAdminClient().from("ai_generations").update({ ref: statusUrl }).eq("id", slot.id);
+  if (error) return { ok: false, error: "The video started but couldn't be tracked. Try again in a moment." };
+  return { ok: true, statusUrl };
 }
 
 /**
