@@ -2,18 +2,24 @@
 
 **The social scheduler even your AI can run.**
 
-Postbase is an open-source, **MCP-native** social media scheduler. Connect your
-channels, compose and schedule posts, and Postbase publishes them across every
-channel on time — from a clean dashboard, or straight from the AI tools you already
-work in.
+[Postbase](https://www.postbase.so) is an open-source, **MCP-native** social media
+scheduler. Connect your channels, compose and schedule posts, and Postbase publishes
+them across every channel on time — from a clean dashboard, or straight from the AI
+tools you already work in.
 
-- **Publishing rail, not a content generator** — it schedules and publishes; it
-  doesn't write your content.
-- **MCP-native** — an AI agent (Claude, Cursor, …) can drive posting through the
-  [`@postbasehq/mcp`](https://github.com/postbasehq/mcp) server.
-- **Self-host free, or use the hosted cloud** — same product either way.
+- **MCP-native** — Claude, ChatGPT, Cursor, Claude Code and other MCP clients can
+  draft and schedule posts through the hosted server at `https://mcp.postbase.so/mcp`
+  (OAuth sign-in) or the [`@postbasehq/mcp`](https://github.com/postbasehq/mcp)
+  npm package (API key). There's a REST API too.
+- **Built-in AI agent** — a chat in the app that drafts posts and schedules them
+  once you confirm.
+- **Self-host free, or use the [hosted cloud](https://www.postbase.so/pricing)** —
+  same product either way.
 
-Channels: **X, Instagram, LinkedIn, TikTok** · YouTube next.
+Channels: **X, LinkedIn, Bluesky, Mastodon, TikTok, YouTube** · Instagram, Facebook
+and Threads coming soon.
+
+Docs: [docs.postbase.so](https://docs.postbase.so/general/introduction)
 
 ## Tech stack
 

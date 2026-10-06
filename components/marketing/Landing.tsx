@@ -78,7 +78,7 @@ const HERO: Record<
   creators: {
     title: (
       <>
-        Write it once.
+        Write it once.{" "}
         <br />
         Post it <Underlined>everywhere</Underlined>.
       </>
@@ -90,7 +90,7 @@ const HERO: Record<
   developers: {
     title: (
       <>
-        Give your agent a<br />
+        Give your agent a <br />
         <Underlined>publish button</Underlined>.
       </>
     ),

@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Sign in",
   description: "Sign in to Postbase, or create an account with Google, GitHub or a magic link. No password needed.",
   ...pageMeta("/login"),
+  robots: { index: false, follow: true },
 };
 
 export default function LoginLayout({ children }: { children: React.ReactNode }) {

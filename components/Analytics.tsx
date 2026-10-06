@@ -17,15 +17,25 @@ export function Analytics() {
   useEffect(() => {
     const c = getConsent();
     setState(c);
-    setOpen(c === null);
     setReady(true);
     const onChange = (e: Event) => setState((e as CustomEvent<Consent>).detail);
     const onOpen = () => setOpen(true);
     window.addEventListener(CONSENT_EVENT, onChange);
     window.addEventListener(OPEN_SETTINGS_EVENT, onOpen);
+    // Ask on the visitor's first interaction rather than on load. Browsers stop
+    // measuring Largest Contentful Paint at that point, so the banner (a bigger
+    // block of text than the hero on phones) can't become the page's LCP.
+    // Nothing loads until they accept either way.
+    const FIRST = ["pointerdown", "keydown", "scroll", "wheel", "touchstart"] as const;
+    const onFirst = () => {
+      setOpen(true);
+      FIRST.forEach((t) => window.removeEventListener(t, onFirst));
+    };
+    if (c === null) FIRST.forEach((t) => window.addEventListener(t, onFirst, { passive: true }));
     return () => {
       window.removeEventListener(CONSENT_EVENT, onChange);
       window.removeEventListener(OPEN_SETTINGS_EVENT, onOpen);
+      FIRST.forEach((t) => window.removeEventListener(t, onFirst));
     };
   }, []);
 

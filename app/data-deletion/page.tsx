@@ -1,5 +1,6 @@
 export const metadata = {
   title: "Data deletion",
+  robots: { index: false, follow: false },
 };
 
 export default async function DataDeletionPage({

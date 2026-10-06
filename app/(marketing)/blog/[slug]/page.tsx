@@ -56,7 +56,7 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
         mainEntityOfPage: `${SITE_URL}${path}`,
         author: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
         publisher: { "@id": `${SITE_URL}/#organization` },
-        image: `${SITE_URL}/opengraph-image`,
+        image: { "@type": "ImageObject", url: `${SITE_URL}${path}/cover.png`, width: 1200, height: 630 },
       },
       {
         "@type": "BreadcrumbList",
