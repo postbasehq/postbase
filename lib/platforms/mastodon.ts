@@ -31,6 +31,49 @@ export function normalizeInstance(url: string): string {
   return u;
 }
 
+/**
+ * Whether a Mastodon server address is safe for our servers to call: https, a
+ * real public hostname, and every address it resolves to public. Mastodon is
+ * federated, so the address is user-supplied: without this a "server" like
+ * metadata.google.internal or 10.0.0.1.nip.io would point our requests inside
+ * the hosting network (SSRF).
+ */
+export async function isPublicInstance(instanceUrl: string): Promise<boolean> {
+  let url: URL;
+  try {
+    url = new URL(normalizeInstance(instanceUrl));
+  } catch {
+    return false;
+  }
+  const host = url.hostname.toLowerCase();
+  if (url.protocol !== "https:" || url.port || url.username || url.password) return false;
+  if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(host) || /\.(internal|local|localhost|lan|home|corp|intranet)$/.test(host)) return false;
+  try {
+    const { lookup } = await import("node:dns/promises");
+    const addrs = await lookup(host, { all: true });
+    return addrs.length > 0 && addrs.every((a) => isPublicIp(a.address));
+  } catch {
+    return false;
+  }
+}
+
+function isPublicIp(ip: string): boolean {
+  if (ip.includes(":")) {
+    const v = ip.toLowerCase();
+    if (v.startsWith("::ffff:")) return isPublicIp(v.slice(7));
+    return !(v === "::1" || v === "::" || /^f[cd]/.test(v) || /^fe[89ab]/.test(v));
+  }
+  const [a, b] = ip.split(".").map(Number);
+  return !(
+    a === 0 || a === 10 || a === 127 || a >= 224 ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    (a === 198 && (b === 18 || b === 19))
+  );
+}
+
 async function api<T>(
   instance: string,
   path: string,
@@ -90,6 +133,7 @@ export async function verifyAccount(
 /** Revoke the access token on its instance (best-effort; needs the app's credentials). */
 export async function revokeAccess(tokens: MastodonTokens): Promise<void> {
   if (!tokens.client_id || !tokens.client_secret) return;
+  if (!(await isPublicInstance(tokens.instance))) return;
   await fetch(`${normalizeInstance(tokens.instance)}/oauth/revoke`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },

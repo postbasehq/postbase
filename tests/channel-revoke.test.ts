@@ -1,4 +1,7 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+// The Mastodon server must resolve to a public address before we call it.
+vi.mock("node:dns/promises", () => ({ lookup: async () => [{ address: "151.101.1.1", family: 4 }] }));
 import { installFakeNet, counted, json } from "./helpers/fake-net";
 import { revokeChannelAccess } from "@/lib/channel-revoke";
 import { encryptJson } from "@/lib/crypto";

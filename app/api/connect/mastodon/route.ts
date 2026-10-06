@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { encryptJson } from "@/lib/crypto";
-import { registerApp, authorizeUrl, normalizeInstance } from "@/lib/platforms/mastodon";
+import { registerApp, authorizeUrl, isPublicInstance, normalizeInstance } from "@/lib/platforms/mastodon";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 const cookieOpts = { httpOnly: true, secure: true, sameSite: "lax" as const, path: "/", maxAge: 600 };
@@ -25,8 +25,9 @@ export async function GET(request: Request) {
   let instance: string;
   try {
     instance = normalizeInstance(instanceInput);
-    // Reject anything that isn't a plausible host.
-    if (!/^https:\/\/[a-z0-9.-]+\.[a-z]{2,}$/i.test(instance)) throw new Error("bad instance");
+    // Reject anything that isn't a public https host (it's user-supplied and
+    // our servers call it).
+    if (!(await isPublicInstance(instance))) throw new Error("bad instance");
   } catch {
     return NextResponse.redirect(`${APP_URL}/channels?error=mt_bad_instance`);
   }

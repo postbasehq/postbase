@@ -39,12 +39,19 @@ export async function GET(request: Request) {
   headers.set("Cache-Control", "public, max-age=3600");
 
   if (type.startsWith("image/") && !TIKTOK_IMAGE_TYPES.has(type)) {
-    // Converting is done in memory: bound it.
+    // Converting is done in memory: bound it (declared size, then while reading).
     if (Number(upstream.headers.get("Content-Length") ?? 0) > MAX_IMAGE_BYTES) {
       return new NextResponse("Too large", { status: 413 });
     }
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    for await (const chunk of upstream.body as unknown as AsyncIterable<Uint8Array>) {
+      size += chunk.byteLength;
+      if (size > MAX_IMAGE_BYTES) return new NextResponse("Too large", { status: 413 });
+      chunks.push(chunk);
+    }
     const sharp = (await import("sharp")).default;
-    const jpeg = await sharp(Buffer.from(await upstream.arrayBuffer()))
+    const jpeg = await sharp(Buffer.concat(chunks), { limitInputPixels: 100_000_000 })
       .flatten({ background: "#ffffff" })
       .jpeg({ quality: 90 })
       .toBuffer();
