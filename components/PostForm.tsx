@@ -288,7 +288,11 @@ export function PostForm({
   const [genStage, setGenStage] = useState<string | null>(null);
   const [genError, setGenError] = useState<string | null>(null);
   const [aiLeft, setAiLeft] = useState(aiRemaining);
-  const genCancelled = useRef(false);
+  // Each generation gets a number; Stop/close (or leaving) bumps it, so an
+  // older run's late result is dropped instead of landing in the post or
+  // ending a newer run.
+  const genRun = useRef(0);
+  useEffect(() => () => void genRun.current++, []);
 
   /* derived */
   const cleanTweets = tweets.map((t) => t.text.trim()).filter(Boolean);
@@ -392,6 +396,13 @@ export function PostForm({
   // TikTokSettings reports its validity while mounted; deselecting TikTok
   // unmounts it, so its last report (maybe "invalid") must not linger.
   const tiktokOk = !tiktokChannel || tiktokValid;
+  // TikTok's settings turning invalid while its tab is hidden (e.g. a video
+  // longer than the account allows) would only show as a dot: bring them up.
+  const prevTiktokOk = useRef(tiktokOk);
+  useEffect(() => {
+    if (prevTiktokOk.current && !tiktokOk) setSettingsTab("tiktok");
+    prevTiktokOk.current = tiktokOk;
+  }, [tiktokOk]);
   // Saving mid-upload would drop the file (it's only attached once it lands).
   const uploading = busy || thumbBusy;
   const canSubmit =
@@ -463,7 +474,7 @@ export function PostForm({
   const firstImage = media.find((m) => m.type.startsWith("image/"));
 
   function closeGen() {
-    genCancelled.current = true;
+    genRun.current++;
     setGenOpen(false);
     setGenPrompt("");
     setGenBusy(false);
@@ -472,6 +483,8 @@ export function PostForm({
 
   async function runGenerate() {
     if (genBusy) return;
+    const run = ++genRun.current;
+    const live = () => genRun.current === run;
     if (genMode === "image") {
       if (!genPrompt.trim()) return;
       setGenBusy(true);
@@ -479,16 +492,20 @@ export function PostForm({
       setGenStage("Generating…");
       try {
         const res = await generateAiImage(genPrompt, genAspect);
+        // Charged either way, so the allowance counts it even if stopped.
+        if (res.ok) setAiLeft((l) => (l ? { ...l, image: Math.max(0, l.image - 1) } : l));
+        if (!live()) return; // stopped: don't add it
         if (res.ok) {
           setMedia((m) => [...m, { url: res.url, type: res.type }]);
-          setAiLeft((l) => (l ? { ...l, image: Math.max(0, l.image - 1) } : l));
           closeGen();
         } else setGenError(res.error);
       } catch {
-        setGenError("Something went wrong generating the image.");
+        if (live()) setGenError("Something went wrong generating the image.");
       } finally {
-        setGenBusy(false);
-        setGenStage(null);
+        if (live()) {
+          setGenBusy(false);
+          setGenStage(null);
+        }
       }
       return;
     }
@@ -499,21 +516,21 @@ export function PostForm({
     setGenBusy(true);
     setGenError(null);
     setGenStage("Starting…");
-    genCancelled.current = false;
     try {
       const started = await startAiVideo(genPrompt, genAspect, useImg);
+      if (started.ok) setAiLeft((l) => (l ? { ...l, video: Math.max(0, l.video - 1) } : l));
+      if (!live()) return;
       if (!started.ok) {
         setGenError(started.error);
         return;
       }
-      setAiLeft((l) => (l ? { ...l, video: Math.max(0, l.video - 1) } : l));
       setGenStage("Generating video… this can take a minute");
       const deadline = Date.now() + 5 * 60 * 1000;
       while (Date.now() < deadline) {
-        if (genCancelled.current) return;
         await new Promise((r) => setTimeout(r, 3000));
-        if (genCancelled.current) return;
+        if (!live()) return;
         const p = await pollAiVideo(started.statusUrl);
+        if (!live()) return;
         if (p.status === "done") {
           setMedia((m) => [...m, { url: p.url, type: p.type }]);
           closeGen();
@@ -526,10 +543,13 @@ export function PostForm({
       }
       setGenError("Video timed out — please try again.");
     } catch {
-      setGenError("Something went wrong generating the video.");
+      if (live()) setGenError("Something went wrong generating the video.");
     } finally {
-      setGenBusy(false);
-      setGenStage(null);
+      // closeGen() already reset these; a stale run must not touch a newer one's.
+      if (live()) {
+        setGenBusy(false);
+        setGenStage(null);
+      }
     }
   }
 
@@ -1132,7 +1152,9 @@ export function PostForm({
             <span className="text-xs text-[#d14a3e]">Pick a channel, or clear the time to save a draft.</span>
           ) : notReady && !isDraft ? (
             <span className="hidden text-xs text-[#d14a3e] sm:inline">
-              Fix the flagged channels, or clear the time to save a draft.
+              {hasBlocking
+                ? "Fix the flagged channels, or clear the time to save a draft."
+                : "Finish the TikTok settings, or clear the time to save a draft."}
             </span>
           ) : null}
           <Link href="/queue" className="text-sm font-medium text-muted hover:text-ink">
