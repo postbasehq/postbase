@@ -121,7 +121,7 @@ export function GlanceTiles({ items }: { items: { label: string; stat: string; v
         const t = TONE[f.tone];
         return (
           <div key={f.label} className="relative isolate flex min-h-[230px] flex-col overflow-hidden rounded-[24px] p-8" style={{ background: t.bg }}>
-            <LogoMark color={t.mark} className="pointer-events-none absolute -bottom-10 -right-10 -z-10 w-[200px] -rotate-12" />
+            <LogoMark color={t.mark} edge="top" className="pointer-events-none absolute right-6 top-0 -z-10 w-[104px]" />
             <span className="self-start rounded-full bg-white px-3 py-1 font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-[#14161a]">
               {f.label}
             </span>
@@ -165,7 +165,7 @@ export function McpFacts({ network, items }: { network: string; items: { label: 
 export function BluePanel({ badge, title, items }: { badge: string; title: string; items: { label?: string; value: string }[] }) {
   return (
     <div className="relative isolate overflow-hidden rounded-[24px] bg-[#2b59d9] p-8 md:p-10">
-      <LogoMark color="#2148b3" className="pointer-events-none absolute -bottom-14 -right-12 -z-10 w-[300px] -rotate-12" />
+      <LogoMark color="#2148b3" edge="top" className="pointer-events-none absolute right-10 top-0 -z-10 w-[150px]" />
       <span className="rounded-full bg-white px-3 py-1 font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-[#14161a]">
         {badge}
       </span>

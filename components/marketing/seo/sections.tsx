@@ -240,7 +240,7 @@ export function Steps({ items }: { items: { title: string; body: string }[] }) {
         const t = STEP_TILES[i % 3];
         return (
           <li key={s.title} className="relative isolate flex min-h-[240px] flex-col overflow-hidden rounded-[24px] p-8" style={{ background: t.bg }}>
-            <LogoMark color={t.mark} className="pointer-events-none absolute -bottom-10 -right-10 -z-10 w-[200px] -rotate-12" />
+            <LogoMark color={t.mark} edge="top" className="pointer-events-none absolute right-6 top-0 -z-10 w-[104px]" />
             <span className="self-start rounded-full bg-white px-3 py-1 font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-[#14161a]">
               Step {i + 1}
             </span>
