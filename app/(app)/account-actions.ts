@@ -8,6 +8,8 @@ import { rateLimit } from "@/lib/rate-limit";
 
 export type DeleteAccountState = { error?: string };
 
+const RECENT_SIGN_IN_MS = 24 * 60 * 60 * 1000;
+
 /**
  * Delete the signed-in account. The person types their email to confirm; the
  * plan (what's deleted, what's left, what blocks it) is recomputed here, never
@@ -23,10 +25,16 @@ export async function deleteMyAccount(_prev: DeleteAccountState, formData: FormD
   const typed = String(formData.get("confirm") ?? "").trim().toLowerCase();
   if (typed !== user.email.toLowerCase()) return { error: "Type your email address exactly to confirm." };
   if (!(await rateLimit(`delete-account:${user.id}`, 60 * 60, 5))) return { error: "Too many attempts. Try again in an hour." };
+  // Re-authentication: a stolen session alone can't delete the account; a
+  // fresh sign-in needs the inbox (or Google/GitHub) as well.
+  const signedIn = user.last_sign_in_at ? Date.parse(user.last_sign_in_at) : 0;
+  if (Date.now() - signedIn > RECENT_SIGN_IN_MS) {
+    return { error: "For your security, sign out and sign back in, then delete your account within 24 hours." };
+  }
 
   let deleted: string[];
   try {
-    const plan = await deleteAccount(user.id);
+    const plan = await deleteAccount(user.id, user.email);
     deleted = plan.purge.map((o) => o.name);
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Couldn't delete the account. Email team@postbase.so and we'll do it for you." };

@@ -18,8 +18,9 @@ import { revokeChannelAccess } from "@/lib/channel-revoke";
  *     R2 media library), its OAuth tokens/codes, then the org row (every
  *     org-scoped table cascades).
  *  3. Left workspaces: membership, OAuth tokens/codes and API keys go.
- *  4. The auth user is deleted (memberships, API keys, sessions cascade;
- *     authorship on shared posts becomes anonymous).
+ *  4. Invites and waitlist rows holding their email go, then the auth user
+ *     (memberships, API keys, sessions cascade; posts they wrote in shared
+ *     workspaces stay with that workspace, with the author removed).
  */
 
 type Db = ReturnType<typeof createAdminClient>;
@@ -156,7 +157,7 @@ async function leaveWorkspace(db: Db, orgId: string, userId: string): Promise<vo
 }
 
 /** Delete the account per the plan. Throws (having changed nothing) if there are blockers. */
-export async function deleteAccount(userId: string): Promise<DeletionPlan> {
+export async function deleteAccount(userId: string, email: string): Promise<DeletionPlan> {
   const plan = await planAccountDeletion(userId);
   if (plan.blockers.length) throw new Error(plan.blockers[0]);
   const db = createAdminClient();
@@ -167,9 +168,16 @@ export async function deleteAccount(userId: string): Promise<DeletionPlan> {
   for (const org of plan.purge) await purgeWorkspace(org.id, { billingCancelled: true });
   for (const org of plan.leave) await leaveWorkspace(db, org.id, userId);
 
-  // Anything left keyed to the user (OAuth has no foreign keys), then the user.
+  // Anything left keyed to the user (OAuth has no foreign keys) or holding
+  // their email (invites to them in other workspaces, waitlist sign-ups made
+  // before signing in), then the user.
   await db.from("oauth_tokens").delete().eq("user_id", userId);
   await db.from("oauth_codes").delete().eq("user_id", userId);
+  // Exact matches only: ilike would treat "_" and "%" in an address as
+  // wildcards and could delete someone else's rows.
+  const addresses = [...new Set([email, email.toLowerCase()])];
+  await db.from("org_invites").delete().in("email", addresses);
+  await db.from("platform_waitlist").delete().in("email", addresses);
   const { error } = await db.auth.admin.deleteUser(userId);
   if (error) throw new Error(`Couldn't delete the account: ${error.message}`);
   return plan;

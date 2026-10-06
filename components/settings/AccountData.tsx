@@ -84,6 +84,10 @@ export function AccountData({
                   ) : null}
                   <li>Revoke Postbase&apos;s access to your social accounts, disconnect your AI apps and delete your API keys.</li>
                   <li>Delete your login. This can&apos;t be undone.</li>
+                  {plan.leave.length ? (
+                    <li>Posts you wrote in shared workspaces stay with those workspaces, no longer linked to you.</li>
+                  ) : null}
+                  <li>Posts that have already gone out stay on the networks; delete them there if you want them gone.</li>
                 </ul>
                 <label className="mt-1 flex flex-col gap-1.5">
                   <span className="text-muted">
