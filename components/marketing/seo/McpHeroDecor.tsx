@@ -147,6 +147,35 @@ function AppTile({ children, dark = false }: { children: React.ReactNode; dark?:
   );
 }
 
+/** Above the /mcp headline: the MCP clients that connect, as app tiles. */
+export function McpClientRow() {
+  const clients = [
+    ["claude", "Claude"],
+    ["chatgpt", "ChatGPT"],
+    ["cursor", "Cursor"],
+    ["vscode", "VS Code"],
+    ["windsurf", "Windsurf"],
+    ["gemini", "Gemini"],
+  ];
+  return (
+    <div className="flex justify-center">
+      <span className="sr-only">Works with {clients.map(([, n]) => n).join(", ")}</span>
+      <span className="flex items-center -space-x-1.5" aria-hidden>
+        {clients.map(([id, name], i) => (
+          <span
+            key={id}
+            title={name}
+            className="rounded-md shadow-[0_8px_20px_-10px_rgba(16,24,40,0.55)] ring-[3px] ring-ground"
+            style={{ transform: `rotate(${i % 2 ? 6 : -6}deg)` }}
+          >
+            <ClientLogo id={id} size={40} />
+          </span>
+        ))}
+      </span>
+    </div>
+  );
+}
+
 export function McpHeroDecor() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 hidden h-[760px] overflow-hidden select-none xl:block">
