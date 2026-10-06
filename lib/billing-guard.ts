@@ -271,7 +271,8 @@ export async function seatUsage(orgId: string): Promise<{ used: number; group: B
   const db = createAdminClient();
   const [{ data: members }, { data: invites }] = await Promise.all([
     db.from("org_members").select("user_id").in("org_id", g.orgIds),
-    db.from("org_invites").select("email").in("org_id", g.orgIds).is("accepted_at", null),
+    // Pending invites hold a seat until they expire.
+    db.from("org_invites").select("email").in("org_id", g.orgIds).is("accepted_at", null).gt("expires_at", new Date().toISOString()),
   ]);
   const users = new Set((members ?? []).map((m) => m.user_id as string));
   const emails = new Set((invites ?? []).map((i) => String(i.email).toLowerCase()));

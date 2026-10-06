@@ -5,7 +5,7 @@ import { PLANS, SEAT_LIMIT, type PlanId } from "@/lib/plans";
 import { seatUsage } from "@/lib/billing-guard";
 import { CopyField } from "@/components/CopyField";
 import { SubmitButton } from "@/components/SubmitButton";
-import { createInvite, revokeInvite, removeMember } from "../team-actions";
+import { createInvite, resendInvite, revokeInvite, removeMember } from "../team-actions";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -43,13 +43,14 @@ export default async function TeamPage() {
   const { data: invites } = orgId
     ? await db
         .from("org_invites")
-        .select("id, email, role, token")
+        .select("id, email, role, token, expires_at")
         .eq("org_id", orgId)
         .is("accepted_at", null)
         .order("created_at", { ascending: true })
     : { data: [] };
 
-  const seatsUsed = seats?.used ?? members.length + (invites?.length ?? 0);
+  const now = Date.now();
+  const seatsUsed = seats?.used ?? members.length + (invites ?? []).filter((i) => Date.parse(i.expires_at) > now).length;
   const atLimit = seatsUsed >= seatLimit;
 
   const card = "overflow-hidden rounded-2xl border border-line bg-surface shadow-sm";
@@ -166,6 +167,22 @@ export default async function TeamPage() {
                 <span className="ml-auto rounded-full border border-line px-2.5 py-1 text-xs font-medium text-muted">
                   {ROLE_LABEL[inv.role] ?? inv.role}
                 </span>
+                {Date.parse(inv.expires_at) <= now ? (
+                  <span className="text-xs font-medium text-[#d14a3e]">Expired</span>
+                ) : (
+                  <span className="text-xs text-muted">
+                    Expires in {Math.max(1, Math.ceil((Date.parse(inv.expires_at) - now) / 86_400_000))}d
+                  </span>
+                )}
+                <form action={resendInvite}>
+                  <input type="hidden" name="invite_id" value={inv.id} />
+                  <SubmitButton
+                    pendingLabel="Sending…"
+                    className="rounded-full border border-line px-2.5 py-1 text-xs font-medium text-muted hover:border-ink hover:text-ink disabled:opacity-50"
+                  >
+                    Resend
+                  </SubmitButton>
+                </form>
                 <form action={revokeInvite}>
                   <input type="hidden" name="invite_id" value={inv.id} />
                   <SubmitButton
@@ -175,11 +192,12 @@ export default async function TeamPage() {
                   </SubmitButton>
                 </form>
               </div>
-              <CopyField value={`${APP_URL}/invite/${inv.token}`} />
+              {Date.parse(inv.expires_at) > now ? <CopyField value={`${APP_URL}/invite/${inv.token}`} /> : null}
             </div>
           ))}
           <p className="px-4 pb-3 text-xs text-muted">
-            Share the link with each teammate — they accept by signing in with the invited email.
+            We email each invite; you can also share the link. Links work for 7 days, and Resend sends a fresh one. They
+            accept by signing in with the invited email.
           </p>
         </div>
       ) : null}

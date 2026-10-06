@@ -15,7 +15,7 @@ export default async function AcceptInvitePage({
   const db = createAdminClient();
   const { data: invite } = await db
     .from("org_invites")
-    .select("id, org_id, email, role, accepted_at, orgs(name)")
+    .select("id, org_id, email, role, accepted_at, expires_at, orgs(name)")
     .eq("token", token)
     .maybeSingle();
 
@@ -49,11 +49,16 @@ export default async function AcceptInvitePage({
   const secondary =
     "mt-7 inline-flex h-12 w-full items-center justify-center rounded-full border border-line bg-surface text-[15px] font-semibold text-ink shadow-sm transition hover:border-ink/30";
 
-  if (!invite || invite.accepted_at) {
+  const expired = Boolean(invite && !invite.accepted_at && Date.parse(invite.expires_at) <= Date.now());
+  if (!invite || invite.accepted_at || expired) {
     return shell(
       <>
-        <h1 className={h1}>This invite isn&apos;t available</h1>
-        <p className={p}>It may have been used already or revoked. Ask whoever invited you to send a new link.</p>
+        <h1 className={h1}>{expired ? "This invite has expired" : "This invite isn\u2019t available"}</h1>
+        <p className={p}>
+          {expired
+            ? `Invite links work for 7 days. Ask whoever invited you to ${orgName} to resend it from their Team page.`
+            : "It may have been used already or revoked. Ask whoever invited you to send a new link."}
+        </p>
         <Link href="/" className={secondary}>
           Go to Postbase
         </Link>

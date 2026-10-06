@@ -207,9 +207,10 @@ export function sendInviteEmail(invite: { id: string; email: string; token: stri
         p(`Sign in with <strong>${esc(invite.email)}</strong> to accept.`, `Sign in with ${invite.email} to accept.`, true),
       ],
       cta: { label: "Accept the invite", url: `${APP_URL}/invite/${encodeURIComponent(invite.token)}` },
-      footnote: "If you weren't expecting this, you can ignore it.",
+      footnote: "The link works for 7 days. If you weren't expecting this, you can ignore it.",
     });
-    await sendEmailOnce(`invite:${invite.id}`, { ...email, to: [invite.email] });
+    // Keyed by the link too, so a re-send (same invite, new link) is emailed.
+    await sendEmailOnce(`invite:${invite.id}:${invite.token.slice(0, 16)}`, { ...email, to: [invite.email] });
   });
 }
 

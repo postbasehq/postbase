@@ -39,7 +39,7 @@ export default async function SettingsPage() {
     ? await Promise.all([
         db.from("orgs").select("name, created_at, plan").eq("id", orgId).single(),
         db.from("org_members").select("user_id", { count: "exact", head: true }).eq("org_id", orgId),
-        db.from("org_invites").select("id", { count: "exact", head: true }).eq("org_id", orgId).is("accepted_at", null),
+        db.from("org_invites").select("id", { count: "exact", head: true }).eq("org_id", orgId).is("accepted_at", null).gt("expires_at", new Date().toISOString()),
         // Never select hashed_key.
         db.from("api_keys").select("id, label, key_hint, last_used_at").eq("org_id", orgId).order("created_at", { ascending: false }),
         user ? listConnectedApps(user.id) : Promise.resolve([]),
