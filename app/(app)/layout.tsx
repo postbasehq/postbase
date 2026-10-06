@@ -18,6 +18,7 @@ import { TimezoneSync } from "@/components/TimezoneSync";
 import { PlanGate } from "@/components/PlanGate";
 import { billingEnforced, billingGroup, orgHasAccess } from "@/lib/billing-guard";
 import { PLANS, WORKSPACE_LIMIT, nextWorkspacePlan } from "@/lib/plans";
+import { trialEligible } from "@/lib/trial";
 import { createClient } from "@/lib/supabase/server";
 import { needsTwoFactor, VERIFY_PATH } from "@/lib/mfa";
 import { getUserOrgs, getCurrentOrgId } from "@/lib/org";
@@ -60,6 +61,7 @@ export default async function AppLayout({
   let notices: Notice[] = [];
   let channelIssues: ChannelIssue[] = [];
   let locked = false;
+  let trial = true;
   let workspaces: WorkspaceAllowance | null = null;
   // Set when this workspace's plan belongs to another workspace, for the no-plan screen.
   let linkedTo: { name: string; canManage: boolean } | null = null;
@@ -108,6 +110,9 @@ export default async function AppLayout({
       active: !locked,
     };
     if (group.linked) linkedTo = { name: group.rootName, canManage: workspaces.canManage };
+    // Only a locked, self-paying workspace sees the "pick a plan" screen; ask
+    // whether its checkout would start a free trial so the screen says so truthfully.
+    if (locked && !group.linked) trial = await trialEligible(group.rootId);
     notices = ((failed ?? []) as unknown as {
       id: string;
       error: string | null;
@@ -199,7 +204,7 @@ export default async function AppLayout({
               </header>
               <main className="min-h-0 flex-1 overflow-y-auto p-4 md:p-6">
                 <div className="mx-auto h-full w-full max-w-[1200px]">
-                  <PlanGate locked={locked} linkedTo={linkedTo}>{children}</PlanGate>
+                  <PlanGate locked={locked} linkedTo={linkedTo} trial={trial}>{children}</PlanGate>
                 </div>
               </main>
             </div>

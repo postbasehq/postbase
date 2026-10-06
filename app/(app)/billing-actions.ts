@@ -8,6 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { canManageOrg, getCurrentOrgId, getOrgRole } from "@/lib/org";
 import { PLANS, planIsActive, priceId, type PlanId } from "@/lib/plans";
 import { billingGroup } from "@/lib/billing-guard";
+import { trialEligible } from "@/lib/trial";
 
 /** Get (or lazily create) the org's Stripe customer. */
 async function ensureCustomer(orgId: string, email: string): Promise<string> {
@@ -75,10 +76,11 @@ export async function startCheckout(formData: FormData) {
     return openPortal();
   }
 
+  // The 7-day trial is once per workspace (lib/trial.ts, the same rule the
+  // billing page uses to promise it), decided before a customer is created.
+  const eligible = await trialEligible(orgId);
   const customer = await ensureCustomer(orgId, user.email);
-  // The 7-day trial is once per workspace: no trial if it has ever subscribed.
-  const previous = await getStripe().subscriptions.list({ customer, status: "all", limit: 1 });
-  const trial = previous.data.length === 0 ? { trial_period_days: 7 } : {};
+  const trial = eligible ? { trial_period_days: 7 } : {};
   // Managed Payments: Stripe is merchant of record (tax/VAT, fraud, disputes).
   // Needs an eligible tax code on each product.
   const params: Stripe.Checkout.SessionCreateParams = {

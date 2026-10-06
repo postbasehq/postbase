@@ -4,6 +4,7 @@ import { CompareTable } from "@/components/marketing/PricingSections";
 import { BillingStatus, ManageButton } from "@/components/BillingStatus";
 import { StartPlanNowButton } from "@/components/StartPlanNowButton";
 import { loadBillingStatus } from "@/lib/billing-status";
+import { trialEligible } from "@/lib/trial";
 import { startCheckout } from "../billing-actions";
 import { setActiveOrg } from "../team-actions";
 import { SubmitButton } from "@/components/SubmitButton";
@@ -18,6 +19,8 @@ export default async function BillingPage({
   const { plan, active, canManage, card, billedThrough, trialing } = await loadBillingStatus(orgId);
   // Checkout and the Stripe portal are owner/admin only (enforced in billing-actions).
   const isManager = orgId ? canManageOrg(await getOrgRole(orgId)) : false;
+  // Promise the free trial only if checkout would really start one (lib/trial.ts).
+  const trial = orgId && !active && isManager ? await trialEligible(orgId) : true;
 
   // A workspace covered by another's plan has nothing to buy here: point to the one that pays.
   if (billedThrough) {
@@ -104,6 +107,7 @@ export default async function BillingPage({
       {isManager ? (
         <div className="mt-8">
           <PlanPicker
+            trial={trial}
             action={startCheckout}
             currentPlan={active ? plan : null}
             chosenPlan={chosenPlan ?? null}

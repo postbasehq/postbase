@@ -30,9 +30,12 @@ const RECOMMENDED = "team";
 export function PlanGate({
   locked,
   linkedTo = null,
+  trial = true,
   children,
 }: {
   locked: boolean;
+  /** Checking out starts the free trial (lib/trial.ts); false once the workspace has had it. */
+  trial?: boolean;
   /** This workspace's plan belongs to another workspace (whose plan has lapsed). */
   linkedTo?: { name: string; canManage: boolean } | null;
   children: React.ReactNode;
@@ -68,11 +71,14 @@ export function PlanGate({
               </>
             ) : (
               <>
-                <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">7 days free</div>
+                <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">
+                  {trial ? "7 days free" : "Pick a plan"}
+                </div>
                 <h2 className="mt-1.5 font-display text-[22px] font-semibold leading-tight tracking-[-0.02em] text-ink">{title}</h2>
                 <p className="mt-2 text-[14px] leading-relaxed text-muted">
-                  Pick a plan to schedule and publish. $0 today, and nothing is charged if you cancel before the trial
-                  ends.
+                  {trial
+                    ? "Pick a plan to schedule and publish. $0 today, and nothing is charged if you cancel before the trial ends."
+                    : "Pick a plan to schedule and publish again. This workspace has already had its free trial, so the plan starts and is charged today. Your drafts and channels are all still here."}
                 </p>
               </>
             )}

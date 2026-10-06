@@ -58,10 +58,17 @@ export function PlanPicker({
   initialInterval = "month",
   chosenPlan,
   showSelfHost = false,
+  trial = true,
 }: {
   action?: (formData: FormData) => Promise<void>;
   currentPlan?: string | null;
   initialInterval?: Interval;
+  /**
+   * Whether checking out starts the free trial (lib/trial.ts). False for a
+   * workspace that has subscribed before: it's charged at checkout, so no
+   * "7 days free" or "$0 today". Marketing pages leave it on (new customers).
+   */
+  trial?: boolean;
   /** Plan picked on the pricing page before sign-in; featured on the billing page. */
   chosenPlan?: string | null;
   /** Marketing pages: add the self-host card under the plans. */
@@ -86,14 +93,22 @@ export function PlanPicker({
               badge={featured ? (chosen ? "Your pick" : "Recommended") : undefined}
               currentPlan={currentPlan}
               action={action}
+              trial={trial}
             />
           );
         })}
       </div>
 
       <p className="text-center text-[13px] text-muted">
-        7-day free trial, card required. Cancel before it ends and you won&apos;t be charged. AI and X-link
-        allowances are trial-sized until your first payment. Prices in US dollars, including any sales tax or VAT.
+        {trial ? (
+          <>
+            7-day free trial, card required. Cancel before it ends and you won&apos;t be charged. AI and X-link
+            allowances are trial-sized until your first payment.
+          </>
+        ) : (
+          <>This workspace has already had its free trial, so your plan starts and is charged today.</>
+        )}{" "}
+        Prices in US dollars, including any sales tax or VAT.
       </p>
 
       {showSelfHost ? <SelfHostCard /> : null}
@@ -161,6 +176,7 @@ export function PlanCard({
   currentPlan,
   action,
   className = "",
+  trial = true,
 }: {
   id: keyof typeof PLANS;
   interval?: Interval;
@@ -170,6 +186,8 @@ export function PlanCard({
   currentPlan?: string | null;
   action?: (formData: FormData) => Promise<void>;
   className?: string;
+  /** Checking out starts the free trial (see PlanPicker). */
+  trial?: boolean;
 }) {
   const p = PLANS[id];
   const y = interval === "year";
@@ -178,7 +196,7 @@ export function PlanCard({
   const isCurrent = currentPlan === id;
   const perMonth = y ? yearly(p.monthly) / 12 : p.monthly;
   const billed = y ? `${money(yearly(p.monthly))} billed yearly · save ${money(p.monthly * 2)}` : "Billed monthly";
-  const cta = isCurrent ? "Current plan" : subscribed ? `Switch to ${p.name}` : "Start 7-day free trial";
+  const cta = isCurrent ? "Current plan" : subscribed ? `Switch to ${p.name}` : trial ? "Start 7-day free trial" : `Start ${p.name}`;
   const buttonCls = `block w-full rounded-full px-4 py-3 text-center font-display text-[14px] font-semibold transition-shadow disabled:cursor-default disabled:opacity-60 ${
     featured
       ? `${accent.fill} shadow-sm hover:shadow-md`
@@ -237,7 +255,7 @@ export function PlanCard({
           )}
           {!subscribed ? (
             <p className="mt-2 text-center text-[12px] text-muted">
-              $0 today, then{" "}
+              {trial ? "$0 today, then " : "Charged today: "}
               {y ? `${money(yearly(p.monthly))}/year` : `${money(p.monthly)}/month`}
             </p>
           ) : null}
