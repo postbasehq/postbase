@@ -9,8 +9,10 @@
  * to be verified in the TikTok app — so photos are served through our own domain
  * (see /api/media/proxy), not the Supabase domain, which can't be verified.
  *
- * The app passed TikTok's Content Posting API audit (Sept 2026), so posts use the
- * visibility the creator picks in the composer (clamped to their creator_info).
+ * App review passed (Sept 2026), but the Direct Post audit is still pending, so
+ * posts are private (SELF_ONLY) until it clears: LIMITED.tiktok in
+ * lib/platforms/availability.ts. After that, posts use the visibility the creator
+ * picks in the composer (clamped to their creator_info).
  *
  * Requires TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET, TIKTOK_CALLBACK_URL.
  * TIKTOK_PRIVACY_LEVEL is an optional hard cap (e.g. SELF_ONLY for a sandbox

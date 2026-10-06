@@ -1,3 +1,5 @@
+import { tiktokCaveat } from "@/lib/platforms/availability";
+
 /*
  * Networks Postbase publishes to. Drives /integrations, /integrations/[slug]
  * and the sitemap. Limits and capabilities mirror the composer
@@ -361,7 +363,7 @@ export const NETWORKS: Network[] = [
       ],
       [
         "Can I choose who sees my TikTok?",
-        "Yes. The TikTok panel shows the privacy options your account allows, plus comment, duet and stitch settings for each post.",
+        tiktokCaveat() ? "Not yet. Until TikTok approves public posting for Postbase, TikTok posts go out as private (only you can see them); you can make them public in the TikTok app. Comment, duet and stitch settings work for each post now." : "Yes. The TikTok panel shows the privacy options your account allows, plus comment, duet and stitch settings for each post.",
       ],
       FREE_TRIAL_FAQ,
     ],

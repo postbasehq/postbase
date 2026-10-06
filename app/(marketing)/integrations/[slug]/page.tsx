@@ -1,3 +1,4 @@
+import { tiktokCaveat } from "@/lib/platforms/availability";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SiteNav } from "@/components/SiteNav";
@@ -39,7 +40,7 @@ export default async function IntegrationPage({ params }: { params: Promise<{ sl
           trail={trail}
           h1={n.h1}
           icons={n.h1Icon ? [{ before: n.h1Icon, brand: n.id }] : []}
-          sub={n.sub}
+          sub={n.id === "tiktok" ? `${n.sub}${tiktokCaveat(" For now posts go out as private, until TikTok approves public posting.")}` : n.sub}
           secondary={{ label: "See pricing", href: "/pricing" }}
           frame={`One draft, cut to fit ${n.name}`}
         >

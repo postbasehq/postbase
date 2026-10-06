@@ -1,3 +1,4 @@
+import { tiktokCaveat } from "@/lib/platforms/availability";
 import { AI_IMAGE_LIMIT, AI_VIDEO_LIMIT, PLAN_ORDER, PLANS } from "@/lib/plans";
 import { Tile, MonthShot, AgentShot } from "@/components/marketing/CreatorGrid";
 import { McpShot } from "@/components/marketing/DevGrid";
@@ -81,7 +82,7 @@ const GROUPS: { title: string; rows: Row[] }[] = [
       { label: "Threads", note: "On X, Bluesky and Mastodon; the first comment on LinkedIn", values: all(true) },
       { label: "Repeating posts", note: "Every day, every few days, weekly or monthly", values: all(true) },
       { label: "Republish a published post", values: all(true) },
-      { label: "TikTok and YouTube post settings", note: "Visibility, comments, duets and stitches", values: all(true) },
+      { label: "TikTok and YouTube post settings", note: `Visibility, comments, duets and stitches${tiktokCaveat(" (TikTok posts are private for now)")}`, values: all(true) },
       { label: "Automatic retries and failure alerts", values: all(true) },
     ],
   },
@@ -296,7 +297,7 @@ export const PRICING_FAQ: [string, string][] = [
   ],
   [
     "Is posting really unlimited?",
-    "Yes, for normal use by the people and accounts on your plan. Some networks charge us for every post (X, for example), so if a plan's posting is far beyond typical use, such as automated bulk posting, we'll contact you before anything changes. The details are in our terms.",
+    "Yes, for normal use by the people and accounts on your plan. One exception: X charges much more for a post containing a link, so each plan includes a monthly allowance of X posts with links (listed on each plan); X posts without links stay unlimited. Some networks charge us for every post, so if a plan's posting is far beyond typical use, such as automated bulk posting, we'll contact you before anything changes. The details are in our terms.",
   ],
   [
     "What counts as a channel?",
@@ -324,7 +325,7 @@ export const PRICING_FAQ: [string, string][] = [
   ],
   [
     "Is the AI agent really unlimited?",
-    "Yes, for normal use on every plan. There's a daily safety limit per workspace to stop scripts or runaway sessions, far above what anyone uses by hand. AI images and videos have monthly allowances that reset on the 1st; the usage ring in the agent chat shows how much is left.",
+    "Yes, for normal use on every plan. There's a daily safety limit, shared across your plan's workspaces, to stop scripts or runaway sessions, far above what anyone uses by hand. AI images and videos have monthly allowances that reset on the 1st; the usage ring in the agent chat shows how much is left.",
   ],
   [
     "How do I cancel?",

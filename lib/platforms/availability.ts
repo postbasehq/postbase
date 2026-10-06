@@ -16,6 +16,14 @@ export const LIMITED: Record<string, string> = {
   tiktok: "Posts go out as private (only you can see them) until TikTok approves public posting.",
 };
 
+/**
+ * Marketing/docs caveat while TikTok is LIMITED (private-only). Returns "" once
+ * the LIMITED.tiktok entry is deleted, so every caveat disappears with it.
+ */
+export function tiktokCaveat(text = " (TikTok posts are private for now, until TikTok approves public posting)"): string {
+  return "tiktok" in LIMITED ? text : "";
+}
+
 /** Platforms people can join the waitlist for (matches the DB check). */
 export const WAITLIST_PLATFORMS = ["instagram", "facebook", "tiktok"] as const;
 

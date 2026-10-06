@@ -1,3 +1,4 @@
+import { tiktokCaveat } from "@/lib/platforms/availability";
 import type { Feature } from "@/components/marketing/seo/FeatureTiles";
 
 /*
@@ -94,7 +95,7 @@ export const PERSONAS: Persona[] = [
       ],
       [
         "Can I schedule TikTok and YouTube videos?",
-        "Yes. Upload the video once in the composer, write a caption for each and schedule them together. TikTok's privacy and interaction settings are in the composer too.",
+        `Yes. Upload the video once in the composer, write a caption for each and schedule them together. TikTok's privacy and interaction settings are in the composer too.${tiktokCaveat(" For now TikTok posts go out as private, until TikTok approves public posting.")}`,
       ],
       [
         "Can I repeat evergreen posts?",
@@ -335,7 +336,7 @@ export const PERSONAS: Persona[] = [
       ],
       [
         "Does Postbase support Instagram and Facebook?",
-        "They're coming soon, once Meta approves our app. X, LinkedIn, Bluesky, Mastodon, TikTok and YouTube work today.",
+        `They're coming soon, once Meta approves our app. X, LinkedIn, Bluesky, Mastodon, TikTok and YouTube work today${tiktokCaveat()}.`,
       ],
       [
         "Is there a free trial?",

@@ -1,3 +1,4 @@
+import { tiktokCaveat } from "@/lib/platforms/availability";
 import { SiteNav } from "@/components/SiteNav";
 import { pageMeta } from "@/lib/site";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -30,6 +31,7 @@ export default function PricingPage() {
               <p className="mx-auto mt-5 max-w-[56ch] text-balance text-[17px] leading-relaxed text-muted md:text-[19px]">
                 Every plan includes X, LinkedIn, TikTok, YouTube, Bluesky and Mastodon, the AI agent and
                 the MCP server. Pick by how many workspaces, channels and people you need.
+                {tiktokCaveat(" TikTok posts are private for now, until TikTok approves public posting.")}
               </p>
             </div>
 

@@ -5,6 +5,8 @@
  * Be fair: every page says when the other tool is the better pick.
  */
 
+import { tiktokCaveat } from "@/lib/platforms/availability";
+
 export const CHECKED = "26 September 2026";
 
 /** Postbase's side of every comparison table, keyed by row. */
@@ -12,7 +14,7 @@ export const US = {
   price: "$29/month for 5 channels, billed monthly or yearly",
   free: "No free hosted plan: a 7-day trial, or self-host for free",
   scaling: "Per plan, not per channel: 15 channels and team seats for $39/month",
-  networks: "X, LinkedIn, Bluesky, Mastodon, TikTok, YouTube (Instagram, Facebook and Threads coming soon)",
+  networks: `X, LinkedIn, Bluesky, Mastodon, TikTok${tiktokCaveat(" (private posts for now)")}, YouTube (Instagram, Facebook and Threads coming soon)`,
   mcp: "Yes, on every plan. Sign in with Postbase or use an API key",
   api: "Yes, on every plan. Create a key on the AI & API page",
   oss: "Yes. Self-host for free with your own platform keys",
