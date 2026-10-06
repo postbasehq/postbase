@@ -49,13 +49,21 @@ function tzOffsetMs(utcMs: number, tz: string): number {
 }
 
 /** The UTC ISO instant of a local wall-clock time (YYYY-MM-DD, hour, minute) in a
- *  timezone. Re-checks the offset once so DST changeovers land correctly. */
+ *  timezone. Across a DST change it resolves like Temporal's "compatible" mode:
+ *  a time skipped by spring-forward moves forward by the gap (02:30 → 03:30),
+ *  and a time that happens twice at fall-back is the first one. */
 export function zonedTimeToUtc(dayKey: string, hour: number, minute: number, tz: string): string {
   const [y, m, d] = dayKey.split("-").map(Number);
   const wall = Date.UTC(y, m - 1, d, hour, minute);
   try {
-    let utc = wall - tzOffsetMs(wall, tz);
-    utc = wall - tzOffsetMs(utc, tz);
+    // The offsets in force half a day either side cover any one DST change.
+    const before = tzOffsetMs(wall - 12 * 3_600_000, tz);
+    const after = tzOffsetMs(wall + 12 * 3_600_000, tz);
+    // A candidate is real if the zone really has that offset at that instant.
+    const real = [wall - before, wall - after].filter((utc, i) => tzOffsetMs(utc, tz) === [before, after][i]);
+    // Twice (fall-back): the earlier. Never (spring-forward): read the time with
+    // the offset from before the change, which lands it after the gap.
+    const utc = real.length ? Math.min(...real) : wall - before;
     return new Date(utc).toISOString();
   } catch {
     return new Date(wall).toISOString();

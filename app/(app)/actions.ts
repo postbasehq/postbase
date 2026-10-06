@@ -17,7 +17,7 @@ import { hasAccess, NO_PLAN_MESSAGE, releaseAiGeneration, reserveAiGeneration, s
 import { connectBluesky } from "@/lib/platforms/bluesky";
 import { isRepeatEvery } from "@/lib/publish/repeat";
 import { getTimeZone, zonedTimeToUtc } from "@/lib/tz";
-import { firstBlockingProblem, pastTimeProblem, tiktokSettingsProblem } from "@/lib/post-validation";
+import { firstBlockingProblem, parseScheduleTime, pastTimeProblem, tiktokSettingsProblem } from "@/lib/post-validation";
 import { cancelPostForOrg, holdPostForEdit } from "@/lib/publish/cancel";
 import { insertPostWhole, replaceTargetsAndMedia } from "@/lib/publish/save-post";
 import {
@@ -354,7 +354,9 @@ async function createPostOrThrow(formData: FormData) {
   const channelIds = formData.getAll("channels").map(String).filter(Boolean);
   if (nothingToSave(segments, channelIds, formData)) throw new FormError(NOTHING_TO_SAVE);
 
-  const scheduledAt = scheduledRaw ? new Date(scheduledRaw).toISOString() : null;
+  const parsedAt = scheduledRaw ? parseScheduleTime(scheduledRaw) : null;
+  if (parsedAt && "error" in parsedAt) throw new FormError(parsedAt.error);
+  const scheduledAt = parsedAt ? parsedAt.iso : null;
   const status = scheduledAt ? "scheduled" : "draft";
   // Drafts are always allowed; scheduling needs an active plan.
   if (status === "scheduled") {
@@ -460,7 +462,9 @@ async function updatePostOrThrow(formData: FormData) {
   const channelIds = formData.getAll("channels").map(String).filter(Boolean);
   if (nothingToSave(segments, channelIds, formData)) throw new FormError(NOTHING_TO_SAVE);
 
-  const scheduledAt = scheduledRaw ? new Date(scheduledRaw).toISOString() : null;
+  const parsedAt = scheduledRaw ? parseScheduleTime(scheduledRaw) : null;
+  if (parsedAt && "error" in parsedAt) throw new FormError(parsedAt.error);
+  const scheduledAt = parsedAt ? parsedAt.iso : null;
   const status = scheduledAt ? "scheduled" : "draft";
   // Drafts are always allowed; scheduling needs an active plan.
   if (status === "scheduled") {

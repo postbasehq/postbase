@@ -49,7 +49,7 @@ curl -X POST https://www.postbase.so/api/v1/posts \
 | `body` | string | Post text (single post). |
 | `thread` | string[] | Posts to publish as a thread (takes precedence over `body`). |
 | `channel_ids` | string[] | Channels to publish to (from [Channels](/api/channels)). |
-| `scheduled_at` | string \| null | ISO 8601 time. Omit or `null` to save a draft. |
+| `scheduled_at` | string \| null | ISO 8601 time with a timezone: `Z` or an offset, e.g. `2026-10-01T09:00:00+01:00`. A time without one is refused. Omit or `null` to save a draft. |
 
 Returns the created post with `201 Created`. Invalid channel ids or an empty
 body return `400`.

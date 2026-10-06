@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { insertPostWhole } from "@/lib/publish/save-post";
 import { cancelPostForOrg, type CancelOutcome } from "@/lib/publish/cancel";
-import { firstBlockingProblem, pastTimeProblem } from "@/lib/post-validation";
+import { firstBlockingProblem, parseScheduleTime, pastTimeProblem } from "@/lib/post-validation";
 import { schedulingProblem } from "@/lib/billing-guard";
 import { xLinkWarningFor } from "@/lib/x-links";
 
@@ -68,7 +68,9 @@ export async function createPost(orgId: string, input: CreatePostInput) {
     }
   }
 
-  const scheduledAt = input.scheduledAt ? new Date(input.scheduledAt).toISOString() : null;
+  const parsedAt = input.scheduledAt ? parseScheduleTime(input.scheduledAt, true) : null;
+  if (parsedAt && "error" in parsedAt) throw new Error(parsedAt.error);
+  const scheduledAt = parsedAt ? parsedAt.iso : null;
   const status = scheduledAt ? "scheduled" : "draft";
   if (scheduledAt && channelIds.length === 0) {
     // It would "publish" with nothing sent. Drafts can wait for their channels.

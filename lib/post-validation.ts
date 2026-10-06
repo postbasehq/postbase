@@ -192,3 +192,21 @@ export function tiktokSettingsProblem(
   }
   return null;
 }
+
+// An ISO 8601 date-time that says which timezone it's in (Z or ±hh:mm).
+const ISO_WITH_ZONE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$/i;
+
+/**
+ * A schedule time as a UTC ISO string, or why it can't be used. With
+ * `requireZone` (the API and MCP), a time without Z or an offset is refused:
+ * read in the server's timezone (UTC), "09:00" would quietly mean 09:00 UTC.
+ */
+export function parseScheduleTime(raw: string, requireZone = false): { iso: string } | { error: string } {
+  const s = raw.trim();
+  const ms = Date.parse(s);
+  if (!s || Number.isNaN(ms)) return { error: "That schedule time isn't valid." };
+  if (requireZone && !ISO_WITH_ZONE.test(s)) {
+    return { error: "scheduled_at needs a timezone, as ISO 8601 with Z or an offset (e.g. 2026-10-01T09:00:00+01:00)" };
+  }
+  return { iso: new Date(ms).toISOString() };
+}

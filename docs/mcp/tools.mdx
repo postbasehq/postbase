@@ -20,7 +20,7 @@ Draft or schedule a post or thread.
 | `body` | string | The post text (single post). |
 | `thread` | string[] | Multiple posts to publish as a thread. |
 | `channel_ids` | string[] | Channels to publish to (from `list_channels`). |
-| `scheduled_at` | string | ISO 8601 time to publish. Omit for a draft. |
+| `scheduled_at` | string | ISO 8601 time to publish, with a timezone (`Z` or an offset like `+01:00`). Omit for a draft. |
 | `schedule_in_minutes` | number | Publish this many minutes from now, on the server's clock. Used for relative times like "in 10 minutes". |
 
 Provide either `body` or `thread`. Omit `scheduled_at` and `schedule_in_minutes` to save a draft.
