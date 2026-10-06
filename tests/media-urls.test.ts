@@ -63,3 +63,30 @@ describe("media downloads are bounded", () => {
     expect(seen?.redirect).toBe("error");
   });
 });
+
+import { ownStorageUrl } from "@/lib/media-urls";
+
+describe("the media proxy only streams our own storage", () => {
+  const base = "https://db.test/storage/v1/object/public/post-media/";
+  it("allows files in the post-media bucket and the R2 bucket", () => {
+    expect(ownStorageUrl(`${base}uploads/a/b.png`)).toBe(`${base}uploads/a/b.png`);
+    expect(ownStorageUrl("https://pub-test.r2.dev/org/file.mp4")).toBe("https://pub-test.r2.dev/org/file.mp4");
+  });
+  it("refuses anything that steps outside it", () => {
+    for (const bad of [
+      `${base}../other-bucket/x`,
+      `${base}%2e%2e/other-bucket/x`,
+      `${base}uploads/..%2F..%2Fx`,
+      `${base}a%5C..%5Cx`,
+      "https://db.test/storage/v1/object/public/other/x",
+      "https://pub-test.r2.dev.evil.com/x",
+      "https://user:pw@pub-test.r2.dev/x",
+      "http://pub-test.r2.dev/x",
+      "https://169.254.169.254/latest",
+      "not a url",
+      null,
+    ]) {
+      expect(ownStorageUrl(bad)).toBeNull();
+    }
+  });
+});

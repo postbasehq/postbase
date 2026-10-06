@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isSafeRedirectUri, registerClient } from "@/lib/oauth";
+import { clientKey, rateLimit } from "@/lib/rate-limit";
 
 // RFC 7591 — Dynamic Client Registration. MCP clients register themselves to
 // obtain a client_id before starting the authorization-code + PKCE flow.
@@ -10,6 +11,15 @@ const cors = {
 };
 
 export async function POST(req: Request) {
+  // Each registration stores a client row: cap it per caller so a script can't
+  // flood the table. Real MCP clients register once per connection. Fails open
+  // so a limiter outage never blocks people connecting their assistant.
+  if (!(await rateLimit(`oauth-register:${clientKey(req)}`, 60 * 60, 30, { failOpen: true }))) {
+    return NextResponse.json(
+      { error: "slow_down", error_description: "Too many registrations. Try again later." },
+      { status: 429, headers: { ...cors, "Retry-After": "3600" } },
+    );
+  }
   let body: { client_name?: string; redirect_uris?: unknown; token_endpoint_auth_method?: string };
   try {
     body = await req.json();

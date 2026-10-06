@@ -43,3 +43,34 @@ function hostOf(base: string | undefined): string | null {
     return null;
   }
 }
+
+/* The media proxy (app/api/media/proxy) streams only files in our own storage. */
+function allowedPrefixes(): string[] {
+  const prefixes = [`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/post-media/`];
+  const r2 = process.env.R2_PUBLIC_URL?.replace(/\/+$/, "");
+  if (r2) prefixes.push(`${r2}/`);
+  return prefixes;
+}
+
+/**
+ * The storage URL to fetch, or null. Checked after URL parsing and decoding, so
+ * "post-media/../other-bucket/…" or "%2e%2e" can't step outside our storage.
+ */
+export function ownStorageUrl(src: string | null): string | null {
+  if (!src) return null;
+  let url: URL;
+  try {
+    url = new URL(src);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "https:" || url.username || url.password) return null;
+  let path: string;
+  try {
+    path = decodeURIComponent(url.pathname);
+  } catch {
+    return null;
+  }
+  if (path.split("/").some((seg) => seg === ".." || seg === ".") || path.includes("\\")) return null;
+  return allowedPrefixes().some((p) => url.href.startsWith(p)) ? url.href : null;
+}

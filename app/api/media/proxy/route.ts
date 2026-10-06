@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import { clientKey, rateLimit } from "@/lib/rate-limit";
+import { MAX_IMAGE_BYTES } from "@/lib/platforms/fetch-media";
+import { ownStorageUrl } from "@/lib/media-urls";
 
 export const runtime = "nodejs";
 
@@ -12,24 +15,22 @@ export const runtime = "nodejs";
  * Locked to our own storage (the post-media bucket + the media library's R2
  * bucket) to avoid being an open proxy (SSRF).
  */
-function allowedPrefixes(): string[] {
-  const prefixes = [`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/post-media/`];
-  const r2 = process.env.R2_PUBLIC_URL?.replace(/\/+$/, "");
-  if (r2) prefixes.push(`${r2}/`);
-  return prefixes;
-}
-
 // TikTok photo posts only accept JPEG and WebP; anything else is converted.
 const TIKTOK_IMAGE_TYPES = new Set(["image/jpeg", "image/jpg", "image/webp"]);
 
 export async function GET(request: Request) {
-  const src = new URL(request.url).searchParams.get("src");
-  if (!src || !allowedPrefixes().some((p) => src.startsWith(p))) {
-    return new NextResponse("Not found", { status: 404 });
+  const src = ownStorageUrl(new URL(request.url).searchParams.get("src"));
+  if (!src) return new NextResponse("Not found", { status: 404 });
+
+  // Generous: TikTok fetches each post's media once or twice. Bounds anyone
+  // using it to burn bandwidth or image conversions. Fails open (TikTok's
+  // fetch must not fail because of a limiter outage).
+  if (!(await rateLimit(`media-proxy:${clientKey(request)}`, 60, 120, { failOpen: true }))) {
+    return new NextResponse("Too many requests", { status: 429, headers: { "Retry-After": "60" } });
   }
 
-  const upstream = await fetch(src);
-  if (!upstream.ok || !upstream.body) {
+  const upstream = await fetch(src, { redirect: "error", signal: AbortSignal.timeout(120_000) }).catch(() => null);
+  if (!upstream || !upstream.ok || !upstream.body) {
     return new NextResponse("Upstream error", { status: 502 });
   }
 
@@ -38,6 +39,10 @@ export async function GET(request: Request) {
   headers.set("Cache-Control", "public, max-age=3600");
 
   if (type.startsWith("image/") && !TIKTOK_IMAGE_TYPES.has(type)) {
+    // Converting is done in memory: bound it.
+    if (Number(upstream.headers.get("Content-Length") ?? 0) > MAX_IMAGE_BYTES) {
+      return new NextResponse("Too large", { status: 413 });
+    }
     const sharp = (await import("sharp")).default;
     const jpeg = await sharp(Buffer.from(await upstream.arrayBuffer()))
       .flatten({ background: "#ffffff" })
