@@ -16,8 +16,8 @@ tools you already work in.
 - **Self-host free, or use the [hosted cloud](https://www.postbase.so/pricing)** —
   same product either way.
 
-Channels: **X, LinkedIn, Bluesky, Mastodon, TikTok, YouTube** · Instagram and
-Facebook coming soon.
+Channels: **X, LinkedIn, Bluesky, Mastodon, TikTok, YouTube** · Instagram, Facebook
+and Threads coming soon.
 
 Docs: [docs.postbase.so](https://docs.postbase.so/general/introduction)
 

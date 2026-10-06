@@ -15,7 +15,7 @@ export const FAQ: [string, string][] = [
     "Can AI agents post through Postbase?",
     "Yes. Add Postbase to Claude as a custom connector, or run @postbasehq/mcp in Cursor or any MCP client. Agents can list your channels, create and schedule posts or threads, check the queue and cancel posts.",
   ],
-  ["Which networks does Postbase support?", `X, LinkedIn, TikTok, YouTube, Bluesky and Mastodon today${tiktokCaveat()}. Instagram and Facebook are coming soon, once Meta approves our app.`],
+  ["Which networks does Postbase support?", `X, LinkedIn, TikTok, YouTube, Bluesky and Mastodon today${tiktokCaveat()}. Instagram and Facebook are coming soon, once Meta approves our app, and Threads is on the way too.`],
   [
     "Is there a public API?",
     "Yes. The REST API uses bearer keys you create on the AI & API page. You can list channels, list and create posts, and cancel scheduled posts. Keys are stored as hashes and can be revoked any time.",

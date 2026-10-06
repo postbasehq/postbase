@@ -37,7 +37,7 @@ This roundup covers the ones worth trying, including ours. Everything here was c
 
 ## 2. Postbase: built for AI agents
 
-That's us, so weigh this one accordingly. [Postbase](https://github.com/postbasehq/postbase) focuses on a smaller set of networks (X, LinkedIn, Bluesky, Mastodon, TikTok and YouTube today, with Instagram and Facebook waiting on Meta's review) and on AI: an agent built into the app, plus a hosted MCP server so Claude, Cursor and other AI tools can schedule posts.
+That's us, so weigh this one accordingly. [Postbase](https://github.com/postbasehq/postbase) focuses on a smaller set of networks (X, LinkedIn, Bluesky, Mastodon, TikTok and YouTube today, with Instagram and Facebook waiting on Meta's review and Threads coming soon) and on AI: an agent built into the app, plus a hosted MCP server so Claude, Cursor and other AI tools can schedule posts.
 
 - **Licence:** AGPL-3.0
 - **Hosted:** $29/month for 5 channels, $39/month for 15 channels and team seats
