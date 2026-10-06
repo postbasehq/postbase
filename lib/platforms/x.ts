@@ -63,6 +63,7 @@ export async function revokeAccess(token: string): Promise<void> {
 
 async function tokenRequest(body: URLSearchParams): Promise<XTokens> {
   const res = await fetch(TOKEN_URL, {
+    signal: AbortSignal.timeout(15_000), // well inside the 30s refresh lease (token-refresh.ts)
     method: "POST",
     headers: {
       Authorization: basicAuth(),

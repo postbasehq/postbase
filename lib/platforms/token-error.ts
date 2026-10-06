@@ -19,9 +19,16 @@ export class TokenError extends Error {
  */
 export function isDefinitiveAuthFailure(e: unknown): boolean {
   if (!(e instanceof TokenError)) return false;
-  if (e.code && ["invalid_grant", "invalid_client", "unauthorized_client", "invalid_token"].includes(e.code)) return true;
+  // invalid_client / unauthorized_client are OUR app's credentials, not the
+  // user's login: reconnecting can't fix them (see isAppCredentialFailure).
+  if (e.code && ["invalid_grant", "invalid_token"].includes(e.code)) return true;
   // X reports a spent or bad refresh token as 400 invalid_request.
   return (e.status === 400 || e.status === 401) && e.code === "invalid_request";
+}
+
+/** The network rejected Postbase's own client id/secret: a config problem for us, not the user. */
+export function isAppCredentialFailure(e: unknown): boolean {
+  return e instanceof TokenError && (e.code === "invalid_client" || e.code === "unauthorized_client");
 }
 
 /** Read a token endpoint's reply without crashing on an HTML error page. */

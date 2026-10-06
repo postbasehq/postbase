@@ -137,6 +137,7 @@ type TokenResponse = {
 
 async function tokenRequest(body: URLSearchParams): Promise<TokenResponse> {
   const res = await fetch(TOKEN_URL, {
+    signal: AbortSignal.timeout(15_000), // well inside the 30s refresh lease (token-refresh.ts)
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,

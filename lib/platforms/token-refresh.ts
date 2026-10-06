@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decryptJson, encryptJson } from "@/lib/crypto";
-import { isDefinitiveAuthFailure } from "@/lib/platforms/token-error";
+import { isAppCredentialFailure, isDefinitiveAuthFailure } from "@/lib/platforms/token-error";
 
 /*
  * Refreshing a channel's OAuth tokens, safely:
@@ -100,6 +100,9 @@ export async function refreshChannelTokens<T extends BaseTokens>(opts: {
         return { tokens: decryptJson<T>(row.encrypted_tokens), tokenExpiry: row.token_expiry };
       }
       throw new TokenAuthLost(`${opts.label} token refresh failed — reconnect the channel.`);
+    }
+    if (isAppCredentialFailure(e)) {
+      Sentry.captureMessage(`[token-refresh] ${opts.label} rejected Postbase's client credentials — check the app's env keys`, "error");
     }
     // The provider's own text stays in the logs: words like "Unauthorized" in it
     // would read as a lost connection (lib/channel-health.ts) and flag a reconnect.

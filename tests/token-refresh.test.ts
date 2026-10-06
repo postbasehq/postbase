@@ -134,3 +134,12 @@ describe("channel token refresh", () => {
     expect(needsReconnect((res as { error: string }).error)).toBe(false);
   });
 });
+
+describe("refresh failures that a reconnect can't fix", () => {
+  it("our own app credentials being rejected is not the user's reconnect", async () => {
+    const ch = fakeChannel({ access_token: "a1", refresh_token: "r1" });
+    net = installFakeNet((r) => (xToken(r) ? json({ error: "invalid_client" }, 401) : ch.db(r)));
+    const err = await refreshChannelTokens<Tokens>({ channelId: "ch", encrypted: ch.row.encrypted_tokens, refresh: xRefresh, label: "X" }).catch((e) => e);
+    expect(err).toBeInstanceOf(TokenRefreshUnavailable);
+  });
+});
