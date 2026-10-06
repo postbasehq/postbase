@@ -7,12 +7,14 @@ import { listPosts } from "@/lib/blog";
 import { PERSONAS } from "@/lib/seo/personas";
 import { ALL_COMBOS } from "@/lib/seo/combos";
 import { MCP_NETWORKS } from "@/lib/seo/mcp";
+import { listEntries } from "@/lib/changelog";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   // Only blog pages carry a lastmod: it comes from the post's own dates, so it
   // stays accurate. A build-time date on every page teaches Google to ignore it.
   const posts = listPosts();
   const latest = posts.reduce((d, p) => ((p.updated ?? p.date) > d ? (p.updated ?? p.date) : d), "");
+  const changes = listEntries();
   const page = (path: string, priority: number, changeFrequency: "weekly" | "monthly" | "yearly") => ({
     url: `${SITE_URL}${path}`,
     changeFrequency,
@@ -39,6 +41,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page("/tools/social-media-image-sizes", 0.8, "monthly"),
     { ...page("/blog", 0.8, "weekly"), lastModified: new Date(latest) },
     ...posts.map((p) => ({ ...page(`/blog/${p.slug}`, 0.7, "monthly"), lastModified: new Date(p.updated ?? p.date) })),
+    ...(changes.length ? [{ ...page("/changelog", 0.6, "weekly"), lastModified: new Date(changes[0].date) }] : []),
+    ...changes.map((e) => ({ ...page(`/changelog/${e.slug}`, 0.4, "yearly"), lastModified: new Date(e.date) })),
     page("/terms", 0.3, "yearly"),
     page("/privacy", 0.3, "yearly"),
   ];

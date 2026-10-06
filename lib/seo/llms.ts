@@ -6,6 +6,7 @@ import { MCP_NETWORKS } from "@/lib/seo/mcp";
 import { COMPETITORS } from "@/lib/seo/competitors";
 import { PERSONAS } from "@/lib/seo/personas";
 import { listPosts } from "@/lib/blog";
+import { listEntries } from "@/lib/changelog";
 
 /*
  * Plain-text summaries for AI assistants and answer engines: /llms.txt (the
@@ -83,6 +84,14 @@ export function llmsTxt({ full = false } = {}): string {
     COMPETITORS.map((c) => link(`/alternatives/${c.slug}`, `Postbase vs ${c.name}`)).join("\n"),
     `## Guides`,
     posts.map((p) => link(`/blog/${p.slug}`, p.title, p.description)).join("\n"),
+    `## Recent changes`,
+    [
+      link("/changelog", "Changelog", "every week's new features, improvements and fixes"),
+      `- [Changelog RSS](${SITE_URL}/changelog/rss.xml)`,
+      ...listEntries()
+        .slice(0, 10)
+        .map((e) => link(`/changelog/${e.slug}`, `${e.title} (${e.date})`, e.summary)),
+    ].join("\n"),
     `## Free tools`,
     [
       link("/tools/character-counter", "Character counter", "counts the way X, Bluesky and LinkedIn do, and splits threads"),

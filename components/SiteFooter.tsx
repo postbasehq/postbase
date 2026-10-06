@@ -22,6 +22,7 @@ const COLUMNS: { title: string; links: [string, string, Icon?][] }[] = [
       ["For small businesses", "/for/small-businesses"],
       ["Compare", "/alternatives"],
       ["Blog", "/blog"],
+      ["Changelog", "/changelog"],
       ["Free tools", "/tools"],
     ],
   },

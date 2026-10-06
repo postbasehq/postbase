@@ -191,6 +191,7 @@ const DRAWER_LINKS = [
   { href: "/pricing", label: "Pricing" },
   { href: "/alternatives", label: "Compare" },
   { href: "/blog", label: "Blog" },
+  { href: "/changelog", label: "Changelog" },
   { href: "/tools", label: "Free tools" },
   { href: "https://docs.postbase.so", label: "Docs" },
   { href: "https://github.com/postbasehq/postbase", label: "GitHub" },
