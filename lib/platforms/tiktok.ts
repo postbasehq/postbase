@@ -371,6 +371,8 @@ export async function waitForPublish(
       return { status: "PROCESSING" };
     }
     if (data.status === "PUBLISH_COMPLETE" && data.postId) return { status: data.status, postId: data.postId };
+    // Complete on the last check but no public id (a private post): done.
+    if (data.status === "PUBLISH_COMPLETE" && i === tries - 1) return { status: data.status };
     if (data.status === "FAILED") {
       throw new Error(`TikTok publish failed: ${data.failReason ?? "unknown"}`);
     }

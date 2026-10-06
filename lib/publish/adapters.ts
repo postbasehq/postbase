@@ -29,6 +29,7 @@ import {
   initPhotoPost,
   type TikTokPostOptions,
   waitForPublish,
+  fetchPublishStatus,
   creatorInfo,
   pickPrivacyLevel,
   TIKTOK_MAX_VIDEO,
@@ -373,6 +374,8 @@ function proxiedMediaUrl(url: string): string {
   return `${APP_URL}/api/media/proxy?src=${encodeURIComponent(url)}`;
 }
 
+const TIKTOK_PROCESSING = "TikTok is still processing the post.";
+
 async function publishToTikTok(input: PublishInput): Promise<PublishResult> {
   if (!input.encryptedTokens) return { ok: false, error: "TikTok account not connected." };
 
@@ -390,6 +393,21 @@ async function publishToTikTok(input: PublishInput): Promise<PublishResult> {
   }
 
   const caption = [input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean).join(" ");
+
+  // A post uploaded on an earlier run that TikTok was still processing: check
+  // it rather than uploading again (that would post it twice).
+  if (input.pendingRef) {
+    let st: Awaited<ReturnType<typeof fetchPublishStatus>>;
+    try {
+      st = await fetchPublishStatus(tokens.access_token, input.pendingRef);
+    } catch {
+      return { ok: false, error: TIKTOK_PROCESSING, pendingRef: input.pendingRef };
+    }
+    // Private posts complete without a public id: keep the publish id.
+    if (st.status === "PUBLISH_COMPLETE") return { ok: true, platformPostId: st.postId ?? input.pendingRef };
+    if (st.status === "FAILED") return { ok: false, error: `TikTok publish failed: ${st.failReason ?? "unknown"}` };
+    return { ok: false, error: TIKTOK_PROCESSING, pendingRef: input.pendingRef };
+  }
 
   // Privacy level: the user's choice, unless TIKTOK_PRIVACY_LEVEL is set — a hard
   // cap for sandbox/unaudited apps (leave it unset in production now that the app
@@ -435,6 +453,9 @@ async function publishToTikTok(input: PublishInput): Promise<PublishResult> {
     }
 
     const finished = await waitForPublish(tokens.access_token, publishId);
+    // Still processing: not published yet. The publisher checks it again next
+    // minute (above), so a failure on TikTok's side shows as failed.
+    if (finished.status !== "PUBLISH_COMPLETE") return { ok: false, error: TIKTOK_PROCESSING, pendingRef: publishId };
     // Prefer the real post id (lets us read metrics later); fall back to publish id.
     return { ok: true, platformPostId: finished.postId ?? publishId };
   } catch (e) {

@@ -90,3 +90,23 @@ describe("retries never post twice", () => {
     expect(sent).toEqual([emoji, longUrl]);
   });
 });
+
+describe("TikTok: a post still processing isn't reported as published", () => {
+  const run = async (status: string, extra: Record<string, unknown> = {}) => {
+    net?.restore();
+    net = installFakeNet((r) => {
+      if (r.url.pathname.endsWith("/post/publish/status/fetch/")) return json({ data: { status, ...extra }, error: { code: "ok" } });
+      if (r.url.pathname.includes("/post/publish/")) throw new Error("must not upload again");
+    });
+    const enc = encryptJson({ access_token: "t", refresh_token: "r" });
+    return publish({ ...base, threadTail: [], body: "clip", media: [{ url: "https://cdn.test/v.mp4", type: "video/mp4" }], platform: "tiktok", encryptedTokens: enc, pendingRef: "v_pub_1" });
+  };
+  it("checks the earlier upload instead of uploading again", async () => {
+    expect(await run("PROCESSING_UPLOAD")).toMatchObject({ ok: false, pendingRef: "v_pub_1" });
+    expect(await run("PUBLISH_COMPLETE", { publicaly_available_post_id: [7123] })).toMatchObject({ ok: true, platformPostId: "7123" });
+    expect(await run("PUBLISH_COMPLETE")).toMatchObject({ ok: true, platformPostId: "v_pub_1" });
+    const failed = await run("FAILED", { fail_reason: "spam_risk" });
+    expect(failed).toMatchObject({ ok: false, error: "TikTok publish failed: spam_risk" });
+    expect((failed as { pendingRef?: string }).pendingRef).toBeUndefined();
+  });
+});

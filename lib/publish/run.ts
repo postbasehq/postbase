@@ -224,7 +224,17 @@ async function publishTarget(
       .from("post_targets")
       .update(
         stale
-          ? { status: "failed", error: "The platform took too long to process the media. Retry to upload it again.", next_attempt_at: null, pending_ref: null, pending_since: null }
+          ? {
+              status: "failed",
+              // TikTok publishes on its own once processing ends, so it may yet go out;
+              // Instagram only publishes when we tell it to, so a retry is safe there.
+              error: platform === "tiktok"
+                ? "TikTok didn't confirm the post within 30 minutes. Check your TikTok account before using Retry: it may still have gone out."
+                : "The platform took too long to process the media. Retry to upload it again.",
+              next_attempt_at: null,
+              pending_ref: null,
+              pending_since: null,
+            }
           : { status: "failed", error: result.error, next_attempt_at: new Date(Date.now() + 60_000).toISOString(), pending_ref: result.pendingRef, pending_since: since },
       )
       .eq("id", target.id);
