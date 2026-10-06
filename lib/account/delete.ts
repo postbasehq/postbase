@@ -147,7 +147,7 @@ export async function purgeWorkspace(orgId: string, opts: { billingCancelled?: b
 }
 
 /** Leave a shared workspace: membership plus this user's programmatic access there. */
-async function leaveWorkspace(db: Db, orgId: string, userId: string): Promise<void> {
+export async function leaveWorkspace(db: Db, orgId: string, userId: string): Promise<void> {
   await db.from("org_members").delete().eq("org_id", orgId).eq("user_id", userId);
   await Promise.all([
     db.from("oauth_tokens").delete().eq("org_id", orgId).eq("user_id", userId),

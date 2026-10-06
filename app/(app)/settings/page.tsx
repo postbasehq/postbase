@@ -9,6 +9,8 @@ import { workspaceInitial, workspaceTile } from "@/lib/workspace-tile";
 import { WorkspaceNameForm } from "@/components/settings/WorkspaceNameForm";
 import { ThemePicker } from "@/components/settings/ThemePicker";
 import { AccountData } from "@/components/settings/AccountData";
+import { WorkspaceRemoval } from "@/components/settings/WorkspaceRemoval";
+import { planWorkspaceRemoval } from "@/lib/account/workspace";
 import { planAccountDeletion } from "@/lib/account/delete";
 import { listConnectedApps } from "@/lib/oauth";
 import { BillingStatus, ManageButton } from "@/components/BillingStatus";
@@ -30,6 +32,7 @@ export default async function SettingsPage() {
 
   const db = createAdminClient();
   const billing = await loadBillingStatus(orgId);
+  const removal = user && orgId ? await planWorkspaceRemoval(user.id, orgId) : null;
   const [{ data: org }, members, invites, { data: keys }, apps] = orgId
     ? await Promise.all([
         db.from("orgs").select("name, created_at, plan").eq("id", orgId).single(),
@@ -104,6 +107,7 @@ export default async function SettingsPage() {
               <Row label="Plan" value={`Included in ${billing.billedThrough.name}'s plan`} href="/billing" cta="Details" last />
             ) : null}
           </div>
+          {removal ? <WorkspaceRemoval plan={removal} /> : null}
         </Card>
 
         {/* Plan and usage, the same card as the Billing page */}
