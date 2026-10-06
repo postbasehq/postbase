@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { pageMeta } from "@/lib/site";
-import { CHECKED, COMPETITORS, US, competitorBySlug, type Competitor } from "@/lib/seo/competitors";
+import { CHECKED, COMPETITORS, US, competitorBySlug, competitorCard, type Competitor } from "@/lib/seo/competitors";
 import { CtaBand, FaqList, card, wrap } from "@/components/marketing/ui";
 import { LinkCards, SectionHead, SeoHero, Steps, section } from "@/components/marketing/seo/sections";
 import { AlternativeTiles, CalendarHeroDemo } from "@/components/marketing/seo/demos";
@@ -86,11 +86,7 @@ export default async function AlternativePage({ params }: { params: Promise<{ sl
         <section className={section}>
           <SectionHead title="Other comparisons" />
           <LinkCards
-            items={COMPETITORS.filter((o) => o.slug !== c.slug).map((o) => ({
-              href: `/alternatives/${o.slug}`,
-              title: `Postbase vs ${o.name}`,
-              body: o.blurb,
-            }))}
+            items={COMPETITORS.filter((o) => o.slug !== c.slug).map(competitorCard)}
           />
         </section>
 

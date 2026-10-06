@@ -892,4 +892,36 @@ export const COMPETITORS: Competitor[] = [
   },
 ];
 
+/**
+ * Each competitor's own mark, bundled in public/logos (simple-icons for Buffer,
+ * Hootsuite and Postiz; the others from the company's site), with its brand
+ * colour for the link card's accent. Shown on a white tile, so dark marks read
+ * in both themes.
+ */
+export const COMPETITOR_LOGO: Record<string, { src: string; tone: string }> = {
+  buffer: { src: "/logos/buffer.svg", tone: "#231f20" },
+  hootsuite: { src: "/logos/hootsuite.svg", tone: "#ff4c46" },
+  typefully: { src: "/logos/typefully.svg", tone: "#000000" },
+  ayrshare: { src: "/logos/ayrshare.svg", tone: "#7b5cf5" },
+  hypefury: { src: "/logos/hypefury.webp", tone: "#1e6ff0" },
+  later: { src: "/logos/later.png", tone: "#000000" },
+  "sprout-social": { src: "/logos/sprout-social.svg", tone: "#59cb59" },
+  publer: { src: "/logos/publer.svg", tone: "#00cec7" },
+  socialbee: { src: "/logos/socialbee.png", tone: "#f6b829" },
+  "post-bridge": { src: "/logos/post-bridge.png", tone: "#000000" },
+  postiz: { src: "/logos/postiz.svg", tone: "#612bd3" },
+  zernio: { src: "/logos/zernio.svg", tone: "#eb3514" },
+  "upload-post": { src: "/logos/upload-post.png", tone: "#5b7cfa" },
+  opentweet: { src: "/logos/opentweet.png", tone: "#000000" },
+  blotato: { src: "/logos/blotato.webp", tone: "#8b5cf6" },
+};
+
+/** A competitor as a link card: "Postbase vs X", its blurb and its logo. */
+export const competitorCard = (c: Competitor) => ({
+  href: `/alternatives/${c.slug}`,
+  title: `Postbase vs ${c.name}`,
+  body: c.blurb,
+  logo: COMPETITOR_LOGO[c.slug],
+});
+
 export const competitorBySlug = (slug: string) => COMPETITORS.find((c) => c.slug === slug);

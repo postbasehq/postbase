@@ -318,6 +318,8 @@ export type LinkCard = {
   client?: string;
   /** No logo: the Postbase mark in this solid brand colour instead. */
   mark?: string;
+  /** An image logo (a competitor's mark) on a white tile, with its brand colour. */
+  logo?: { src: string; tone: string };
   soon?: boolean;
 };
 
@@ -368,6 +370,7 @@ function BigLogo({ brand, client, size }: { brand?: string; client?: string; siz
 /** The card's accent: its Postbase mark colour, or its logo's brand colour. */
 function cardTone(l: LinkCard): string | null {
   if (l.mark) return l.mark;
+  if (l.logo) return DARK.has(l.logo.tone.toLowerCase()) ? "var(--ink)" : l.logo.tone;
   const color = l.brand ? BRANDS[l.brand]?.bg : l.client ? LOGOS[l.client]?.color : undefined;
   if (!color) return null;
   if (color.startsWith("linear-gradient")) return "#d62976"; // Instagram's pink
@@ -403,6 +406,15 @@ export function LinkCards({ items }: { items: LinkCard[] }) {
                 edge="right"
                 className="pointer-events-none absolute -bottom-3 right-0 w-[76px] transition-transform duration-500 ease-out sm:w-[92px] group-hover:-translate-y-3"
               />
+            ) : l.logo ? (
+              // The logo on a white tile, cropped by the corner like the drawn logos.
+              <div
+                className="pointer-events-none absolute -bottom-5 -right-4 flex size-[112px] origin-bottom-right -rotate-12 scale-[0.8] items-center justify-center rounded-[26px] border border-line bg-white shadow-[0_14px_30px_-14px_rgba(16,24,40,0.45)] transition-transform duration-500 ease-out sm:scale-100 group-hover:-translate-x-3 group-hover:-translate-y-3 group-hover:rotate-0"
+                aria-hidden
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={l.logo.src} alt="" className="size-[68px] object-contain" />
+              </div>
             ) : (
               <div
                 className="pointer-events-none absolute -bottom-6 -right-5 origin-bottom-right -rotate-12 scale-[0.8] transition-transform sm:scale-100 duration-500 ease-out group-hover:-translate-x-3 group-hover:-translate-y-3 group-hover:rotate-0"
@@ -411,7 +423,7 @@ export function LinkCards({ items }: { items: LinkCard[] }) {
                 <BigLogo brand={l.brand} client={l.client} size={130} />
               </div>
             )}
-            <div className={`relative ${l.brand || l.client || l.mark ? "max-w-[calc(100%-108px)]" : ""}`}>
+            <div className={`relative ${l.brand || l.client || l.mark || l.logo ? "max-w-[calc(100%-108px)]" : ""}`}>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-display text-[19px] font-semibold tracking-[-0.01em] text-ink">{l.title}</span>
                 {l.soon ? (

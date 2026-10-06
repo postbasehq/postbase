@@ -1,6 +1,6 @@
 import { LIVE_NETWORKS } from "@/lib/seo/networks";
 import { CLIENTS } from "@/lib/seo/clients";
-import { COMPETITORS } from "@/lib/seo/competitors";
+import { COMPETITORS, competitorCard } from "@/lib/seo/competitors";
 import { MCP_NETWORKS } from "@/lib/seo/mcp";
 import { listPosts } from "@/lib/blog";
 import type { LinkCard } from "@/components/marketing/seo/sections";
@@ -45,7 +45,7 @@ export function relatedCard(href: string): LinkCard | null {
   }
   if (kind === "alternatives") {
     const c = COMPETITORS.find((x) => x.slug === slug);
-    return c ? { href, title: `Postbase vs ${c.name}`, body: c.blurb } : null;
+    return c ? competitorCard(c) : null;
   }
   if (kind === "blog") {
     const p = listPosts().find((x) => x.slug === slug);

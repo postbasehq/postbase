@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { pageMeta } from "@/lib/site";
-import { COMPETITORS } from "@/lib/seo/competitors";
+import { COMPETITORS, competitorCard } from "@/lib/seo/competitors";
 import { CtaBand, wrap } from "@/components/marketing/ui";
 import { LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
 import { AlternativeTiles, CalendarHeroDemo } from "@/components/marketing/seo/demos";
@@ -32,7 +32,7 @@ export default function AlternativesPage() {
 
         <section className={section}>
           <SectionHead title="Comparisons" />
-          <LinkCards items={COMPETITORS.map((c) => ({ href: `/alternatives/${c.slug}`, title: `Postbase vs ${c.name}`, body: c.blurb }))} />
+          <LinkCards items={COMPETITORS.map(competitorCard)} />
         </section>
 
         <section className={section}>
