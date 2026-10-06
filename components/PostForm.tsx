@@ -549,7 +549,19 @@ export function PostForm({
   const cardTitle = "font-display text-sm font-semibold";
 
   return (
-    <form action={action} className="mt-6 flex flex-col gap-4 pb-24">
+    <form
+      action={action}
+      // Enter in a one-line field (YouTube title, draft search, time, AI prompt
+      // in a modal) would submit the form, i.e. schedule the post. Only the
+      // Schedule/Save button submits; textareas keep Enter for new lines.
+      onKeyDown={(e) => {
+        const t = e.target;
+        if (e.key === "Enter" && t instanceof HTMLInputElement && t.type !== "submit" && t.type !== "button") {
+          e.preventDefault();
+        }
+      }}
+      className="mt-6 flex flex-col gap-4 pb-24"
+    >
       {!canSchedule ? (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-line bg-surface-2 px-4 py-3 text-sm">
           <span className="text-ink">
