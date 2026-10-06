@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { deleteAccount } from "@/lib/account/delete";
 import { sendAccountDeleted } from "@/lib/email/notify";
 import { rateLimit } from "@/lib/rate-limit";
+import { needsTwoFactor } from "@/lib/mfa";
 
 export type DeleteAccountState = { error?: string };
 
@@ -21,6 +22,8 @@ export async function deleteMyAccount(_prev: DeleteAccountState, formData: FormD
     data: { user },
   } = await supabase.auth.getUser();
   if (!user?.email) return { error: "Sign in again, then try once more." };
+  // Defence in depth with the middleware: a session still owing its 2FA code can't delete.
+  if (await needsTwoFactor(supabase, user)) return { error: "Enter your two-factor code first, then try again." };
 
   const typed = String(formData.get("confirm") ?? "").trim().toLowerCase();
   if (typed !== user.email.toLowerCase()) return { error: "Type your email address exactly to confirm." };

@@ -54,7 +54,10 @@ export async function updateSession(request: NextRequest) {
   // Two-factor step-up. The session APIs (matched in middleware.ts) answer 401;
   // pages, server actions and the MCP consent page go to the code prompt.
   const stepUp = [...protectedPrefixes, "/oauth", "/api"];
-  if (user && stepUp.some((p) => path === p || path.startsWith(`${p}/`)) && (await needsTwoFactor(supabase, user))) {
+  // A server action runs whichever page URL it's POSTed to (it's found by the
+  // Next-Action header), so it must step up even when posted to "/".
+  const serverAction = request.method === "POST" && request.headers.has("next-action");
+  if (user && (serverAction || stepUp.some((p) => path === p || path.startsWith(`${p}/`))) && (await needsTwoFactor(supabase, user))) {
     const held = path.startsWith("/api/")
       ? NextResponse.json({ error: "Two-factor verification required." }, { status: 401 })
       : NextResponse.redirect(new URL(verifyUrl(path + request.nextUrl.search), request.url));

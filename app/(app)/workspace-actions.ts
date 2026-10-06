@@ -10,6 +10,7 @@ import { PLANS, WORKSPACE_LIMIT, nextWorkspacePlan } from "@/lib/plans";
 import { redirect } from "next/navigation";
 import { deleteWorkspaceAs, leaveWorkspaceAs } from "@/lib/account/workspace";
 import { rateLimit } from "@/lib/rate-limit";
+import { needsTwoFactor } from "@/lib/mfa";
 
 export type CreateWorkspaceResult = { ok: true; id: string } | { ok: false; error: string; upgrade?: boolean };
 
@@ -87,6 +88,7 @@ export async function leaveCurrentWorkspace(_prev: WorkspaceRemovalState, _formD
   } = await supabase.auth.getUser();
   const orgId = await getCurrentOrgId();
   if (!user || !orgId) return { error: "Sign in again, then try once more." };
+  if (await needsTwoFactor(supabase, user)) return { error: "Enter your two-factor code first, then try again." };
   try {
     await leaveWorkspaceAs(user.id, orgId);
   } catch (e) {
@@ -103,11 +105,16 @@ export async function deleteCurrentWorkspace(_prev: WorkspaceRemovalState, formD
   } = await supabase.auth.getUser();
   const orgId = await getCurrentOrgId();
   if (!user || !orgId) return { error: "Sign in again, then try once more." };
+  if (await needsTwoFactor(supabase, user)) return { error: "Enter your two-factor code first, then try again." };
   const { data: org } = await createAdminClient().from("orgs").select("name").eq("id", orgId).maybeSingle();
   if (String(formData.get("confirm") ?? "").trim() !== String(org?.name ?? "").trim()) {
     return { error: "Type the workspace name exactly to confirm." };
   }
   if (!(await rateLimit(`delete-workspace:${user.id}`, 60 * 60, 10))) return { error: "Too many attempts. Try again in an hour." };
+  // Like account deletion: a stolen session alone can't wipe a workspace.
+  if (Date.now() - (user.last_sign_in_at ? Date.parse(user.last_sign_in_at) : 0) > 24 * 60 * 60 * 1000) {
+    return { error: "For your security, sign out and sign back in, then delete the workspace within 24 hours." };
+  }
   try {
     await deleteWorkspaceAs(user.id, orgId);
   } catch (e) {
