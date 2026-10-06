@@ -242,24 +242,59 @@ export async function agentUsage(_db: SupabaseClient, orgId: string): Promise<Ag
   };
 }
 
-/** Why the agent can't take another message right now, or null if it can. */
-export async function agentLimitReason(db: SupabaseClient, orgId: string): Promise<"no_plan" | "daily" | "budget" | null> {
-  if (!(await hasAccess(db, orgId))) return "no_plan";
-  const u = await agentUsage(db, orgId);
-  if (u.remainingToday <= 0) return "daily";
-  if (u.spentUsd >= u.budgetUsd) return "budget";
-  return null;
+/**
+ * Take one AI generation from the plan's monthly allowance, atomically
+ * (reserve_ai_generation: per-plan lock, count, insert), before the work
+ * starts, so parallel requests can't overrun it. Give it back with
+ * releaseAiGeneration if the generation fails.
+ */
+export async function reserveAiGeneration(
+  orgId: string,
+  kind: AiKind,
+): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const g = await billingGroup(orgId);
+  const limit = (kind === "image" ? AI_IMAGE_LIMIT : AI_VIDEO_LIMIT)[g.usagePlan] ?? 0;
+  const { data, error } = await createAdminClient().rpc("reserve_ai_generation", {
+    p_orgs: g.orgIds,
+    p_org: orgId,
+    p_kind: kind,
+    p_limit: limit,
+    p_since: monthStartIso(),
+  });
+  if (error) return { ok: false, error: "Couldn't check your AI allowance. Try again in a moment." };
+  if (!data) {
+    return { ok: false, error: (await aiLimitMessage(createAdminClient(), orgId, kind)) ?? "You've used this month's AI allowance." };
+  }
+  return { ok: true, id: data as string };
 }
 
-/** Whether the workspace has no access, or has hit one of the agent's backstops. */
-export async function atAgentLimit(db: SupabaseClient, orgId: string): Promise<boolean> {
-  return (await agentLimitReason(db, orgId)) !== null;
+/** Give a reserved generation back (the work failed, or wasn't charged). */
+export async function releaseAiGeneration(id: string): Promise<void> {
+  await createAdminClient().from("ai_generations").delete().eq("id", id);
 }
 
-/** Record one used agent message (service-role insert, so it can't be tampered with). */
-export async function recordAgentMessage(db: SupabaseClient, orgId: string): Promise<string | null> {
-  const { data } = await db.from("agent_messages").insert({ org_id: orgId }).select("id").single();
-  return data?.id ?? null;
+/**
+ * Count one agent turn against the plan's backstops atomically
+ * (reserve_agent_message: per-plan lock, daily cap, monthly spend, insert).
+ * Returns the usage row id (its cost is filled in when the turn ends).
+ */
+export async function reserveAgentMessage(
+  orgId: string,
+): Promise<{ ok: true; id: string } | { ok: false; reason: "no_plan" | "daily" | "budget" | "error" }> {
+  const db = createAdminClient();
+  if (!(await hasAccess(db, orgId))) return { ok: false, reason: "no_plan" };
+  const g = await billingGroup(orgId);
+  const { data, error } = await db.rpc("reserve_agent_message", {
+    p_orgs: g.orgIds,
+    p_org: orgId,
+    p_daily_cap: AGENT_DAILY_CAP[g.usagePlan] ?? AGENT_DAILY_CAP.trial,
+    p_day_start: dayStartIso(),
+    p_budget: AGENT_MONTHLY_BUDGET_USD[g.usagePlan] ?? AGENT_MONTHLY_BUDGET_USD.trial,
+    p_month_start: monthStartIso(),
+  });
+  if (error || !data) return { ok: false, reason: "error" };
+  if (data === "daily" || data === "budget") return { ok: false, reason: data };
+  return { ok: true, id: data as string };
 }
 
 /**

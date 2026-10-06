@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { getCurrentOrgId } from "@/lib/org";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { agentLimitReason, billingGroup, recordAgentMessage, aiUsage, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
+import { billingGroup, reserveAgentMessage, aiUsage, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
 import { AGENT_DAILY_CAP } from "@/lib/plans";
 import { higgsfieldConfigured } from "@/lib/higgsfield";
 import { systemPrompt } from "@/lib/agent/config";
@@ -87,7 +87,16 @@ export async function POST(req: Request) {
 
   // Unlimited under fair use, with two per-plan backstops (lib/plans.ts). Count this turn.
   const admin = createAdminClient();
-  const limit = await agentLimitReason(admin, orgId);
+  // Atomic check-and-count (reserve_agent_message), so parallel requests can't
+  // slip past the daily cap or the monthly spend ceiling.
+  const reservation = await reserveAgentMessage(orgId);
+  const limit = reservation.ok ? null : reservation.reason;
+  if (limit === "error") {
+    return new Response(JSON.stringify({ error: "Couldn't check your agent allowance. Try again in a moment." }), {
+      status: 503,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
   if (limit === "no_plan") {
     return new Response(JSON.stringify({ error: NO_PLAN_MESSAGE }), {
       status: 402,
@@ -110,7 +119,7 @@ export async function POST(req: Request) {
       { status: 429, headers: { "Content-Type": "application/json" } },
     );
   }
-  const usageRowId = await recordAgentMessage(admin, orgId);
+  const usageRowId = reservation.ok ? reservation.id : null;
 
   // Resolve (or create) the conversation, then persist the user message.
   let title = "New chat";

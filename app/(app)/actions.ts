@@ -10,7 +10,7 @@ import { canManageOrg, getCurrentOrgId, getOrgRole } from "@/lib/org";
 import { encryptJson } from "@/lib/crypto";
 import { revokeChannelAccess } from "@/lib/channel-revoke";
 import { type YouTubePostOptions } from "@/lib/platforms/youtube";
-import { atChannelLimit, aiLimitMessage, hasAccess, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
+import { atChannelLimit, hasAccess, NO_PLAN_MESSAGE, releaseAiGeneration, reserveAiGeneration } from "@/lib/billing-guard";
 import { connectBluesky } from "@/lib/platforms/bluesky";
 import { isRepeatEvery } from "@/lib/publish/repeat";
 import { getTimeZone, zonedTimeToUtc } from "@/lib/tz";
@@ -763,8 +763,10 @@ export async function generateAiImage(
   const ratio = isAspectRatio(aspectRatio) ? aspectRatio : "1:1";
 
   if (!(await hasAccess(supabase, orgId))) return { ok: false, error: NO_PLAN_MESSAGE };
-  const imageBlock = await aiLimitMessage(supabase, orgId, "image");
-  if (imageBlock) return { ok: false, error: imageBlock };
+  // Take it from the allowance before generating (atomic, so parallel
+  // requests can't overrun it); give it back if anything below fails.
+  const slot = await reserveAiGeneration(orgId, "image");
+  if (!slot.ok) return { ok: false, error: slot.error };
 
   try {
     const sourceUrl = await generateSoulImage(clean, ratio);
@@ -778,12 +780,15 @@ export async function generateAiImage(
     const { error } = await admin.storage
       .from("post-media")
       .upload(path, Buffer.from(bytes), { contentType: "image/jpeg", upsert: false });
-    if (error) return { ok: false, error: "Generated the image but couldn't save it." };
-    // Record usage (service role — can't be tampered with client-side).
-    await admin.from("ai_generations").insert({ org_id: orgId, kind: "image" });
+    if (error) {
+      await releaseAiGeneration(slot.id);
+      return { ok: false, error: "Generated the image but couldn't save it." };
+    }
     const url = admin.storage.from("post-media").getPublicUrl(path).data.publicUrl;
     return { ok: true, url, type: "image/jpeg" };
   } catch (e) {
+    // Higgsfield doesn't charge failed generations, so neither do we.
+    await releaseAiGeneration(slot.id);
     return { ok: false, error: e instanceof Error ? e.message : "Image generation failed." };
   }
 }
@@ -809,16 +814,19 @@ export async function startAiVideo(
   const ratio = isAspectRatio(aspectRatio) ? aspectRatio : "9:16";
 
   if (!(await hasAccess(supabase, orgId))) return { ok: false, error: NO_PLAN_MESSAGE };
-  const videoBlock = await aiLimitMessage(supabase, orgId, "video");
-  if (videoBlock) return { ok: false, error: videoBlock };
+  // Reserved before starting (atomic, so parallel starts can't overrun the
+  // allowance), then tied to the job so a failure can give it back and only
+  // this workspace can collect the result.
+  const slot = await reserveAiGeneration(orgId, "video");
+  if (!slot.ok) return { ok: false, error: slot.error };
 
   try {
     const { statusUrl } = await startVideo({ prompt: clean, aspectRatio: ratio, imageUrl });
-    // Count it against the allowance now (service role), tied to this job so a
-    // failure can give it back and only this workspace can collect the result.
-    await createAdminClient().from("ai_generations").insert({ org_id: orgId, kind: "video", ref: statusUrl });
+    const { error } = await createAdminClient().from("ai_generations").update({ ref: statusUrl }).eq("id", slot.id);
+    if (error) throw new Error("Couldn't track the video job. Try again.");
     return { ok: true, statusUrl };
   } catch (e) {
+    await releaseAiGeneration(slot.id);
     return { ok: false, error: e instanceof Error ? e.message : "Couldn't start the video." };
   }
 }
