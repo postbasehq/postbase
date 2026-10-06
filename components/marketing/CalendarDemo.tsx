@@ -101,6 +101,8 @@ export function CalendarDemo({
   productShot = false,
   sidebar = productShot,
   fromHour = FIRST_HOUR,
+  incoming,
+  notice,
 }: {
   showAgent?: boolean;
   productShot?: boolean;
@@ -109,6 +111,10 @@ export function CalendarDemo({
   /** First hour row to show. Cropped frames start later so the animated
    *  part of the week (12:00 to 15:00) is in view without scrolling. */
   fromHour?: number;
+  /** Driven from outside (the MCP demo): a post an agent just scheduled. Replaces the hero loop's own new post. */
+  incoming?: { day: number; hour: number; minute: number; chans: string[]; body: string } | null;
+  /** Driven from outside: a toast to show over the grid. */
+  notice?: string | null;
 }) {
   const hours = HOURS.filter((h) => h >= fromHour);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -189,7 +195,10 @@ export function CalendarDemo({
     };
   }, [productShot, inView]);
 
-  const events = (added ? [...EVENTS, added] : EVENTS).filter((e) => e.hour >= fromHour).map((e) => ({
+  const landed: Ev | null = incoming
+    ? { ...NEW_POST, ...incoming, post: { ...NEW_POST.post, body: incoming.body } }
+    : added;
+  const events = (landed ? [...EVENTS.filter((e) => !(incoming && e.day === incoming.day && e.hour === incoming.hour)), landed] : EVENTS).filter((e) => e.hour >= fromHour).map((e) => ({
     ...e,
     day: moved[e.id]?.day ?? e.day,
     status: statusOf[e.id] ?? e.status,
@@ -345,10 +354,10 @@ export function CalendarDemo({
               </div>
             </div>
 
-            {toast ? (
+            {(notice ?? toast) ? (
               <div className="swap-in pointer-events-none absolute bottom-3 left-1/2 z-40 inline-flex -translate-x-1/2 whitespace-nowrap items-center gap-2 rounded-full bg-ink px-3.5 py-2 text-[12px] font-medium text-surface shadow-lg">
                 <span className="flex size-4 items-center justify-center rounded-full bg-[#188038] text-[10px] font-bold text-white">✓</span>
-                {toast}
+                {notice ?? toast}
               </div>
             ) : null}
           </div>

@@ -83,12 +83,10 @@ export type McpNetwork = {
   metaDescription: string;
   h1: [string, string];
   sub: string;
-  /** An example create_post call, as the agent would send it. */
-  example: { caption: string; args: Record<string, unknown> };
   /** How create_post behaves on this network. */
   behaviour: { label: string; value: string }[];
-  /** What gets refused, and why. */
-  checks: string[];
+  /** What gets refused or flagged when the agent calls the tool. */
+  checks: { label: string; value: string }[];
   faqs: [string, string][];
 };
 
@@ -102,18 +100,6 @@ export const MCP_NETWORKS: McpNetwork[] = [
       "A hosted X MCP server for Claude, ChatGPT and Cursor: schedule tweets and threads through X's official API. OAuth sign-in, no X developer account needed.",
     h1: ["The X", "MCP server"],
     sub: "Let Claude, ChatGPT, Cursor or any MCP client schedule tweets and threads on X through the official API, without an X developer account of your own.",
-    example: {
-      caption: "A three-post thread, scheduled for 9am UK time",
-      args: {
-        thread: [
-          "We just shipped scheduled threads in Postbase.",
-          "Write the whole thread once, pick a time, and each post goes out as a reply to the one before.",
-          "Try it free for 7 days: postbase.so",
-        ],
-        channel_ids: ["<your X channel id>"],
-        scheduled_at: "2026-10-07T09:00:00+01:00",
-      },
-    },
     behaviour: [
       { label: "Length", value: "280 characters per post, counted the way X counts: links are 23 and most emoji are 2." },
       { label: "Threads", value: "Send a thread array and Postbase publishes it as a chain of replies, up to 25 posts." },
@@ -121,9 +107,9 @@ export const MCP_NETWORKS: McpNetwork[] = [
       { label: "API access", value: "Postbase posts through its own X API app, so you don't need X API keys or a paid X developer tier." },
     ],
     checks: [
-      "A scheduled post over 280 weighted characters is refused when the agent calls the tool, with the reason, so it can shorten it.",
-      "A time in the past is refused rather than posted straight away.",
-      "Near the monthly link allowance, the call returns a warning the agent can pass on. Linked posts past the allowance aren't sent until it resets.",
+      { label: "Too long", value: "A scheduled post over 280 weighted characters is refused when the agent calls the tool, with the reason, so it can shorten it." },
+      { label: "In the past", value: "A time in the past is refused rather than posted straight away." },
+      { label: "Link allowance", value: "Near the monthly link allowance, the call returns a warning the agent can pass on. Linked posts past the allowance aren't sent until it resets." },
     ],
     faqs: [
       [
@@ -147,17 +133,6 @@ export const MCP_NETWORKS: McpNetwork[] = [
       "A hosted LinkedIn MCP server: let Claude, ChatGPT or Cursor schedule LinkedIn posts with a first comment through LinkedIn's official API. OAuth sign-in.",
     h1: ["The LinkedIn", "MCP server"],
     sub: "Let Claude, ChatGPT, Cursor or any MCP client write and schedule LinkedIn posts, with the link in the first comment, through LinkedIn's official API.",
-    example: {
-      caption: "A post with its link in the first comment",
-      args: {
-        thread: [
-          "We spent three months making scheduling boring. Here's what we learned about time zones, retries and LinkedIn's API.",
-          "The full write-up: postbase.so/blog",
-        ],
-        channel_ids: ["<your LinkedIn channel id>"],
-        scheduled_at: "2026-10-08T08:30:00+01:00",
-      },
-    },
     behaviour: [
       { label: "Length", value: "Up to 3,000 characters. Only the first few lines show before \"see more\"." },
       { label: "First comment", value: "Send two parts as a thread and the second is published as the post's first comment." },
@@ -165,9 +140,9 @@ export const MCP_NETWORKS: McpNetwork[] = [
       { label: "Profiles", value: "Posts go to personal LinkedIn profiles. Company pages aren't supported yet." },
     ],
     checks: [
-      "A scheduled post over 3,000 characters is refused when the agent calls the tool, with the reason.",
-      "A time in the past is refused rather than posted straight away.",
-      "Disconnected or expired LinkedIn channels show their status in list_channels, so the agent can tell you to reconnect.",
+      { label: "Too long", value: "A scheduled post over 3,000 characters is refused when the agent calls the tool, with the reason." },
+      { label: "In the past", value: "A time in the past is refused rather than posted straight away." },
+      { label: "Expired accounts", value: "Disconnected or expired LinkedIn channels show their status in list_channels, so the agent can tell you to reconnect." },
     ],
     faqs: [
       [
@@ -191,14 +166,6 @@ export const MCP_NETWORKS: McpNetwork[] = [
       "A hosted Bluesky MCP server: let Claude, ChatGPT or Cursor schedule Bluesky posts and threads, with clickable links, through the AT Protocol. OAuth sign-in.",
     h1: ["The Bluesky", "MCP server"],
     sub: "Bluesky has no built-in scheduling. Let Claude, ChatGPT, Cursor or any MCP client schedule Bluesky posts and threads through the AT Protocol instead.",
-    example: {
-      caption: "The same announcement to X and Bluesky at once",
-      args: {
-        body: "Postbase now schedules Bluesky threads, with clickable links: postbase.so/integrations/bluesky",
-        channel_ids: ["<your Bluesky channel id>", "<your X channel id>"],
-        schedule_in_minutes: 30,
-      },
-    },
     behaviour: [
       { label: "Length", value: "300 characters per post, counted as you'd count them by eye." },
       { label: "Links", value: "Bluesky needs extra markup to make a link clickable. Postbase adds it when the post goes out." },
@@ -206,9 +173,9 @@ export const MCP_NETWORKS: McpNetwork[] = [
       { label: "Connecting", value: "Connect Bluesky to Postbase with your handle and an app password, not your main password." },
     ],
     checks: [
-      "A scheduled post over 300 characters is refused when the agent calls the tool, with the reason.",
-      "When one call targets X and Bluesky, every post has to fit both limits. Separate calls give each network its own version.",
-      "A time in the past is refused rather than posted straight away.",
+      { label: "Too long", value: "A scheduled post over 300 characters is refused when the agent calls the tool, with the reason." },
+      { label: "Two networks", value: "When one call targets X and Bluesky, every post has to fit both limits. Separate calls give each network its own version." },
+      { label: "In the past", value: "A time in the past is refused rather than posted straight away." },
     ],
     faqs: [
       [
@@ -232,16 +199,6 @@ export const MCP_NETWORKS: McpNetwork[] = [
       "A hosted Mastodon MCP server that works with any instance: let Claude, ChatGPT or Cursor schedule Mastodon posts and threads. OAuth sign-in, no self-hosting.",
     h1: ["The Mastodon", "MCP server"],
     sub: "Let Claude, ChatGPT, Cursor or any MCP client schedule posts and threads on any Mastodon instance, from mastodon.social to your own server.",
-    example: {
-      caption: "A short release thread, saved as a draft to review",
-      args: {
-        thread: [
-          "Postbase 1.2 is out: threads on Mastodon, Bluesky and X from one draft. #opensource",
-          "It's AGPL-3.0 and self-hostable. Code: github.com/postbasehq/postbase",
-        ],
-        channel_ids: ["<your Mastodon channel id>"],
-      },
-    },
     behaviour: [
       { label: "Length", value: "500 characters per post, the default on most instances." },
       { label: "Instances", value: "Works with any instance you've connected: mastodon.social, fosstodon.org or your own." },
@@ -249,9 +206,9 @@ export const MCP_NETWORKS: McpNetwork[] = [
       { label: "Hashtags", value: "Posted as written, so hashtags work the way they do when you type them." },
     ],
     checks: [
-      "A scheduled post over 500 characters is refused when the agent calls the tool, with the reason.",
-      "A time in the past is refused rather than posted straight away.",
-      "Leave out the time and the post is saved as a draft for you to check first.",
+      { label: "Too long", value: "A scheduled post over 500 characters is refused when the agent calls the tool, with the reason." },
+      { label: "In the past", value: "A time in the past is refused rather than posted straight away." },
+      { label: "Drafts", value: "Leave out the time and the post is saved as a draft for you to check first." },
     ],
     faqs: [
       [
@@ -271,3 +228,5 @@ export const MCP_NETWORKS: McpNetwork[] = [
 ];
 
 export const mcpNetwork = (slug: string) => MCP_NETWORKS.find((n) => n.slug === slug);
+
+export { MCP_SCENES, type McpScene } from "@/lib/seo/mcp-scenes";

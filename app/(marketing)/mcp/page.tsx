@@ -4,11 +4,11 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { pageMeta } from "@/lib/site";
 import { CLIENTS } from "@/lib/seo/clients";
 import { LIVE_NETWORKS } from "@/lib/seo/networks";
-import { MCP_FACTS, MCP_FAQS, MCP_NETWORKS, MCP_URL } from "@/lib/seo/mcp";
+import { MCP_FACTS, MCP_FAQS, MCP_NETWORKS, MCP_SCENES } from "@/lib/seo/mcp";
 import { CtaBand, FaqList, wrap } from "@/components/marketing/ui";
-import { CodeBlock, Facts, LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
-import { ClientSetupDemo } from "@/components/marketing/seo/demos";
-import { McpTools } from "@/components/marketing/seo/McpTools";
+import { Facts, LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
+import { McpInActionDemo } from "@/components/marketing/seo/McpDemo";
+import { McpConnect, McpTools } from "@/components/marketing/seo/McpTools";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 
@@ -19,14 +19,6 @@ const TRAIL = [{ label: "Home", href: "/" }, { label: "MCP server" }];
 
 export const metadata: Metadata = { title: TITLE, description: DESCRIPTION, ...pageMeta("/mcp", { ownImage: true }) };
 
-const claude = CLIENTS[0];
-
-const REMOTE = JSON.stringify({ mcpServers: { postbase: { url: MCP_URL } } }, null, 2);
-const LOCAL = JSON.stringify(
-  { mcpServers: { postbase: { command: "npx", args: ["-y", "@postbasehq/mcp"], env: { POSTBASE_API_KEY: "pb_live_…" } } } },
-  null,
-  2,
-);
 
 export default function McpPage() {
   return (
@@ -40,9 +32,9 @@ export default function McpPage() {
           sub="One hosted server that lets Claude, ChatGPT, Cursor or any MCP client draft and schedule posts and threads to X, LinkedIn, Bluesky and Mastodon. Sign in with Postbase: no API key, and every post lands on a calendar you can check."
           cta={{ label: "Connect in a minute", href: "/login" }}
           secondary={{ label: "Tool reference", href: "https://docs.postbase.so/mcp/tools" }}
-          frame="Add the server, sign in, ask for a post"
+          frame="Claude scheduling through Postbase, live on your calendar"
         >
-          <ClientSetupDemo client={{ logo: claude.logo, name: claude.name, setup: claude.setup }} />
+          <McpInActionDemo scene={MCP_SCENES.hub} />
         </SeoHero>
 
         <section className={section}>
@@ -59,7 +51,7 @@ export default function McpPage() {
         </section>
 
         <section className={section}>
-          <SectionHead title="Per network" sub="What create_post does on each network, with example calls." />
+          <SectionHead title="Per network" sub="What create_post does on each network, and what it checks first." />
           <LinkCards
             items={MCP_NETWORKS.map((m) => {
               const n = LIVE_NETWORKS.find((x) => x.slug === m.slug)!;
@@ -73,10 +65,7 @@ export default function McpPage() {
             title="Two ways to connect"
             sub="Most AI tools take the hosted URL and sign you in with OAuth. If yours only runs local servers, use the npm package with an API key."
           />
-          <div className="flex flex-col gap-8">
-            <CodeBlock language="json" code={REMOTE} caption="Hosted, with OAuth sign-in" />
-            <CodeBlock language="json" code={LOCAL} caption="Local, with an API key (npm @postbasehq/mcp)" />
-          </div>
+          <McpConnect />
         </section>
 
         <section className={section}>

@@ -6,10 +6,10 @@ import { pageMeta } from "@/lib/site";
 import { CLIENTS } from "@/lib/seo/clients";
 import { COMBO_CLIENTS } from "@/lib/seo/combos";
 import { LIVE_NETWORKS } from "@/lib/seo/networks";
-import { MCP_NETWORKS, MCP_URL, mcpNetwork } from "@/lib/seo/mcp";
-import { CtaBand, FaqList, card, wrap } from "@/components/marketing/ui";
-import { CodeBlock, Facts, LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
-import { ClientSetupDemo } from "@/components/marketing/seo/demos";
+import { MCP_NETWORKS, MCP_SCENES, mcpNetwork } from "@/lib/seo/mcp";
+import { CtaBand, FaqList, wrap } from "@/components/marketing/ui";
+import { Facts, LinkCards, SectionHead, SeoHero, section } from "@/components/marketing/seo/sections";
+import { McpInActionDemo } from "@/components/marketing/seo/McpDemo";
 import { McpTools } from "@/components/marketing/seo/McpTools";
 import { SeoJsonLd } from "@/components/marketing/seo/SeoJsonLd";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
@@ -33,7 +33,6 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   };
 }
 
-const claude = CLIENTS[0];
 
 export default async function McpNetworkPage({ params }: { params: Params }) {
   const { network } = await params;
@@ -42,7 +41,6 @@ export default async function McpNetworkPage({ params }: { params: Params }) {
   if (!m || !n) notFound();
   const path = `/mcp/${network}`;
   const trail = [{ label: "Home", href: "/" }, { label: "MCP server", href: "/mcp" }, { label: n.name }];
-  const call = JSON.stringify({ name: "create_post", arguments: m.example.args }, null, 2);
 
   return (
     <>
@@ -56,9 +54,9 @@ export default async function McpNetworkPage({ params }: { params: Params }) {
           sub={m.sub}
           cta={{ label: "Connect in a minute", href: "/login" }}
           secondary={{ label: "The MCP server", href: "/mcp" }}
-          frame={`Add ${MCP_URL} to your AI tool`}
+          frame={`Claude scheduling to ${n.name} through Postbase`}
         >
-          <ClientSetupDemo client={{ logo: claude.logo, name: claude.name, setup: claude.setup }} />
+          <McpInActionDemo scene={MCP_SCENES[m.slug]} />
         </SeoHero>
 
         <section className={section}>
@@ -67,22 +65,8 @@ export default async function McpNetworkPage({ params }: { params: Params }) {
         </section>
 
         <section className={section}>
-          <SectionHead title="An example call" sub={`What your AI tool sends to create_post. Get channel ids from list_channels.`} />
-          <CodeBlock language="json" code={call} caption={m.example.caption} />
-        </section>
-
-        <section className={section}>
           <SectionHead title="Checked before it's queued" sub="Problems come back to the agent when it calls the tool, not hours later when the post is due." />
-          <div className={`${card} mx-auto max-w-[820px] p-7`}>
-            <ul className="flex flex-col gap-2.5">
-              {m.checks.map((t) => (
-                <li key={t} className="flex items-start gap-3 text-[15px] leading-relaxed text-ink">
-                  <span className="mt-2 size-1.5 shrink-0 rounded-full bg-blue" aria-hidden />
-                  {t}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <Facts items={m.checks} />
         </section>
 
         <section className={section}>
