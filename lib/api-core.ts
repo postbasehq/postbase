@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { insertPostWhole } from "@/lib/publish/save-post";
 import { cancelPostForOrg, type CancelOutcome } from "@/lib/publish/cancel";
 import { firstBlockingProblem, pastTimeProblem } from "@/lib/post-validation";
 import { schedulingProblem } from "@/lib/billing-guard";
@@ -81,19 +82,16 @@ export async function createPost(orgId: string, input: CreatePostInput) {
     if (problem) throw new Error(problem);
   }
 
-  const { data: post, error } = await db
-    .from("posts")
-    .insert({ org_id: orgId, body, thread_tail: threadTail, scheduled_at: scheduledAt, status })
-    .select("id, body, scheduled_at, status")
-    .single();
-  if (error) throw new Error(error.message);
-
-  if (channelIds.length > 0) {
-    const { error: tErr } = await db
-      .from("post_targets")
-      .insert(channelIds.map((channel_id) => ({ post_id: post.id, channel_id, status })));
-    if (tErr) throw new Error(tErr.message);
-  }
+  // Written as a draft and given its status last, so it's never left
+  // scheduled with missing channels (lib/publish/save-post.ts).
+  const { id } = await insertPostWhole(
+    db,
+    { org_id: orgId, body, thread_tail: threadTail, scheduled_at: scheduledAt },
+    status,
+    channelIds.map((channel_id) => ({ channel_id })),
+    [],
+  );
+  const post = { id, body, scheduled_at: scheduledAt, status };
 
   // The cron poller publishes scheduled posts when due — no event needed.
   // Over the X link allowance? Say so now; the publisher enforces it when due.

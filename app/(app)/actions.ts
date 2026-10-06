@@ -19,6 +19,7 @@ import { isRepeatEvery } from "@/lib/publish/repeat";
 import { getTimeZone, zonedTimeToUtc } from "@/lib/tz";
 import { firstBlockingProblem, pastTimeProblem } from "@/lib/post-validation";
 import { cancelPostForOrg, holdPostForEdit } from "@/lib/publish/cancel";
+import { insertPostWhole, replaceTargetsAndMedia } from "@/lib/publish/save-post";
 import {
   generateSoulImage,
   higgsfieldConfigured,
@@ -120,6 +121,19 @@ async function orphanedStoragePaths(
  * org_id, or to a post just verified (or created) in it.
  */
 const writeDb = () => createAdminClient();
+
+/** Only channels in this workspace; RLS alone would also accept the user's other workspaces'. */
+async function assertOwnChannels(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  orgId: string,
+  channelIds: string[],
+): Promise<void> {
+  if (channelIds.length === 0) return;
+  const { data: owned, error } = await supabase.from("channels").select("id").eq("org_id", orgId).in("id", channelIds);
+  if (error) throw new Error(error.message);
+  const ownedIds = new Set((owned ?? []).map((c) => c.id));
+  if (channelIds.some((id) => !ownedIds.has(id))) throw new Error("Invalid channel selection.");
+}
 
 /** Parse the composer's `thread` JSON field into non-empty, trimmed tweet segments. */
 function parseThread(formData: FormData): string[] {
@@ -313,15 +327,17 @@ export async function createPost(formData: FormData) {
     redirect("/queue");
   }
 
-  const { data: post, error } = await writeDb()
-    .from("posts")
-    .insert({
+  await assertOwnChannels(supabase, orgId, channelIds);
+
+  const variants = parseVariants(formData);
+  await insertPostWhole(
+    writeDb(),
+    {
       org_id: orgId,
       author_id: user?.id ?? null,
       body: segments[0],
       thread_tail: segments.slice(1),
       scheduled_at: scheduledAt,
-      status,
       tiktok_privacy_level: parseTiktokPrivacy(formData),
       youtube_privacy: parseYoutubePrivacy(formData),
       youtube_options: parseYoutubeOptions(formData, orgId),
@@ -329,41 +345,11 @@ export async function createPost(formData: FormData) {
       repeat_every: parseRepeatEvery(formData, status === "scheduled"),
       // Repeats step on the author's local calendar (keeps 09:00 at 09:00 across DST).
       timezone: await getTimeZone(),
-    })
-    .select("id")
-    .single();
-  if (error) throw new Error(error.message);
-
-  if (channelIds.length > 0) {
-    // Only allow targeting channels in this workspace. RLS alone would also
-    // accept channels from the user's other workspaces.
-    const { data: owned } = await supabase
-      .from("channels")
-      .select("id")
-      .eq("org_id", orgId)
-      .in("id", channelIds);
-    const ownedIds = new Set((owned ?? []).map((c) => c.id));
-    if (channelIds.some((id) => !ownedIds.has(id))) {
-      throw new Error("Invalid channel selection.");
-    }
-
-    const variants = parseVariants(formData);
-    const targets = channelIds.map((channel_id) => ({
-      post_id: post.id,
-      channel_id,
-      variant_body: variants[channel_id] ?? null,
-      status,
-    }));
-    const { error: targetErr } = await writeDb().from("post_targets").insert(targets);
-    if (targetErr) throw new Error(targetErr.message);
-  }
-
-  const media = parseMedia(formData);
-  if (media.length > 0) {
-    await writeDb()
-      .from("media")
-      .insert(media.map((m) => ({ post_id: post.id, storage_url: m.url, type: m.type })));
-  }
+    },
+    status,
+    channelIds.map((channel_id) => ({ channel_id, variant_body: variants[channel_id] ?? null })),
+    parseMedia(formData),
+  );
 
   // The cron poller publishes scheduled posts when their time arrives — no event needed.
 
@@ -426,17 +412,7 @@ export async function updatePost(formData: FormData) {
   if (scheduledAt) await assertSendable(supabase, orgId, channelIds, segments, scheduledAt, formData);
 
   // Validate channels belong to this workspace before writing anything.
-  if (channelIds.length > 0) {
-    const { data: owned } = await supabase
-      .from("channels")
-      .select("id")
-      .eq("org_id", orgId)
-      .in("id", channelIds);
-    const ownedIds = new Set((owned ?? []).map((c) => c.id));
-    if (channelIds.some((id) => !ownedIds.has(id))) {
-      throw new Error("Invalid channel selection.");
-    }
-  }
+  await assertOwnChannels(supabase, orgId, channelIds);
 
   // The check above is a separate read: the publisher could claim a target
   // before the rewrite below, which would then send it again at the new time.
@@ -444,14 +420,14 @@ export async function updatePost(formData: FormData) {
   const hold = await holdPostForEdit(orgId, postId);
   if (!hold.ok) redirect("/queue");
 
-  // Update the post, scoped to the org, and confirm it was ours.
+  // Update the post, scoped to the org, and confirm it was ours. It stays a
+  // draft until its targets and media are replaced (see replaceTargetsAndMedia).
   const { data: updated, error } = await writeDb()
     .from("posts")
     .update({
       body: segments[0],
       thread_tail: segments.slice(1),
       scheduled_at: scheduledAt,
-      status,
       tiktok_privacy_level: parseTiktokPrivacy(formData),
       youtube_privacy: parseYoutubePrivacy(formData),
       youtube_options: parseYoutubeOptions(formData, orgId),
@@ -471,24 +447,7 @@ export async function updatePost(formData: FormData) {
     redirect("/queue");
   }
 
-  // Replace the targets (all unsent and held as drafts, so none is mid-send).
-  await writeDb().from("post_targets").delete().eq("post_id", postId);
-  if (channelIds.length > 0) {
-    const variants = parseVariants(formData);
-    const { error: tErr } = await writeDb().from("post_targets").insert(
-      channelIds.map((channel_id) => ({
-        post_id: postId,
-        channel_id,
-        variant_body: variants[channel_id] ?? null,
-        status,
-      })),
-    );
-    if (tErr) throw new Error(tErr.message);
-  }
-
-  // Replace media rows, and delete any now-removed files from the bucket so they
-  // don't orphan. Storage deletion needs the admin client (the bucket only allows
-  // authenticated uploads, not deletes — see the security-hardening migration).
+  // Files this edit removes; deleted from the bucket only once the edit saved.
   const media = parseMedia(formData);
   const { data: oldMedia } = await supabase
     .from("media")
@@ -498,17 +457,30 @@ export async function updatePost(formData: FormData) {
   const removedUrls = (oldMedia ?? [])
     .map((m) => m.storage_url)
     .filter((u) => u && !keptUrls.has(u)) as string[];
+
+  // Replace the targets (all unsent and held as drafts, so none is mid-send)
+  // and media; the post takes its new status last. If this fails the post is
+  // left a draft rather than scheduled with missing channels or media.
+  const variants = parseVariants(formData);
+  try {
+    await replaceTargetsAndMedia(
+      writeDb(),
+      postId,
+      status,
+      channelIds.map((channel_id) => ({ channel_id, variant_body: variants[channel_id] ?? null })),
+      media,
+    );
+  } catch (e) {
+    console.error(`[updatePost] ${postId} left as a draft:`, e);
+    throw new Error("Couldn't save every change, so the post was kept as a draft. Open it from Drafts and save again.");
+  }
+
   // Only delete files no other post (e.g. a repeat occurrence) still references.
+  // Storage deletion needs the admin client (the bucket only allows
+  // authenticated uploads, not deletes — see the security-hardening migration).
   const removedPaths = await orphanedStoragePaths(supabase, removedUrls, postId, orgId);
   if (removedPaths.length > 0) {
     await createAdminClient().storage.from("post-media").remove(removedPaths);
-  }
-
-  await writeDb().from("media").delete().eq("post_id", postId);
-  if (media.length > 0) {
-    await writeDb()
-      .from("media")
-      .insert(media.map((m) => ({ post_id: postId, storage_url: m.url, type: m.type })));
   }
 
   revalidatePath("/queue");

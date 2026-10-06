@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { insertPostWhole } from "@/lib/publish/save-post";
 import { firstBlockingProblem, pastTimeProblem } from "@/lib/post-validation";
 import { isOwnMediaUrl } from "@/lib/media-urls";
 import { getCurrentOrgId } from "@/lib/org";
@@ -76,36 +77,29 @@ export async function scheduleProposedPost(
   // Written with the service role (members can only read posts, 0061),
   // scoped to the caller's workspace.
   const db = createAdminClient();
-  const { data: post, error } = await db
-    .from("posts")
-    .insert({
-      org_id: orgId,
-      author_id: user?.id ?? null,
-      body: segments[0],
-      thread_tail: segments.slice(1),
-      scheduled_at: scheduledIso,
-      status,
-    })
-    .select("id")
-    .single();
-  if (error) return { ok: false, error: error.message };
-
   const variants = proposal.variants ?? {};
-  const { error: targetErr } = await db.from("post_targets").insert(
-    channelIds.map((channel_id) => ({
-      post_id: post.id,
-      channel_id,
+  let post: { id: string };
+  try {
+    // Written as a draft and given its status last, so it's never left
+    // scheduled with missing channels or media (lib/publish/save-post.ts).
+    post = await insertPostWhole(
+      db,
+      {
+        org_id: orgId,
+        author_id: user?.id ?? null,
+        body: segments[0],
+        thread_tail: segments.slice(1),
+        scheduled_at: scheduledIso,
+      },
       status,
-      variant_body: variants[channel_id]?.trim() ? variants[channel_id] : null,
-    })),
-  );
-  if (targetErr) return { ok: false, error: targetErr.message };
-
-  const media = (proposal.media ?? []).filter((m) => m?.url && isOwnMediaUrl(m.url, orgId));
-  if (media.length > 0) {
-    await db
-      .from("media")
-      .insert(media.map((m) => ({ post_id: post.id, storage_url: m.url, type: m.type })));
+      channelIds.map((channel_id) => ({
+        channel_id,
+        variant_body: variants[channel_id]?.trim() ? variants[channel_id] : null,
+      })),
+      (proposal.media ?? []).filter((m) => m?.url && isOwnMediaUrl(m.url, orgId)),
+    );
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Couldn't save the post." };
   }
 
   revalidatePath("/queue");
