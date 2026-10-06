@@ -727,7 +727,7 @@ export function MediaLibrary({
               <div className="min-w-0 flex-1">
                 {renaming ? (
                   <div className="flex items-center gap-2">
-                    <input
+                    <input aria-label="File name"
                       value={renameValue}
                       onChange={(e) => setRenameValue(e.target.value)}
                       autoFocus
@@ -991,7 +991,7 @@ function FolderRail({
     <span className={`ml-auto shrink-0 text-[12px] tabular-nums ${over ? "text-white/80" : "text-muted"}`}>{n ?? 0}</span>
   );
   const nameInput = (onEnter: () => void, onCancel: () => void) => (
-    <input
+    <input aria-label="Folder name"
       autoFocus
       value={draft}
       maxLength={60}

@@ -251,6 +251,7 @@ export function PostForm({
     if (activeTab !== "base" && !selected.has(activeTab)) setActiveTab("base");
   }, [selected, activeTab]);
   const [tiktokValid, setTiktokValid] = useState(true);
+  const [settingsTab, setSettingsTab] = useState<"tiktok" | "youtube">("tiktok");
   const [scheduleLocal, setScheduleLocal] = useState(
     () => utcToLocalInput(initial?.scheduledAt) || defaultScheduleLocal || "",
   );
@@ -366,6 +367,14 @@ export function PostForm({
   const tiktokChannel = selectedChannels.find((c) => c.platform === "tiktok") ?? null;
   const youtubeChannel = selectedChannels.find((c) => c.platform === "youtube") ?? null;
   const tiktokPhotoOnly = hasMedia && !hasVideo;
+  // Platform settings sit in tabs when more than one panel applies. Both stay
+  // mounted (inactive one hidden) so their hidden inputs still submit.
+  const settingsPlatforms = [
+    ...(tiktokChannel ? (["tiktok"] as const) : []),
+    ...(youtubeChannel ? (["youtube"] as const) : []),
+  ];
+  const settingsTabbed = settingsPlatforms.length > 1;
+  const activeSettings = settingsPlatforms.includes(settingsTab) ? settingsTab : settingsPlatforms[0];
   // TikTok settings must be complete before scheduling (not required for drafts).
   const needsPlan = !isDraft && !canSchedule;
   const canSubmit = !bodyEmpty && (isDraft || (!hasBlocking && tiktokValid && canSchedule));
@@ -825,9 +834,26 @@ export function PostForm({
               ) : null}
             </div>
 
+            {settingsTabbed ? (
+              <div className="flex flex-wrap items-center gap-1 self-start rounded-xl bg-surface-2/60 p-1">
+                {settingsPlatforms.map((p) => (
+                  <VariantTab
+                    key={p}
+                    active={activeSettings === p}
+                    dot={p === "tiktok" && !tiktokValid}
+                    dotClassName="bg-[#d14a3e]"
+                    onClick={() => setSettingsTab(p)}
+                  >
+                    <BrandTile platform={p} size={15} radius={4} />
+                    {label(p)} settings
+                  </VariantTab>
+                ))}
+              </div>
+            ) : null}
+
             {/* TikTok settings (Content Sharing Guidelines compliant) */}
             {tiktokChannel ? (
-              <div className="pt-1">
+              <div className={activeSettings === "tiktok" ? "pt-1" : "hidden"}>
                 <TikTokSettings
                   channelId={tiktokChannel.id}
                   channelHandle={tiktokChannel.handle}
@@ -844,7 +870,7 @@ export function PostForm({
 
             {/* YouTube settings (title, thumbnail, visibility, audience) */}
             {youtubeChannel ? (
-              <div className="pt-1">
+              <div className={activeSettings === "youtube" ? "pt-1" : "hidden"}>
                 <YouTubeSettings
                   channelHandle={youtubeChannel.handle}
                   initial={initial?.youtubePrivacy}
@@ -1186,7 +1212,7 @@ export function PostForm({
           </div>
         ) : (
           <>
-            <textarea
+            <textarea aria-label={genMode === "video" ? "Describe the video" : "Describe the image"}
               value={genPrompt}
               onChange={(e) => setGenPrompt(e.target.value)}
               rows={3}
@@ -1481,11 +1507,13 @@ export function PostForm({
 function VariantTab({
   active,
   dot,
+  dotClassName = "bg-blue",
   onClick,
   children,
 }: {
   active: boolean;
   dot?: boolean;
+  dotClassName?: string;
   onClick: () => void;
   children: React.ReactNode;
 }) {
@@ -1498,7 +1526,7 @@ function VariantTab({
       }`}
     >
       {children}
-      {dot ? <span className="size-1.5 rounded-full bg-blue" /> : null}
+      {dot ? <span className={`size-1.5 rounded-full ${dotClassName}`} /> : null}
     </button>
   );
 }
@@ -1528,7 +1556,7 @@ function ChannelVariantEditor({
   const atLimit = limit != null && len > limit;
   return (
     <div className="rounded-xl border border-line bg-ground p-3.5 transition-shadow focus-within:border-blue">
-      <textarea
+      <textarea aria-label="Caption for this channel"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={6}
@@ -1699,7 +1727,7 @@ function ThreadItem({
             </div>
           </div>
         ) : null}
-        <textarea
+        <textarea aria-label={isFirst ? "Post text" : "Next post or comment"}
           value={t}
           onChange={(e) => onChange(e.target.value)}
           rows={isFirst ? 6 : 3}

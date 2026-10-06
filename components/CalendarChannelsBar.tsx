@@ -247,7 +247,7 @@ export function CalendarChannelsBar({
                 </span>
                 <div className="flex items-center rounded-xl border border-line bg-ground px-3.5 focus-within:border-blue">
                   <span className="text-sm text-muted">https://</span>
-                  <input
+                  <input aria-label="Mastodon server"
                     value={instance}
                     onChange={(e) => setInstance(e.target.value)}
                     autoFocus

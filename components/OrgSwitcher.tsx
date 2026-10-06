@@ -222,7 +222,7 @@ function CreateWorkspace({ allowance: a, onDone }: { allowance: WorkspaceAllowan
     <div className="mt-1.5 border-t border-line pt-1.5">
       {naming ? (
         <div className="px-1 pb-1">
-          <input
+          <input aria-label="Workspace name"
             autoFocus
             value={name}
             maxLength={60}

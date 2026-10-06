@@ -7,7 +7,7 @@ export function CopyField({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="flex items-center gap-2">
-      <input
+      <input aria-label="Link to copy"
         readOnly
         value={value}
         onFocus={(e) => e.currentTarget.select()}

@@ -225,7 +225,7 @@ export function AgentProposalPanel({
                     {segments.length > 1 ? (
                       <div className="pb-1 text-[11px] font-medium text-muted">Post {i + 1}</div>
                     ) : null}
-                    <textarea
+                    <textarea aria-label={segments.length > 1 ? `Post ${i + 1}` : "Post text"}
                       value={seg}
                       onChange={(e) =>
                         setSegments((prev) => prev.map((s, j) => (j === i ? e.target.value : s)))
@@ -237,7 +237,7 @@ export function AgentProposalPanel({
                 ))
               ) : (
                 <div className="space-y-1.5">
-                  <textarea
+                  <textarea aria-label="Caption for this channel"
                     value={variants[activeTab] ?? ""}
                     onChange={(e) => setVariants((p) => ({ ...p, [activeTab]: e.target.value }))}
                     rows={5}
@@ -274,7 +274,7 @@ export function AgentProposalPanel({
 
             <div>
               <div className="pb-2 text-xs font-semibold text-muted">When</div>
-              <input
+              <input aria-label="When to post"
                 type="datetime-local"
                 value={when}
                 onChange={(e) => setWhen(e.target.value)}

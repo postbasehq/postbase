@@ -83,7 +83,7 @@ export function AgentSidebar({ onShowNav }: { onShowNav?: () => void }) {
               const active = c.id === activeId;
               if (editingId === c.id) {
                 return (
-                  <input
+                  <input aria-label="Chat name"
                     key={c.id}
                     autoFocus
                     value={draft}
