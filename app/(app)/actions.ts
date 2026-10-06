@@ -20,6 +20,7 @@ import { atChannelLimit, aiLimitMessage, hasAccess, NO_PLAN_MESSAGE } from "@/li
 import { connectBluesky } from "@/lib/platforms/bluesky";
 import { isRepeatEvery } from "@/lib/publish/repeat";
 import { getTimeZone, zonedTimeToUtc } from "@/lib/tz";
+import { firstBlockingProblem, pastTimeProblem } from "@/lib/post-validation";
 import {
   generateSoulImage,
   higgsfieldConfigured,
@@ -141,6 +142,32 @@ function parseMedia(formData: FormData): { url: string; type: string }[] {
     // ignore
   }
   return [];
+}
+
+/**
+ * Server-side twin of the composer's checks, for scheduled posts: not in the
+ * past, and nothing a selected network would reject (length counted its way,
+ * required media, X's media rules). Stops a stale or tampered client from
+ * scheduling a post that can only fail when it's due.
+ */
+async function assertSendable(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  orgId: string,
+  channelIds: string[],
+  segments: string[],
+  scheduledAt: string,
+  formData: FormData,
+): Promise<void> {
+  const past = pastTimeProblem(scheduledAt);
+  if (past) throw new Error(past);
+  if (channelIds.length === 0) return;
+  const { data: chans } = await supabase.from("channels").select("id, platform").eq("org_id", orgId).in("id", channelIds);
+  const variants = parseVariants(formData);
+  const problem = firstBlockingProblem(
+    (chans ?? []).map((c) => ({ platform: c.platform as string, parts: variants[c.id] ? [variants[c.id]] : segments })),
+    parseMedia(formData),
+  );
+  if (problem) throw new Error(problem);
 }
 
 /** Parse the `variants` JSON field into a channelId -> non-empty text map. */
@@ -281,6 +308,7 @@ export async function createPost(formData: FormData) {
   const status = scheduledAt ? "scheduled" : "draft";
   // Drafts are always allowed; scheduling needs an active plan.
   if (status === "scheduled" && !(await hasAccess(supabase, orgId))) throw new Error(NO_PLAN_MESSAGE);
+  if (scheduledAt) await assertSendable(supabase, orgId, channelIds, segments, scheduledAt, formData);
 
   // Backstop against double-submits: if an identical post was created in this
   // workspace in the last 15s, treat this as a duplicate click and don't insert
@@ -391,6 +419,7 @@ export async function updatePost(formData: FormData) {
   const status = scheduledAt ? "scheduled" : "draft";
   // Drafts are always allowed; scheduling needs an active plan.
   if (status === "scheduled" && !(await hasAccess(supabase, orgId))) throw new Error(NO_PLAN_MESSAGE);
+  if (scheduledAt) await assertSendable(supabase, orgId, channelIds, segments, scheduledAt, formData);
 
   // Update the post, scoped to the org, and confirm it was ours.
   const { data: updated, error } = await supabase

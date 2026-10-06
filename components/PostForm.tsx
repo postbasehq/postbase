@@ -10,6 +10,7 @@ import { Modal } from "@/components/Modal";
 import { countXLinkPosts } from "@/lib/x-link-count";
 import { BrandTile } from "@/components/BrandTile";
 import { DateTimePicker } from "@/components/DateTimePicker";
+import { charCount, checkForPlatform, PAST_GRACE_MS } from "@/lib/post-validation";
 import { channelHealth } from "@/lib/channel-health";
 import { TikTokSettings, type TikTokInitial } from "@/components/TikTokSettings";
 import { YouTubeSettings, type YouTubePrivacy } from "@/components/YouTubeSettings";
@@ -295,6 +296,13 @@ export function PostForm({
   const previewClamped = Math.min(previewIdx, Math.max(0, selectedChannels.length - 1));
   const previewChannel = selectedChannels[previewClamped];
 
+  // The selected network with the smallest budget drives the editor's counter,
+  // counted its way (X weighs URLs as 23 and emoji/CJK as 2, Bluesky counts graphemes).
+  const strictPlatform = selectedPlatforms.reduce<string | null>(
+    (best, p) => (best == null || (PLATFORM[p]?.limit ?? Infinity) < (PLATFORM[best]?.limit ?? Infinity) ? p : best),
+    null,
+  );
+  const countText = (t: string) => (strictPlatform ? charCount(strictPlatform, t) : Array.from(t).length);
   // Strictest character budget across the selected platforms (null when none).
   const charLimit = (() => {
     if (selectedPlatforms.length === 0) return null;
@@ -316,36 +324,18 @@ export function PostForm({
   function checkPlatform(platform: string): Note[] {
     const meta = PLATFORM[platform];
     if (!meta) return [];
+    // What each channel will really send (its own variant, or the thread), checked
+    // the way the network checks it (lib/post-validation, also run on the server).
+    const seen = new Set<string>();
     const notes: Note[] = [];
-    if (meta.thread) {
-      // Thread-native (X, Bluesky, Mastodon): each block is its own post/reply.
-      tweets.forEach((t, i) => {
-        const over = t.text.trim().length - meta.limit;
-        if (over > 0)
-          notes.push({ level: "error", text: `Post ${i + 1} is ${over} over ${meta.limit}` });
-      });
-    } else {
-      const over = caption.length - meta.limit;
-      if (over > 0)
-        notes.push({ level: "error", text: `Caption is ${over} over ${meta.limit.toLocaleString()}` });
-      if (isThread)
-        notes.push({
-          level: "info",
-          text: meta.firstComment
-            ? "Extra posts publish as a first comment"
-            : "Extra posts are added to the post text",
-        });
+    for (const c of selectedChannels.filter((ch) => ch.platform === platform)) {
+      const variant = variants[c.id]?.trim();
+      for (const n of checkForPlatform(platform, variant ? [variant] : cleanTweets, media)) {
+        if (seen.has(n.text)) continue;
+        seen.add(n.text);
+        notes.push(n);
+      }
     }
-    if (meta.videoOnly && !hasVideo) {
-      notes.push({ level: "error", text: "Needs a video" });
-    } else if (meta.needsMedia && !hasMedia) {
-      notes.push({
-        level: "error",
-        text: meta.prefersVideo ? "Needs a video or images" : "Needs an image or video",
-      });
-    }
-    if (meta.prefersVideo && hasMedia && !hasVideo)
-      notes.push({ level: "info", text: "Posts as a photo carousel" });
     if (platform === "x" && xLinks) {
       // Each X account sends its own copy, so each one's link posts count.
       const needed = selectedChannels
@@ -368,7 +358,9 @@ export function PostForm({
   }
 
   const checks = selectedPlatforms.map((p) => ({ platform: p, notes: checkPlatform(p) }));
-  const hasBlocking = checks.some((c) => c.notes.some((n) => n.level === "error"));
+  // A time already gone would publish on the next run, not when the user meant.
+  const inPast = !!utc && Date.parse(utc) < Date.now() - PAST_GRACE_MS;
+  const hasBlocking = inPast || checks.some((c) => c.notes.some((n) => n.level === "error"));
   const bodyEmpty = cleanTweets.length === 0;
   // The first selected TikTok account drives the compliant TikTok settings.
   const tiktokChannel = selectedChannels.find((c) => c.platform === "tiktok") ?? null;
@@ -691,6 +683,7 @@ export function PostForm({
                     total={tweets.length}
                     isThread={isThread}
                     charLimit={charLimit}
+                    countText={countText}
                     emptyWarning={i === 0 && bodyEmpty && !hasMedia}
                     reordering={reordering}
                     onDragChange={setReordering}
@@ -709,6 +702,7 @@ export function PostForm({
                   PLATFORM[selectedChannels.find((c) => c.id === activeTab)?.platform ?? ""]?.limit ??
                   null
                 }
+                platform={selectedChannels.find((c) => c.id === activeTab)?.platform}
                 onChange={(v) => setVariants((prev) => ({ ...prev, [activeTab]: v }))}
                 onCopyBase={() => setVariants((prev) => ({ ...prev, [activeTab]: caption }))}
                 onUseBase={() =>
@@ -998,6 +992,7 @@ export function PostForm({
       <div className="fixed bottom-3 left-0 right-3 z-30 rounded-b-2xl border border-line bg-surface shadow-[0_-4px_14px_-10px_rgba(16,24,40,0.22)] md:left-60">
         <div className="mx-auto flex w-full max-w-[1248px] flex-wrap items-center gap-x-4 gap-y-3 px-6 py-3.5">
         <DateTimePicker value={scheduleLocal} onChange={setScheduleLocal} timeZone={tz} />
+        {inPast ? <span className="text-xs font-medium text-[#d14a3e]">That time has passed. Pick a later one.</span> : null}
 
         {initial?.id && scheduleLocal ? (
           <button
@@ -1514,6 +1509,7 @@ function ChannelVariantEditor({
   value,
   base,
   limit,
+  platform,
   onChange,
   onCopyBase,
   onUseBase,
@@ -1521,20 +1517,21 @@ function ChannelVariantEditor({
   value: string;
   base: string;
   limit: number | null;
+  /** The channel's network, so the counter counts its way. */
+  platform?: string;
   onChange: (v: string) => void;
   onCopyBase: () => void;
   onUseBase: () => void;
 }) {
-  const len = value.length;
+  const len = platform ? charCount(platform, value) : Array.from(value).length;
   const nearLimit = limit != null && len >= limit * 0.9;
-  const atLimit = limit != null && len >= limit;
+  const atLimit = limit != null && len > limit;
   return (
     <div className="rounded-xl border border-line bg-ground p-3.5 transition-shadow focus-within:border-blue">
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={6}
-        maxLength={limit ?? undefined}
         placeholder={
           base
             ? "Customize this channel's caption… (leave empty to use the base text)"
@@ -1573,6 +1570,7 @@ function ThreadItem({
   total,
   isThread,
   charLimit,
+  countText,
   emptyWarning,
   reordering,
   onDragChange,
@@ -1585,6 +1583,8 @@ function ThreadItem({
   total: number;
   isThread: boolean;
   charLimit: number | null;
+  /** Counts text the way the strictest selected network does. */
+  countText: (t: string) => number;
   emptyWarning: boolean;
   reordering: boolean;
   onDragChange: (v: boolean) => void;
@@ -1595,9 +1595,9 @@ function ThreadItem({
   const controls = useDragControls();
   const [dragging, setDragging] = useState(false);
   const t = tweet.text;
-  const len = t.length;
+  const len = countText(t);
   const nearLimit = charLimit != null && len >= charLimit * 0.9;
-  const atLimit = charLimit != null && len >= charLimit;
+  const atLimit = charLimit != null && len > charLimit;
   const isFirst = index === 0;
   const isLast = index === total - 1;
 
@@ -1703,7 +1703,6 @@ function ThreadItem({
           value={t}
           onChange={(e) => onChange(e.target.value)}
           rows={isFirst ? 6 : 3}
-          maxLength={charLimit ?? undefined}
           placeholder={isFirst ? "What do you want to say?" : "Add a comment or next post…"}
           className="w-full resize-none select-text bg-transparent text-[15px] leading-relaxed outline-none placeholder:text-muted/70"
         />

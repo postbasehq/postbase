@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { firstBlockingProblem, pastTimeProblem } from "@/lib/post-validation";
 import { getCurrentOrgId } from "@/lib/org";
 import { hasAccess, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
 import { isOwnImageUrl } from "@/lib/agent/tools";
@@ -52,10 +53,22 @@ export async function scheduleProposedPost(
 
   // Only allow targeting channels in this workspace; RLS alone would also accept
   // channels from the user's other workspaces.
-  const { data: owned } = await supabase.from("channels").select("id").eq("org_id", orgId).in("id", channelIds);
+  const { data: owned } = await supabase.from("channels").select("id, platform").eq("org_id", orgId).in("id", channelIds);
   const ownedIds = new Set((owned ?? []).map((c) => c.id));
   if (channelIds.some((id) => !ownedIds.has(id))) {
     return { ok: false, error: "One of those channels isn't in this workspace." };
+  }
+  // Same checks as the composer, so the agent can't schedule something a
+  // network would reject or a time that has already passed.
+  if (scheduledIso) {
+    const variants = proposal.variants ?? {};
+    const problem =
+      pastTimeProblem(scheduledIso) ??
+      firstBlockingProblem(
+        (owned ?? []).map((c) => ({ platform: c.platform as string, parts: variants[c.id]?.trim() ? [variants[c.id].trim()] : segments })),
+        proposal.media ?? [],
+      );
+    if (problem) return { ok: false, error: problem };
   }
 
   const { data: post, error } = await supabase

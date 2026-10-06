@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { firstBlockingProblem, pastTimeProblem } from "@/lib/post-validation";
 import { hasAccess, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
 import { xLinkWarningFor } from "@/lib/x-links";
 
@@ -51,12 +52,14 @@ export async function createPost(orgId: string, input: CreatePostInput) {
   const threadTail = segments.slice(1);
 
   const channelIds = (input.channelIds ?? []).filter(Boolean);
+  let platforms: string[] = [];
   if (channelIds.length > 0) {
     const { data: owned } = await db
       .from("channels")
-      .select("id")
+      .select("id, platform")
       .eq("org_id", orgId)
       .in("id", channelIds);
+    platforms = (owned ?? []).map((c) => c.platform as string);
     const ownedIds = new Set((owned ?? []).map((c) => c.id));
     if (channelIds.some((id) => !ownedIds.has(id))) {
       throw new Error("one or more channel_ids are invalid for this workspace");
@@ -66,6 +69,13 @@ export async function createPost(orgId: string, input: CreatePostInput) {
   const scheduledAt = input.scheduledAt ? new Date(input.scheduledAt).toISOString() : null;
   const status = scheduledAt ? "scheduled" : "draft";
   if (status === "scheduled" && !(await hasAccess(db, orgId))) throw new Error(NO_PLAN_MESSAGE);
+  if (scheduledAt) {
+    // Same checks as the composer: fail now, not when it's due. API posts
+    // carry no media, so networks that need it (Instagram, TikTok, YouTube)
+    // are refused here with a clear reason.
+    const problem = pastTimeProblem(scheduledAt) ?? firstBlockingProblem(platforms.map((platform) => ({ platform, parts: segments })), []);
+    if (problem) throw new Error(problem);
+  }
 
   const { data: post, error } = await db
     .from("posts")

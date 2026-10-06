@@ -54,6 +54,7 @@ import {
   type MastodonTokens,
 } from "@/lib/platforms/mastodon";
 import { freshTikTokTokens } from "@/lib/platforms/tiktok-session";
+import { charCount } from "@/lib/post-validation";
 
 const MEDIA_BUCKET = "post-media";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -601,7 +602,9 @@ async function publishToBluesky(input: PublishInput): Promise<PublishResult> {
   // Each segment is its own post (300-grapheme cap); a thread becomes a reply
   // chain. Media rides on the lead post only, mirroring the X adapter.
   const segments = [input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean);
-  const clip = (s: string) => (Array.from(s).length > BLUESKY_MAX_CHARS ? Array.from(s).slice(0, BLUESKY_MAX_CHARS).join("") : s);
+  // Bluesky counts graphemes (lib/post-validation blocks longer posts before they
+  // get here). Only trim as a last resort, by graphemes, so emoji survive intact.
+  const clip = (s: string) => clipTo("bluesky", s, BLUESKY_MAX_CHARS);
 
   // A retry continues after the parts an earlier attempt already posted (kept
   // as "uri|cid", which a reply needs) instead of posting the lead again.
@@ -644,8 +647,8 @@ async function publishToMastodon(input: PublishInput): Promise<PublishResult> {
   }
 
   const segments = [input.body, ...input.threadTail].map((t) => t.trim()).filter(Boolean);
-  const clip = (s: string) =>
-    Array.from(s).length > MASTODON_MAX_CHARS ? Array.from(s).slice(0, MASTODON_MAX_CHARS).join("") : s;
+  // Mastodon counts a URL as 23; only trim when its own count is over the limit.
+  const clip = (s: string) => clipTo("mastodon", s, MASTODON_MAX_CHARS);
 
   // A retry continues after the parts an earlier attempt already posted.
   const sent = (input.threadIds ?? []).filter(Boolean);
@@ -667,6 +670,19 @@ async function publishToMastodon(input: PublishInput): Promise<PublishResult> {
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Mastodon publish failed." };
   }
+}
+
+/**
+ * Last-resort trim for a post that's over a network's limit by that network's
+ * own count (the composer and API block these first). Under the limit, the text
+ * is sent untouched; over it, whole graphemes are dropped from the end.
+ */
+function clipTo(platform: string, text: string, limit: number): string {
+  if (charCount(platform, text) <= limit) return text;
+  const seg = new Intl.Segmenter("en", { granularity: "grapheme" });
+  const parts = Array.from(seg.segment(text), (x) => x.segment);
+  while (parts.length && charCount(platform, parts.join("")) > limit) parts.pop();
+  return parts.join("");
 }
 
 export async function publish(input: PublishInput): Promise<PublishResult> {
