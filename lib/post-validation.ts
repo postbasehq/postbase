@@ -10,6 +10,9 @@ import { count, type CountRule } from "@/lib/char-count";
  */
 
 export type MediaRef = { type: string };
+
+/** Most posts in a thread (the composer's own cap). */
+export const MAX_PARTS = 25;
 export type Check = { level: "error" | "info"; text: string };
 
 type TextShape =
@@ -61,6 +64,20 @@ export function checkForPlatform(platform: string, parts: string[], media: Media
   if (!r) return [];
   const out: Check[] = [];
   const text = parts.map((t) => t.trim()).filter(Boolean);
+
+  // Bound the work before counting: this runs on the server for every
+  // scheduled post, and network-accurate counting (URL matching, grapheme
+  // segmentation) gets slow on huge or hostile input. Nothing this long can
+  // fit any network, so say so without counting it.
+  if (text.length > MAX_PARTS) {
+    out.push({ level: "error", text: `Threads can have up to ${MAX_PARTS} posts` });
+    return out;
+  }
+  const hardCap = Math.max(r.limit * 8, 4000);
+  if (text.some((t) => t.length > hardCap) || (r.shape === "caption" && text.join("").length > hardCap)) {
+    out.push({ level: "error", text: `Far over the ${r.limit.toLocaleString()} character limit` });
+    return out;
+  }
 
   // Length, counted the network's way.
   if (r.shape === "caption") {
@@ -122,7 +139,13 @@ export function firstBlockingProblem(
   targets: { platform: string; parts: string[] }[],
   media: MediaRef[],
 ): string | null {
+  // Many channels on one network usually send the same text: check each
+  // network + text combination once.
+  const seen = new Set<string>();
   for (const t of targets) {
+    const key = `${t.platform}\u0000${t.parts.join("\u0001")}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
     const err = checkForPlatform(t.platform, t.parts, media).find((c) => c.level === "error");
     if (err) return `${platformLabel(t.platform)}: ${err.text}.`;
   }
