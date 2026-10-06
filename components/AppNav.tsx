@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
 import { AgentSparkIcon } from "@/components/AgentSparkIcon";
+import { BugGlyph, FeedbackNavButton } from "@/components/FeedbackDialog";
 
-type Item = { label: string; href: string; icon: ComponentType; external?: boolean };
+type Item = { label: string; href: string; icon: ComponentType; external?: boolean; feedback?: boolean };
 type Section = { label: string | null; items: Item[] };
 
 const SECTIONS: Section[] = [
@@ -51,8 +52,8 @@ const SECTIONS: Section[] = [
     label: "Support",
     items: [
       { label: "Postbase on X", href: "https://x.com/postbasehq", icon: XIcon, external: true },
-      // Feedback goes straight to the team inbox (replies come from a person).
-      { label: "Feedback", href: "mailto:team@postbase.so?subject=Postbase%20feedback", icon: FeedbackIcon },
+      // Opens the feedback form, which emails the team inbox (replies come from a person).
+      { label: "Feedback", href: "#feedback", icon: FeedbackIcon, feedback: true },
     ],
   },
 ];
@@ -118,6 +119,13 @@ export function AppNav({
                 >
                   {inner}
                 </span>
+              );
+            }
+            if (item.feedback) {
+              return (
+                <FeedbackNavButton key={item.href} className={`${cls} text-muted hover:bg-surface-2 hover:text-ink`}>
+                  {inner}
+                </FeedbackNavButton>
               );
             }
             if (item.external) {
@@ -262,7 +270,7 @@ function XIcon() {
   );
 }
 function FeedbackIcon() {
-  return base(<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />);
+  return base(<BugGlyph />);
 }
 function DraftsIcon() {
   return base(

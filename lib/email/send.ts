@@ -17,6 +17,10 @@ export type Email = {
   subject: string;
   html: string;
   text: string;
+  /** Overrides EMAIL_REPLY_TO (e.g. feedback, so a reply goes to the sender). */
+  replyTo?: string;
+  /** Base64 file contents (Resend attachments). */
+  attachments?: { filename: string; content: string }[];
 };
 
 export function emailConfigured(): boolean {
@@ -57,12 +61,13 @@ export async function sendEmail(email: Email, idempotencyKey: string): Promise<b
       },
       body: JSON.stringify({
         from: process.env.EMAIL_FROM || "Postbase <noreply@postbase.so>",
-        reply_to: process.env.EMAIL_REPLY_TO || "team@postbase.so",
+        reply_to: email.replyTo || process.env.EMAIL_REPLY_TO || "team@postbase.so",
         to,
         // Subjects carry workspace/people names: no control characters, sane length.
         subject: email.subject.replace(/[\u0000-\u001f\u007f]+/g, " ").slice(0, 200),
         html: email.html,
         text: email.text,
+        ...(email.attachments?.length ? { attachments: email.attachments } : {}),
       }),
     });
     if (!res.ok) throw new Error(`Resend ${res.status}: ${(await res.text()).slice(0, 300)}`);
