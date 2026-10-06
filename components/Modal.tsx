@@ -3,11 +3,14 @@
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 
 /**
- * Lightweight modal shell: backdrop, Escape-to-close, focus on open, and a
- * body-scroll lock. Mirrors the inline dialog in DisconnectButton so connect
+ * Lightweight modal shell: backdrop, Escape-to-close, focus on open (kept inside
+ * while open, given back on close), and a body-scroll lock. Mirrors the inline dialog in DisconnectButton so connect
  * and disconnect flows feel identical.
  */
 const SIZES = { md: "max-w-md", lg: "max-w-2xl", xl: "max-w-4xl" } as const;
+
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export function Modal({
   open,
@@ -36,7 +39,29 @@ export function Modal({
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onCloseRef.current();
+    const opener = document.activeElement as HTMLElement | null;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") return onCloseRef.current();
+      // Tab cycles within the dialog instead of reaching the page behind it.
+      const panel = panelRef.current;
+      if (e.key !== "Tab" || !panel) return;
+      const items = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => el.offsetParent !== null);
+      if (items.length === 0) {
+        e.preventDefault();
+        panel.focus();
+        return;
+      }
+      const first = items[0];
+      const last = items[items.length - 1];
+      const inside = panel.contains(document.activeElement);
+      if (e.shiftKey && (document.activeElement === first || !inside || document.activeElement === panel)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (document.activeElement === last || !inside)) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
     window.addEventListener("keydown", onKey);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -44,6 +69,8 @@ export function Modal({
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
+      // Back to whatever opened it, if it's still on the page.
+      if (opener?.isConnected) opener.focus();
     };
   }, [open]);
 

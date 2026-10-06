@@ -1611,6 +1611,7 @@ function VariantTab({
   return (
     <button
       type="button"
+      aria-pressed={active}
       onClick={onClick}
       className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
         active ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"
