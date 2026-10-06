@@ -70,6 +70,10 @@ export async function createPost(orgId: string, input: CreatePostInput) {
 
   const scheduledAt = input.scheduledAt ? new Date(input.scheduledAt).toISOString() : null;
   const status = scheduledAt ? "scheduled" : "draft";
+  if (scheduledAt && channelIds.length === 0) {
+    // It would "publish" with nothing sent. Drafts can wait for their channels.
+    throw new Error("channel_ids is required to schedule a post (omit scheduled_at to save a draft)");
+  }
   if (status === "scheduled") {
     const blocked = await schedulingProblem(orgId);
     if (blocked) throw new Error(blocked);

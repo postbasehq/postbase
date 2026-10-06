@@ -6,6 +6,7 @@ import { reserveXLinks, settleXLinks } from "@/lib/x-links";
 import type { TikTokPostOptions } from "@/lib/platforms/tiktok";
 import type { YouTubePostOptions } from "@/lib/platforms/youtube";
 import { isRepeatEvery, nextOccurrence } from "@/lib/publish/repeat";
+import { insertPostWhole } from "@/lib/publish/save-post";
 import { NO_PLAN_MESSAGE, accessRowFor, orgHasAccess } from "@/lib/billing-guard";
 import { notifyPostsFailed, notifyReconnect } from "@/lib/email/notify";
 import { isOwnMediaUrl } from "@/lib/media-urls";
@@ -337,49 +338,39 @@ async function spawnRepeatIfDue(db: Db, postId: string): Promise<void> {
     origin.timezone as string | null,
   );
 
-  const { data: clone } = await db
-    .from("posts")
-    .insert({
-      org_id: origin.org_id,
-      author_id: origin.author_id,
-      body: origin.body,
-      thread_tail: origin.thread_tail ?? [],
-      scheduled_at: nextAt,
-      status: "scheduled",
-      tiktok_privacy_level: origin.tiktok_privacy_level,
-      tiktok_options: origin.tiktok_options,
-      youtube_privacy: origin.youtube_privacy,
-      youtube_options: origin.youtube_options,
-      repeat_every: origin.repeat_every,
-      timezone: origin.timezone,
-    })
-    .select("id")
-    .single();
-  if (!clone) return;
-
-  const { data: targets } = await db
-    .from("post_targets")
-    .select("channel_id, variant_body")
-    .eq("post_id", postId);
-  if (targets && targets.length > 0) {
-    await db.from("post_targets").insert(
-      targets.map((t) => ({
-        post_id: clone.id,
-        channel_id: t.channel_id,
-        variant_body: t.variant_body,
-        status: "scheduled",
-      })),
+  // Read what to copy first; the occurrence is then written whole (scheduled
+  // only once its targets and media are in), so a failure can't leave an empty
+  // occurrence that "publishes" with nothing sent and spawns the next one.
+  const [{ data: targets, error: tErr }, { data: media, error: mErr }] = await Promise.all([
+    db.from("post_targets").select("channel_id, variant_body").eq("post_id", postId),
+    db.from("media").select("storage_url, type").eq("post_id", postId),
+  ]);
+  try {
+    if (tErr || mErr) throw new Error((tErr ?? mErr)!.message);
+    if (!targets?.length) return; // nowhere to send the next one
+    await insertPostWhole(
+      db,
+      {
+        org_id: origin.org_id,
+        author_id: origin.author_id,
+        body: origin.body,
+        thread_tail: origin.thread_tail ?? [],
+        scheduled_at: nextAt,
+        tiktok_privacy_level: origin.tiktok_privacy_level,
+        tiktok_options: origin.tiktok_options,
+        youtube_privacy: origin.youtube_privacy,
+        youtube_options: origin.youtube_options,
+        repeat_every: origin.repeat_every,
+        timezone: origin.timezone,
+      },
+      "scheduled",
+      targets.map((t) => ({ channel_id: t.channel_id as string, variant_body: t.variant_body as string | null })),
+      (media ?? []).map((m) => ({ url: m.storage_url as string, type: m.type as string })),
     );
-  }
-
-  const { data: media } = await db
-    .from("media")
-    .select("storage_url, type")
-    .eq("post_id", postId);
-  if (media && media.length > 0) {
-    await db.from("media").insert(
-      media.map((m) => ({ post_id: clone.id, storage_url: m.storage_url, type: m.type })),
-    );
+  } catch (e) {
+    // Give the claim back so a later recompute of this post can spawn it.
+    console.error(`[publish] next occurrence of ${postId} not created:`, e);
+    await db.from("posts").update({ repeat_next_spawned: false }).eq("id", postId);
   }
 }
 

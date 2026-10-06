@@ -122,6 +122,8 @@ async function orphanedStoragePaths(
  */
 const writeDb = () => createAdminClient();
 
+const NO_CHANNELS = "Pick at least one channel to schedule this post, or save it as a draft.";
+
 /** Only channels in this workspace; RLS alone would also accept the user's other workspaces'. */
 async function assertOwnChannels(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -183,7 +185,8 @@ async function assertSendable(
 ): Promise<void> {
   const past = pastTimeProblem(scheduledAt);
   if (past) throw new Error(past);
-  if (channelIds.length === 0) return;
+  // With no channels it would "publish" with nothing sent (and repeat forever).
+  if (channelIds.length === 0) throw new Error(NO_CHANNELS);
   const { data: chans } = await supabase.from("channels").select("id, platform").eq("org_id", orgId).in("id", channelIds);
   const variants = parseVariants(formData);
   const problem = firstBlockingProblem(
@@ -630,42 +633,30 @@ export async function repostPost(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { data: copy, error } = await writeDb()
-    .from("posts")
-    .insert({
-      org_id: orgId,
-      author_id: user?.id ?? null,
-      body: src.body,
-      thread_tail: src.thread_tail ?? [],
-      scheduled_at: scheduledAt,
-      status: "scheduled",
-      tiktok_privacy_level: src.tiktok_privacy_level,
-      tiktok_options: src.tiktok_options,
-      youtube_privacy: src.youtube_privacy,
-      youtube_options: src.youtube_options,
-    })
-    .select("id")
-    .single();
-  if (error || !copy) return { ok: false, error: error?.message ?? "Couldn't create the copy." };
+  const { data: media, error: mErr } = await supabase.from("media").select("storage_url, type").eq("post_id", postId);
+  if (mErr) return { ok: false, error: mErr.message };
 
-  const { error: tErr } = await writeDb().from("post_targets").insert(
-    targets.map((t) => ({
-      post_id: copy.id,
-      channel_id: t.channel_id,
-      variant_body: t.variant_body,
-      status: "scheduled",
-    })),
-  );
-  if (tErr) {
-    await writeDb().from("posts").delete().eq("id", copy.id);
-    return { ok: false, error: tErr.message };
-  }
-
-  const { data: media } = await supabase.from("media").select("storage_url, type").eq("post_id", postId);
-  if (media && media.length > 0) {
-    await writeDb()
-      .from("media")
-      .insert(media.map((m) => ({ post_id: copy.id, storage_url: m.storage_url, type: m.type })));
+  try {
+    // Scheduled only once its targets and media are in (lib/publish/save-post.ts).
+    await insertPostWhole(
+      writeDb(),
+      {
+        org_id: orgId,
+        author_id: user?.id ?? null,
+        body: src.body,
+        thread_tail: src.thread_tail ?? [],
+        scheduled_at: scheduledAt,
+        tiktok_privacy_level: src.tiktok_privacy_level,
+        tiktok_options: src.tiktok_options,
+        youtube_privacy: src.youtube_privacy,
+        youtube_options: src.youtube_options,
+      },
+      "scheduled",
+      targets.map((t) => ({ channel_id: t.channel_id, variant_body: t.variant_body })),
+      (media ?? []).map((m) => ({ url: m.storage_url as string, type: m.type as string })),
+    );
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Couldn't create the copy." };
   }
 
   revalidatePath("/calendar");

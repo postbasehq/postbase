@@ -377,7 +377,9 @@ export function PostForm({
   const activeSettings = settingsPlatforms.includes(settingsTab) ? settingsTab : settingsPlatforms[0];
   // TikTok settings must be complete before scheduling (not required for drafts).
   const needsPlan = !isDraft && !canSchedule;
-  const canSubmit = !bodyEmpty && (isDraft || (!hasBlocking && tiktokValid && canSchedule));
+  // A scheduled post needs somewhere to go; a draft can wait for its channels.
+  const noChannels = selectedChannels.length === 0;
+  const canSubmit = !bodyEmpty && (isDraft || (!noChannels && !hasBlocking && tiktokValid && canSchedule));
   // Not ready to publish if a platform check fails OR the TikTok settings are
   // incomplete — keep the status indicator consistent with the disabled button.
   const notReady = hasBlocking || !tiktokValid;
@@ -1086,6 +1088,8 @@ export function PostForm({
             </span>
           ) : bodyEmpty ? (
             <span className="hidden text-xs text-muted sm:inline">Write something to continue.</span>
+          ) : noChannels && !isDraft ? (
+            <span className="text-xs text-[#d14a3e]">Pick a channel, or clear the time to save a draft.</span>
           ) : notReady && !isDraft ? (
             <span className="hidden text-xs text-[#d14a3e] sm:inline">
               Fix the flagged channels, or clear the time to save a draft.
