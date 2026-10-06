@@ -431,7 +431,7 @@ async function updatePostOrThrow(formData: FormData) {
   // duplicates. Retrying a failed channel is handled by the queue Retry.
   const { data: current } = await supabase
     .from("posts")
-    .select("status, post_targets(status, platform_post_id, pending_ref, thread_ids)")
+    .select("status, timezone, post_targets(status, platform_post_id, pending_ref, thread_ids)")
     .eq("id", postId)
     .eq("org_id", orgId)
     .maybeSingle();
@@ -492,7 +492,10 @@ async function updatePostOrThrow(formData: FormData) {
       youtube_options: parseYoutubeOptions(formData, orgId),
       tiktok_options: parseTiktokOptions(formData),
       repeat_every: parseRepeatEvery(formData, status === "scheduled"),
-      timezone: await getTimeZone(),
+      // The series keeps its author's calendar: a teammate in another timezone
+      // fixing a typo mustn't move every later occurrence. (Older posts saved
+      // before timezones were stored take the editor's.)
+      timezone: (current.timezone as string | null) ?? (await getTimeZone()),
       // repeat_next_spawned is left as is: a failed occurrence being edited
       // has already spawned the next one, and re-arming it would fork the series.
     })
