@@ -23,13 +23,15 @@ import { Tile, shot } from "@/components/marketing/CreatorGrid";
  */
 export function McpOrRest() {
   return (
-    <div className="mb-5 grid gap-5 lg:grid-cols-2">
+    <div className="mb-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
       {/* MCP: a request in chat, answered by a real tool call */}
-      <div className="flex flex-col rounded-[28px] bg-[#2b59d9] p-8 md:p-10">
+      {/* min-w-0: grid items otherwise grow to their widest line (the chat demo), past a phone's width */}
+      <div className="flex min-w-0 flex-col rounded-[28px] bg-[#2b59d9] p-8 md:p-10">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h3 className="font-display text-[clamp(28px,2.8vw,36px)] font-semibold leading-[1.1] tracking-[-0.02em] text-white">MCP</h3>
           {/* The AI tools that connect over MCP, as white tiles */}
-          <span className="flex items-center gap-2">
+          {/* Wraps on phones, where seven tiles are wider than the card. */}
+          <span className="flex flex-wrap items-center gap-2">
             {/* Claude, then ChatGPT; Claude Code (CLIENTS[1]) shares Claude's mark, so it's skipped */}
             {[CLIENTS[0], { id: "chatgpt", name: "ChatGPT" }, ...CLIENTS.slice(2)].map((c) => (
               <span key={c.id} title={c.name} className="rounded-md shadow-[0_6px_16px_-8px_rgba(0,0,0,0.5)]">
@@ -52,7 +54,7 @@ export function McpOrRest() {
       <div className="lg:relative">
       <div className="flex flex-col gap-5 lg:absolute lg:inset-0">
       {/* REST: the actual request and response */}
-      <div className="flex flex-col rounded-[28px] bg-[#e3a72c] p-7 lg:flex-1">
+      <div className="flex min-w-0 flex-col rounded-[28px] bg-[#e3a72c] p-7 lg:flex-1">
         <h3 className="font-display text-[clamp(26px,2.4vw,32px)] font-semibold leading-[1.1] tracking-[-0.02em] text-[#14161a]">REST API</h3>
         <p className="mt-2 text-[16px] leading-relaxed text-[#14161a]">
           For when you want your own scripts, apps, automations or cron jobs to call Postbase directly.

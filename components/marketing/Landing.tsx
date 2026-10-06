@@ -5,7 +5,8 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { BrandTile, BRANDS } from "@/components/BrandTile";
 import { AudienceProvider, AudienceToggle, Swap, useAudience, type Audience } from "@/components/marketing/Audience";
-import { DevShot } from "@/components/marketing/DevShot";
+import { McpInActionDemo } from "@/components/marketing/seo/McpDemo";
+import { MCP_SCENES } from "@/lib/seo/mcp-scenes";
 import { CalendarDemo } from "@/components/marketing/CalendarDemo";
 import { CreatorGrid } from "@/components/marketing/CreatorGrid";
 import { DevGrid, McpOrRest } from "@/components/marketing/DevGrid";
@@ -96,7 +97,7 @@ const HERO: Record<
     ),
     sub: "Connect Claude, Cursor or your own code over MCP or the REST API. Every post your agent schedules lands in your calendar.",
     cta: { label: "Connect an agent", href: "/login" },
-    frame: "Connect your agent from the AI & API page",
+    frame: "Ask your agent, and it lands in your calendar",
   },
 };
 
@@ -151,11 +152,9 @@ function Hero() {
                 </div>
               </Fit>
             ) : (
-              <Fit minWidth={900} height={700} mobile={{ renderWidth: 480, viewWidth: 480, height: 700 }}>
-                <div className="h-full overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_50px_120px_-50px_rgba(16,24,40,0.45)]">
-                  <DevShot />
-                </div>
-              </Fit>
+              // Claude scheduling through Postbase over MCP, and the post landing
+              // on the calendar: the headline's promise, shown (text networks only).
+              <McpInActionDemo scene={MCP_SCENES.hub} />
             )}
           </Swap>
         </div>
