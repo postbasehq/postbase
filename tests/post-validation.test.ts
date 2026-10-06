@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { charCount, checkForPlatform, firstBlockingProblem, pastTimeProblem } from "@/lib/post-validation";
+import { charCount, checkForPlatform, firstBlockingProblem, pastTimeProblem, tiktokSettingsProblem } from "@/lib/post-validation";
 
 const img = (n: number, type = "image/jpeg") => Array.from({ length: n }, () => ({ type }));
 const vid = [{ type: "video/mp4" }];
@@ -67,5 +67,18 @@ describe("hostile input stays cheap", () => {
   });
   it("still counts a genuine long URL on X", () => {
     expect(texts("x", ["Read https://example.com/" + "a".repeat(2000)])).toEqual([]);
+  });
+});
+
+describe("TikTok settings are re-checked on the server", () => {
+  it("the user has to choose who sees the post", () => {
+    expect(tiktokSettingsProblem(null, null)).toMatch(/Choose who can see/);
+    expect(tiktokSettingsProblem("PUBLIC_TO_EVERYONE", { brandedContent: false })).toBeNull();
+  });
+  it("branded content can't be private, including when posts are forced private", () => {
+    expect(tiktokSettingsProblem("SELF_ONLY", { brandedContent: true })).toMatch(/can't be private/);
+    expect(tiktokSettingsProblem("PUBLIC_TO_EVERYONE", { brandedContent: true })).toBeNull();
+    expect(tiktokSettingsProblem("PUBLIC_TO_EVERYONE", { brandedContent: true }, "SELF_ONLY")).toMatch(/private for now/);
+    expect(tiktokSettingsProblem("SELF_ONLY", { brandedContent: false }, "SELF_ONLY")).toBeNull();
   });
 });

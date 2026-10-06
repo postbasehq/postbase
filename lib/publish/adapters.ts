@@ -378,6 +378,13 @@ function proxiedMediaUrl(url: string): string {
 }
 
 const TIKTOK_PROCESSING = "TikTok is still processing the post.";
+// As the composer names them (components/TikTokSettings.tsx).
+const TIKTOK_PRIVACY_LABEL: Record<string, string> = {
+  PUBLIC_TO_EVERYONE: "Everyone",
+  MUTUAL_FOLLOW_FRIENDS: "Friends",
+  FOLLOWER_OF_CREATOR: "Followers",
+  SELF_ONLY: "Only me",
+};
 
 async function publishToTikTok(input: PublishInput): Promise<PublishResult> {
   if (!input.encryptedTokens) return { ok: false, error: "TikTok account not connected." };
@@ -421,7 +428,16 @@ async function publishToTikTok(input: PublishInput): Promise<PublishResult> {
   let privacy = preferred;
   try {
     const info = await creatorInfo(tokens.access_token);
-    privacy = pickPrivacyLevel(info.privacy_level_options, preferred);
+    const options = info.privacy_level_options;
+    if (!override && options?.length && !options.includes(preferred)) {
+      // The account no longer offers what the user chose. Posting it to a
+      // different audience than they picked isn't allowed; ask them instead.
+      return {
+        ok: false,
+        error: `Your TikTok account no longer allows "${TIKTOK_PRIVACY_LABEL[preferred] ?? preferred}". Edit the post and choose who can see it.`,
+      };
+    }
+    privacy = pickPrivacyLevel(options, preferred);
   } catch {
     // Fall back to the preferred level; the init call will surface any error.
   }

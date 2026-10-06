@@ -161,3 +161,23 @@ export function pastTimeProblem(scheduledAtIso: string | null, now = Date.now())
   if (Number.isNaN(t)) return "That date and time isn't valid.";
   return t < now - PAST_GRACE_MS ? "That time is in the past. Pick a time from now on." : null;
 }
+
+/**
+ * TikTok's Content Sharing Guidelines, re-checked on the server: the user must
+ * pick who sees the post (no default), and branded content can't be private.
+ * `override` is TIKTOK_PRIVACY_LEVEL, which forces every post to that level
+ * while the app is unaudited.
+ */
+export function tiktokSettingsProblem(
+  privacy: string | null,
+  options: { brandedContent?: boolean } | null,
+  override?: string,
+): string | null {
+  if (!privacy) return "Choose who can see your TikTok post.";
+  if (options?.brandedContent && (override || privacy) === "SELF_ONLY") {
+    return override
+      ? "TikTok posts are private for now, and branded content can't be private. Turn off branded content to post."
+      : "Branded content can't be private on TikTok. Choose who can see it.";
+  }
+  return null;
+}

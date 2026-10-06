@@ -137,3 +137,37 @@ describe("a post whose outcome is unclear is never sent again automatically", ()
     expect((dns as { uncertain?: boolean }).uncertain).toBeFalsy();
   });
 });
+
+describe("TikTok: the audience is never changed behind the user's back", () => {
+  const send = async (options: string[], uploads: string[], env?: string) => {
+    net?.restore();
+    if (env) process.env.TIKTOK_PRIVACY_LEVEL = env;
+    else delete process.env.TIKTOK_PRIVACY_LEVEL;
+    net = installFakeNet((r) => {
+      if (r.url.pathname.endsWith("/creator_info/query/")) {
+        return json({ data: { privacy_level_options: options, max_video_post_duration_sec: 600 }, error: { code: "ok" } });
+      }
+      if (r.url.pathname.includes("/post/publish/")) {
+        uploads.push((r.body as { post_info?: { privacy_level?: string } })?.post_info?.privacy_level ?? "?");
+        return json({ error: { code: "stop_here" } }, 400);
+      }
+    });
+    const enc = encryptJson({ access_token: "t", refresh_token: "r" });
+    try {
+      return await publish({ ...base, threadTail: [], body: "clip", media: [{ url: "https://cdn.test/v.mp4", type: "video/mp4" }], platform: "tiktok", encryptedTokens: enc, tiktokPrivacyLevel: "PUBLIC_TO_EVERYONE" });
+    } finally {
+      delete process.env.TIKTOK_PRIVACY_LEVEL;
+    }
+  };
+  it("fails with a clear reason when the chosen audience is no longer offered", async () => {
+    const uploads: string[] = [];
+    const res = await send(["FOLLOWER_OF_CREATOR", "SELF_ONLY"], uploads);
+    expect(res).toMatchObject({ ok: false, error: expect.stringContaining('no longer allows "Everyone"') });
+    expect(uploads).toEqual([]); // nothing sent to TikTok
+  });
+  it("the unaudited-app override still applies", async () => {
+    // Forced private while unaudited: an account offering only "Only me" goes ahead (on to the upload).
+    const res = await send(["SELF_ONLY"], [], "SELF_ONLY");
+    expect((res as { error?: string }).error ?? "").not.toMatch(/no longer allows/);
+  });
+});

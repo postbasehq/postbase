@@ -17,7 +17,7 @@ import { hasAccess, NO_PLAN_MESSAGE, releaseAiGeneration, reserveAiGeneration, s
 import { connectBluesky } from "@/lib/platforms/bluesky";
 import { isRepeatEvery } from "@/lib/publish/repeat";
 import { getTimeZone, zonedTimeToUtc } from "@/lib/tz";
-import { firstBlockingProblem, pastTimeProblem } from "@/lib/post-validation";
+import { firstBlockingProblem, pastTimeProblem, tiktokSettingsProblem } from "@/lib/post-validation";
 import { cancelPostForOrg, holdPostForEdit } from "@/lib/publish/cancel";
 import { insertPostWhole, replaceTargetsAndMedia } from "@/lib/publish/save-post";
 import {
@@ -194,6 +194,14 @@ async function assertSendable(
     parseMedia(formData),
   );
   if (problem) throw new Error(problem);
+  if ((chans ?? []).some((c) => c.platform === "tiktok")) {
+    const tiktok = tiktokSettingsProblem(
+      parseTiktokPrivacy(formData),
+      parseTiktokOptions(formData),
+      process.env.TIKTOK_PRIVACY_LEVEL?.trim() || undefined,
+    );
+    if (tiktok) throw new Error(tiktok);
+  }
 }
 
 /**

@@ -72,6 +72,11 @@ export async function scheduleProposedPost(
         (proposal.media ?? []).filter((m) => m?.url && isOwnMediaUrl(m.url, orgId)),
       );
     if (problem) return { ok: false, error: problem };
+    // TikTok needs the user to pick who sees each post (and the disclosure
+    // options), which only the composer asks for.
+    if ((owned ?? []).some((c) => c.platform === "tiktok")) {
+      return { ok: false, error: "Schedule TikTok posts from the composer, so you can choose who sees them." };
+    }
   }
 
   // Written with the service role (members can only read posts, 0061),
