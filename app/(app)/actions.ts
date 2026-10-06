@@ -418,8 +418,8 @@ export async function updatePost(formData: FormData) {
       tiktok_options: parseTiktokOptions(formData),
       repeat_every: parseRepeatEvery(formData, status === "scheduled"),
       timezone: await getTimeZone(),
-      // Editing re-arms the repeat: a rescheduled post hasn't published yet.
-      repeat_next_spawned: false,
+      // repeat_next_spawned is left as is: a failed occurrence being edited
+      // has already spawned the next one, and re-arming it would fork the series.
     })
     .eq("id", postId)
     .eq("org_id", orgId)

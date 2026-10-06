@@ -306,8 +306,10 @@ async function recomputePostStatus(db: Db, postId: string): Promise<string | nul
 }
 
 /**
- * If a just-published post repeats, spawn the next occurrence one cadence
- * step ahead (same body, channels and media). The claim flips
+ * If a post that repeats has finished (published, or failed on some or all
+ * channels: one bad occurrence mustn't end the series), spawn the next
+ * occurrence one cadence step ahead (same body, channels and media). Not for a
+ * workspace without an active plan, which would only queue more failures. The claim flips
  * `repeat_next_spawned` atomically so a repeating post is never cloned twice,
  * even if the status is recomputed on a later run.
  */
@@ -316,12 +318,16 @@ async function spawnRepeatIfDue(db: Db, postId: string): Promise<void> {
     .from("posts")
     .update({ repeat_next_spawned: true })
     .eq("id", postId)
-    .eq("status", "published")
+    .in("status", ["published", "failed"])
     .eq("repeat_next_spawned", false)
     .not("repeat_every", "is", null)
     .select("org_id, author_id, body, thread_tail, tiktok_privacy_level, tiktok_options, youtube_privacy, youtube_options, scheduled_at, repeat_every, timezone")
     .maybeSingle();
   if (!origin || !isRepeatEvery(origin.repeat_every)) return;
+  // A failed billing read spawns anyway (nothing would retry this later); the
+  // occurrence is checked against the plan again when it's due.
+  const access = await accessRowFor(origin.org_id as string).catch(() => null);
+  if (access && !orgHasAccess(access)) return;
 
   // Stepped in the author's timezone so the local time survives DST changes.
   const nextAt = nextOccurrence(

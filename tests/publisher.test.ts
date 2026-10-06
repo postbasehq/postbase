@@ -103,3 +103,11 @@ describe("a cancelled post stays cancelled", () => {
     expect(retryRead?.url.searchParams.get("posts.status")).toBe("neq.draft");
   });
 });
+
+describe("repeating posts", () => {
+  it("a failed occurrence still spawns the next one (the series doesn't end)", async () => {
+    await publishDuePosts();
+    const spawn = net.log.find((r) => r.table === "posts" && r.method === "PATCH" && (r.body as Record<string, unknown>)?.repeat_next_spawned === true);
+    expect(spawn?.url.searchParams.get("status")).toBe("in.(published,failed)");
+  });
+});
