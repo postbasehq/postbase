@@ -1,6 +1,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { xLinkWarningFor } from "@/lib/x-links";
 import { listChannels, listPosts, cancelPost } from "@/lib/api-core";
+import { cancelMessage } from "@/lib/publish/cancel";
 import { generateAiImage } from "@/app/(app)/actions";
 import { higgsfieldConfigured } from "@/lib/higgsfield";
 
@@ -236,8 +237,8 @@ export async function runAgentTool(
     }
 
     case "cancel_post": {
-      const ok = await cancelPost(orgId, str(input.post_id));
-      return { forModel: JSON.stringify({ cancelled: ok }) };
+      const outcome = await cancelPost(orgId, str(input.post_id));
+      return { forModel: JSON.stringify({ cancelled: outcome.ok, message: cancelMessage(outcome) }) };
     }
 
     default:

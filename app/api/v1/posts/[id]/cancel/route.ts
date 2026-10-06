@@ -11,8 +11,13 @@ export async function POST(
   if (auth instanceof NextResponse) return auth;
 
   const { id } = await params;
-  const cancelled = await cancelPost(auth.orgId, id);
-  if (!cancelled) return NextResponse.json({ error: "Post not found" }, { status: 404 });
+  const outcome = await cancelPost(auth.orgId, id);
+  if (!outcome.ok) {
+    return outcome.reason === "published"
+      ? NextResponse.json({ error: "Post already published" }, { status: 409 })
+      : NextResponse.json({ error: "Post not found" }, { status: 404 });
+  }
 
-  return NextResponse.json({ ok: true, id });
+  // still_sending: channels already mid-send when it was cancelled; they finish.
+  return NextResponse.json({ ok: true, id, still_sending: outcome.stillSending });
 }

@@ -34,6 +34,7 @@ type TargetRow = {
 type PostRow = {
   id: string;
   org_id: string;
+  status: string;
   body: string;
   thread_tail: string[] | null;
   tiktok_privacy_level: string | null;
@@ -55,7 +56,7 @@ const THREADED_PLATFORMS = new Set(["x", "bluesky", "mastodon"]);
 const START_BUDGET_MS = 180_000;
 const INTERRUPTED_ERROR =
   "Publishing was interrupted before we could confirm it went out. Check the channel — if the post isn't there, hit Retry.";
-const POST_COLUMNS = "id, org_id, body, thread_tail, tiktok_privacy_level, tiktok_options, youtube_privacy, youtube_options";
+const POST_COLUMNS = "id, org_id, status, body, thread_tail, tiktok_privacy_level, tiktok_options, youtube_privacy, youtube_options";
 // How many times to try a target before giving up.
 const MAX_ATTEMPTS = 4;
 // How long a platform may keep processing an upload before we give up on it.
@@ -426,8 +427,10 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
       .limit(200),
     db
       .from("post_targets")
-      .select("id, post_id")
+      .select("id, post_id, posts!inner(status)")
       .eq("status", "failed")
+      // A cancelled (draft) post's retries never run (also re-checked on claim).
+      .neq("posts.status", "draft")
       .lt("attempts", MAX_ATTEMPTS)
       .not("next_attempt_at", "is", null)
       .lte("next_attempt_at", nowIso)
@@ -464,6 +467,11 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
       if (!loaded || !target) {
         // Deleted between queueing and claiming: nothing to send.
         await releaseClaim(db, item.id, item.from);
+        continue;
+      }
+      if (loaded.post.status === "draft") {
+        // Cancelled between queueing and claiming: park the target with it.
+        await db.from("post_targets").update({ status: "draft", next_attempt_at: null }).eq("id", item.id).eq("status", "publishing");
         continue;
       }
       const orgId = loaded.post.org_id;

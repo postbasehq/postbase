@@ -10,6 +10,7 @@ let fail: Set<string>;
 let failRecompute: boolean;
 let channelOrg: string;
 let mediaRows: { storage_url: string; type: string }[];
+let postStatus: string;
 let net: ReturnType<typeof installFakeNet>;
 
 function db(r: FakeRequest) {
@@ -18,7 +19,7 @@ function db(r: FakeRequest) {
   const rows = (x: unknown[]) => (r.single ? (x.length ? json(x[0]) : json({ code: "PGRST116" }, 406)) : json(x));
   if (fail.has(r.table) && r.method === "GET") return json({ code: "08006", message: "connection reset (injected)" }, 400);
   if (r.table === "posts" && r.method === "PATCH" && q.get("status") === "eq.scheduled") return json([{ id: P }]);
-  if (r.table === "posts" && r.method === "GET" && q.get("id") === `eq.${P}`) return rows([{ id: P, org_id: O, body: "hello", thread_tail: [] }]);
+  if (r.table === "posts" && r.method === "GET" && q.get("id") === `eq.${P}`) return rows([{ id: P, org_id: O, status: postStatus, body: "hello", thread_tail: [] }]);
   if (r.table === "post_targets" && r.method === "GET" && q.get("status") === "eq.scheduled") return json([{ id: T, post_id: P, posts: { status: "publishing" } }]);
   if (r.table === "post_targets" && r.method === "PATCH" && q.get("id") === `eq.${T}`) return json([{ id: T }]);
   if (r.table === "post_targets" && r.method === "GET" && q.get("id") === `eq.${T}`) {
@@ -39,6 +40,7 @@ beforeEach(() => {
   failRecompute = false;
   channelOrg = O;
   mediaRows = [];
+  postStatus = "publishing";
   net = installFakeNet(db);
 });
 afterEach(() => {
@@ -85,5 +87,19 @@ describe("the publisher never turns a database blip into a failed post", () => {
     expect(targetWrites().at(-1)).toMatchObject({ status: "failed" });
     expect(String(targetWrites().at(-1)?.error)).toMatch(/isn't stored in this workspace/);
     expect(net.log.some((r) => r.url.host === "169.254.169.254")).toBe(false);
+  });
+});
+
+describe("a cancelled post stays cancelled", () => {
+  it("a target claimed just as its post was cancelled is parked, not sent", async () => {
+    postStatus = "draft";
+    await publishDuePosts();
+    expect(targetWrites().at(-1)).toMatchObject({ status: "draft", next_attempt_at: null });
+    expect(net.log.some((r) => r.url.host !== "db.test")).toBe(false);
+  });
+  it("retries of cancelled (draft) posts are never queued", async () => {
+    await publishDuePosts();
+    const retryRead = net.log.find((r) => r.table === "post_targets" && r.method === "GET" && r.url.searchParams.get("status") === "eq.failed");
+    expect(retryRead?.url.searchParams.get("posts.status")).toBe("neq.draft");
   });
 });

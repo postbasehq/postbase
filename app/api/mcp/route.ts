@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { authenticateApiKey } from "@/lib/api-auth";
 import { resolveAccessToken, resourceMetadataUrlFor } from "@/lib/oauth";
 import { listChannels, listPosts, createPost, cancelPost } from "@/lib/api-core";
+import { cancelMessage } from "@/lib/publish/cancel";
 import { failedAuthLimited, postLimit, requestLimit, tooManyRequests } from "@/lib/api-limits";
 
 /**
@@ -127,8 +128,8 @@ async function runTool(orgId: string, name: string, args: Args): Promise<unknown
       });
     }
     case "cancel_post": {
-      const ok = await cancelPost(orgId, String(args.post_id ?? ""));
-      return { cancelled: ok };
+      const outcome = await cancelPost(orgId, String(args.post_id ?? ""));
+      return { cancelled: outcome.ok, message: cancelMessage(outcome) };
     }
     default:
       throw new Error(`Unknown tool: ${name}`);

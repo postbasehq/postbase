@@ -18,6 +18,7 @@ import { connectBluesky } from "@/lib/platforms/bluesky";
 import { isRepeatEvery } from "@/lib/publish/repeat";
 import { getTimeZone, zonedTimeToUtc } from "@/lib/tz";
 import { firstBlockingProblem, pastTimeProblem } from "@/lib/post-validation";
+import { cancelPostForOrg } from "@/lib/publish/cancel";
 import {
   generateSoulImage,
   higgsfieldConfigured,
@@ -380,7 +381,7 @@ export async function updatePost(formData: FormData) {
   if (!current) redirect("/queue"); // not ours / gone — bounce with feedback
   const anyDelivered = (
     (current.post_targets ?? []) as { status: string; platform_post_id: string | null; thread_ids: string[] | null }[]
-  ).some((t) => t.status === "published" || t.platform_post_id || (t.thread_ids?.length ?? 0) > 0);
+  ).some((t) => t.status === "published" || t.status === "publishing" || t.platform_post_id || (t.thread_ids?.length ?? 0) > 0);
   if (current.status === "published" || current.status === "publishing" || anyDelivered) {
     redirect("/queue");
   }
@@ -505,30 +506,14 @@ export async function retryTarget(formData: FormData) {
 
 /** Cancel a scheduled post: return it to draft so the poller skips it. */
 export async function cancelPost(formData: FormData) {
-  const supabase = await createClient();
   const orgId = await getCurrentOrgId();
   if (!orgId) throw new Error("No workspace found for this user.");
 
   const postId = String(formData.get("post_id") ?? "");
   if (!postId) throw new Error("Missing post id.");
 
-  // Scope the update to the caller's org and confirm it actually hit a row before
-  // doing anything else — otherwise a known post id from another tenant could be
-  // cancelled.
-  const { data: updated, error } = await supabase
-    .from("posts")
-    .update({ status: "draft", scheduled_at: null })
-    .eq("id", postId)
-    .eq("org_id", orgId)
-    .select("id");
-  if (error) throw new Error(error.message);
-  if (!updated || updated.length === 0) {
-    // Not this user's post (or gone) — do nothing.
-    return;
-  }
-
-  await supabase.from("post_targets").update({ status: "draft" }).eq("post_id", postId);
-
+  // Scoped to the caller's workspace; race-safe with the publisher.
+  await cancelPostForOrg(orgId, postId);
   revalidatePath("/queue");
 }
 
@@ -676,11 +661,13 @@ export async function deletePost(formData: FormData) {
   // `publishing` so we never delete a post mid-send and race the live poller.
   const { data: post } = await supabase
     .from("posts")
-    .select("id, status")
+    .select("id, status, post_targets(status)")
     .eq("id", postId)
     .eq("org_id", orgId)
     .maybeSingle();
   if (!post || post.status === "publishing") return;
+  // A cancelled post can still have a channel mid-send (lib/publish/cancel.ts).
+  if (((post.post_targets ?? []) as { status: string }[]).some((t) => t.status === "publishing")) return;
 
   // Remove any media files from the bucket (rows cascade with the post). Storage
   // deletes need the admin client — the bucket only allows authenticated uploads.

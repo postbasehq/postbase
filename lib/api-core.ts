@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { cancelPostForOrg, type CancelOutcome } from "@/lib/publish/cancel";
 import { firstBlockingProblem, pastTimeProblem } from "@/lib/post-validation";
 import { hasAccess, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
 import { xLinkWarningFor } from "@/lib/x-links";
@@ -97,18 +98,7 @@ export async function createPost(orgId: string, input: CreatePostInput) {
   return warning ? { ...post, warning } : post;
 }
 
-/** Returns true if a post was cancelled, false if it didn't exist in this org. */
-export async function cancelPost(orgId: string, postId: string): Promise<boolean> {
-  const db = createAdminClient();
-  const { data: updated, error } = await db
-    .from("posts")
-    .update({ status: "draft", scheduled_at: null })
-    .eq("id", postId)
-    .eq("org_id", orgId)
-    .select("id");
-  if (error) throw new Error(error.message);
-  if (!updated || updated.length === 0) return false;
-
-  await db.from("post_targets").update({ status: "draft" }).eq("post_id", postId);
-  return true;
+/** Cancel a post back to a draft (see lib/publish/cancel.ts). */
+export async function cancelPost(orgId: string, postId: string): Promise<CancelOutcome> {
+  return cancelPostForOrg(orgId, postId);
 }
