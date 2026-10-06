@@ -89,6 +89,8 @@ export async function loadBillingStatus(orgId: string | null) {
     plan,
     active,
     comped,
+    /** In the free trial and not cancelled: "Start my plan now" applies. */
+    trialing: status === "trialing" && !ending && !comped,
     /** Set when this workspace is covered by another workspace's plan. */
     billedThrough: group?.linked ? { id: group.rootId, name: group.rootName } : null,
     /** Whether "Manage subscription" (the Stripe portal) can open. */

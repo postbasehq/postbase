@@ -46,6 +46,14 @@ export type BillingGroup = {
   /** Every workspace sharing the plan, the billing one first. */
   orgIds: string[];
   plan: PlanId;
+  /**
+   * The plan whose per-use allowances apply (AI generations, X posts with
+   * links, the agent's backstops): "trial" while the subscription is still in
+   * its free trial, so a trial can't spend a top plan's allowance before
+   * anything is paid. Channels, workspaces, seats and storage use `plan`.
+   */
+  usagePlan: PlanId;
+  trialing: boolean;
   subscription_status: string | null;
   comped: boolean;
   /** True when the workspace asked about is covered by another's plan. */
@@ -73,13 +81,18 @@ export async function billingGroup(orgId: string): Promise<BillingGroup> {
   if (rootError || membersError) {
     throw new Error(`billingGroup(${orgId}): ${(rootError ?? membersError)!.message}`);
   }
+  const plan = ((root?.plan as PlanId | undefined) ?? "trial") as PlanId;
+  const comped = Boolean(root?.comped);
+  const trialing = root?.subscription_status === "trialing" && !comped;
   return {
     rootId,
     rootName: (root?.name as string) ?? "",
     orgIds: [rootId, ...(members ?? []).map((m) => m.id as string)],
-    plan: ((root?.plan as PlanId | undefined) ?? "trial") as PlanId,
+    plan,
+    usagePlan: trialing ? "trial" : plan,
+    trialing,
     subscription_status: (root?.subscription_status as string | null) ?? null,
-    comped: Boolean(root?.comped),
+    comped,
     linked: rootId !== orgId,
   };
 }
@@ -131,6 +144,8 @@ export async function atChannelLimit(_db: SupabaseClient, orgId: string): Promis
 export type AiKind = "image" | "video";
 export type AiUsage = {
   plan: PlanId;
+  /** In the free trial: limits are trial-level until the first payment. */
+  trialing: boolean;
   image: { used: number; limit: number; remaining: number };
   video: { used: number; limit: number; remaining: number };
 };
@@ -145,6 +160,7 @@ function monthStartIso(): string {
 export async function aiUsage(_db: SupabaseClient, orgId: string): Promise<AiUsage> {
   const g = await billingGroup(orgId);
   const plan = g.plan;
+  const allowance = g.usagePlan; // trial-level while the free trial runs
   const db = createAdminClient();
   const since = monthStartIso();
   // The monthly allowance is shared across the plan's workspaces.
@@ -152,22 +168,32 @@ export async function aiUsage(_db: SupabaseClient, orgId: string): Promise<AiUsa
     db.from("ai_generations").select("id", { count: "exact", head: true }).in("org_id", g.orgIds).eq("kind", "image").gte("created_at", since),
     db.from("ai_generations").select("id", { count: "exact", head: true }).in("org_id", g.orgIds).eq("kind", "video").gte("created_at", since),
   ]);
-  const imgLimit = AI_IMAGE_LIMIT[plan] ?? AI_IMAGE_LIMIT.trial;
-  const vidLimit = AI_VIDEO_LIMIT[plan] ?? AI_VIDEO_LIMIT.trial;
+  const imgLimit = AI_IMAGE_LIMIT[allowance] ?? AI_IMAGE_LIMIT.trial;
+  const vidLimit = AI_VIDEO_LIMIT[allowance] ?? AI_VIDEO_LIMIT.trial;
   const iu = img.count ?? 0;
   const vu = vid.count ?? 0;
   return {
     plan,
+    trialing: g.trialing,
     image: { used: iu, limit: imgLimit, remaining: Math.max(0, imgLimit - iu) },
     video: { used: vu, limit: vidLimit, remaining: Math.max(0, vidLimit - vu) },
   };
 }
 
-/** Whether the org has hit its monthly quota for the given kind. */
-export async function atAiLimit(db: SupabaseClient, orgId: string, kind: AiKind): Promise<boolean> {
-  if (!(await hasAccess(db, orgId))) return true;
+/**
+ * Why the org can't generate another `kind` right now, or null. During the free
+ * trial the allowance is trial-level, and the message says how to unlock the
+ * plan's full allowance (start the plan now on Billing).
+ */
+export async function aiLimitMessage(db: SupabaseClient, orgId: string, kind: AiKind): Promise<string | null> {
   const u = await aiUsage(db, orgId);
-  return u[kind].remaining <= 0;
+  if (u[kind].remaining > 0) return null;
+  const noun = kind === "image" ? "AI images" : "AI videos";
+  if (u.trialing) {
+    const full = (kind === "image" ? AI_IMAGE_LIMIT : AI_VIDEO_LIMIT)[u.plan] ?? 0;
+    return `Your free trial includes ${u[kind].limit} ${noun}. To get your plan's ${full} a month now, start your plan early on the Billing page.`;
+  }
+  return `You've used all your ${noun} for this month. Upgrade your plan for more.`;
 }
 
 export type AgentUsage = {
@@ -202,8 +228,9 @@ export async function agentUsage(_db: SupabaseClient, orgId: string): Promise<Ag
     db.from("agent_messages").select("id", { count: "exact", head: true }).in("org_id", g.orgIds).gte("created_at", dayStartIso()),
     db.rpc("agent_spend_since", { p_orgs: g.orgIds, p_since: monthStartIso() }),
   ]);
-  const dailyCap = AGENT_DAILY_CAP[g.plan] ?? AGENT_DAILY_CAP.trial;
-  const budget = AGENT_MONTHLY_BUDGET_USD[g.plan] ?? AGENT_MONTHLY_BUDGET_USD.trial;
+  // Trial-level backstops while the free trial runs.
+  const dailyCap = AGENT_DAILY_CAP[g.usagePlan] ?? AGENT_DAILY_CAP.trial;
+  const budget = AGENT_MONTHLY_BUDGET_USD[g.usagePlan] ?? AGENT_MONTHLY_BUDGET_USD.trial;
   return {
     plan: g.plan,
     month: month ?? 0,

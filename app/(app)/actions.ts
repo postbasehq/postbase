@@ -16,7 +16,7 @@ import {
   type YouTubeTokens,
 } from "@/lib/platforms/youtube";
 import { revokeAccess as revokeMetaAccess } from "@/lib/platforms/meta";
-import { atChannelLimit, atAiLimit, hasAccess, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
+import { atChannelLimit, aiLimitMessage, hasAccess, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
 import { connectBluesky } from "@/lib/platforms/bluesky";
 import { isRepeatEvery } from "@/lib/publish/repeat";
 import { getTimeZone, zonedTimeToUtc } from "@/lib/tz";
@@ -777,9 +777,8 @@ export async function generateAiImage(
   const ratio = isAspectRatio(aspectRatio) ? aspectRatio : "1:1";
 
   if (!(await hasAccess(supabase, orgId))) return { ok: false, error: NO_PLAN_MESSAGE };
-  if (await atAiLimit(supabase, orgId, "image")) {
-    return { ok: false, error: "You've used all your AI images for this month. Upgrade your plan for more." };
-  }
+  const imageBlock = await aiLimitMessage(supabase, orgId, "image");
+  if (imageBlock) return { ok: false, error: imageBlock };
 
   try {
     const sourceUrl = await generateSoulImage(clean, ratio);
@@ -824,9 +823,8 @@ export async function startAiVideo(
   const ratio = isAspectRatio(aspectRatio) ? aspectRatio : "9:16";
 
   if (!(await hasAccess(supabase, orgId))) return { ok: false, error: NO_PLAN_MESSAGE };
-  if (await atAiLimit(supabase, orgId, "video")) {
-    return { ok: false, error: "You've used all your AI videos for this month. Upgrade your plan for more." };
-  }
+  const videoBlock = await aiLimitMessage(supabase, orgId, "video");
+  if (videoBlock) return { ok: false, error: videoBlock };
 
   try {
     const { statusUrl } = await startVideo({ prompt: clean, aspectRatio: ratio, imageUrl });

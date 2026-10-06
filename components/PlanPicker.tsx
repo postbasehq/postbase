@@ -92,8 +92,8 @@ export function PlanPicker({
       </div>
 
       <p className="text-center text-[13px] text-muted">
-        7-day free trial, card required. Cancel before it ends and you won&apos;t be charged. Prices in US
-        dollars, including any sales tax or VAT.
+        7-day free trial, card required. Cancel before it ends and you won&apos;t be charged. AI and X-link
+        allowances are trial-sized until your first payment. Prices in US dollars, including any sales tax or VAT.
       </p>
 
       {showSelfHost ? <SelfHostCard /> : null}

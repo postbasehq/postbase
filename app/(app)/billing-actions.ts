@@ -130,3 +130,38 @@ export async function openPortal() {
   }
   redirect(url);
 }
+
+/**
+ * End the free trial now and start paying, which lifts the trial-level AI,
+ * X-link and agent allowances to the plan's (lib/billing-guard usagePlan).
+ * error_if_incomplete: if the card is declined Stripe rejects the change and
+ * the trial carries on, rather than leaving a past_due subscription with full
+ * allowances unpaid.
+ */
+export async function startPlanNow() {
+  if (!stripeConfigured()) throw new Error("Billing isn’t configured on this server yet.");
+  const orgId = await getCurrentOrgId();
+  if (!orgId) throw new Error("No workspace found.");
+  await requireBillingManager(orgId);
+  if ((await billingGroup(orgId)).linked) redirect("/billing");
+
+  const { data: org } = await createAdminClient()
+    .from("orgs")
+    .select("stripe_subscription_id, subscription_status")
+    .eq("id", orgId)
+    .single();
+  if (!org?.stripe_subscription_id || org.subscription_status !== "trialing") redirect("/billing");
+
+  try {
+    await getStripe().subscriptions.update(org.stripe_subscription_id, {
+      trial_end: "now",
+      payment_behavior: "error_if_incomplete",
+      proration_behavior: "none",
+    });
+  } catch (e) {
+    console.error("[billing] start plan now failed:", e instanceof Error ? e.message : e);
+    redirect("/billing?start=failed");
+  }
+  // The webhook flips the status to active; the page shows a confirmation meanwhile.
+  redirect("/billing?start=ok");
+}

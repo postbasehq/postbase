@@ -2,6 +2,7 @@ import { canManageOrg, getCurrentOrgId, getOrgRole } from "@/lib/org";
 import { PlanPicker } from "@/components/PlanPicker";
 import { CompareTable } from "@/components/marketing/PricingSections";
 import { BillingStatus, ManageButton } from "@/components/BillingStatus";
+import { StartPlanNowButton } from "@/components/StartPlanNowButton";
 import { loadBillingStatus } from "@/lib/billing-status";
 import { startCheckout } from "../billing-actions";
 import { setActiveOrg } from "../team-actions";
@@ -10,11 +11,11 @@ import { SubmitButton } from "@/components/SubmitButton";
 export default async function BillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkout?: string; plan?: string; interval?: string }>;
+  searchParams: Promise<{ checkout?: string; plan?: string; interval?: string; start?: string }>;
 }) {
-  const { checkout, plan: chosenPlan, interval } = await searchParams;
+  const { checkout, plan: chosenPlan, interval, start } = await searchParams;
   const orgId = await getCurrentOrgId();
-  const { plan, active, canManage, card, billedThrough } = await loadBillingStatus(orgId);
+  const { plan, active, canManage, card, billedThrough, trialing } = await loadBillingStatus(orgId);
   // Checkout and the Stripe portal are owner/admin only (enforced in billing-actions).
   const isManager = orgId ? canManageOrg(await getOrgRole(orgId)) : false;
 
@@ -68,13 +69,34 @@ export default async function BillingPage({
         <div className="mt-4 rounded-xl bg-surface-2 px-4 py-3 text-sm text-muted">
           Checkout cancelled — no charge was made.
         </div>
+      ) : start === "ok" ? (
+        <div className="mt-4 rounded-xl bg-surface-2 px-4 py-3 text-sm text-ink">
+          Your plan has started and its full allowances are on. It can take a moment to show below.
+        </div>
+      ) : start === "failed" ? (
+        <div className="mt-4 rounded-xl bg-surface-2 px-4 py-3 text-sm text-ink">
+          We couldn’t take the payment, so your free trial carries on as before. Update your card under Manage
+          subscription and try again.
+        </div>
       ) : null}
 
       {/* current status */}
       <div className="mt-6">
         <BillingStatus
           {...card}
-          action={canManage && isManager ? <ManageButton /> : null}
+          note={
+            trialing
+              ? "During the free trial, AI images and videos, X posts with links and the AI agent run on trial allowances. Your plan’s full allowances start with your first payment, or start your plan now."
+              : undefined
+          }
+          action={
+            canManage && isManager ? (
+              <div className="flex flex-wrap items-center gap-2">
+                {trialing ? <StartPlanNowButton planName={card.planName} /> : null}
+                <ManageButton />
+              </div>
+            ) : null
+          }
         />
       </div>
 

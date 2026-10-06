@@ -102,7 +102,9 @@ export async function POST(req: Request) {
       JSON.stringify({
         error:
           limit === "daily"
-            ? `You've reached today's AI agent limit for your plan (${AGENT_DAILY_CAP[group.plan]} messages). It resets at midnight UTC.${viaMcp}`
+            ? group.trialing
+              ? `You've reached today's AI agent limit for your free trial (${AGENT_DAILY_CAP[group.usagePlan]} messages). It resets at midnight UTC, or start your plan early on the Billing page for its full limit.${viaMcp}`
+              : `You've reached today's AI agent limit for your plan (${AGENT_DAILY_CAP[group.usagePlan]} messages). It resets at midnight UTC.${viaMcp}`
             : `Your plan has reached this month's fair-use limit for the AI agent. It resets on the 1st. If you need more, email team@postbase.so.${viaMcp}`,
       }),
       { status: 429, headers: { "Content-Type": "application/json" } },
@@ -155,7 +157,7 @@ export async function POST(req: Request) {
   // Tell the agent its remaining image budget so it can warn before generating
   // (or refuse at zero) — only when image generation is actually available.
   const imageCredits = higgsfieldConfigured()
-    ? await aiUsage(admin, orgId).then((u) => ({ remaining: u.image.remaining, limit: u.image.limit }))
+    ? await aiUsage(admin, orgId).then((u) => ({ remaining: u.image.remaining, limit: u.image.limit, trialing: u.trialing }))
     : null;
   const system = systemPrompt({ now: new Date(), timezone, imageCredits });
 

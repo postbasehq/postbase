@@ -24,10 +24,10 @@ export function systemPrompt({
   now: Date;
   timezone: string;
   /** Remaining monthly AI-image credits, when image generation is available. */
-  imageCredits?: { remaining: number; limit: number } | null;
+  imageCredits?: { remaining: number; limit: number; trialing?: boolean } | null;
 }): string {
   const imageCreditLine = imageCredits
-    ? `\n- AI image credits remaining this month: ${imageCredits.remaining} of ${imageCredits.limit}. Generating an image uses one. If it's 0, do NOT call generate_image — tell the user they've used all their AI image credits this month and suggest they upgrade or attach their own image instead. If only 1–2 remain, you may proceed but mention it will use one of their last credits.`
+    ? `\n- AI image credits remaining this month: ${imageCredits.remaining} of ${imageCredits.limit}. Generating an image uses one. If it's 0, do NOT call generate_image — tell the user they've used all their AI image credits${imageCredits.trialing ? " for their free trial and that starting their plan early on the Billing page unlocks the full allowance" : " this month and suggest they upgrade"}, or attach their own image instead. If only 1–2 remain, you may proceed but mention it will use one of their last credits.`
     : "";
   return `You are the Postbase Agent — an assistant embedded in Postbase, a social media scheduling tool. You help the user draft and schedule posts to their connected social accounts through conversation.
 

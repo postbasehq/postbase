@@ -44,7 +44,7 @@ export async function xLinkUsage(orgId: string): Promise<XLinkUsage> {
     .eq("root_org_id", g.rootId)
     .gte("created_at", xLinkPeriodStart().toISOString());
   const used = (data ?? []).reduce((n, r) => n + (r.count as number), 0);
-  const limit = X_LINK_LIMIT[g.plan] ?? X_LINK_LIMIT.trial;
+  const limit = X_LINK_LIMIT[g.usagePlan] ?? X_LINK_LIMIT.trial;
   return { enforced: true, used, limit, remaining: Math.max(0, limit - used), resetsAt };
 }
 
@@ -68,7 +68,7 @@ export async function reserveXLinks(orgId: string, targetId: string, count: numb
   } catch {
     return unavailable;
   }
-  const limit = X_LINK_LIMIT[g.plan] ?? X_LINK_LIMIT.trial;
+  const limit = X_LINK_LIMIT[g.usagePlan] ?? X_LINK_LIMIT.trial;
   const db = createAdminClient();
   const { data, error } = await db.rpc("reserve_x_links", {
     p_root: g.rootId,
@@ -79,7 +79,7 @@ export async function reserveXLinks(orgId: string, targetId: string, count: numb
     p_since: xLinkPeriodStart().toISOString(),
   });
   if (error) return unavailable;
-  if (!data) return { ok: false, error: overLimitMessage(limit, count) };
+  if (!data) return { ok: false, error: overLimitMessage(limit, count, g.trialing) };
   return { ok: true, id: data as string };
 }
 
@@ -94,8 +94,11 @@ export async function settleXLinks(id: string | null, actual: number): Promise<v
   else await db.from("x_link_usage").update({ count: actual }).eq("id", id);
 }
 
-export function overLimitMessage(limit: number, needed = 1): string {
+export function overLimitMessage(limit: number, needed = 1, trialing = false): string {
   const what = needed > 1 ? `This thread has ${needed} posts with links, and your` : "Your";
+  if (trialing) {
+    return `${what} free trial's ${limit} X posts with links are used up. Remove the link and hit Retry, or start your plan early on the Billing page for its full allowance. Posts without links are unlimited.`;
+  }
   return `${what} plan's ${limit} X posts with links for this month are used up. Remove the link and hit Retry, or retry after ${formatResetDate(xLinkResetsAt())} when the allowance resets. Posts without links are unlimited.`;
 }
 

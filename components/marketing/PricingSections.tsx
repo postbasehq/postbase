@@ -292,7 +292,7 @@ export function CompareTable({
 export const PRICING_FAQ: [string, string][] = [
   [
     "How does the free trial work?",
-    "Every plan starts with 7 days free. A card is required, but nothing is charged today. If you don't cancel before the trial ends, your plan starts and you're billed for the first month or year.",
+    "Every plan starts with 7 days free. A card is required, but nothing is charged today. You get the plan's channels, seats and workspaces straight away; AI generations, X posts with links and the agent's daily limit are trial-sized until your first payment (or start your plan early from Billing). If you don't cancel before the trial ends, your plan starts and you're billed for the first month or year.",
   ],
   [
     "Is posting really unlimited?",
