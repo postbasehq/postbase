@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { charCount, checkForPlatform, firstBlockingProblem, NOTHING_TO_POST, pastTimeProblem, tiktokSettingsProblem } from "@/lib/post-validation";
+import { charCount, checkForPlatform, firstBlockingProblem, NOTHING_TO_POST, partBudget, pastTimeProblem, tiktokSettingsProblem } from "@/lib/post-validation";
 
 const img = (n: number, type = "image/jpeg") => Array.from({ length: n }, () => ({ type }));
 const vid = [{ type: "video/mp4" }];
@@ -93,5 +93,24 @@ describe("media on its own is a post", () => {
   it("no text and no media is nothing to post", () => {
     expect(texts("x", [], [])).toEqual([`error: ${NOTHING_TO_POST}`]);
     expect(texts("x", ["  "], [])).toEqual([`error: ${NOTHING_TO_POST}`]);
+  });
+});
+
+describe("the editor's counter reports the network with the least room", () => {
+  it("a long link is fine on X but over on Bluesky", () => {
+    const part = "a".repeat(200) + " https://example.com/" + "x".repeat(130);
+    expect(partBudget(["x"], [part], 0)).toMatchObject({ platform: "x", limit: 280 });
+    expect(partBudget(["x"], [part], 0)!.used).toBeLessThanOrEqual(280);
+    const both = partBudget(["x", "bluesky"], [part], 0)!;
+    expect(both.platform).toBe("bluesky");
+    expect(both.used).toBeGreaterThan(both.limit);
+  });
+  it("caption networks count the whole joined caption, not one part", () => {
+    const b = partBudget(["instagram"], ["a".repeat(1500), "b".repeat(1500)], 0)!;
+    expect(b).toMatchObject({ platform: "instagram", limit: 2200 });
+    expect(b.used).toBe(3002);
+  });
+  it("nothing selected, nothing to report", () => {
+    expect(partBudget([], ["hi"], 0)).toBeNull();
   });
 });

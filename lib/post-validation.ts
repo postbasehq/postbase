@@ -210,3 +210,27 @@ export function parseScheduleTime(raw: string, requireZone = false): { iso: stri
   }
   return { iso: new Date(ms).toISOString() };
 }
+
+/**
+ * The editor's counter for thread part `index`: each network's count of what it
+ * will actually receive (caption networks fold every part into one caption),
+ * reported for the network with the least room left. Null with no networks.
+ */
+export function partBudget(
+  platforms: string[],
+  parts: string[],
+  index: number,
+): { used: number; limit: number; platform: string } | null {
+  let best: { used: number; limit: number; platform: string } | null = null;
+  for (const platform of platforms) {
+    const r = RULES[platform];
+    if (!r) continue;
+    const text =
+      r.shape === "caption"
+        ? parts.map((t) => t.trim()).filter(Boolean).join(r.join ?? "\n\n")
+        : (parts[index] ?? "");
+    const used = charCount(platform, text);
+    if (!best || r.limit - used < best.limit - best.used) best = { used, limit: r.limit, platform };
+  }
+  return best;
+}

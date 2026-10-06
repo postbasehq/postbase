@@ -10,7 +10,7 @@ import { Modal } from "@/components/Modal";
 import { countXLinkPosts } from "@/lib/x-link-count";
 import { BrandTile } from "@/components/BrandTile";
 import { DateTimePicker } from "@/components/DateTimePicker";
-import { charCount, checkForPlatform, NOTHING_TO_POST, PAST_GRACE_MS } from "@/lib/post-validation";
+import { charCount, checkForPlatform, NOTHING_TO_POST, PAST_GRACE_MS, partBudget } from "@/lib/post-validation";
 import { channelHealth } from "@/lib/channel-health";
 import { TikTokSettings, type TikTokInitial } from "@/components/TikTokSettings";
 import { YouTubeSettings, type YouTubePrivacy } from "@/components/YouTubeSettings";
@@ -315,19 +315,14 @@ export function PostForm({
   const previewClamped = Math.min(previewIdx, Math.max(0, selectedChannels.length - 1));
   const previewChannel = selectedChannels[previewClamped];
 
-  // The selected network with the smallest budget drives the editor's counter,
-  // counted its way (X weighs URLs as 23 and emoji/CJK as 2, Bluesky counts graphemes).
-  const strictPlatform = selectedPlatforms.reduce<string | null>(
-    (best, p) => (best == null || (PLATFORM[p]?.limit ?? Infinity) < (PLATFORM[best]?.limit ?? Infinity) ? p : best),
-    null,
+  // The editor's counter: per part, the network with the least room left,
+  // counting what it will really receive, its way (X weighs URLs as 23, Bluesky
+  // counts graphemes, caption networks join the parts). Networks whose every
+  // channel has its own caption don't get this text, so they don't count.
+  const editorPlatforms = Array.from(
+    new Set(selectedChannels.filter((c) => !variants[c.id]?.trim()).map((c) => c.platform)),
   );
-  const countText = (t: string) => (strictPlatform ? charCount(strictPlatform, t) : Array.from(t).length);
-  // Strictest character budget across the selected platforms (null when none).
-  const charLimit = (() => {
-    if (selectedPlatforms.length === 0) return null;
-    const min = Math.min(...selectedPlatforms.map((p) => PLATFORM[p]?.limit ?? Infinity));
-    return Number.isFinite(min) ? min : null;
-  })();
+  const budgetFor = (i: number) => partBudget(editorPlatforms, tweets.map((t) => t.text), i);
 
   let tz = "your timezone";
   try {
@@ -765,8 +760,8 @@ export function PostForm({
                     index={i}
                     total={tweets.length}
                     isThread={isThread}
-                    charLimit={charLimit}
-                    countText={countText}
+                    budget={budgetFor(i)}
+                    budgetLabel={editorPlatforms.length > 1}
                     emptyWarning={i === 0 && bodyEmpty && !hasMedia}
                     reordering={reordering}
                     onDragChange={setReordering}
@@ -1693,8 +1688,8 @@ function ThreadItem({
   index,
   total,
   isThread,
-  charLimit,
-  countText,
+  budget,
+  budgetLabel,
   emptyWarning,
   reordering,
   onDragChange,
@@ -1706,9 +1701,11 @@ function ThreadItem({
   index: number;
   total: number;
   isThread: boolean;
-  charLimit: number | null;
+  /** Characters used / allowed on the tightest network, or null with none selected. */
+  budget: { used: number; limit: number; platform: string } | null;
+  /** Name the network the count is for (more than one is selected). */
+  budgetLabel: boolean;
   /** Counts text the way the strictest selected network does. */
-  countText: (t: string) => number;
   emptyWarning: boolean;
   reordering: boolean;
   onDragChange: (v: boolean) => void;
@@ -1719,9 +1716,9 @@ function ThreadItem({
   const controls = useDragControls();
   const [dragging, setDragging] = useState(false);
   const t = tweet.text;
-  const len = countText(t);
-  const nearLimit = charLimit != null && len >= charLimit * 0.9;
-  const atLimit = charLimit != null && len > charLimit;
+  const len = budget ? budget.used : Array.from(t).length;
+  const nearLimit = budget != null && len >= budget.limit * 0.9;
+  const atLimit = budget != null && len > budget.limit;
   const isFirst = index === 0;
   const isLast = index === total - 1;
 
@@ -1837,7 +1834,8 @@ function ThreadItem({
             }
           >
             {len.toLocaleString()}
-            {charLimit != null ? ` / ${charLimit.toLocaleString()}` : " characters"}
+            {budget != null ? ` / ${budget.limit.toLocaleString()}` : " characters"}
+            {budget != null && budgetLabel ? ` · ${label(budget.platform)}` : ""}
           </span>
           {emptyWarning ? (
             <span className="inline-flex items-center gap-1 font-medium text-amber">
