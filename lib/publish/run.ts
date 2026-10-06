@@ -8,6 +8,7 @@ import type { YouTubePostOptions } from "@/lib/platforms/youtube";
 import { isRepeatEvery, nextOccurrence } from "@/lib/publish/repeat";
 import { NO_PLAN_MESSAGE, accessRowFor, orgHasAccess } from "@/lib/billing-guard";
 import { notifyPostsFailed, notifyReconnect } from "@/lib/email/notify";
+import { isOwnMediaUrl } from "@/lib/media-urls";
 
 type Db = ReturnType<typeof createAdminClient>;
 
@@ -475,6 +476,25 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
     } catch (e) {
       console.error(`[publish] retrying ${item.id} next run:`, e instanceof Error ? e.message : e);
       await releaseClaim(db, item.id, item.from);
+      continue;
+    }
+
+    // Only ever download the workspace's own stored files (lib/media-urls.ts):
+    // a stored media URL is member-supplied, and the adapters fetch it
+    // server-side. Checked at save time too; this covers anything older.
+    const foreignMedia = [
+      ...loaded.media.map((m) => m.url),
+      ...(loaded.post.youtube_options?.thumbnailUrl ? [loaded.post.youtube_options.thumbnailUrl] : []),
+    ].some((url) => !isOwnMediaUrl(url, loaded.post.org_id));
+    if (foreignMedia) {
+      await db
+        .from("post_targets")
+        .update({
+          status: "failed",
+          error: "An attached file isn't stored in this workspace. Open the post, remove it and attach it again.",
+          next_attempt_at: null,
+        })
+        .eq("id", target.id);
       continue;
     }
 

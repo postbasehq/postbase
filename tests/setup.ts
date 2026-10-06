@@ -6,6 +6,7 @@ process.env.NEXT_PUBLIC_SUPABASE_URL = "https://db.test";
 process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role";
 process.env.TOKEN_ENCRYPTION_KEY = randomBytes(32).toString("base64");
 process.env.NEXT_PUBLIC_APP_URL = "https://www.postbase.so";
+process.env.R2_PUBLIC_URL = "https://pub-test.r2.dev";
 // Fake Stripe price ids (lib/plans reads these when it loads).
 process.env.STRIPE_PRICE_CREATOR_MONTH = "price_creator";
 process.env.STRIPE_PRICE_TEAM_MONTH = "price_team";
@@ -16,6 +17,8 @@ for (const k of [
   "RESEND_API_KEY",
   "R2_ACCOUNT_ID",
   "R2_BUCKET",
+  "R2_ACCESS_KEY_ID",
+  "R2_SECRET_ACCESS_KEY",
   "HIGGSFIELD_API_KEY",
   "FORCE_BILLING",
 ]) {

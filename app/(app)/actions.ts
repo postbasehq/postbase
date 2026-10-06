@@ -10,6 +10,7 @@ import { canManageOrg, getCurrentOrgId, getOrgRole } from "@/lib/org";
 import { encryptJson } from "@/lib/crypto";
 import { revokeChannelAccess } from "@/lib/channel-revoke";
 import { ownStoragePath } from "@/lib/media-paths";
+import { isOwnMediaUrl } from "@/lib/media-urls";
 import { saveChannel } from "@/lib/channel-store";
 import { type YouTubePostOptions } from "@/lib/platforms/youtube";
 import { hasAccess, NO_PLAN_MESSAGE, releaseAiGeneration, reserveAiGeneration } from "@/lib/billing-guard";
@@ -47,14 +48,14 @@ function parseYoutubePrivacy(formData: FormData): string | null {
 
 /** Parse the YouTube title / thumbnail / audience, or null if the composer
  *  didn't emit them (no YouTube channel selected). */
-function parseYoutubeOptions(formData: FormData): YouTubePostOptions | null {
+function parseYoutubeOptions(formData: FormData, orgId: string): YouTubePostOptions | null {
   if (formData.get("youtube_privacy") == null) return null;
   const title = String(formData.get("youtube_title") ?? "").trim().slice(0, 100);
   const thumb = String(formData.get("youtube_thumbnail_url") ?? "");
   return {
     ...(title ? { title } : {}),
-    // Only our own storage: the publisher fetches this URL server-side.
-    ...(thumb.startsWith(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/`) ? { thumbnailUrl: thumb } : {}),
+    // Only this workspace's own storage: the publisher fetches this URL server-side.
+    ...(thumb && isOwnMediaUrl(thumb, orgId) ? { thumbnailUrl: thumb } : {}),
     madeForKids: formData.get("youtube_made_for_kids") === "true",
   };
 }
@@ -168,6 +169,17 @@ async function assertSendable(
   if (problem) throw new Error(problem);
 }
 
+/**
+ * A post's media must be this workspace's own stored files (lib/media-urls.ts):
+ * the publisher downloads them server-side, so anything else is refused here,
+ * before the post is saved.
+ */
+function assertOwnMedia(formData: FormData, orgId: string): void {
+  if (parseMedia(formData).some((m) => !isOwnMediaUrl(m.url, orgId))) {
+    throw new Error("One of the attached files isn't from this workspace's storage. Remove it and attach it again.");
+  }
+}
+
 /** Parse the `variants` JSON field into a channelId -> non-empty text map. */
 function parseVariants(formData: FormData): Record<string, string> {
   const raw = formData.get("variants");
@@ -270,6 +282,7 @@ export async function createPost(formData: FormData) {
   const status = scheduledAt ? "scheduled" : "draft";
   // Drafts are always allowed; scheduling needs an active plan.
   if (status === "scheduled" && !(await hasAccess(supabase, orgId))) throw new Error(NO_PLAN_MESSAGE);
+  assertOwnMedia(formData, orgId);
   if (scheduledAt) await assertSendable(supabase, orgId, channelIds, segments, scheduledAt, formData);
 
   // Backstop against double-submits: if an identical post was created in this
@@ -298,7 +311,7 @@ export async function createPost(formData: FormData) {
       status,
       tiktok_privacy_level: parseTiktokPrivacy(formData),
       youtube_privacy: parseYoutubePrivacy(formData),
-      youtube_options: parseYoutubeOptions(formData),
+      youtube_options: parseYoutubeOptions(formData, orgId),
       tiktok_options: parseTiktokOptions(formData),
       repeat_every: parseRepeatEvery(formData, status === "scheduled"),
       // Repeats step on the author's local calendar (keeps 09:00 at 09:00 across DST).
@@ -381,6 +394,7 @@ export async function updatePost(formData: FormData) {
   const status = scheduledAt ? "scheduled" : "draft";
   // Drafts are always allowed; scheduling needs an active plan.
   if (status === "scheduled" && !(await hasAccess(supabase, orgId))) throw new Error(NO_PLAN_MESSAGE);
+  assertOwnMedia(formData, orgId);
   if (scheduledAt) await assertSendable(supabase, orgId, channelIds, segments, scheduledAt, formData);
 
   // Update the post, scoped to the org, and confirm it was ours.
@@ -393,7 +407,7 @@ export async function updatePost(formData: FormData) {
       status,
       tiktok_privacy_level: parseTiktokPrivacy(formData),
       youtube_privacy: parseYoutubePrivacy(formData),
-      youtube_options: parseYoutubeOptions(formData),
+      youtube_options: parseYoutubeOptions(formData, orgId),
       tiktok_options: parseTiktokOptions(formData),
       repeat_every: parseRepeatEvery(formData, status === "scheduled"),
       timezone: await getTimeZone(),

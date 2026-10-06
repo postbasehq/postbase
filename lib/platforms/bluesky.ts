@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { fetchMedia, MAX_IMAGE_BYTES as MAX_SOURCE_IMAGE_BYTES } from "@/lib/platforms/fetch-media";
 
 /**
  * Bluesky (AT Protocol) integration — raw XRPC over fetch, matching the
@@ -158,9 +159,8 @@ export async function createPost(
   if (images.length) {
     const uploaded: { alt: string; image: BlobRef }[] = [];
     for (const img of images) {
-      const res = await fetch(img.url);
-      if (!res.ok) throw new Error(`Couldn't fetch media (${res.status})`);
-      const jpeg = await compressForBluesky(await res.arrayBuffer());
+      const { bytes } = await fetchMedia(img.url, { maxBytes: MAX_SOURCE_IMAGE_BYTES, what: "image" });
+      const jpeg = await compressForBluesky(bytes);
       uploaded.push({ alt: "", image: await uploadImage(tokens.service, session.accessJwt, jpeg) });
     }
     record.embed = { $type: "app.bsky.embed.images", images: uploaded };

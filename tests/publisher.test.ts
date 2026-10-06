@@ -9,6 +9,7 @@ let org: Record<string, unknown>;
 let fail: Set<string>;
 let failRecompute: boolean;
 let channelOrg: string;
+let mediaRows: { storage_url: string; type: string }[];
 let net: ReturnType<typeof installFakeNet>;
 
 function db(r: FakeRequest) {
@@ -26,6 +27,7 @@ function db(r: FakeRequest) {
   if (r.table === "post_targets" && r.method === "GET" && q.get("post_id") === `eq.${P}`) {
     return failRecompute ? json({ code: "08006", message: "boom" }, 400) : json([{ status: "scheduled", next_attempt_at: null, platform_post_id: null }]);
   }
+  if (r.table === "media" && r.method === "GET") return json(mediaRows);
   if (r.table === "orgs" && q.get("id") === `eq.${O}`) return rows([org]);
   return json([]);
 }
@@ -36,6 +38,7 @@ beforeEach(() => {
   fail = new Set();
   failRecompute = false;
   channelOrg = O;
+  mediaRows = [];
   net = installFakeNet(db);
 });
 afterEach(() => {
@@ -75,5 +78,12 @@ describe("the publisher never turns a database blip into a failed post", () => {
     channelOrg = "44444444-4444-4444-8444-444444444444";
     await publishDuePosts();
     expect(targetWrites().at(-1)).toMatchObject({ status: "failed", error: "This channel doesn't belong to the post's workspace." });
+  });
+  it("never downloads media that isn't the workspace's own", async () => {
+    mediaRows = [{ storage_url: "https://169.254.169.254/latest/meta-data/", type: "image/png" }];
+    await publishDuePosts();
+    expect(targetWrites().at(-1)).toMatchObject({ status: "failed" });
+    expect(String(targetWrites().at(-1)?.error)).toMatch(/isn't stored in this workspace/);
+    expect(net.log.some((r) => r.url.host === "169.254.169.254")).toBe(false);
   });
 });

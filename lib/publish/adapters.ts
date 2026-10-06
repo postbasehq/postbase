@@ -55,6 +55,7 @@ import {
 } from "@/lib/platforms/mastodon";
 import { freshTikTokTokens } from "@/lib/platforms/tiktok-session";
 import { charCount } from "@/lib/post-validation";
+import { fetchMedia, MAX_IMAGE_BYTES, MAX_VIDEO_BYTES } from "@/lib/platforms/fetch-media";
 
 const MEDIA_BUCKET = "post-media";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -162,9 +163,7 @@ async function publishToX(input: PublishInput): Promise<PublishResult> {
     // Resuming after the first post went out: its media is already attached.
     const mediaIds: string[] = [];
     for (const m of resumeIds.length > 0 ? [] : input.media) {
-      const res = await fetch(m.url);
-      if (!res.ok) throw new Error(`Couldn't fetch media (${res.status})`);
-      const bytes = await res.arrayBuffer();
+      const { bytes } = await fetchMedia(m.url, { maxBytes: m.type.startsWith("video/") ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES });
       mediaIds.push(await uploadMedia(tokens.access_token, bytes, m.type));
     }
     const { id } = await postThread(tokens.access_token, texts, mediaIds, {
@@ -190,9 +189,7 @@ const IG_MAX_RATIO = 1.91;
  * through untouched.
  */
 async function ensureInstagramImageUrl(url: string, type: string): Promise<string> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Couldn't fetch image for Instagram (${res.status}).`);
-  const input = Buffer.from(await res.arrayBuffer());
+  const input = Buffer.from((await fetchMedia(url, { maxBytes: MAX_IMAGE_BYTES, what: "image for Instagram" })).bytes);
 
   const sharp = (await import("sharp")).default;
   const meta = await sharp(input).metadata();
@@ -374,9 +371,8 @@ async function publishToLinkedIn(input: PublishInput): Promise<PublishResult> {
     const imageUrns: string[] = [];
     const images = input.media.filter((m) => m.type.startsWith("image/"));
     for (const img of images.slice(0, 20)) {
-      const res = await fetch(img.url);
-      if (!res.ok) throw new Error(`Couldn't fetch media (${res.status})`);
-      imageUrns.push(await liUploadImage(tokens.access_token, tokens.author_urn, await res.arrayBuffer()));
+      const { bytes } = await fetchMedia(img.url, { maxBytes: MAX_IMAGE_BYTES, what: "image" });
+      imageUrns.push(await liUploadImage(tokens.access_token, tokens.author_urn, bytes));
     }
     const id = await liCreatePost(tokens.access_token, tokens.author_urn, commentary, imageUrns);
 
@@ -436,9 +432,7 @@ async function publishToTikTok(input: PublishInput): Promise<PublishResult> {
 
     if (videos.length > 0) {
       // Video: upload the bytes directly (FILE_UPLOAD) — no domain verification.
-      const res = await fetch(videos[0].url);
-      if (!res.ok) throw new Error(`Couldn't fetch video (${res.status})`);
-      const bytes = await res.arrayBuffer();
+      const { bytes } = await fetchMedia(videos[0].url, { maxBytes: MAX_VIDEO_BYTES, what: "video" });
       if (bytes.byteLength > TIKTOK_MAX_VIDEO) {
         throw new Error("TikTok videos can be up to 4GB.");
       }
@@ -516,9 +510,7 @@ async function publishToYouTube(input: PublishInput): Promise<PublishResult> {
   const title = Array.from(clean(opts.title?.trim() || firstLine) || "Postbase upload").slice(0, 100).join("").trim();
 
   try {
-    const res = await fetch(video.url);
-    if (!res.ok) throw new Error(`Couldn't fetch video (${res.status})`);
-    const bytes = await res.arrayBuffer();
+    const { bytes } = await fetchMedia(video.url, { maxBytes: MAX_VIDEO_BYTES, what: "video" });
     const id = await ytUploadVideo(tokens.access_token, bytes, {
       title,
       description,
@@ -531,10 +523,9 @@ async function publishToYouTube(input: PublishInput): Promise<PublishResult> {
     let warning: string | undefined;
     if (opts.thumbnailUrl) {
       try {
-        const img = await fetch(opts.thumbnailUrl);
-        if (!img.ok) throw new Error(`Couldn't fetch the thumbnail (${img.status})`);
-        const type = img.headers.get("content-type")?.split(";")[0] || "image/jpeg";
-        await ytSetThumbnail(tokens.access_token, id, await img.arrayBuffer(), type);
+        const thumb = await fetchMedia(opts.thumbnailUrl, { maxBytes: MAX_IMAGE_BYTES, what: "thumbnail" });
+        const type = thumb.type?.split(";")[0] || "image/jpeg";
+        await ytSetThumbnail(tokens.access_token, id, thumb.bytes, type);
       } catch (e) {
         warning = e instanceof Error ? e.message : "Setting the thumbnail failed.";
       }

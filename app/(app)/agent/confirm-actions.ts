@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { firstBlockingProblem, pastTimeProblem } from "@/lib/post-validation";
+import { isOwnMediaUrl } from "@/lib/media-urls";
 import { getCurrentOrgId } from "@/lib/org";
 import { hasAccess, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
-import { isOwnImageUrl } from "@/lib/agent/tools";
 
 /**
  * Commits a post the agent proposed. This is the ONLY path that actually writes
@@ -66,7 +66,7 @@ export async function scheduleProposedPost(
       pastTimeProblem(scheduledIso) ??
       firstBlockingProblem(
         (owned ?? []).map((c) => ({ platform: c.platform as string, parts: variants[c.id]?.trim() ? [variants[c.id].trim()] : segments })),
-        proposal.media ?? [],
+        (proposal.media ?? []).filter((m) => m?.url && isOwnMediaUrl(m.url, orgId)),
       );
     if (problem) return { ok: false, error: problem };
   }
@@ -96,7 +96,7 @@ export async function scheduleProposedPost(
   );
   if (targetErr) return { ok: false, error: targetErr.message };
 
-  const media = (proposal.media ?? []).filter((m) => m?.url && isOwnImageUrl(m.url, orgId));
+  const media = (proposal.media ?? []).filter((m) => m?.url && isOwnMediaUrl(m.url, orgId));
   if (media.length > 0) {
     await supabase
       .from("media")

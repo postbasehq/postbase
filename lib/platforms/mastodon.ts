@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { fetchMedia, MAX_IMAGE_BYTES, MAX_VIDEO_BYTES } from "@/lib/platforms/fetch-media";
 
 /**
  * Mastodon integration — raw REST over fetch (SDK-free, matching the codebase).
@@ -192,9 +193,8 @@ export async function createPost(
 ): Promise<{ id: string; url: string }> {
   const mediaIds: string[] = [];
   for (const m of media.slice(0, 4)) {
-    const res = await fetch(m.url);
-    if (!res.ok) throw new Error(`Couldn't fetch media (${res.status})`);
-    mediaIds.push(await uploadMedia(tokens, await res.arrayBuffer(), m.type));
+    const { bytes } = await fetchMedia(m.url, { maxBytes: m.type.startsWith("video/") ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES });
+    mediaIds.push(await uploadMedia(tokens, bytes, m.type));
   }
 
   const body: Record<string, unknown> = { status: text };
