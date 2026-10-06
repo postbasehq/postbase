@@ -147,6 +147,46 @@ async function saveOrError(what: string, run: () => Promise<void>): Promise<Save
 const NO_CHANNELS = "Pick at least one channel to schedule this post, or save it as a draft.";
 const NOTHING_TO_SAVE = "Write something or add media to post.";
 
+/**
+ * Whether this exact post was just saved (a double click or a resubmitted
+ * form): same author, text, thread, time, channels, captions and media within
+ * 15s. Matching on the first line alone dropped real posts that only shared it.
+ */
+async function isDuplicateSubmit(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  orgId: string,
+  authorId: string | null,
+  segments: string[],
+  scheduledAt: string | null,
+  channelIds: string[],
+  formData: FormData,
+): Promise<boolean> {
+  let q = supabase
+    .from("posts")
+    .select("thread_tail, scheduled_at, post_targets(channel_id, variant_body), media(storage_url)")
+    .eq("org_id", orgId)
+    .eq("body", segments[0] ?? "")
+    .gte("created_at", new Date(Date.now() - 15_000).toISOString())
+    .limit(5);
+  q = authorId ? q.eq("author_id", authorId) : q.is("author_id", null);
+  const { data: recent } = await q;
+  if (!recent?.length) return false;
+
+  const variants = parseVariants(formData);
+  const key = (pairs: string[]) => [...pairs].sort().join("\n");
+  const wantTargets = key(channelIds.map((id) => `${id}\t${variants[id] ?? ""}`));
+  const wantMedia = key(parseMedia(formData).map((m) => m.url));
+  const wantTail = JSON.stringify(segments.slice(1));
+  const sameTime = (at: string | null) => (at && scheduledAt ? Date.parse(at) === Date.parse(scheduledAt) : at === scheduledAt);
+  return recent.some(
+    (p) =>
+      JSON.stringify(p.thread_tail ?? []) === wantTail &&
+      sameTime(p.scheduled_at as string | null) &&
+      key(((p.post_targets ?? []) as { channel_id: string; variant_body: string | null }[]).map((t) => `${t.channel_id}\t${t.variant_body ?? ""}`)) === wantTargets &&
+      key(((p.media ?? []) as { storage_url: string }[]).map((m) => m.storage_url)) === wantMedia,
+  );
+}
+
 /** No text, media or per-channel caption: there's nothing to save. */
 function nothingToSave(segments: string[], channelIds: string[], formData: FormData): boolean {
   if (segments.length > 0 || parseMedia(formData).length > 0) return false;
@@ -366,20 +406,9 @@ async function createPostOrThrow(formData: FormData) {
   assertOwnMedia(formData, orgId);
   if (scheduledAt) await assertSendable(supabase, orgId, channelIds, segments, scheduledAt, formData);
 
-  // Backstop against double-submits: if an identical post was created in this
-  // workspace in the last 15s, treat this as a duplicate click and don't insert
-  // another. (The client also disables the button while submitting.)
-  // (Media-only posts have no text to match on; the disabled button covers them.)
-  const { data: recent } = segments.length
-    ? await supabase
-        .from("posts")
-        .select("id")
-        .eq("org_id", orgId)
-        .eq("body", segments[0])
-        .gte("created_at", new Date(Date.now() - 15_000).toISOString())
-        .limit(1)
-    : { data: null };
-  if (recent && recent.length > 0) {
+  // Backstop against double-submits (the client also disables the button while
+  // submitting): the same person saving exactly the same post in the last 15s.
+  if (await isDuplicateSubmit(supabase, orgId, user?.id ?? null, segments, scheduledAt, channelIds, formData)) {
     revalidatePath("/queue");
     redirect("/queue");
   }
