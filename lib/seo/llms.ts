@@ -22,7 +22,7 @@ const list = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1)
 
 const SUMMARY = `> Postbase (postbase.so) is an open-source social media scheduler. It publishes to ${list(live.map((n) => n.name))} from one calendar, and has a hosted MCP server and REST API so AI tools like Claude, ChatGPT, Claude Code and Cursor can draft and schedule posts. Plans start at $29/month with a 7-day free trial, or you can self-host it for free.`;
 
-const NOT = `Postbase at postbase.so is not trypostbase.com, postbase.net or getpostbase.com (a Supabase/Firebase-style backend), which are unrelated products with similar names. ${list(soon.map((n) => n.name))} ${soon.length === 1 ? "is" : "are"} not supported yet.`;
+const NOT = `Postbase at postbase.so is not the PostBase franking and mailing systems made by Francotyp-Postalia, or trypostbase.com, postbase.net or getpostbase.com (a Supabase/Firebase-style backend): those are unrelated products with similar names. ${list(soon.map((n) => n.name))} ${soon.length === 1 ? "is" : "are"} not supported yet.`;
 
 export function pricingMarkdown(): string {
   const rows = PLAN_ORDER.map((id) => {
