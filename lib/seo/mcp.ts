@@ -251,7 +251,7 @@ ALL_MCP_NETWORKS.push(
     slug: "youtube",
     metaTitle: "YouTube MCP server: upload and schedule videos from AI",
     metaDescription:
-      "A hosted YouTube MCP server: let Claude, ChatGPT or Cursor schedule YouTube videos and Shorts from your media library, with the title, description and visibility. OAuth sign-in.",
+      "A hosted YouTube MCP server: let Claude, ChatGPT or Cursor schedule videos and Shorts from your media library, with title, description and visibility.",
     h1: ["The YouTube", "MCP server"],
     sub: "Upload a video to Postbase once, then let Claude, ChatGPT, Cursor or any MCP client write the title and description and schedule it on YouTube.",
     behaviour: [

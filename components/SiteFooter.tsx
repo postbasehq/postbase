@@ -20,7 +20,6 @@ const COLUMNS: { title: string; links: [string, string, Icon?][] }[] = [
       ["For founders", "/for/founders"],
       ["For agencies", "/for/agencies"],
       ["For small businesses", "/for/small-businesses"],
-      ["Compare", "/alternatives"],
       ["Blog", "/blog"],
       ["Changelog", "/changelog"],
       ["Free tools", "/tools"],
@@ -52,6 +51,18 @@ const COLUMNS: { title: string; links: [string, string, Icon?][] }[] = [
     ],
   },
   {
+    title: "Compare",
+    links: [
+      ["Buffer alternative", "/alternatives/buffer"],
+      ["Hootsuite alternative", "/alternatives/hootsuite"],
+      ["Typefully alternative", "/alternatives/typefully"],
+      ["Hypefury alternative", "/alternatives/hypefury"],
+      ["Later alternative", "/alternatives/later"],
+      ["Postiz alternative", "/alternatives/postiz"],
+      ["All comparisons", "/alternatives", "arrow"],
+    ],
+  },
+  {
     title: "Developers",
     links: [
       ["For developers", "/developers"],
@@ -75,7 +86,7 @@ export function SiteFooter() {
   return (
     <footer className="pb-10 pt-14 text-[14px]">
       <div className="mx-auto max-w-[1180px] px-5 md:px-8">
-        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-[1.4fr_repeat(5,1fr)]">
+        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-[1.3fr_repeat(6,1fr)]">
           <div>
             <Logo />
             <p className="mt-3 max-w-[32ch] text-muted">

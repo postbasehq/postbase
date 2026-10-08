@@ -11,7 +11,7 @@ import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 const PATH = "/tools/linkedin-text-formatter";
 const TITLE = "LinkedIn text formatter: bold, italic and lists";
 const DESCRIPTION =
-  "Free LinkedIn text formatter: make words bold, italic, underlined or struck through, add bullet and numbered lists, and preview where the post folds. Copy and paste into LinkedIn.";
+  "Free LinkedIn text formatter: bold, italic, underline and strikethrough, bullet and numbered lists, and a preview of where your post folds. Copy, then paste.";
 const TRAIL = [{ label: "Home", href: "/" }, { label: "Tools", href: "/tools" }, { label: "LinkedIn text formatter" }];
 
 const FAQS: [string, string][] = [

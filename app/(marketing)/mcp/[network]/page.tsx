@@ -4,7 +4,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { pageMeta } from "@/lib/site";
 import { CLIENTS } from "@/lib/seo/clients";
-import { COMBO_CLIENTS } from "@/lib/seo/combos";
+import { ALL_COMBOS } from "@/lib/seo/combos";
 import { LIVE_NETWORKS } from "@/lib/seo/networks";
 import { MCP_NETWORKS, MCP_SCENES, mcpNetwork } from "@/lib/seo/mcp";
 import { CtaBand, FaqList, wrap } from "@/components/marketing/ui";
@@ -82,7 +82,8 @@ export default async function McpNetworkPage({ params }: { params: Params }) {
           <SectionHead title="Related" />
           <LinkCards
             items={[
-              ...COMBO_CLIENTS.map((c) => {
+              // Setup guides only exist for the text networks (lib/seo/combos.ts).
+              ...ALL_COMBOS.filter((x) => x.network === network).map(({ client: c }) => {
                 const o = CLIENTS.find((x) => x.slug === c)!;
                 return { href: `/ai/${c}/${network}`, title: `${o.name} + ${n.name}`, client: o.logo, body: `Set up ${o.name} to post to ${n.name}.` };
               }),

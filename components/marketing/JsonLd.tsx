@@ -7,8 +7,35 @@ import { FAQ } from "@/components/marketing/faq";
  * the product with its real plan prices, and (on the homepage) the FAQ, which
  * mirrors the FAQ shown on the page word for word.
  */
-export function JsonLd({ withFaq = false, description }: { withFaq?: boolean; description: string }) {
+/** The product with its real plan prices. Also carried by every SEO page (SeoJsonLd), so each decision page describes what it sells. */
+export function softwareNode(description: string): Record<string, unknown> {
   const prices = PLAN_ORDER.map((id) => PLANS[id].monthly);
+  return {
+    "@type": "SoftwareApplication",
+    "@id": `${SITE_URL}/#software`,
+    name: SITE_NAME,
+    url: SITE_URL,
+    description,
+    applicationCategory: "BusinessApplication",
+    applicationSubCategory: "Social media management",
+    operatingSystem: "Web",
+    publisher: { "@id": `${SITE_URL}/#organization` },
+    offers: {
+      "@type": "AggregateOffer",
+      priceCurrency: "USD",
+      lowPrice: Math.min(...prices),
+      highPrice: Math.max(...prices),
+      offerCount: prices.length,
+      url: `${SITE_URL}/pricing`,
+    },
+  };
+}
+
+/** The software's own one-line description, used wherever a page doesn't describe it itself. */
+export const SOFTWARE_DESCRIPTION =
+  "Open-source social media scheduler for X, LinkedIn, Bluesky, Mastodon, TikTok and YouTube, with a hosted MCP server and REST API for AI tools.";
+
+export function JsonLd({ withFaq = false, description }: { withFaq?: boolean; description: string }) {
   const graph: Record<string, unknown>[] = [
     {
       "@type": "Organization",
@@ -27,25 +54,7 @@ export function JsonLd({ withFaq = false, description }: { withFaq?: boolean; de
       name: SITE_NAME,
       publisher: { "@id": `${SITE_URL}/#organization` },
     },
-    {
-      "@type": "SoftwareApplication",
-      "@id": `${SITE_URL}/#software`,
-      name: SITE_NAME,
-      url: SITE_URL,
-      description,
-      applicationCategory: "BusinessApplication",
-      applicationSubCategory: "Social media management",
-      operatingSystem: "Web",
-      publisher: { "@id": `${SITE_URL}/#organization` },
-      offers: {
-        "@type": "AggregateOffer",
-        priceCurrency: "USD",
-        lowPrice: Math.min(...prices),
-        highPrice: Math.max(...prices),
-        offerCount: prices.length,
-        url: `${SITE_URL}/pricing`,
-      },
-    },
+    softwareNode(description),
   ];
   if (withFaq) {
     graph.push({

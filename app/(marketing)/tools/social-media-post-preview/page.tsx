@@ -9,9 +9,9 @@ import { PostPreviewTool } from "@/components/marketing/tools/PostPreviewTool";
 import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 
 const PATH = "/tools/social-media-post-preview";
-const TITLE = "Social media post preview for X, LinkedIn, Instagram and more";
+const TITLE = "Social media post preview for X, LinkedIn and Instagram";
 const DESCRIPTION =
-  "Free social media post preview: see how one post looks on X, LinkedIn, Bluesky, Mastodon, Facebook, Instagram, TikTok and YouTube, with your images or video, before you publish.";
+  "Free post preview: see how one post looks on X, LinkedIn, Bluesky, Mastodon, Facebook, Instagram, TikTok and YouTube, with your own images or video.";
 const TRAIL = [{ label: "Home", href: "/" }, { label: "Tools", href: "/tools" }, { label: "Post preview" }];
 
 const FAQS: [string, string][] = [

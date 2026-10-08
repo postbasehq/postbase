@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   if (!e) return {};
   const meta = pageMeta(`/changelog/${e.slug}`, { ownImage: true });
   return {
-    title: { absolute: `${e.title} · Postbase changelog` },
+    title: { absolute: `${e.title} · Postbase` },
     description: e.summary,
     ...meta,
     openGraph: { ...meta.openGraph, type: "article", publishedTime: e.date },

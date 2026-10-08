@@ -11,7 +11,7 @@ import { CompareTable, IncludedGrid, PricingFaq } from "@/components/marketing/P
 export const metadata = {
   title: "Pricing: plans from $29/month",
   description:
-    "Postbase starts at $29/month with a 7-day free trial, including every network, the MCP server and the API. Agencies get 20 client workspaces on one $99 bill. Or self-host it for free.",
+    "From $29/month with a 7-day free trial: every network, the MCP server and the API. Agencies get 20 workspaces for $99. Or self-host it for free.",
   ...pageMeta("/pricing"),
 };
 

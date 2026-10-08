@@ -1,0 +1,41 @@
+name: SEO pass
+
+# Daily technical SEO check of the live site: every page in the sitemap must be
+# crawlable, server-rendered and indexable (scripts/seo-check.mjs). A failed run
+# means something blocks indexing; GitHub emails the failure. New and changed
+# pages are submitted to IndexNow; the state of what was sent is kept in the
+# Actions cache between runs.
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  seo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Restore IndexNow state
+        uses: actions/cache/restore@v4
+        with:
+          path: indexnow-state.json
+          key: indexnow-${{ github.run_id }}
+          restore-keys: indexnow-
+      - name: Check https://www.postbase.so
+        run: node scripts/seo-check.mjs https://www.postbase.so --indexnow indexnow-state.json --json seo-report.json --md seo-report.md
+      - name: Save IndexNow state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: indexnow-state.json
+          key: indexnow-${{ github.run_id }}
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-report
+          path: seo-report.*

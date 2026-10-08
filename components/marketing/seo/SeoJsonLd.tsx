@@ -1,10 +1,11 @@
 import { SITE_URL } from "@/lib/site";
+import { SOFTWARE_DESCRIPTION, softwareNode } from "@/components/marketing/JsonLd";
 
 /**
  * schema.org data for an SEO page: the page itself, its breadcrumb trail and
  * (when it has one) its FAQ, which must match the FAQ shown on the page word
- * for word. Points at the Organization / SoftwareApplication nodes the
- * homepage defines.
+ * for word. Carries the SoftwareApplication (with its plan prices) too, so a
+ * decision page says what it sells without a hop to the homepage.
  */
 export function SeoJsonLd({
   path,
@@ -41,6 +42,7 @@ export function SeoJsonLd({
         item: `${SITE_URL}${t.href ?? path}`,
       })),
     },
+    softwareNode(SOFTWARE_DESCRIPTION),
   ];
   if (faqs?.length) {
     graph.push({
