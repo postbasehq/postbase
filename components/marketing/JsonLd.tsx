@@ -18,7 +18,10 @@ export function softwareNode(description: string): Record<string, unknown> {
     description,
     applicationCategory: "BusinessApplication",
     applicationSubCategory: "Social media management",
+    alternateName: ALTERNATE_NAMES,
     operatingSystem: "Web",
+    // The open-source code is the same product.
+    sameAs: ["https://github.com/postbasehq/postbase"],
     publisher: { "@id": `${SITE_URL}/#organization` },
     offers: {
       "@type": "AggregateOffer",
@@ -31,6 +34,15 @@ export function softwareNode(description: string): Record<string, unknown> {
   };
 }
 
+/**
+ * Other names people search us by. "Postbase" alone is also Francotyp-Postalia's
+ * PostBase franking machines, and other companies use the name, so the domain
+ * and category help search engines tell us apart.
+ */
+const ALTERNATE_NAMES = ["Postbase (postbase.so)", "postbase.so", "Postbase HQ", "Postbase social media scheduler"];
+const DISAMBIGUATION =
+  "Postbase (postbase.so) is open-source social media scheduling software. It is not related to the PostBase mailing and franking systems, or to other companies using the name.";
+
 /** The software's own one-line description, used wherever a page doesn't describe it itself. */
 export const SOFTWARE_DESCRIPTION =
   "Open-source social media scheduler for X, LinkedIn, Bluesky, Mastodon, TikTok and YouTube, with a hosted MCP server and REST API for AI tools.";
@@ -41,17 +53,22 @@ export function JsonLd({ withFaq = false, description }: { withFaq?: boolean; de
       "@type": "Organization",
       "@id": `${SITE_URL}/#organization`,
       name: SITE_NAME,
+      alternateName: ALTERNATE_NAMES,
       legalName: "Berkway Group Limited",
+      disambiguatingDescription: DISAMBIGUATION,
       url: SITE_URL,
       logo: `${SITE_URL}/icon-512.png`,
       email: "team@postbase.so",
-      sameAs: ["https://github.com/postbasehq", "https://x.com/postbasehq"],
+      // Only profiles we own. producthunt.com/products/postbase is a different company.
+      sameAs: ["https://github.com/postbasehq", "https://x.com/postbasehq", "https://www.linkedin.com/company/postbasehq"],
     },
     {
       "@type": "WebSite",
       "@id": `${SITE_URL}/#website`,
       url: SITE_URL,
       name: SITE_NAME,
+      // Google's site-name system reads these when the plain name is ambiguous.
+      alternateName: ["postbase.so", "Postbase HQ"],
       publisher: { "@id": `${SITE_URL}/#organization` },
     },
     softwareNode(description),
