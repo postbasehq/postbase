@@ -225,7 +225,27 @@ async function main() {
     add("error", "/sitemap.xml", "sitemap", `HTTP ${sm.res?.status}`);
     return finish(started, [], rules);
   }
-  const urls = [...sm.body.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)].map((m) => decode(m[1]));
+  const locs = (xml) => [...xml.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)].map((m) => decode(m[1]));
+  // A sitemap index lists one sitemap per page type; follow each one.
+  let urls = locs(sm.body);
+  const sections = {};
+  if (/<sitemapindex\b/i.test(sm.body)) {
+    const children = urls;
+    urls = [];
+    for (const child of children) {
+      const childPath = new URL(child).pathname;
+      if (new URL(child).origin !== SITE) add("error", childPath, "sitemap", `sitemap listed on another origin than ${SITE}`);
+      const r = await get(`${ORIGIN}${childPath}`);
+      if (r.res?.status !== 200) {
+        add("error", childPath, "sitemap", `HTTP ${r.res?.status ?? "no response"}`);
+        continue;
+      }
+      const found = locs(r.body);
+      if (found.length === 0) add("warn", childPath, "sitemap", "no <loc> entries");
+      sections[childPath.replace(/^\/sitemaps\/|\.xml$/g, "")] = found.length;
+      urls.push(...found);
+    }
+  }
   if (urls.length === 0) add("error", "/sitemap.xml", "sitemap", "no <loc> entries");
   const dupes = urls.filter((u, i) => urls.indexOf(u) !== i);
   if (dupes.length) add("warn", "/sitemap.xml", "sitemap", `duplicate entries: ${[...new Set(dupes)].join(", ")}`);
@@ -237,10 +257,10 @@ async function main() {
   const seen = new Set();
   const paths = [...new Set(urls.map(normPath))];
   const pages = await pool(paths, async (p) => checkPage(p, `${ORIGIN}${p === "/" ? "/" : p}`, await get(`${ORIGIN}${p}`), seen));
-  return finish(started, pages, rules, seen, new Set(paths));
+  return finish(started, pages, rules, seen, new Set(paths), sections);
 }
 
-async function finish(started, pages, rules, seen = new Set(), inSitemap = new Set()) {
+async function finish(started, pages, rules, seen = new Set(), inSitemap = new Set(), sections = {}) {
   // Duplicate titles and descriptions compete with each other.
   const by = (k) => {
     const m = new Map();
@@ -288,6 +308,7 @@ async function finish(started, pages, rules, seen = new Set(), inSitemap = new S
     warnings: warns.length,
     slowest: [...pages].sort((a, b) => b.ms - a.ms).slice(0, 3).map((p) => `${p.path} ${p.ms}ms`),
     indexnow,
+    sections,
   };
 
   const md = [
@@ -299,6 +320,7 @@ async function finish(started, pages, rules, seen = new Set(), inSitemap = new S
     ``,
     warns.length ? `## Warnings\n\n${warns.map((i) => `- \`${i.path}\` ${i.check}: ${i.detail}`).join("\n")}` : `## Warnings\n\nNone.`,
     ``,
+    Object.keys(sections).length ? `Sitemaps: ${Object.entries(sections).map(([k, v]) => `${k} ${v}`).join(", ")}\n` : ``,
     `Slowest: ${summary.slowest.join(", ")}`,
     summary.indexnow ? `\nIndexNow: ${summary.indexnow}` : ``,
   ].join("\n");

@@ -32,7 +32,14 @@ export default async function AiClientPage({ params }: { params: Promise<{ slug:
 
   return (
     <>
-      <SeoJsonLd path={path} name={c.metaTitle} description={c.metaDescription} trail={trail} faqs={c.faqs} />
+      <SeoJsonLd
+        path={path}
+        name={c.metaTitle}
+        description={c.metaDescription}
+        trail={trail}
+        faqs={c.faqs}
+        howTo={{ name: `Set up Postbase in ${c.name}`, steps: c.steps, totalTime: "PT1M" }}
+      />
       <SiteNav />
       <main>
         <SeoHero

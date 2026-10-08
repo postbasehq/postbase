@@ -34,7 +34,14 @@ export default async function IntegrationPage({ params }: { params: Promise<{ sl
 
   return (
     <>
-      <SeoJsonLd path={path} name={n.metaTitle} description={n.metaDescription} trail={trail} faqs={n.faqs} />
+      <SeoJsonLd
+        path={path}
+        name={n.metaTitle}
+        description={n.metaDescription}
+        trail={trail}
+        faqs={n.faqs}
+        howTo={{ name: `How to schedule ${noun}`, steps: n.steps }}
+      />
       <SiteNav />
       <main>
         <SeoHero

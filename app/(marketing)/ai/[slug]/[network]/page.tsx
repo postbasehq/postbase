@@ -68,13 +68,20 @@ export default async function ComboPage({ params }: { params: Params }) {
     ],
     [
       `Can ${client.name} delete my ${n.name} posts?`,
-      `No. It can list channels, create drafts and scheduled posts, list the queue and cancel a scheduled post. There's no tool for deleting anything.`,
+      `No. It can list channels, find files in your media library, create drafts and scheduled posts, list the queue and cancel a scheduled post. There's no tool for deleting anything.`,
     ],
   ];
 
   return (
     <>
-      <SeoJsonLd path={path} name={title} description={description} trail={trail} faqs={faqs} />
+      <SeoJsonLd
+        path={path}
+        name={title}
+        description={description}
+        trail={trail}
+        faqs={faqs}
+        howTo={{ name: `Post to ${n.name} from ${client.name}`, steps }}
+      />
       <SiteNav />
       <main>
         <SeoHero

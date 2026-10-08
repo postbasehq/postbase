@@ -227,7 +227,7 @@ export function Steps({ items, badge = (i) => `Step ${i + 1}` }: { items: { titl
       {items.map((s, i) => {
         const t = STEP_TILES[i % 3];
         return (
-          <li key={s.title} className="relative isolate flex min-h-[240px] flex-col overflow-hidden rounded-[24px] p-8" style={{ background: t.bg }}>
+          <li key={s.title} id={`step-${i + 1}`} className="relative isolate flex min-h-[240px] flex-col overflow-hidden rounded-[24px] p-8" style={{ background: t.bg }}>
             {/* Flush with the top edge beside the badge; without one, the title starts at the top, so it hangs from the bottom edge. */}
             <LogoMark
               color={t.mark}
