@@ -92,8 +92,8 @@ const HERO: Record<
   developers: {
     title: (
       <>
-        Give your agent a <br />
-        <Underlined>publish button</Underlined>.
+        Social posting <br />
+        for <Underlined>AI agents</Underlined>.
       </>
     ),
     sub: "Connect Claude, Cursor or your own code over MCP or the REST API. Every post your agent schedules lands in your calendar.",
