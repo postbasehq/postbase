@@ -4,6 +4,7 @@ import { resolveAccessToken, resourceMetadataUrlFor } from "@/lib/oauth";
 import { listChannels, listPosts, listMedia, createPost, cancelPost, type CreatePostInput } from "@/lib/api-core";
 import { cancelMessage } from "@/lib/publish/cancel";
 import { failedAuthLimited, postLimit, requestLimit, tooManyRequests } from "@/lib/api-limits";
+import { OUTPUT, structured } from "@/lib/mcp-output";
 
 /**
  * Hosted MCP server (Streamable HTTP, stateless JSON-RPC). Authenticated by an
@@ -30,6 +31,7 @@ const TOOLS = [
     annotations: { title: "List channels", readOnlyHint: true, openWorldHint: false },
     description:
       "List the social accounts (channels) connected to this Postbase workspace: id, platform (x, linkedin, bluesky, mastodon, tiktok, youtube), handle and status. Use the ids with create_post. Docs: https://docs.postbase.so/mcp/tools",
+    outputSchema: OUTPUT.list_channels,
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
   {
@@ -38,6 +40,7 @@ const TOOLS = [
     annotations: { title: "Create or schedule a post", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     description:
       "Create a draft, or schedule a post or thread, on one or more connected channels. Relative times (\"in 10 minutes\", \"in 2 hours\") can be given as `schedule_in_minutes`, which the server converts using its own clock. The post appears on the user's Postbase calendar and publishes at `scheduled_at` via each network's official API. Provide `body` for a single post or `thread` for several posts; the same text goes to every channel in the call, so call once per network for different wording. Limits per post: X 280 (links count 23), Bluesky 300, Mastodon 500, LinkedIn 3,000, YouTube 5,000 (description). Threads publish as reply chains on X, Bluesky and Mastodon; on LinkedIn the extra parts become the first comment. To attach images or a video, pass `media_ids` from list_media (files the user uploaded to their Postbase media library); YouTube needs a video and `youtube.made_for_kids`. TikTok posts can only be saved as drafts here: the user schedules them in Postbase, where TikTok requires them to choose who sees the post. Omit `scheduled_at` and `schedule_in_minutes` to save a draft. Docs: https://docs.postbase.so/mcp/tools",
+    outputSchema: OUTPUT.create_post,
     inputSchema: {
       type: "object",
       properties: {
@@ -85,6 +88,7 @@ const TOOLS = [
     annotations: { title: "List media", readOnlyHint: true, openWorldHint: false },
     description:
       "List files in this workspace's Postbase media library (newest first, up to 50): id, name, MIME type, size and URL. Pass the ids to create_post's `media_ids` to attach them. Files are uploaded by the user in Postbase. Docs: https://docs.postbase.so/mcp/tools",
+    outputSchema: OUTPUT.list_media,
     inputSchema: {
       type: "object",
       properties: {
@@ -100,6 +104,7 @@ const TOOLS = [
     annotations: { title: "List scheduled posts", readOnlyHint: true, openWorldHint: false },
     description:
       "List posts in this workspace with their text, time and channels. Defaults to scheduled posts; pass `status` to see drafts, published or failed posts instead. Docs: https://docs.postbase.so/mcp/tools",
+    outputSchema: OUTPUT.list_scheduled,
     inputSchema: {
       type: "object",
       properties: {
@@ -114,6 +119,7 @@ const TOOLS = [
     annotations: { title: "Cancel a scheduled post", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description:
       "Cancel a scheduled post before it publishes. The post goes back to being a draft, so nothing is deleted and it can be rescheduled in Postbase. Get the id from list_scheduled. Docs: https://docs.postbase.so/mcp/tools",
+    outputSchema: OUTPUT.cancel_post,
     inputSchema: {
       type: "object",
       properties: { post_id: { type: "string", description: "The post id to cancel." } },
@@ -217,11 +223,14 @@ async function handleRpc(orgId: string, msg: {
       const args = (params?.arguments as Args) ?? {};
       try {
         const out = await runTool(orgId, name, args);
+        const now = new Date().toISOString();
+        const data = structured(name, out, now);
         return rpcResult(id, {
           content: [
-            { type: "text", text: JSON.stringify(out, null, 2) },
-            { type: "text", text: `Current server time: ${new Date().toISOString()} (UTC)` },
+            { type: "text", text: JSON.stringify(data, null, 2) },
+            { type: "text", text: `Current server time: ${now} (UTC)` },
           ],
+          structuredContent: data,
         });
       } catch (e) {
         return rpcResult(id, {
