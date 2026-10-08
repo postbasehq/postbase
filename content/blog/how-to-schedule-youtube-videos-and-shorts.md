@@ -3,7 +3,7 @@ title: How to schedule YouTube videos and Shorts
 description: How to schedule YouTube videos and Shorts in YouTube Studio, how time zones and rescheduling work, and how to post to YouTube and TikTok at once.
 date: 2026-09-27
 category: Guides
-related: /integrations/youtube, /integrations/tiktok, /blog/youtube-api-upload-video
+related: /integrations/youtube, /integrations/tiktok, /tools/best-time-to-post, /blog/youtube-api-upload-video
 ---
 
 YouTube has solid scheduling built in, so for a single video you may not need anything else. This guide covers how to use it, a few details that catch people out, and when a scheduling tool helps, usually when the same video is also going to TikTok.

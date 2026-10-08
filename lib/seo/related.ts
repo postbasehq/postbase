@@ -24,6 +24,12 @@ export const TOOLS: Record<string, LinkCard> = {
     brand: "x",
     body: "Count a post per network and split it into a thread.",
   },
+  "/tools/best-time-to-post": {
+    href: "/tools/best-time-to-post",
+    title: "Best time to post",
+    brand: "tiktok",
+    body: "The best day and hour for each network, in your time zone.",
+  },
   "/tools/social-media-image-sizes": {
     href: "/tools/social-media-image-sizes",
     title: "Image and video sizes",

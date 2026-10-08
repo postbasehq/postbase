@@ -96,6 +96,7 @@ export function llmsTxt({ full = false } = {}): string {
     [
       link("/tools/character-counter", "Character counter", "counts the way X, Bluesky and LinkedIn do, and splits threads"),
       link("/tools/social-media-image-sizes", "Social media image and video sizes"),
+      link("/tools/best-time-to-post", "Best time to post", "best day and hour per network, converted to your time zone"),
       link("/tools/linkedin-text-formatter", "LinkedIn text formatter", "bold, italic and lists in Unicode, with a preview of the fold"),
       link("/tools/social-media-post-preview", "Social media post preview", "one post on eight networks, with your own media"),
     ].join("\n"),

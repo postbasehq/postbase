@@ -5,7 +5,7 @@ description: LinkedIn has built-in scheduling up to 3 months ahead. How to use i
 date: 2026-09-27
 updated: 2026-10-06
 category: Guides
-related: /integrations/linkedin, /mcp/linkedin, /ai/claude/linkedin, /tools/character-counter
+related: /integrations/linkedin, /mcp/linkedin, /ai/claude/linkedin, /tools/character-counter, /tools/best-time-to-post
 ---
 
 Good news first: you don't need any tool to schedule a LinkedIn post. LinkedIn has built-in scheduling on desktop, in the app and on company Pages. This guide shows how to use it, the limits that trip people up, what it can't do, and when a scheduling tool is worth it.
@@ -104,7 +104,7 @@ It drafts the post, sends the link as the first comment, and schedules it on you
 - **Front-load the point.** Only the first few lines show before "see more".
 - **Short paragraphs.** One or two sentences each, with a blank line between.
 - **Put the link in the first comment** if you want the post itself to read cleanly.
-- **Keep a steady rhythm.** A few posts a week at times your network is online beats bursts followed by silence.
+- **Keep a steady rhythm.** A few posts a week at times your network is online beats bursts followed by silence. Our [best time to post tool](/tools/best-time-to-post) shows when that is, in your time zone.
 
 ## Frequently asked questions
 

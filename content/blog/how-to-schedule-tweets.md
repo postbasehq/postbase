@@ -5,7 +5,7 @@ description: How to schedule posts on X on the web and iPhone, where to find the
 date: 2026-09-27
 updated: 2026-10-06
 category: Guides
-related: /integrations/x, /mcp/x, /ai/claude/x, /tools/character-counter, /blog/hypefury-alternative-for-x
+related: /integrations/x, /mcp/x, /ai/claude/x, /tools/character-counter, /tools/best-time-to-post, /blog/hypefury-alternative-for-x
 ---
 
 X has a basic scheduler built into its composer. It's fine for a single post now and then. For threads, several networks at once, or a week of posts planned in one sitting, a scheduling tool does more.

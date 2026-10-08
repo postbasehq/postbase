@@ -5,7 +5,7 @@ description: TikTok lets you schedule videos 15 minutes to 10 days ahead from a 
 date: 2026-09-27
 updated: 2026-10-06
 category: Guides
-related: /integrations/tiktok, /integrations/youtube, /blog/how-to-schedule-youtube-videos-and-shorts, /blog/tiktok-content-posting-api
+related: /integrations/tiktok, /integrations/youtube, /tools/best-time-to-post, /blog/how-to-schedule-youtube-videos-and-shorts, /blog/tiktok-content-posting-api
 ---
 
 TikTok has a built-in scheduler, but it's easy to miss because it isn't in the phone app. This guide covers how to use it, who can, its limits, and when a scheduling tool makes more sense.
