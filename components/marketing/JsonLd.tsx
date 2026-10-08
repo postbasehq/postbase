@@ -59,8 +59,14 @@ export function JsonLd({ withFaq = false, description }: { withFaq?: boolean; de
       url: SITE_URL,
       logo: `${SITE_URL}/icon-512.png`,
       email: "team@postbase.so",
-      // Only profiles we own. producthunt.com/products/postbase is a different company.
-      sameAs: ["https://github.com/postbasehq", "https://x.com/postbasehq", "https://www.linkedin.com/company/postbasehq"],
+      // Only profiles and listings that are ours. producthunt.com/products/postbase is a different company.
+      sameAs: [
+        "https://github.com/postbasehq",
+        "https://x.com/postbasehq",
+        "https://www.linkedin.com/company/postbasehq",
+        "https://alternativeto.net/software/postbase/about/",
+        "https://trustmrr.com/startup/postbase",
+      ],
     },
     {
       "@type": "WebSite",
