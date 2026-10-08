@@ -21,6 +21,8 @@ export async function POST(req: Request) {
     thread?: string[];
     channel_ids?: string[];
     scheduled_at?: string | null;
+    media_ids?: string[];
+    youtube?: { title?: string; privacy?: string; made_for_kids?: boolean };
   };
   try {
     payload = await req.json();
@@ -37,6 +39,15 @@ export async function POST(req: Request) {
       thread: Array.isArray(payload.thread) ? payload.thread : undefined,
       channelIds: Array.isArray(payload.channel_ids) ? payload.channel_ids : [],
       scheduledAt: payload.scheduled_at ?? null,
+      mediaIds: Array.isArray(payload.media_ids) ? payload.media_ids.filter((x) => typeof x === "string") : [],
+      youtube:
+        payload.youtube && typeof payload.youtube === "object"
+          ? {
+              title: typeof payload.youtube.title === "string" ? payload.youtube.title : undefined,
+              privacy: typeof payload.youtube.privacy === "string" ? payload.youtube.privacy : undefined,
+              madeForKids: typeof payload.youtube.made_for_kids === "boolean" ? payload.youtube.made_for_kids : undefined,
+            }
+          : undefined,
     });
     return NextResponse.json({ post }, { status: 201 });
   } catch (e) {

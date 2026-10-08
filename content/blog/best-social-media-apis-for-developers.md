@@ -71,7 +71,7 @@ curl https://www.postbase.so/api/v1/posts \
 ```
 
 - **Price:** $29/month for 5 channels; the API and MCP server are on every plan.
-- **Watch out for:** the API and MCP server post text and threads today; media is added in the composer. Networks today are X, LinkedIn, Bluesky, Mastodon, TikTok and YouTube.
+- **Watch out for:** media is attached from the Postbase media library by id, not uploaded through the API, and TikTok posts can only be drafted through it. Networks today are X, LinkedIn, Bluesky, Mastodon, TikTok and YouTube.
 
 ### Postiz
 

@@ -5,7 +5,19 @@ import { MCP_NETWORKS } from "@/lib/seo/mcp";
 import { listPosts } from "@/lib/blog";
 import type { LinkCard } from "@/components/marketing/seo/sections";
 
-const TOOLS: Record<string, LinkCard> = {
+export const TOOLS: Record<string, LinkCard> = {
+  "/tools/linkedin-text-formatter": {
+    href: "/tools/linkedin-text-formatter",
+    title: "LinkedIn text formatter",
+    brand: "linkedin",
+    body: "Bold, italic and lists that paste into LinkedIn.",
+  },
+  "/tools/social-media-post-preview": {
+    href: "/tools/social-media-post-preview",
+    title: "Post preview",
+    brand: "instagram",
+    body: "See one post on eight networks before it goes out.",
+  },
   "/tools/character-counter": {
     href: "/tools/character-counter",
     title: "Character counter",
@@ -38,7 +50,7 @@ export function relatedCard(href: string): LinkCard | null {
     return c ? { href, title: c.eyebrow, client: c.logo, body: c.blurb } : null;
   }
   if (kind === "mcp") {
-    if (!slug) return { href, title: "The MCP server", mark: "#2b59d9", body: "Endpoint, sign-in, the four tools and their limits." };
+    if (!slug) return { href, title: "The MCP server", mark: "#2b59d9", body: "Endpoint, sign-in, the five tools and their limits." };
     const m = MCP_NETWORKS.find((x) => x.slug === slug);
     const n = LIVE_NETWORKS.find((x) => x.slug === slug);
     return m && n ? { href, title: `${n.name} MCP server`, brand: n.id, body: m.behaviour[0].value } : null;

@@ -52,4 +52,25 @@ export const MCP_SCENES: Record<string, McpScene> = {
     reply: "Scheduled on Mastodon for 9:00 tomorrow, with #opensource and #fieldnote at the end.",
     body: "Fieldnote is now open source under AGPL-3.0. #opensource",
   },
+  youtube: {
+    ask: "Schedule the brew-guide video from my media library on YouTube for 9am tomorrow, unlisted, with a title and description",
+    tools: ["list_channels", "list_media", "create_post"],
+    card: { chans: ["youtube"], what: "Video, unlisted" },
+    reply: "Scheduled. brew-guide.mp4 goes up on YouTube at 9:00 tomorrow as an unlisted video, with the title and description below.",
+    body: "How we brew the Kochere at home",
+  },
+  instagram: {
+    ask: "Make a carousel from the three latte-art photos in my media library and schedule it on Instagram for 9am tomorrow",
+    tools: ["list_channels", "list_media", "create_post"],
+    card: { chans: ["instagram"], what: "Carousel, 3 images" },
+    reply: "Scheduled for 9:00 tomorrow on Instagram: a three-image carousel with the caption below.",
+    body: "Three tries, one heart. Latte art practice this week.",
+  },
+  facebook: {
+    ask: "Post the opening-hours photo from my media library to our Facebook Page at 9am tomorrow",
+    tools: ["list_channels", "list_media", "create_post"],
+    card: { chans: ["facebook"], what: "Post with a photo" },
+    reply: "Scheduled on your Facebook Page for 9:00 tomorrow, with the opening-hours photo.",
+    body: "New winter hours from Monday: 8am to 4pm, every day.",
+  },
 };

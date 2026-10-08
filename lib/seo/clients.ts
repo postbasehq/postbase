@@ -55,7 +55,7 @@ const COMMON_FAQS = (name: string): [string, string][] => [
   ],
   [
     `Which networks can ${name} post to?`,
-    "Text posts and threads go to X, LinkedIn, Bluesky and Mastodon. TikTok and YouTube need a video, so for those ask for a draft and add the video in the Postbase composer before it's scheduled.",
+    "Posts and threads go to X, LinkedIn, Bluesky and Mastodon, and videos to YouTube, with images or video from your Postbase media library. TikTok posts are saved as drafts, because TikTok requires you to choose who sees each one in the Postbase composer.",
   ],
   [
     `How do I stop ${name} posting for me?`,
@@ -76,7 +76,7 @@ export const CLIENTS: AiClient[] = [
     kind: "chat",
     metaTitle: "Post to social media from Claude (MCP connector)",
     metaDescription:
-      "Add Postbase to Claude as a custom connector and let Claude draft and schedule posts to X, LinkedIn, Bluesky and Mastodon. No API key, set up in a minute.",
+      "Add Postbase to Claude as a custom connector and let Claude draft and schedule posts to X, LinkedIn, Bluesky, Mastodon and YouTube. No API key, set up in a minute.",
     eyebrow: "Postbase for Claude",
     h1: ["Let Claude post to", "social media"],
     h1Icon: "Claude",
@@ -110,7 +110,7 @@ export const CLIENTS: AiClient[] = [
       ],
       [
         "Can Claude attach images or videos?",
-        "Not yet. The connector handles text posts and threads. For media, ask Claude for a draft, then add the image or video in the Postbase composer and schedule it from there.",
+        "Yes, from your Postbase media library. Upload the files there, then ask Claude to attach them by name. Claude can't send files of its own.",
       ],
       [
         "Can Claude post without asking me first?",
@@ -127,7 +127,7 @@ export const CLIENTS: AiClient[] = [
     kind: "chat",
     metaTitle: "Post to social media from ChatGPT (MCP connector)",
     metaDescription:
-      "Add Postbase to ChatGPT as a custom MCP app in developer mode and let ChatGPT draft and schedule posts to X, LinkedIn, Bluesky and Mastodon. No API key.",
+      "Add Postbase to ChatGPT as a custom MCP app in developer mode and let ChatGPT draft and schedule posts to X, LinkedIn, Bluesky, Mastodon and YouTube. No API key.",
     eyebrow: "Postbase for ChatGPT",
     h1: ["Let ChatGPT post to", "social media"],
     h1Icon: "ChatGPT",
@@ -159,7 +159,7 @@ export const CLIENTS: AiClient[] = [
       ],
       [
         "Can ChatGPT attach images or videos?",
-        "Not yet. The connection handles text posts and threads. For media, ask ChatGPT for a draft, then add the image or video in the Postbase composer and schedule it from there.",
+        "Yes, from your Postbase media library. Upload the files there, then ask ChatGPT to attach them by name. ChatGPT can't send files of its own.",
       ],
       [
         "Can ChatGPT post without asking me first?",
@@ -259,7 +259,7 @@ export const CLIENTS: AiClient[] = [
     kind: "editor",
     metaTitle: "Schedule social posts from VS Code (Copilot MCP)",
     metaDescription:
-      "Add the Postbase MCP server to VS Code with one command and let GitHub Copilot's agent draft and schedule posts to X, LinkedIn, Bluesky and Mastodon.",
+      "Add the Postbase MCP server to VS Code with one command and let GitHub Copilot's agent draft and schedule posts to X, LinkedIn, Bluesky, Mastodon and YouTube.",
     eyebrow: "Postbase for VS Code",
     h1: ["Let Copilot", "post for you"],
     h1Icon: "Copilot",
@@ -326,7 +326,7 @@ export const CLIENTS: AiClient[] = [
     kind: "terminal",
     metaTitle: "Schedule social posts from Gemini CLI (MCP server)",
     metaDescription:
-      "Add the Postbase MCP server to Gemini CLI with one command. Draft and schedule posts to X, LinkedIn, Bluesky and Mastodon from your terminal.",
+      "Add the Postbase MCP server to Gemini CLI with one command. Draft and schedule posts to X, LinkedIn, Bluesky, Mastodon and YouTube from your terminal.",
     eyebrow: "Postbase for Gemini CLI",
     h1: ["Post from", "the terminal"],
     h1Icon: "the",

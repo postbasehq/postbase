@@ -59,7 +59,7 @@ function CallRow({ name }: { name: string }) {
   );
 }
 
-/** The server's four tools: name, read or write, how the call looks in Claude, what it does and its arguments. */
+/** The server's tools: name, read or write, how the call looks in Claude, what it does and its arguments. */
 export function McpTools() {
   return (
     <div className="grid gap-5 md:grid-cols-2">
@@ -99,7 +99,7 @@ export function McpConnect() {
         labelClass="bg-[#e3a72c] text-[#14161a]"
       >
         <p className="text-[15px] leading-relaxed text-ink">
-          For clients that only run local servers: create a key on the AI &amp; API page and run the open-source package with npx. Same four tools.
+          For clients that only run local servers: create a key on the AI &amp; API page and run the open-source package with npx. Same tools.
         </p>
         <p className="mt-4 w-fit rounded-xl border border-line bg-surface-2 px-3.5 py-2 font-mono text-[14px] text-ink">npx @postbasehq/mcp</p>
       </TwoZone>

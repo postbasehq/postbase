@@ -15,7 +15,7 @@ import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 
 const TITLE = "Social media MCP server (hosted, OAuth sign-in)";
 const DESCRIPTION =
-  "The Postbase MCP server lets Claude, ChatGPT, Cursor and other AI tools schedule posts and threads to X, LinkedIn, Bluesky and Mastodon. Hosted, open source.";
+  "The Postbase MCP server lets Claude, ChatGPT, Cursor and other AI tools schedule posts, threads, images and video to X, LinkedIn, Bluesky, Mastodon and YouTube. Hosted, open source.";
 const TRAIL = [{ label: "Home", href: "/" }, { label: "MCP server" }];
 
 export const metadata: Metadata = { title: TITLE, description: DESCRIPTION, ...pageMeta("/mcp", { ownImage: true }) };
@@ -30,7 +30,7 @@ export default function McpPage() {
         <SeoHero
           trail={TRAIL}
           h1={["The social media", "MCP server"]}
-          sub="One hosted server that lets Claude, ChatGPT, Cursor or any MCP client draft and schedule posts and threads to X, LinkedIn, Bluesky and Mastodon. Sign in with Postbase: no API key, and every post lands on a calendar you can check."
+          sub="One hosted server that lets Claude, ChatGPT, Cursor or any MCP client draft and schedule posts, threads and videos to X, LinkedIn, Bluesky, Mastodon and YouTube. Sign in with Postbase: no API key, and every post lands on a calendar you can check."
           cta={{ label: "Connect in a minute", href: "/login" }}
           secondary={{ label: "Tool reference", href: "https://docs.postbase.so/mcp/tools" }}
           frame="Claude scheduling through Postbase, live on your calendar"
@@ -47,8 +47,8 @@ export default function McpPage() {
 
         <section className={section}>
           <SectionHead
-            title="Four tools, nothing destructive"
-            sub="The agent can read your channels and queue, create drafts and scheduled posts, and cancel one before it goes out. It can't delete anything."
+            title="Five tools, nothing destructive"
+            sub="The agent can read your channels, media library and queue, create drafts and scheduled posts, and cancel one before it goes out. It can't delete anything."
           />
           <McpTools />
         </section>

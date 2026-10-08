@@ -48,12 +48,13 @@ Start a new chat and make sure the Postbase connector is switched on in the chat
 
 > Write an X post and a LinkedIn post announcing our new pricing page. Schedule the X one for tomorrow at 10am and the LinkedIn one for 11am.
 
-Claude will usually check which channels you have, write the posts and then ask before it calls the tool that schedules them. It has four tools to work with:
+Claude will usually check which channels you have, write the posts and then ask before it calls the tool that schedules them. It has five tools to work with:
 
-::demo tools caption="The four tools Claude gets. It can't delete posts, disconnect accounts or change settings."
+::demo tools caption="The five tools Claude gets. It can't delete posts, disconnect accounts or change settings."
 
 - **list_channels** tells Claude which accounts are connected, so it knows what "LinkedIn" means in your workspace.
-- **create_post** saves a draft, or schedules a post or thread for a specific time.
+- **create_post** saves a draft, or schedules a post or thread for a specific time, with images or a video attached.
+- **list_media** finds images and videos in your Postbase media library, so Claude can attach them by name.
 - **list_scheduled** shows what's already queued.
 - **cancel_post** pulls a scheduled post back to a draft.
 
@@ -79,8 +80,8 @@ You can open any of them in the composer to change the wording, add an image or 
 
 ## What Claude can't do (yet)
 
-- **Attach images or video.** The connector sends text posts and threads. To add media, ask Claude to save a draft, then attach the image or video in the Postbase composer.
-- **Post to TikTok or YouTube on its own.** Both need a video, so Claude can draft the caption but you add the video before it's scheduled.
+- **Send files of its own.** Claude attaches images and videos from your Postbase media library, so upload them there first. That's also how it schedules YouTube videos.
+- **Schedule TikTok posts.** TikTok requires you to pick who sees each post yourself, so Claude can only save a TikTok draft for you to schedule in the composer.
 - **Schedule without an active plan.** Drafts always work. Scheduling needs an active plan or trial.
 
 ## Troubleshooting

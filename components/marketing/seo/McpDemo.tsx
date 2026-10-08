@@ -19,6 +19,7 @@ import { MCP_LANDING as LANDING, MCP_WHEN as WHEN, type McpScene } from "@/lib/s
 const LABEL: Record<string, string> = {
   list_channels: "List channels",
   create_post: "Create or schedule a post",
+  list_media: "List media",
 };
 
 function ClaudeWindow({ scene, typed, sent, done, running, reply }: {

@@ -94,7 +94,7 @@ Cancelled posts go back to drafts, so nothing is lost.
 
 ## What it can't do yet
 
-The MCP tools post text and threads, so if you want a screenshot or a demo video on the post, ask Claude to save a draft and add the media in the Postbase composer before scheduling. And while Claude can draft TikTok and YouTube captions, those networks need a video before anything can be scheduled.
+Claude can't send files from your machine. To put a screenshot or demo video on the post, upload it to your Postbase media library first, then ask Claude to attach it ("use release-2.4.mp4 from my media library"). TikTok posts can only be saved as drafts, because TikTok requires you to pick who sees each one in the Postbase composer.
 
 ## Using Cursor or VS Code instead?
 

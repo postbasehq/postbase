@@ -2,9 +2,9 @@ import { CLIENTS, type AiClient } from "@/lib/seo/clients";
 import { LIVE_NETWORKS, type FactUi, type Network } from "@/lib/seo/networks";
 
 /*
- * "Post to <network> from <AI client>" pages: /ai/[client]/[network]. Only
- * text networks, because the MCP tools post text and threads (no media), so
- * TikTok and YouTube can't be posted to by an agent alone. Each network has
+ * "Post to <network> from <AI client>" pages: /ai/[client]/[network]. The text
+ * networks only (YouTube has its own /mcp/youtube page; TikTok can only be
+ * drafted by an agent). Each network has
  * notes on how an agent's post behaves there; each client kind has its own
  * prompts, so no two pages say the same thing.
  */

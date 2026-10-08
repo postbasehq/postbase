@@ -1,14 +1,17 @@
 import { MCP_URL } from "@/lib/seo/clients";
 import { API_LIMITS } from "@/lib/api-limits";
 import { X_LINK_LIMIT } from "@/lib/plans";
-import type { FactUi } from "@/lib/seo/networks";
+import { LIVE_NETWORKS, type FactUi } from "@/lib/seo/networks";
 
 /*
  * The MCP server pages: /mcp (the server itself: endpoint, sign-in, tools and
  * limits) and /mcp/[network] (what each tool does on one network, with example
  * calls). The /ai pages cover setup in each AI tool; these are the reference.
  * Facts mirror app/api/mcp/route.ts and lib/api-core.ts; keep them in sync.
- * Text networks only, because the tools post text and threads (no media).
+ * Media comes from the workspace's media library (list_media + media_ids).
+ * TikTok has no page: its guidelines need the creator to schedule each post in
+ * the composer, so agents can only draft there. Instagram and Facebook pages
+ * are written but only built once those networks are live (see LIVE_NETWORKS).
  */
 
 export { MCP_URL };
@@ -25,7 +28,13 @@ export const MCP_TOOLS: { name: string; kind: "read" | "write"; summary: string;
     kind: "write",
     summary:
       "Saves a draft, or schedules a post or a thread, on one or more channels. The post lands on your Postbase calendar and publishes through each network's official API.",
-    args: "body or thread, channel_ids, and scheduled_at (ISO 8601 with an offset) or schedule_in_minutes. Leave both times out to save a draft.",
+    args: "body or thread, channel_ids, scheduled_at (ISO 8601 with an offset) or schedule_in_minutes, and media_ids from list_media. Leave both times out to save a draft.",
+  },
+  {
+    name: "list_media",
+    kind: "read",
+    summary: "The images and videos in your Postbase media library, newest first. The agent passes their ids to create_post to attach them.",
+    args: "type (optional): image or video. search (optional): part of a file name.",
   },
   {
     name: "list_scheduled",
@@ -65,7 +74,11 @@ export const MCP_FAQS: [string, string][] = [
   ],
   [
     "Which networks can an AI post to through it?",
-    "X, LinkedIn, Bluesky and Mastodon. The tools send text and threads, so TikTok and YouTube, which need a video, can only be saved as drafts: add the video in Postbase and schedule it from there.",
+    "X, LinkedIn, Bluesky, Mastodon and YouTube, with images or video from your Postbase media library. TikTok posts can only be saved as drafts: TikTok requires you to choose who sees each post, so you schedule them in Postbase yourself.",
+  ],
+  [
+    "Can the agent attach images and video?",
+    "Yes, from your Postbase media library. Upload files there, and the agent finds them with list_media and attaches them by id. It can't upload files of its own or fetch images from other websites.",
   ],
   [
     "Do I need an API key?",
@@ -86,7 +99,7 @@ export const MCP_FAQS: [string, string][] = [
 ];
 
 export type McpNetwork = {
-  slug: "x" | "linkedin" | "bluesky" | "mastodon";
+  slug: "x" | "linkedin" | "bluesky" | "mastodon" | "youtube" | "instagram" | "facebook";
   metaTitle: string;
   metaDescription: string;
   h1: [string, string];
@@ -100,7 +113,7 @@ export type McpNetwork = {
 
 const xLinks = `${X_LINK_LIMIT.creator} to ${X_LINK_LIMIT.agency}`;
 
-export const MCP_NETWORKS: McpNetwork[] = [
+const ALL_MCP_NETWORKS: McpNetwork[] = [
   {
     slug: "x",
     metaTitle: "X (Twitter) MCP server: post tweets and threads",
@@ -126,7 +139,7 @@ export const MCP_NETWORKS: McpNetwork[] = [
       ],
       [
         "Can it attach images or video to a tweet?",
-        "Not through the MCP tools yet. Ask the agent to save a draft, add the media in the Postbase composer and schedule it from there.",
+        "Yes. Upload them to your Postbase media library and ask the agent to attach them: up to four images, or one video or GIF, per post.",
       ],
       [
         "Can it reply to or like other people's posts?",
@@ -162,7 +175,7 @@ export const MCP_NETWORKS: McpNetwork[] = [
       ],
       [
         "Can it add images to LinkedIn posts?",
-        "Not through the MCP tools. Ask for a draft, add images in the Postbase composer and schedule from there.",
+        "Yes, up to 20 images from your Postbase media library. Video isn't posted to LinkedIn yet.",
       ],
     ],
   },
@@ -194,7 +207,7 @@ export const MCP_NETWORKS: McpNetwork[] = [
       ],
       [
         "Can it post images to Bluesky?",
-        "Not through the MCP tools. Save a draft, add up to four images in the Postbase composer and schedule it there.",
+        "Yes, up to four images per post from your Postbase media library. Video isn't posted to Bluesky yet.",
       ],
     ],
   },
@@ -231,6 +244,114 @@ export const MCP_NETWORKS: McpNetwork[] = [
     ],
   },
 ];
+
+// YouTube, Instagram and Facebook only have media posts, so these pages lead with list_media.
+ALL_MCP_NETWORKS.push(
+  {
+    slug: "youtube",
+    metaTitle: "YouTube MCP server: upload and schedule videos from AI",
+    metaDescription:
+      "A hosted YouTube MCP server: let Claude, ChatGPT or Cursor schedule YouTube videos and Shorts from your media library, with the title, description and visibility. OAuth sign-in.",
+    h1: ["The YouTube", "MCP server"],
+    sub: "Upload a video to Postbase once, then let Claude, ChatGPT, Cursor or any MCP client write the title and description and schedule it on YouTube.",
+    behaviour: [
+      { label: "Video", stat: "From your library", ui: { kind: "video" }, value: "The agent finds the video with list_media and attaches it by id. Postbase uploads it to YouTube when it's due." },
+      { label: "Title", stat: "100", ui: { kind: "count", used: 64, limit: 100, what: "Title" }, value: "Characters. Set it with youtube.title, or the post's first line is used." },
+      { label: "Description", stat: "5,000", ui: { kind: "count", used: 2310, limit: 5000, what: "Description" }, value: "Characters, taken from the post's text." },
+      { label: "Visibility", stat: "3 options", ui: { kind: "visibility" }, value: "Public, Unlisted or Private, per video." },
+    ],
+    checks: [
+      { label: "No video", value: "A YouTube post without a video attached is refused when the agent calls the tool, so it can pick one from your library." },
+      { label: "Made for kids", value: "YouTube requires every upload to say whether it's made for kids. The agent has to set it, so it should ask you." },
+      { label: "In the past", value: "A time in the past is refused rather than uploaded straight away." },
+    ],
+    faqs: [
+      [
+        "Can the agent upload a video from my computer?",
+        "No. Upload the video to your Postbase media library first. The agent can then find it and schedule it, but it can't send files of its own.",
+      ],
+      [
+        "Can it schedule YouTube Shorts?",
+        "Yes. A vertical video under YouTube's Shorts length limit is published as a Short.",
+      ],
+      [
+        "Does it set the video's visibility?",
+        "Yes. The agent can make it Public, Unlisted or Private. If it doesn't say, the video is public.",
+      ],
+      [
+        "What about TikTok?",
+        "TikTok requires you to choose who sees each post and agree to its terms yourself, so an agent can only save a TikTok draft. You schedule it from the Postbase composer.",
+      ],
+    ],
+  },
+  {
+    slug: "instagram",
+    metaTitle: "Instagram MCP server: schedule posts and Reels from AI",
+    metaDescription:
+      "A hosted Instagram MCP server: let Claude, ChatGPT or Cursor schedule Instagram posts, carousels and Reels from your media library through Instagram's official API.",
+    h1: ["The Instagram", "MCP server"],
+    sub: "Let Claude, ChatGPT, Cursor or any MCP client write captions and schedule posts, carousels and Reels from your Postbase media library.",
+    behaviour: [
+      { label: "Media", stat: "Up to 10", ui: { kind: "images", count: 3 }, value: "Images from your library as a single post or a carousel, or one video as a Reel." },
+      { label: "Caption", stat: "2,200", ui: { kind: "count", used: 1240, limit: 2200, what: "Caption" }, value: "Characters per caption." },
+      { label: "Account", stat: "Professional", ui: { kind: "account" }, value: "A business or creator account, connected through Meta's own sign-in." },
+    ],
+    checks: [
+      { label: "No media", value: "Instagram needs an image or video, so a post without one is refused when the agent calls the tool." },
+      { label: "Too long", value: "A caption over 2,200 characters is refused, with the reason." },
+      { label: "In the past", value: "A time in the past is refused rather than posted straight away." },
+    ],
+    faqs: [
+      [
+        "Can the agent post Reels?",
+        "Yes. Attach one video from your Postbase media library and it's published as a Reel.",
+      ],
+      [
+        "Does it work with a personal Instagram account?",
+        "No. Instagram's API only publishes to business and creator accounts. Switching is free in the Instagram app.",
+      ],
+      [
+        "Can it reply to comments or DMs?",
+        "No. The server schedules your own posts. There are no tools for comments, likes or messages.",
+      ],
+    ],
+  },
+  {
+    slug: "facebook",
+    metaTitle: "Facebook MCP server: schedule Page posts from AI",
+    metaDescription:
+      "A hosted Facebook MCP server: let Claude, ChatGPT or Cursor schedule Facebook Page posts with photos or a video through Meta's official API. OAuth sign-in.",
+    h1: ["The Facebook", "MCP server"],
+    sub: "Let Claude, ChatGPT, Cursor or any MCP client write and schedule posts to your Facebook Page, with photos or a video from your Postbase media library.",
+    behaviour: [
+      { label: "Media", stat: "Up to 10", ui: { kind: "images", count: 3 }, value: "Photos from your library, or one video. Text-only posts work too." },
+      { label: "Length", stat: "63,206", ui: { kind: "count", used: 840, limit: 63206 }, value: "Characters per post, so length is rarely a problem." },
+      { label: "Pages", stat: "Pages", ui: { kind: "account" }, value: "Posts go to Facebook Pages you manage, connected through Meta's own sign-in." },
+    ],
+    checks: [
+      { label: "In the past", value: "A time in the past is refused rather than posted straight away." },
+      { label: "Expired accounts", value: "Disconnected Pages show their status in list_channels, so the agent can tell you to reconnect." },
+      { label: "Drafts", value: "Leave out the time and the post is saved as a draft for you to check first." },
+    ],
+    faqs: [
+      [
+        "Can it post to my personal profile?",
+        "No. Meta's API only publishes to Pages, not personal profiles.",
+      ],
+      [
+        "Can it post a video?",
+        "Yes. Attach one video from your Postbase media library.",
+      ],
+      [
+        "Can it reply to comments or messages?",
+        "No. The server schedules your own Page posts only.",
+      ],
+    ],
+  },
+);
+
+/** Pages only for networks that are live (Instagram and Facebook wait on Meta's app review). */
+export const MCP_NETWORKS = ALL_MCP_NETWORKS.filter((m) => LIVE_NETWORKS.some((n) => n.slug === m.slug));
 
 export const mcpNetwork = (slug: string) => MCP_NETWORKS.find((n) => n.slug === slug);
 

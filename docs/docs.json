@@ -44,7 +44,7 @@
       },
       {
         "group": "Public API",
-        "pages": ["api/authentication", "api/posts", "api/channels"]
+        "pages": ["api/authentication", "api/posts", "api/channels", "api/media"]
       },
       {
         "group": "Self-hosting",

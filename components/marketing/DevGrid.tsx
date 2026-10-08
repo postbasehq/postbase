@@ -432,7 +432,8 @@ export function McpShot() {
 
 const TOOLS = [
   { name: "list_channels", desc: "See connected accounts and their platforms." },
-  { name: "create_post", desc: "Draft or schedule a post/thread to any channels." },
+  { name: "create_post", desc: "Draft or schedule a post/thread, with media, to any channels." },
+  { name: "list_media", desc: "Find images and videos in your media library." },
   { name: "list_scheduled", desc: "Review what's queued to publish." },
   { name: "cancel_post", desc: "Pull a scheduled post before it goes out." },
 ];
@@ -473,6 +474,7 @@ export function ToolsShot() {
 const ENDPOINTS: [string, string, string][] = [
   ["List posts", "GET", "/api/v1/posts"],
   ["Create a post", "POST", "/api/v1/posts"],
+  ["List media", "GET", "/api/v1/media"],
   ["Cancel a post", "POST", "/api/v1/posts/{id}/cancel"],
 ];
 

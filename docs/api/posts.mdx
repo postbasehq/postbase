@@ -50,9 +50,14 @@ curl -X POST https://www.postbase.so/api/v1/posts \
 | `thread` | string[] | Posts to publish as a thread (takes precedence over `body`). |
 | `channel_ids` | string[] | Channels to publish to (from [Channels](/api/channels)). |
 | `scheduled_at` | string \| null | ISO 8601 time with a timezone: `Z` or an offset, e.g. `2026-10-01T09:00:00+01:00`. A time without one is refused. Omit or `null` to save a draft. |
+| `media_ids` | string[] | Files from your [media library](/api/media) to attach, in order. |
+| `youtube` | object | `title`, `privacy` (`public`, `unlisted` or `private`) and `made_for_kids` (required to schedule to YouTube). |
 
-Returns the created post with `201 Created`. Invalid channel ids or an empty
-body return `400`.
+TikTok posts can only be saved as drafts through the API: TikTok requires the
+creator to choose who sees each post in the Postbase composer.
+
+Returns the created post with `201 Created`. Invalid channel ids or media ids, an empty
+post, or a post a network would reject return `400` with the reason.
 
 ## Cancel a post
 

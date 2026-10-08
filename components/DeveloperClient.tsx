@@ -129,7 +129,8 @@ function SideMenu({ sections }: { sections: Section[] }) {
 
 const MCP_TOOLS = [
   { name: "list_channels", desc: "See connected accounts and their platforms." },
-  { name: "create_post", desc: "Draft or schedule a post/thread to any channels." },
+  { name: "create_post", desc: "Draft or schedule a post/thread, with media, to any channels." },
+  { name: "list_media", desc: "Find images and videos in your media library." },
   { name: "list_scheduled", desc: "Review what's queued to publish." },
   { name: "cancel_post", desc: "Pull a scheduled post before it goes out." },
 ];

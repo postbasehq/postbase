@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateApiKey } from "@/lib/api-auth";
 import { resolveAccessToken, resourceMetadataUrlFor } from "@/lib/oauth";
-import { listChannels, listPosts, createPost, cancelPost } from "@/lib/api-core";
+import { listChannels, listPosts, listMedia, createPost, cancelPost, type CreatePostInput } from "@/lib/api-core";
 import { cancelMessage } from "@/lib/publish/cancel";
 import { failedAuthLimited, postLimit, requestLimit, tooManyRequests } from "@/lib/api-limits";
 
@@ -37,7 +37,7 @@ const TOOLS = [
     title: "Create or schedule a post",
     annotations: { title: "Create or schedule a post", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     description:
-      "Create a draft, or schedule a post or thread, on one or more connected channels. Relative times (\"in 10 minutes\", \"in 2 hours\") can be given as `schedule_in_minutes`, which the server converts using its own clock. The post appears on the user's Postbase calendar and publishes at `scheduled_at` via each network's official API. Provide `body` for a single post or `thread` for several posts; the same text goes to every channel in the call, so call once per network for different wording. Limits per post: X 280 (links count 23), Bluesky 300, Mastodon 500, LinkedIn 3,000. Threads publish as reply chains on X, Bluesky and Mastodon; on LinkedIn the extra parts become the first comment. Text only: TikTok and YouTube need a video, so save a draft for those and the user adds media in Postbase. Omit `scheduled_at` and `schedule_in_minutes` to save a draft. Docs: https://docs.postbase.so/mcp/tools",
+      "Create a draft, or schedule a post or thread, on one or more connected channels. Relative times (\"in 10 minutes\", \"in 2 hours\") can be given as `schedule_in_minutes`, which the server converts using its own clock. The post appears on the user's Postbase calendar and publishes at `scheduled_at` via each network's official API. Provide `body` for a single post or `thread` for several posts; the same text goes to every channel in the call, so call once per network for different wording. Limits per post: X 280 (links count 23), Bluesky 300, Mastodon 500, LinkedIn 3,000, YouTube 5,000 (description). Threads publish as reply chains on X, Bluesky and Mastodon; on LinkedIn the extra parts become the first comment. To attach images or a video, pass `media_ids` from list_media (files the user uploaded to their Postbase media library); YouTube needs a video and `youtube.made_for_kids`. TikTok posts can only be saved as drafts here: the user schedules them in Postbase, where TikTok requires them to choose who sees the post. Omit `scheduled_at` and `schedule_in_minutes` to save a draft. Docs: https://docs.postbase.so/mcp/tools",
     inputSchema: {
       type: "object",
       properties: {
@@ -60,6 +60,36 @@ const TOOLS = [
           type: "number",
           description: "Publish this many minutes from now (e.g. 10), measured on the server's clock. Use instead of `scheduled_at` for relative times.",
         },
+        media_ids: {
+          type: "array",
+          items: { type: "string" },
+          description: "Ids of files from list_media to attach, in order. Images or one video, as the network allows.",
+        },
+        youtube: {
+          type: "object",
+          description: "YouTube details, used when a YouTube channel is in channel_ids.",
+          properties: {
+            title: { type: "string", description: "Video title, up to 100 characters. Defaults to the post's first line." },
+            privacy: { type: "string", enum: ["public", "unlisted", "private"], description: "Who can watch it. Defaults to public." },
+            made_for_kids: { type: "boolean", description: "Whether the video is made for kids. YouTube requires this declaration; ask the user." },
+          },
+          additionalProperties: false,
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "list_media",
+    title: "List media",
+    annotations: { title: "List media", readOnlyHint: true, openWorldHint: false },
+    description:
+      "List files in this workspace's Postbase media library (newest first, up to 50): id, name, MIME type, size and URL. Pass the ids to create_post's `media_ids` to attach them. Files are uploaded by the user in Postbase. Docs: https://docs.postbase.so/mcp/tools",
+    inputSchema: {
+      type: "object",
+      properties: {
+        type: { type: "string", enum: ["image", "video"], description: "Only images or only videos." },
+        search: { type: "string", description: "Match part of the file name." },
       },
       additionalProperties: false,
     },
@@ -110,10 +140,25 @@ function scheduledAtFrom(args: Args): string | null {
   return typeof args.scheduled_at === "string" ? args.scheduled_at : null;
 }
 
+function youtubeFrom(v: unknown): CreatePostInput["youtube"] {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return undefined;
+  const y = v as Args;
+  return {
+    title: typeof y.title === "string" ? y.title : undefined,
+    privacy: typeof y.privacy === "string" ? y.privacy : undefined,
+    madeForKids: typeof y.made_for_kids === "boolean" ? y.made_for_kids : undefined,
+  };
+}
+
 async function runTool(orgId: string, name: string, args: Args): Promise<unknown> {
   switch (name) {
     case "list_channels":
       return listChannels(orgId);
+    case "list_media":
+      return listMedia(orgId, {
+        type: typeof args.type === "string" ? args.type : undefined,
+        search: typeof args.search === "string" ? args.search : undefined,
+      });
     case "list_scheduled":
       return listPosts(orgId, typeof args.status === "string" ? args.status : "scheduled");
     case "create_post": {
@@ -125,6 +170,8 @@ async function runTool(orgId: string, name: string, args: Args): Promise<unknown
         thread: Array.isArray(args.thread) ? asStringArray(args.thread) : undefined,
         channelIds: asStringArray(args.channel_ids),
         scheduledAt: scheduledAtFrom(args),
+        mediaIds: asStringArray(args.media_ids),
+        youtube: youtubeFrom(args.youtube),
       });
     }
     case "cancel_post": {

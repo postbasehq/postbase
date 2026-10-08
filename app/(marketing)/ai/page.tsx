@@ -44,7 +44,7 @@ export default function AiPage() {
           <LinkCards
             items={[
               ...CLIENTS.map((c) => ({ href: `/ai/${c.slug}`, title: c.name, client: c.logo, body: c.blurb })),
-              { href: "/mcp", title: "The MCP server", mark: "#2b59d9", body: "Endpoint, sign-in, the four tools and their limits." },
+              { href: "/mcp", title: "The MCP server", mark: "#2b59d9", body: "Endpoint, sign-in, the five tools and their limits." },
             ]}
           />
         </section>

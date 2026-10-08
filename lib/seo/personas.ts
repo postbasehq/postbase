@@ -3,7 +3,7 @@ import type { Feature } from "@/components/marketing/seo/FeatureTiles";
 
 /*
  * "Postbase for X" audience pages. Drives /for/[slug] and the sitemap. Only
- * describe what the app does today (no approval workflow, text-only MCP).
+ * describe what the app does today (no approval workflow, MCP media from the library only).
  */
 
 export type Persona = {

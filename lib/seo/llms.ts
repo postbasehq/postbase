@@ -64,7 +64,7 @@ export function llmsTxt({ full = false } = {}): string {
     `## AI tools (MCP)`,
     [
       `- Hosted MCP server: ${MCP_URL} (OAuth sign-in, no API key needed). Also on npm as @postbasehq/mcp for API-key setups.`,
-      `- Tools: list_channels, create_post (single posts or threads, scheduled or as a draft), list_scheduled, cancel_post.`,
+      `- Tools: list_channels, create_post (single posts or threads, scheduled or as a draft, with images or video from the media library), list_media, list_scheduled, cancel_post. TikTok can only be drafted.`,
       link("/mcp", "The MCP server", "endpoint, sign-in, tools and limits"),
       ...MCP_NETWORKS.map((m) => link(`/mcp/${m.slug}`, m.metaTitle)),
       link("/ai", "Connect an AI tool"),
@@ -96,6 +96,8 @@ export function llmsTxt({ full = false } = {}): string {
     [
       link("/tools/character-counter", "Character counter", "counts the way X, Bluesky and LinkedIn do, and splits threads"),
       link("/tools/social-media-image-sizes", "Social media image and video sizes"),
+      link("/tools/linkedin-text-formatter", "LinkedIn text formatter", "bold, italic and lists in Unicode, with a preview of the fold"),
+      link("/tools/social-media-post-preview", "Social media post preview", "one post on eight networks, with your own media"),
     ].join("\n"),
   ];
   if (full) {

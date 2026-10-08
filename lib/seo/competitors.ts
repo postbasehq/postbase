@@ -630,7 +630,7 @@ export const COMPETITORS: Competitor[] = [
     faqs: [
       [
         "How is Postbase different from Postiz?",
-        "They're close: both are open source under AGPL-3.0, and both include an API, a hosted MCP server and an in-app AI agent. Postiz supports far more networks, and its MCP server can attach images and video. Postbase is a smaller app; its MCP tools post text to X, LinkedIn, Bluesky and Mastodon.",
+        "They're close: both are open source under AGPL-3.0, and both include an API, a hosted MCP server and an in-app AI agent. Postiz supports far more networks. Postbase is a smaller app; its MCP tools post to X, LinkedIn, Bluesky, Mastodon and YouTube, with media from your library.",
       ],
       [
         "Which is cheaper?",
@@ -699,7 +699,7 @@ export const COMPETITORS: Competitor[] = [
       ],
       [
         "Do both work with Claude?",
-        "Yes. Both have a hosted MCP server you can sign in to with OAuth. Postbase's MCP tools post text to X, LinkedIn, Bluesky and Mastodon; Zernio's cover much more of its API.",
+        "Yes. Both have a hosted MCP server you can sign in to with OAuth. Postbase's MCP tools post to X, LinkedIn, Bluesky, Mastodon and YouTube, with media from your library; Zernio's cover much more of its API.",
       ],
       [
         "Is Late the same as Zernio?",
@@ -750,11 +750,11 @@ export const COMPETITORS: Competitor[] = [
     faqs: [
       [
         "Can Postbase post video like Upload-Post?",
-        "Yes, from the composer: Postbase posts video to TikTok, YouTube and X. Its MCP tools are text-only, so if you want Claude to upload video for you, Upload-Post is the better fit.",
+        "Yes, from the composer: Postbase posts video to TikTok, YouTube and X. Its MCP tools can schedule video to YouTube and X from your Postbase media library, but not to TikTok, and Claude can't send files of its own; if you want Claude to upload video from anywhere, Upload-Post is the better fit.",
       ],
       [
         "Do both work with Claude Code?",
-        "Yes. Both have a hosted MCP server, and Upload-Post also publishes Claude Code skills. Postbase's MCP server creates text posts and threads for X, LinkedIn, Bluesky and Mastodon.",
+        "Yes. Both have a hosted MCP server, and Upload-Post also publishes Claude Code skills. Postbase's MCP server schedules posts, threads and videos for X, LinkedIn, Bluesky, Mastodon and YouTube, using files from your media library.",
       ],
       [
         "Which is cheaper?",
@@ -877,7 +877,7 @@ export const COMPETITORS: Competitor[] = [
       ],
       [
         "Do both work with Claude?",
-        "Yes, both have a hosted MCP server with OAuth sign-in for Claude. Blotato's can post images and video to its nine networks; Postbase's MCP tools post text to X, LinkedIn, Bluesky and Mastodon.",
+        "Yes, both have a hosted MCP server with OAuth sign-in for Claude. Blotato's can post images and video to its nine networks; Postbase's post to five, with media from your Postbase library.",
       ],
       [
         "Can I self-host Postbase?",

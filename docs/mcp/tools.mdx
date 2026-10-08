@@ -22,8 +22,28 @@ Draft or schedule a post or thread.
 | `channel_ids` | string[] | Channels to publish to (from `list_channels`). |
 | `scheduled_at` | string | ISO 8601 time to publish, with a timezone (`Z` or an offset like `+01:00`). Omit for a draft. |
 | `schedule_in_minutes` | number | Publish this many minutes from now, on the server's clock. Used for relative times like "in 10 minutes". |
+| `media_ids` | string[] | Files from `list_media` to attach, in order. |
+| `youtube` | object | `title` (up to 100 characters), `privacy` (`public`, `unlisted` or `private`) and `made_for_kids` (required to schedule to YouTube). |
 
-Provide either `body` or `thread`. Omit `scheduled_at` and `schedule_in_minutes` to save a draft.
+Provide `body`, `thread` or `media_ids`. Omit `scheduled_at` and `schedule_in_minutes` to save a draft.
+
+Media follows each network's rules: up to 4 images or one video on X, up to 4
+images on Bluesky and Mastodon, up to 20 images on LinkedIn, and one video on
+YouTube. A scheduled post that a network would reject is refused with the reason.
+
+<Note>
+  TikTok posts can only be saved as drafts from an AI tool. TikTok requires the
+  creator to choose who sees each post and agree to its terms, so you schedule
+  TikTok drafts yourself in the Postbase composer.
+</Note>
+
+## `list_media`
+
+List the images and videos in your Postbase [media library](/using/media),
+newest first (up to 50). Filter with `type` (`image` or `video`) or `search`
+(part of a file name). Pass the returned ids to `create_post` as `media_ids`.
+
+The agent can't upload files itself: upload them in Postbase first.
 
 ## `list_scheduled`
 

@@ -37,6 +37,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page("/contact", 0.5, "yearly"),
     page("/tools", 0.6, "monthly"),
     page("/tools/character-counter", 0.8, "monthly"),
+    page("/tools/linkedin-text-formatter", 0.8, "monthly"),
+    page("/tools/social-media-post-preview", 0.8, "monthly"),
     page("/tools/mcp-config", 0.7, "monthly"),
     page("/tools/social-media-image-sizes", 0.8, "monthly"),
     { ...page("/blog", 0.8, "weekly"), lastModified: new Date(latest) },

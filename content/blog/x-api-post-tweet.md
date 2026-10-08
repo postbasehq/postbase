@@ -187,4 +187,4 @@ curl https://www.postbase.so/api/v1/posts \
   }'
 ```
 
-The same call can post to LinkedIn, Bluesky and Mastodon at once. The API and the [MCP server](/ai) handle text posts and threads today; to add images or video, attach them in the Postbase composer.
+The same call can post to LinkedIn, Bluesky and Mastodon at once. To add images or a video, upload them to your Postbase media library and pass their ids as `media_ids`. The [MCP server](/mcp) does the same for AI tools.
