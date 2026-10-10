@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { BrandTile } from "@/components/BrandTile";
+import { Postbot } from "@/components/postbots/Postbot";
 
 type Tile = { p: string; x: string; y: number; tilt: number; size: number; dur: number; delay: number };
 
@@ -32,25 +34,7 @@ function FloatingTile({ t }: { t: Tile }) {
   );
 }
 
-/** Hand-drawn four-point sparkle. */
-function Sparkle({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 48 48" className={className} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" aria-hidden>
-      <path d="M24 3c1.5 10 6 16.5 20 21-14 4.5-18.5 11-20 21-1.5-10-6-16.5-20-21 14-4.5 18.5-11 20-21Z" />
-    </svg>
-  );
-}
-
-/** Hand-drawn loop squiggle. */
-function Loop({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 120 60" className={className} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
-      <path d="M4 44c18 2 34-6 40-18 5-10-2-20-11-16-10 4-6 22 8 26 18 5 38-6 50-18 6-6 12-10 25-9" />
-    </svg>
-  );
-}
-
-/** Background layer for the hero: dot grid, floating tiles and doodles. */
+/** Background layer for the hero: floating network tiles and Postbase marks. */
 export function HeroDecor() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[760px] overflow-hidden">
@@ -58,18 +42,72 @@ export function HeroDecor() {
         {HERO_TILES.map((t) => (
           <FloatingTile key={t.p} t={t} />
         ))}
-        <Sparkle className="absolute left-[71%] top-[36px] size-9 text-blue" />
-        <Sparkle className="absolute left-[24%] top-[420px] size-5 text-blue" />
-        <Loop className="absolute left-[20%] top-[120px] w-28 -rotate-6 text-blue" />
-      </div>
-      {/* Postbase marks flush with the page edges, in the gaps between the tiles */}
-      <div className="absolute inset-0 hidden xl:block">
-        <LogoMark color="#d14a3e" edge="top" className="absolute left-[17%] top-0 w-[96px] -scale-x-100" />
-        <LogoMark color="#2b59d9" edge="left" className="absolute left-0 top-[135px] w-[110px]" />
-        <LogoMark color="#e3a72c" edge="top" className="absolute right-[15%] top-0 w-[108px]" />
-        <LogoMark color="#2b59d9" edge="right" className="absolute right-0 top-[150px] w-[130px] -scale-y-100" />
       </div>
     </div>
+  );
+}
+
+/**
+ * Two of the hero's top marks come alive as Postbots, one thinking and one
+ * working, hanging from the top of the page where the plain marks were. They
+ * sit in their own layer above the hero content (the decor layer behind it
+ * can't take clicks) and link to Postbots.
+ */
+export function HeroPostbots() {
+  return (
+    <div className="pointer-events-none absolute inset-x-0 top-0 z-10 hidden h-0 xl:block">
+      <HeroPostbot edge="top" color="#d14a3e" state="thinking" width={104} className="left-[17%] top-0 -scale-x-100" />
+      <HeroPostbot edge="top" color="#e3a72c" state="working" width={116} className="right-[15%] top-0" />
+      <HeroPostbot edge="left" color="#2b59d9" state="resting" width={110} className="left-0 top-[135px]" />
+      <HeroPostbot edge="right" color="var(--postbot-contrast)" state="thinking" width={130} className="right-0 top-[150px] -scale-y-100" />
+    </div>
+  );
+}
+
+// The upright Postbot cropped to its body, so the flat top sits flush with an edge.
+const BOT_BOX = { w: 302, h: 205, viewBox: "-12 0 302 205" };
+
+/**
+ * One hero Postbot, flush with the top, left or right edge of the page (turned
+ * so its flat side meets the edge, like the plain marks). `width` is how wide
+ * it is on the page once turned. Links to Postbots.
+ */
+function HeroPostbot({
+  edge,
+  color,
+  state,
+  width,
+  className,
+}: {
+  edge: "top" | "left" | "right";
+  color: string;
+  state: "resting" | "thinking" | "working";
+  width: number;
+  className: string;
+}) {
+  const turned = edge !== "top";
+  // Size of the bot before turning: across the page for "top", along it otherwise.
+  const along = turned ? (width * BOT_BOX.w) / BOT_BOX.h : width;
+  const across = (along * BOT_BOX.h) / BOT_BOX.w;
+  return (
+    <Link
+      href="/bots"
+      aria-label="Meet Postbots"
+      title="Meet Postbots"
+      className={`pointer-events-auto absolute block ${className}`}
+      style={{ width: turned ? across : along, height: turned ? along : across }}
+    >
+      <span
+        className="absolute left-1/2 top-1/2 block transition-transform"
+        style={{
+          width: along,
+          height: across,
+          transform: `translate(-50%, -50%) rotate(${edge === "left" ? -90 : edge === "right" ? 90 : 0}deg)`,
+        }}
+      >
+        <Postbot color={color} state={state} viewBox={BOT_BOX.viewBox} className="block size-full" />
+      </span>
+    </Link>
   );
 }
 

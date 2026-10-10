@@ -8,7 +8,7 @@ const OG_IMAGE = {
   url: "/opengraph-image",
   width: 1200,
   height: 630,
-  alt: "Postbase: the open-source social media scheduler for creators and AI agents",
+  alt: "Postbase: grow an audience on every network without living on social media",
 };
 
 /**

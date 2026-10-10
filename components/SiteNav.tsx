@@ -9,8 +9,9 @@ import { NavAuthButtons } from "./NavAuthButtons";
 import { MobileNav } from "./MobileNav";
 import { NETWORKS } from "@/lib/seo/networks";
 import { CLIENTS } from "@/lib/seo/clients";
+import { ProductsPanel } from "@/components/marketing/ProductsMenu";
+import { PRODUCTS } from "@/lib/seo/products";
 
-const BEFORE = [{ href: "/#features", label: "Features" }];
 const LINKS = [
   { href: "/pricing", label: "Pricing" },
   { href: "/blog", label: "Blog" },
@@ -31,11 +32,9 @@ export function SiteNav() {
             <Logo />
           </div>
           <div className="hidden items-center gap-5 whitespace-nowrap lg:flex xl:gap-7">
-            {BEFORE.map((l) => (
-              <a key={l.label} href={l.href} className="text-[14px] font-medium text-muted transition-colors hover:text-ink">
-                {l.label}
-              </a>
-            ))}
+            <NavMenu label="Products" href="/#features" width={880} align="start" bare>
+              <ProductsPanel />
+            </NavMenu>
             <IntegrationsMenu />
             <AiMenu />
             {LINKS.map((l) => (
@@ -62,7 +61,23 @@ export function SiteNav() {
  * A nav link with a dropdown panel. Opens on hover and on keyboard focus (CSS
  * only, so the nav stays a server component).
  */
-function NavMenu({ label, href, width, children }: { label: string; href: string; width: number; children: React.ReactNode }) {
+function NavMenu({
+  label,
+  href,
+  width,
+  align = "center",
+  bare = false,
+  children,
+}: {
+  label: string;
+  href: string;
+  width: number;
+  /** "start" lines the panel up with the label's left edge (for wide panels near the left of the nav). */
+  align?: "center" | "start";
+  /** No inner padding: the content lays itself out. */
+  bare?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <div className="group relative">
       <Link
@@ -88,10 +103,12 @@ function NavMenu({ label, href, width, children }: { label: string; href: string
       </Link>
 
       {/* pt-4 bridges the gap so the menu stays open while the pointer moves down */}
-      <div className="invisible absolute left-1/2 top-full z-50 -translate-x-1/2 pt-4 opacity-0 transition-[opacity,visibility] duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+      <div
+        className={`invisible absolute top-full z-50 pt-4 opacity-0 transition-[opacity,visibility] duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 ${align === "start" ? "-left-16 xl:-left-6" : "left-1/2 -translate-x-1/2"}`}
+      >
         <div
           style={{ width }}
-          className="rounded-[20px] border border-line bg-surface p-3 shadow-[0_24px_60px_-20px_rgba(16,24,40,0.35)]"
+          className={`rounded-[20px] border border-line bg-surface shadow-[0_24px_60px_-20px_rgba(16,24,40,0.35)] ${bare ? "" : "p-3"}`}
         >
           {children}
         </div>
@@ -223,6 +240,18 @@ function SiteMobileMenu() {
       }
     >
       <div className="px-2 pb-4">
+        <DrawerHeading>Products</DrawerHeading>
+        <ul className="flex flex-col">
+          {PRODUCTS.map((p) => (
+            <li key={p.id}>
+              <Link href={p.href} className="flex items-baseline gap-2 rounded-xl px-3 py-2 text-[15px] font-medium text-ink hover:bg-surface-2">
+                {p.name}
+                <span className="truncate text-[13px] font-normal text-muted">{p.line}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+
         <DrawerHeading>Integrations</DrawerHeading>
         <ul className="grid grid-cols-2 gap-0.5">
           {NETWORKS.filter((n) => n.live).map((n) => (

@@ -10,7 +10,7 @@ import { MCP_SCENES } from "@/lib/seo/mcp-scenes";
 import { CalendarDemo } from "@/components/marketing/CalendarDemo";
 import { CreatorGrid } from "@/components/marketing/CreatorGrid";
 import { DevGrid, McpOrRest } from "@/components/marketing/DevGrid";
-import { HeroDecor } from "@/components/marketing/Decor";
+import { HeroDecor, HeroPostbots } from "@/components/marketing/Decor";
 import { DevFlow } from "@/components/marketing/DevFlow";
 import { Fit } from "@/components/marketing/Fit";
 import { WhoFor as WhoForList } from "@/components/marketing/WhoFor";
@@ -80,12 +80,12 @@ const HERO: Record<
   creators: {
     title: (
       <>
-        Write it once.{" "}
-        <br />
-        Post it <Underlined>everywhere</Underlined>.
+        Grow an audience on every network{" "}
+        <br className="max-md:hidden" />
+        without living on <Underlined>social media</Underlined>.
       </>
     ),
-    sub: "The open-source social media scheduler that tailors one post for every network and publishes each one on time.",
+    sub: "The open-source distribution and growth platform. Schedule everywhere, find the conversations worth joining, and let Postbots do the daily legwork.",
     cta: { label: "Start your 7-day free trial", href: "/login" },
     frame: "Your whole week in one calendar",
   },
@@ -108,9 +108,16 @@ function Hero() {
   return (
     <section className="relative isolate">
       {audience === "developers" ? <DevFlow /> : <HeroDecor />}
+      {audience === "developers" ? null : <HeroPostbots />}
       <div className={`${wrap} pt-14 text-center md:pt-20`}>
         <Swap k={audience}>
-          <h1 data-hero-avoid className="mx-auto max-w-[15ch] font-display text-[clamp(42px,6.8vw,84px)] font-semibold leading-[1.04] tracking-[-0.04em] text-ink">
+          <h1
+            data-hero-avoid
+            className={`mx-auto font-display font-semibold leading-[1.04] tracking-[-0.04em] text-ink ${
+              // The creators heading is a full sentence; it gets more width at a smaller size.
+              audience === "creators" ? "max-w-[24ch] text-[clamp(36px,4.7vw,66px)] text-balance" : "max-w-[15ch] text-[clamp(42px,6.8vw,84px)]"
+            }`}
+          >
             {h.title}
           </h1>
           <p data-hero-avoid className="mx-auto mt-6 max-w-[54ch] text-[17px] leading-relaxed text-muted text-balance md:text-[19px]">

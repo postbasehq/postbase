@@ -16,6 +16,7 @@ const PRIVATE = [
   "/media",
   "/analytics",
   "/agent",
+  "/bots",
   "/api-keys",
   "/settings",
   "/team",

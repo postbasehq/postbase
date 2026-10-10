@@ -38,7 +38,7 @@ export async function updateSession(request: NextRequest) {
   // Defense-in-depth: the (app) layout also guards these, but block unauthenticated
   // access to every app route at the edge too.
   const protectedPrefixes = [
-    "/agent", "/analytics", "/api-keys", "/billing", "/calendar", "/channels",
+    "/agent", "/analytics", "/api-keys", "/billing", "/bots", "/calendar", "/channels",
     "/composer", "/drafts", "/media", "/queue", "/settings", "/team",
   ];
   const path = request.nextUrl.pathname;

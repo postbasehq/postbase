@@ -23,11 +23,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Postbase: The open-source social media scheduler for creators and AI agents",
+    default: "Postbase: the open-source distribution and social growth platform",
     template: "%s · Postbase",
   },
   description:
-    "Schedule and publish to X, LinkedIn, TikTok, YouTube, Bluesky and Mastodon from one calendar. Open source, with an MCP server so AI agents can post for you.",
+    "Grow an audience on every network without living on social media. The open-source social media scheduler, listening bots and AI agents in one growth platform.",
   applicationName: "Postbase",
   keywords: [
     "social media scheduler",

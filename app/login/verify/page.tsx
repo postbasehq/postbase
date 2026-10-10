@@ -28,8 +28,8 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
     <AuthShell
       tone="blue"
       scene="creators"
-      title="Write it once. Post it everywhere."
-      sub="Plan the week, tailor each post for every network, and let Postbase publish it on time."
+      title="Grow an audience on every network without living on social media."
+      sub="Schedule everywhere, find the conversations worth joining, and let Postbots do the daily legwork."
     >
       <TwoFactorPrompt email={user.email ?? ""} factors={factors} next={next} />
     </AuthShell>

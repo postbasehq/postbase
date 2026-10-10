@@ -5,10 +5,10 @@ import { AiToolCards, NetworkCards } from "@/components/marketing/HomeCards";
 import { JsonLd } from "@/components/marketing/JsonLd";
 
 const DESCRIPTION =
-  "Schedule posts to X, LinkedIn, TikTok, YouTube, Bluesky and Mastodon from one calendar. Open source, with an MCP server so Claude can post for you.";
+  "Grow an audience on every network without living on social media. The open-source social media scheduler, listening bots and AI agents in one growth platform.";
 
 export const metadata: Metadata = {
-  title: { absolute: "Postbase: open-source social media scheduler for AI agents" },
+  title: { absolute: "Postbase: the open-source distribution and social growth platform" },
   description: DESCRIPTION,
   ...pageMeta("/"),
 };

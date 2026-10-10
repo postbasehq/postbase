@@ -8,7 +8,7 @@ import { OG_GROUND, OgMarks, ogAssets } from "@/lib/og";
 // with "everywhere" underlined, and the networks as their logo tiles.
 // Everything sits in the centre and clear of the bottom band, where X lays
 // the page title over the image.
-export const alt = "Postbase: the open-source social media scheduler for creators and AI agents";
+export const alt = "Postbase: grow an audience on every network without living on social media";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -31,7 +31,7 @@ export default async function OpengraphImage() {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          paddingTop: 66,
+          paddingTop: 112,
           background: OG_GROUND,
           position: "relative",
           overflow: "hidden",
@@ -48,22 +48,21 @@ export default async function OpengraphImage() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 40 }}>
-          <div style={{ display: "flex", fontSize: 84, fontWeight: 700, color: INK, lineHeight: 1.04, letterSpacing: -3.4 }}>
-            Write it once
-            <span style={STOP}>.</span>
+          <div style={{ display: "flex", fontSize: 60, fontWeight: 700, color: INK, lineHeight: 1.1, letterSpacing: -2.4 }}>
+            Grow an audience on every network
           </div>
-          <div style={{ display: "flex", fontSize: 84, fontWeight: 700, color: INK, lineHeight: 1.04, letterSpacing: -3.4 }}>
-            Post it&nbsp;
+          <div style={{ display: "flex", fontSize: 60, fontWeight: 700, color: INK, lineHeight: 1.1, letterSpacing: -2.4 }}>
+            without living on&nbsp;
             <div style={{ display: "flex", flexDirection: "column", position: "relative", color: BLUE }}>
-              everywhere
-              <svg width="420" height="22" viewBox="0 0 300 16" preserveAspectRatio="none" style={{ position: "absolute", left: 8, bottom: -10 }}>
+              social media
+              <svg width="320" height="20" viewBox="0 0 300 16" preserveAspectRatio="none" style={{ position: "absolute", left: 4, bottom: -8 }}>
                 <path d="M3 11C60 5 150 2 297 8" fill="none" stroke={BLUE} strokeWidth="5" strokeLinecap="round" />
               </svg>
             </div>
             <span style={STOP}>.</span>
           </div>
           <div style={{ marginTop: 26, fontSize: 28, fontWeight: 600, color: "#9aa0a6", letterSpacing: -0.3 }}>
-            The open-source social media scheduler for creators and AI agents
+            The open-source distribution and social growth platform
           </div>
         </div>
 

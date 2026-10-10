@@ -32,6 +32,7 @@ export function getModel(id: string | undefined | null): AgentModelDef | null {
  */
 const PRICES: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
   "claude-sonnet-5": { input: 2, output: 10, cacheRead: 0.2, cacheWrite: 2.5 },
+  "claude-haiku-4-5": { input: 1, output: 5, cacheRead: 0.1, cacheWrite: 1.25 },
   "gpt-5": { input: 1.25, output: 10, cacheRead: 0.125, cacheWrite: 0 },
   "gpt-5-mini": { input: 0.25, output: 2, cacheRead: 0.025, cacheWrite: 0 },
   "gpt-4.1": { input: 2, output: 8, cacheRead: 0.5, cacheWrite: 0 },

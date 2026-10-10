@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-45 -35 390 270" role="img" aria-labelledby="postbot-upright-near-black-title">
+  <title id="postbot-upright-near-black-title">Postbot — the Postbase P brought to life</title>
+  <style>
+    /* Separate face and eye groups let glances and blinks run independently. */
+    :root {
+      --bot-body: #202124;
+      --bot-mask-solid: #fff;
+      --bot-mask-hole: #000;
+      --bot-lift: -9px;
+      --bot-hop: -17px;
+      --bot-lean: -6deg;
+      --bot-glance: 7px;
+      --bot-glance-back: -7px;
+      --bot-face-lift: -5px;
+      --bot-eye-width: 26px;
+      --bot-eye-height: 46px;
+      --bot-eye-radius: 13px;
+      --bot-far-eye-width: 19px;
+      --bot-far-eye-height: 37px;
+      --bot-far-eye-radius: 9.5px;
+      --bot-eye-angle: -28deg;
+      --bot-body-pivot: 150px 193px;
+      --bot-eye-pivot: 83px 74px;
+      --bot-idle-speed: 2.8s;
+      --bot-blink-speed: 5.2s;
+      --bot-face-speed: 7.6s;
+      --bot-thought-lift: -12px;
+      --bot-scan-left: -8px;
+      --bot-scan-right: 8px;
+      --bot-focus-speed: 1.8s;
+      --bot-hover-speed: 0.6s;
+      --bot-ease: cubic-bezier(.45, 0, .25, 1);
+    }
+    .postbot { color: var(--bot-body); cursor: pointer; }
+    .body { animation: bob var(--bot-idle-speed) var(--bot-ease) infinite; transform-origin: var(--bot-body-pivot); }
+    .face { animation: glance var(--bot-face-speed) var(--bot-ease) infinite; }
+    .eyes { animation: blink var(--bot-blink-speed) infinite; transform-origin: var(--bot-eye-pivot); }
+    .mask-base { fill: var(--bot-mask-solid); }
+    .eye-mask { mask-type: luminance; }
+    .eye { fill: var(--bot-mask-hole); width: var(--bot-eye-width); height: var(--bot-eye-height); rx: var(--bot-eye-radius); }
+    /* The farther eye is smaller and higher, suggesting a face turned in space. */
+    .eye-angle { transform: rotate(var(--bot-eye-angle)); transform-box: fill-box; transform-origin: center; }
+    .eye-far { width: var(--bot-far-eye-width); height: var(--bot-far-eye-height); rx: var(--bot-far-eye-radius); }
+    .postbot[data-state="resting"]:hover .body { animation: hello var(--bot-hover-speed) var(--bot-ease) infinite alternate; }
+    .postbot[data-state="resting"]:hover .face { animation: none; transform: translateY(var(--bot-face-lift)); }
+    .postbot[data-state="resting"]:hover .eyes { animation: blink var(--bot-blink-speed) infinite; }
+    @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(var(--bot-lift)); } }
+    @keyframes blink { 0%, 42%, 46%, 100% { transform: scaleY(1); } 44% { transform: scaleY(.08); } }
+    @keyframes glance { 0%, 18%, 48%, 68%, 100% { transform: translate(0, 0); } 26%, 40% { transform: translate(var(--bot-glance), var(--bot-face-lift)); } 76%, 88% { transform: translateX(var(--bot-glance-back)); } }
+    @keyframes hello { from { transform: translateY(var(--bot-lift)) rotate(0deg); } to { transform: translateY(var(--bot-hop)) rotate(var(--bot-lean)); } }
+    /* State changes affect the mask's eye shapes, preserving real transparency. */
+    .postbot[data-state="resting"] { --bot-face-speed: 12s; --bot-blink-speed: 6.8s; }
+    .postbot[data-state="thinking"] { --bot-lift: -4px; --bot-face-speed: 3.8s; }
+    .postbot[data-state="thinking"] .face { animation-name: ponder; transform: translateY(var(--bot-thought-lift)); }
+    .postbot[data-state="thinking"] .eye-far { animation: question var(--bot-face-speed) var(--bot-ease) infinite; transform-box: fill-box; transform-origin: center; }
+    .postbot[data-state="working"] { --bot-lift: -3px; --bot-face-speed: 2.4s; }
+    .postbot[data-state="working"] .face { animation-name: scan; }
+    .postbot[data-state="working"] .eyes { animation: focus var(--bot-focus-speed) var(--bot-ease) infinite; transform: scaleY(.76); }
+    @keyframes ponder { 0%, 100% { transform: translate(0, 0); } 20%, 65% { transform: translate(var(--bot-glance), var(--bot-thought-lift)); } 80% { transform: translateY(var(--bot-face-lift)); } }
+    @keyframes question { 0%, 100% { transform: scaleY(1); } 20%, 65% { transform: scaleY(.62); } 80% { transform: scaleY(1.12); } }
+    @keyframes scan { 0%, 100% { transform: translateX(var(--bot-scan-left)); } 35%, 55% { transform: translateX(var(--bot-scan-right)); } 75% { transform: translate(0, var(--bot-face-lift)); } }
+    @keyframes focus { 0%, 100% { transform: scaleY(.76); } 35%, 65% { transform: scaleY(.96); } 46%, 53% { transform: scaleY(.12); } 49% { transform: scaleY(.78); } }
+    @media (prefers-reduced-motion: reduce) {
+      .postbot .body, .postbot .face, .postbot .eyes, .postbot .eye-far { animation: none !important; }
+    }
+  </style>
+  <g class="postbot" data-state="resting">
+    <g class="body">
+      <!-- Animated eye shapes remove opacity, revealing any background beneath. -->
+      <defs><mask id="postbot-upright-near-black-eye-mask" class="eye-mask" maskUnits="userSpaceOnUse" x="-45" y="-35" width="390" height="270">
+        <rect class="mask-base" x="-45" y="-35" width="390" height="270" />
+      <g transform="translate(8 16)"><g class="face">
+        <g class="eyes">
+          <g class="eye-angle"><rect class="eye" x="51" y="57" /></g>
+          <g class="eye-angle"><rect class="eye eye-far" x="92" y="45.5" /></g>
+        </g>
+      </g></g>
+      </mask></defs>
+      <g mask="url(#postbot-upright-near-black-eye-mask)">
+      <path fill="currentColor" d="M10 0H270Q278 0 278 8C274 58 249 88 214 88C180 88 150 64 150 32V118A75 75 0 0 1 0 118V10Q0 0 10 0Z" />
+      </g>
+    </g>
+  </g>
+</svg>
