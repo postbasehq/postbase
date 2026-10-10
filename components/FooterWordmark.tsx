@@ -1,6 +1,8 @@
+import { FooterBot } from "@/components/FooterBot";
+
 /*
- * "postbase" hanging from the footer rule. The p is the red p from the icon;
- * the other letters are Plus Jakarta Sans ExtraBold. Everything is cut flat
+ * "postbase" hanging from the footer rule. The p is the red Postbot (the
+ * icon's p with eyes); the other letters are Plus Jakarta Sans ExtraBold. Everything is cut flat
  * along the top edge, the way the icon cuts the p through its bowl.
  *
  * Sizes are in em so the whole word scales with the font size, which is set in
@@ -11,21 +13,10 @@
 const BASELINE = 0.908;
 /** How much of the x-height (0.546em) shows below the cut. */
 const SHOWN = 0.44;
-/** Stem width of the icon p; its bowl is a half-disc of half this width. */
+/** Stem width of the icon p; the Postbot p is twice this wide. */
 const W = 0.4;
 
 const RED = "#d14a3e";
-
-/** The icon's p: a stem with a rounded foot and a half-disc bowl on the cut line. */
-function IconP() {
-  const r = W / 2;
-  return (
-    <svg viewBox={`0 0 ${W * 2} ${W * 1.5}`} style={{ width: `${W * 2}em`, height: `${W * 1.5}em` }} className="shrink-0">
-      <path d={`M0,0 H${W} V${W * 1.5 - r} A${r},${r} 0 0 1 0,${W * 1.5 - r} Z`} fill={RED} />
-      <path d={`M${W},0 H${W * 2} A${r},${r} 0 0 1 ${W},0 Z`} fill={RED} />
-    </svg>
-  );
-}
 
 function Text({ children }: { children: string }) {
   return (
@@ -39,7 +30,8 @@ export function FooterWordmark() {
   return (
     <div className="@container" aria-hidden>
       <div className="flex items-start gap-[0.04em] overflow-hidden leading-none" style={{ fontSize: "22cqw", height: `${W * 1.5}em` }}>
-        <IconP />
+        {/* The p is a Postbot: its eyes follow the cursor on desktop. */}
+        <FooterBot color={RED} width={`${W * 2}em`} />
         <Text>ostbase</Text>
       </div>
     </div>

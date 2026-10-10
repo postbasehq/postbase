@@ -90,7 +90,7 @@ export function SiteFooter() {
           <div>
             <Logo />
             <p className="mt-3 max-w-[32ch] text-muted">
-              The open-source social scheduler you can run from a dashboard or from your agent.
+              The open-source distribution and growth platform. Grow on every network without living on social media.
             </p>
           </div>
           {COLUMNS.map((c) => (

@@ -20,7 +20,7 @@ const live = NETWORKS.filter((n) => n.live);
 const soon = NETWORKS.filter((n) => !n.live);
 const list = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
 
-const SUMMARY = `> Postbase (postbase.so) is an open-source social media scheduler. It publishes to ${list(live.map((n) => n.name))} from one calendar, and has a hosted MCP server and REST API so AI tools like Claude, ChatGPT, Claude Code and Cursor can draft and schedule posts. Plans start at $29/month with a 7-day free trial, or you can self-host it for free.`;
+const SUMMARY = `> Postbase (postbase.so) is an open-source distribution and social growth platform. It schedules and publishes to ${list(live.map((n) => n.name))} from one calendar; Postbots, bots you build by chatting, watch Reddit, Hacker News, Bluesky and Google News for mentions, leads and conversations worth joining, research competitors and draft posts for approval; and a hosted MCP server and REST API let AI tools like Claude, ChatGPT, Claude Code and Cursor draft and schedule posts. Plans start at $29/month with a 7-day free trial, or you can self-host it for free.`;
 
 const NOT = `Postbase at postbase.so is not the PostBase franking and mailing systems made by Francotyp-Postalia, or trypostbase.com, postbase.net or getpostbase.com (a Supabase/Firebase-style backend): those are unrelated products with similar names. ${list(soon.map((n) => n.name))} ${soon.length === 1 ? "is" : "are"} not supported yet.`;
 
@@ -33,7 +33,7 @@ export function pricingMarkdown(): string {
 
 Source: ${SITE_URL}/pricing
 
-Every plan includes every network (${list(live.map((n) => n.name))}), unlimited posts, threads and video, the calendar, drafts, analytics, the built-in AI agent, the MCP server and the REST API. Every plan starts with a 7-day free trial (card required, nothing charged until it ends). Prices are in USD. Annual billing is 10x the monthly price (two months free).
+Every plan includes every network (${list(live.map((n) => n.name))}), unlimited posts, threads and video, the calendar, drafts, analytics, the built-in AI agent, Postbots, the MCP server and the REST API. Every plan starts with a 7-day free trial (card required, nothing charged until it ends). Prices are in USD. Annual billing is 10x the monthly price (two months free).
 
 | Plan | Price | Channels | Seats | Workspaces | AI and X allowances |
 | --- | --- | --- | --- | --- | --- |
@@ -60,6 +60,15 @@ export function llmsTxt({ full = false } = {}): string {
       link("/developers", "Developers", "MCP server and REST API"),
       link("/integrations", "Integrations", "supported networks"),
       ...live.map((n) => link(`/integrations/${n.slug}`, `${n.name} scheduling`, n.blurb)),
+    ].join("\n"),
+    `## Postbots`,
+    [
+      `- Postbots (${SITE_URL}/bots, sign-in required) is a chat app inside Postbase. You make a bot with "+", describe its job in plain English, and it names itself and sets itself up. Each bot has its own chat; you can have several.`,
+      `- Listen: on a schedule you choose (up to six checks a day), a bot searches Reddit, Hacker News, Bluesky and Google News for your keywords, skips anything it has already reported, and messages you (and emails you) only when something new is worth your time: a mention, a lead, or a thread you could usefully join.`,
+      `- Research: on request, a bot searches the web and answers briefly with sources (e.g. who your competitors are and what people say about them).`,
+      `- Drafting: a bot drafts replies and posts for your connected channels. It never posts, replies or sends messages itself; you save a draft or schedule it in Postbase.`,
+      `- It cannot read or search X, LinkedIn, Instagram, Facebook, TikTok or YouTube directly (their search is paid or closed, and bots never sign in as you), and it does not send DMs.`,
+      `- Included in every plan; chats and checks count toward the plan's AI fair-use limits.`,
     ].join("\n"),
     `## AI tools (MCP)`,
     [

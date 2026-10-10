@@ -760,6 +760,8 @@ body {
 .pbot[data-state="working"] { --bot-lift: -3px; --bot-face-speed: 2.4s; }
 .pbot[data-state="working"] .pbot-face { animation-name: pbot-scan; }
 .pbot[data-state="working"] .pbot-eyes { animation: pbot-focus var(--bot-focus-speed) var(--bot-ease) infinite; transform: scaleY(0.76); }
+/* Tracking: the face holds still so script can point the eyes (it still blinks). */
+.pbot[data-state="tracking"] .pbot-face { animation: none; }
 @keyframes pbot-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(var(--bot-lift)); } }
 @keyframes pbot-blink { 0%, 42%, 46%, 100% { transform: scaleY(1); } 44% { transform: scaleY(0.08); } }
 @keyframes pbot-glance { 0%, 18%, 48%, 68%, 100% { transform: translate(0, 0); } 26%, 40% { transform: translate(var(--bot-glance), var(--bot-face-lift)); } 76%, 88% { transform: translateX(var(--bot-glance-back)); } }
