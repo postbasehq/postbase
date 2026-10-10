@@ -40,7 +40,7 @@
       },
       {
         "group": "MCP & agents",
-        "pages": ["mcp/overview", "mcp/connect", "mcp/tools"]
+        "pages": ["mcp/overview", "mcp/connect", "mcp/tools", "mcp/skills"]
       },
       {
         "group": "Public API",

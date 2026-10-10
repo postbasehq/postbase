@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
-import { McpClientConfig } from "@/components/McpClientConfig";
+import { CopyButton, McpClientConfig } from "@/components/McpClientConfig";
 import { Modal } from "@/components/Modal";
 import {
   createApiKey,
@@ -494,6 +494,21 @@ export function DeveloperClient({
               />
             </div>
           )}
+
+          {/* Coding agents that use the REST API with a key */}
+          <div className="flex flex-col gap-2 border-t border-line pt-4">
+            <p className="text-[13px] text-muted">
+              <span className="font-semibold text-ink">Using Claude Code, Cursor or Codex?</span> Install the Postbase
+              skills so the agent knows the API, then give it a key as <code className="font-mono text-[12px]">POSTBASE_API_KEY</code>.{" "}
+              <a href="https://docs.postbase.so/mcp/skills" target="_blank" rel="noreferrer" className="font-semibold text-blue-ink hover:underline">
+                Agent Skills docs
+              </a>
+            </p>
+            <div className="flex items-center justify-between gap-3 rounded-xl bg-[#12141a] px-4 py-2.5 ring-1 ring-white/10">
+              <code className="overflow-x-auto font-mono text-[12.5px] text-[#e6e8ef]">npx skills add postbasehq/skills</code>
+              <CopyButton text="npx skills add postbasehq/skills" />
+            </div>
+          </div>
         </div>
       </section>
 

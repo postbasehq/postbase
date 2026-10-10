@@ -1,0 +1,69 @@
+---
+title: Agent Skills
+description: "Teach Claude Code, Cursor, Codex and other coding agents to post with Postbase."
+---
+
+Postbase Agent Skills are instruction packs for coding agents. Install them
+once and your agent knows how to use the Postbase [REST API](/api/authentication):
+which endpoints to call, the fields each one takes, each network's limits, and
+how to retry safely, without you explaining it in every prompt.
+
+## Install
+
+Run this where your coding agent reads skills:
+
+```bash
+npx skills add postbasehq/skills
+```
+
+Then create an API key under **Developers** in Postbase and make it available
+to your agent as an environment variable:
+
+```bash
+POSTBASE_API_KEY=pb_live_…
+```
+
+The source is on GitHub: [postbasehq/skills](https://github.com/postbasehq/skills).
+
+## The skills
+
+| Skill | What it covers |
+| ----- | -------------- |
+| `postbase-post` | Draft or schedule posts and threads, with separate text per channel, and retry safely with an idempotency key |
+| `postbase-manage-posts` | Check whether a post went out (live links and errors), edit or reschedule it, retry failed channels, cancel |
+| `postbase-media` | Attach images and video from your media library or from public links |
+
+## Try it
+
+> "Schedule a LinkedIn post and a shorter X post for tomorrow at 9am announcing this release."
+
+The agent lists your channels, writes both versions, schedules them as one post
+with separate text for X, and gives you the time. Later:
+
+> "Did the launch post go out? Send me the links."
+
+<Tip>
+  Ask the agent to schedule rather than post right away. Everything it creates
+  shows up on your Postbase calendar, where you can edit, reschedule or cancel
+  it before it goes out.
+</Tip>
+
+## Skills or MCP?
+
+Both use the same Postbase API, limits and workspace.
+
+- Use **Agent Skills** when your agent works in a terminal or repo and makes
+  HTTP calls, for example to script posting from a release pipeline.
+- Use the **[MCP server](/mcp/overview)** when your AI tool supports MCP
+  (Claude, ChatGPT, Cursor, Claude Code). It gives the tools directly and you
+  sign in with Postbase, so there's no key to store.
+
+## Troubleshooting
+
+- **The agent doesn't use the skills:** install them in the same environment
+  (project or user) that the agent reads from, then start a new session.
+- **401 Unauthorized:** check that `POSTBASE_API_KEY` is set for the agent and
+  that the key hasn't been revoked. `GET /api/v1/me` tells you which workspace a
+  key belongs to.
+- **It picks the wrong account:** ask it to list your channels first, then name
+  the one you mean.
