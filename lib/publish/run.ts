@@ -10,6 +10,7 @@ import { insertPostWhole } from "@/lib/publish/save-post";
 import { schedulingProblem } from "@/lib/billing-guard";
 import { notifyPostsFailed, notifyReconnect } from "@/lib/email/notify";
 import { isOwnMediaUrl } from "@/lib/media-urls";
+import { emitPostOutcome } from "@/lib/webhooks";
 
 type Db = ReturnType<typeof createAdminClient>;
 
@@ -572,6 +573,8 @@ export async function publishDuePosts(): Promise<{ processed: number }> {
     const status = await recomputePostStatus(db, postId);
     if (status) await spawnRepeatIfDue(db, postId);
     if (status === "failed") failedPosts.push(postId);
+    // The workspace's webhooks hear how it went (no-op without endpoints).
+    if (status) await emitPostOutcome(postId, status);
   }
   // One email per person per run; each post once per failure (keyed by claim).
   await notifyPostsFailed(failedPosts);

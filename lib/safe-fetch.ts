@@ -124,3 +124,53 @@ function getOnce(
     );
   });
 }
+
+/**
+ * POST `body` to a caller's public https URL (webhook deliveries), with the
+ * same address checks as downloads. Redirects aren't followed: a 3xx is the
+ * endpoint's answer. Resolves with the status and the start of the response.
+ */
+export function postPublic(
+  url: string,
+  body: string,
+  headers: Record<string, string>,
+  timeoutMs = 10_000,
+): Promise<{ status: number; body: string }> {
+  const problem = urlProblem(url);
+  if (problem) return Promise.reject(new Error(`The URL ${problem}.`));
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      url,
+      {
+        method: "POST",
+        lookup: publicOnlyLookup,
+        timeout: timeoutMs,
+        headers: { ...headers, "content-length": Buffer.byteLength(body) },
+      },
+      (res) => {
+        let text = "";
+        res.setEncoding("utf8");
+        res.on("data", (c: string) => {
+          if (text.length < 1000) text += c;
+        });
+        res.on("end", () => resolve({ status: res.statusCode ?? 0, body: text.slice(0, 1000) }));
+        res.on("error", reject);
+      },
+    );
+    req.on("timeout", () => req.destroy(new Error(`No response within ${Math.round(timeoutMs / 1000)} seconds`)));
+    req.on("error", (e: NodeJS.ErrnoException) => reject(e.code === "EPRIVATE" ? new Error("The URL points at a private address.") : e));
+    req.end(body);
+  });
+}
+
+/** Whether the URL's host resolves only to public addresses now (a check at save time; connections re-check). */
+export async function resolvesPublic(raw: string): Promise<boolean> {
+  try {
+    const host = new URL(raw).hostname.replace(/^\[|\]$/g, "");
+    if (net.isIP(host)) return isPublicIp(host);
+    const addrs = await dns.promises.lookup(host, { all: true });
+    return addrs.length > 0 && addrs.every((a) => isPublicIp(a.address));
+  } catch {
+    return false;
+  }
+}

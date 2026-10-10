@@ -43,7 +43,7 @@ Postbase's MCP server is hosted at a single URL. You add it to [Claude](/ai/clau
 
 ::demo mcp caption="The AI & API page in Postbase has the setup for each AI tool."
 
-The agent gets nine tools: list channels, list your media library or add a file from a link, create a post or thread (as a draft or scheduled, with images or video and per-channel text), check how each channel went, edit or reschedule a post, retry where it failed, list the queue, and cancel a scheduled post. It can't delete anything or change your account. Everything it schedules appears on the same calendar as your own posts, and each connected tool can be revoked from the AI & API page.
+The agent gets ten tools: list channels, list your media library or add a file from a link, create a post or thread (as a draft or scheduled, with images or video and per-channel text), check how each channel went, edit or reschedule a post, retry where it failed, read post analytics, list the queue, and cancel a scheduled post. It can't delete anything or change your account. Everything it schedules appears on the same calendar as your own posts, and each connected tool can be revoked from the AI & API page.
 
 **Worth knowing:** the agent attaches files from your Postbase media library, or from a public link it passes in. TikTok posts can only be saved as drafts, because TikTok requires you to pick who sees each post yourself. Instagram and Facebook are waiting on Meta's app review, and Threads is coming soon. Postbase is open source and free to self-host.
 

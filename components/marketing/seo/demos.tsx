@@ -123,8 +123,8 @@ export function ClientTiles({ name }: { name: string }) {
         tone="amber"
         layout="bottom"
         label="Tools"
-        title="Nine tools, nothing surprising"
-        body={`${name} can create, edit and check posts and threads, retry what failed, add media and cancel a post. It can't delete anything or change your account.`}
+        title="Ten tools, nothing surprising"
+        body={`${name} can create, edit and check posts and threads, retry what failed, read analytics, add media and cancel a post. It can't delete anything or change your account.`}
       >
         <div className="pt-16">
           <ToolsShot />

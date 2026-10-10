@@ -16,7 +16,7 @@ export const US = {
   scaling: "Per plan, not per channel: 15 channels and team seats for $39/month",
   networks: `X, LinkedIn, Bluesky, Mastodon, TikTok${tiktokCaveat(" (private posts for now)")}, YouTube (Instagram, Facebook and Threads coming soon)`,
   mcp: "Yes, on every plan. Sign in with Postbase or use an API key",
-  api: "Yes, on every plan. Create a key on the AI & API page",
+  api: "Yes, on every plan, with webhooks, analytics and an OpenAPI spec. Create a key on the Developers page",
   oss: "Yes. Self-host for free with your own platform keys",
 };
 

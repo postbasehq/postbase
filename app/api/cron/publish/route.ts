@@ -3,6 +3,7 @@ import { publishDuePosts } from "@/lib/publish/run";
 import { refreshMetrics } from "@/lib/analytics/collect";
 import * as Sentry from "@sentry/nextjs";
 import { checkPublishingHealth, pingHealthcheck } from "@/lib/monitoring/health";
+import { deliverDueWebhooks } from "@/lib/webhooks";
 
 export const dynamic = "force-dynamic";
 // Headroom for slow uploads + processing polls (TikTok, Instagram, YouTube). The
@@ -42,5 +43,12 @@ export async function GET(req: Request) {
   } catch {
     // Metrics are best-effort; never fail the publish cron over them.
   }
-  return NextResponse.json({ ok: true, processed, refreshed });
+  // Retry webhook deliveries that failed earlier (best-effort, like metrics).
+  let webhooks = 0;
+  try {
+    webhooks = await deliverDueWebhooks();
+  } catch (e) {
+    console.error("[cron] webhook retries:", e);
+  }
+  return NextResponse.json({ ok: true, processed, refreshed, webhooks });
 }

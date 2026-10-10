@@ -104,6 +104,29 @@ export const OUTPUT = {
     },
     ["id", "status", "channels"],
   ),
+  get_analytics: result(
+    {
+      from: strOrNull,
+      to: strOrNull,
+      totals: { type: "object", description: "Sums over every post in the range (impressions null where no network reports them)" },
+      posts: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            post_id: str,
+            body: strOrNull,
+            published_at: strOrNull,
+            channels: { type: "array", items: { type: "object" } },
+            totals: { type: "object" },
+          },
+          required: ["post_id"],
+        },
+      },
+      has_more: { type: "boolean" },
+    },
+    ["posts", "totals"],
+  ),
   retry_post: result(
     { id: str, retrying: { type: "array", items: str, description: "Ids of the channels being sent again" } },
     ["id", "retrying"],

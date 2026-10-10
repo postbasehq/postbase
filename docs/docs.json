@@ -13,6 +13,10 @@
     "light": "/logo/postbase-light.svg",
     "dark": "/logo/postbase-dark.svg"
   },
+  "api": {
+    "playground": { "display": "interactive" },
+    "mdx": { "server": "https://www.postbase.so/api/v1", "auth": { "method": "bearer" } }
+  },
   "navigation": {
     "groups": [
       {
@@ -44,7 +48,11 @@
       },
       {
         "group": "Public API",
-        "pages": ["api/authentication", "api/posts", "api/channels", "api/media"]
+        "pages": ["api/authentication", "api/posts", "api/channels", "api/media", "api/analytics", "api/webhooks"]
+      },
+      {
+        "group": "API reference",
+        "openapi": "openapi.json"
       },
       {
         "group": "Self-hosting",

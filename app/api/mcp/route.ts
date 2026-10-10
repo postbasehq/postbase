@@ -3,6 +3,7 @@ import { authenticateApiKey } from "@/lib/api-auth";
 import { resolveAccessToken, resourceMetadataUrlFor } from "@/lib/oauth";
 import { listChannels, listPosts, listMedia, createPost, cancelPost, getPost, updatePost, retryPost, importMedia } from "@/lib/api-core";
 import { postFieldsFrom } from "@/lib/api-input";
+import { getAnalytics, SORTS } from "@/lib/analytics/api";
 import { cancelMessage } from "@/lib/publish/cancel";
 import { failedAuthLimited, mediaImportLimit, postLimit, requestLimit, tooManyRequests } from "@/lib/api-limits";
 import { OUTPUT, structured } from "@/lib/mcp-output";
@@ -200,6 +201,28 @@ const MORE_TOOLS = [
     },
   },
   {
+    name: "get_analytics",
+    title: "Get post analytics",
+    annotations: { title: "Get post analytics", readOnlyHint: true, openWorldHint: false },
+    description:
+      "How published posts performed: each post's channels with their latest impressions, likes, comments, shares and saves (where the network reports them), plus totals for the range. Defaults to the last 30 days, newest first; sort by a metric to find the best posts. Numbers are refreshed periodically, so very recent posts may show little yet. Docs: https://docs.postbase.so/mcp/tools",
+    outputSchema: OUTPUT.get_analytics,
+    inputSchema: {
+      type: "object",
+      properties: {
+        from: { type: "string", description: "First day, YYYY-MM-DD. Defaults to 29 days before `to`." },
+        to: { type: "string", description: "Last day, YYYY-MM-DD. Defaults to today (UTC)." },
+        post_id: { type: "string", description: "Just this post (ignores the dates)." },
+        channel_id: { type: "string", description: "Only this channel, from list_channels." },
+        platform: { type: "string", description: "Only this network, e.g. x or linkedin." },
+        sort: { type: "string", enum: [...SORTS], description: "Order by date (default) or a metric." },
+        order: { type: "string", enum: ["desc", "asc"], description: "desc (default) or asc." },
+        limit: { type: "number", description: "Posts to return, 1 to 100 (default 20)." },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
     name: "add_media",
     title: "Add media from a URL",
     annotations: { title: "Add media from a URL", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
@@ -259,6 +282,17 @@ async function runTool(orgId: string, name: string, args: Args): Promise<unknown
       if (mediaHit) throw new Error(mediaHit.message);
       return updatePost(orgId, String(args.post_id ?? ""), fields);
     }
+    case "get_analytics":
+      return getAnalytics(orgId, {
+        from: typeof args.from === "string" ? args.from : undefined,
+        to: typeof args.to === "string" ? args.to : undefined,
+        postId: typeof args.post_id === "string" ? args.post_id : undefined,
+        channelId: typeof args.channel_id === "string" ? args.channel_id : undefined,
+        platform: typeof args.platform === "string" ? args.platform : undefined,
+        sort: typeof args.sort === "string" ? args.sort : undefined,
+        order: typeof args.order === "string" ? args.order : undefined,
+        limit: typeof args.limit === "number" ? args.limit : 20,
+      });
     case "retry_post":
       return retryPost(orgId, String(args.post_id ?? ""));
     case "add_media": {

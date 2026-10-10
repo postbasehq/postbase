@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
 import { CopyButton, McpClientConfig } from "@/components/McpClientConfig";
+import { WebhooksCard, type WebhookRow } from "@/components/WebhooksCard";
 import { Modal } from "@/components/Modal";
 import {
   createApiKey,
@@ -44,6 +45,7 @@ const SECTION_ICONS = {
   apps: icon(<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />),
   keys: icon(<path d="M15 7a4 4 0 1 1-3.9 4.9L4 19v-3h3v-3h3l1.1-1.1A4 4 0 0 1 15 7Z" />),
   tools: icon(<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />),
+  webhooks: icon(<path d="M18 16.98h-5.99c-1.1 0-1.95.94-2.48 1.9A4 4 0 0 1 2 17c.01-.7.2-1.4.57-2M6 17l3.13-5.78c.53-.97.1-2.18-.5-3.1a4 4 0 1 1 6.89-4.06M12 6l3.13 5.73C15.66 12.7 16.9 13 18 13a4 4 0 0 1 0 8" />),
 };
 
 /** The nearest scrolling ancestor (the app's <main>), or the window. */
@@ -133,6 +135,7 @@ const MCP_TOOLS = [
   { name: "get_post", desc: "Check each channel: published with its link, or why it failed." },
   { name: "update_post", desc: "Edit or reschedule a post before it goes out." },
   { name: "retry_post", desc: "Send a post again where it failed." },
+  { name: "get_analytics", desc: "See which posts did best: likes, views and more." },
   { name: "list_media", desc: "Find images and videos in your media library." },
   { name: "add_media", desc: "Add an image or video from a link." },
   { name: "list_scheduled", desc: "Review what's queued to publish." },
@@ -286,8 +289,12 @@ export function DeveloperClient({
   mcpUrl,
   connectedApps = [],
   workspace = "this workspace",
+  webhooks = [],
+  webhookEvents = [],
 }: {
   keys: KeyRow[];
+  webhooks?: WebhookRow[];
+  webhookEvents?: { value: string; label: string }[];
   mcpUrl: string;
   connectedApps?: ConnectedApp[];
   /** The workspace these keys and connections belong to. */
@@ -323,6 +330,7 @@ export function DeveloperClient({
       { id: "mcp", label: "Connect an AI tool", icon: SECTION_ICONS.mcp },
       ...(hasApps ? [{ id: "apps", label: "Connected apps", icon: SECTION_ICONS.apps }] : []),
       { id: "api-keys", label: "API keys", icon: SECTION_ICONS.keys },
+      { id: "webhooks", label: "Webhooks", icon: SECTION_ICONS.webhooks },
       { id: "tools", label: "Tools", icon: SECTION_ICONS.tools },
     ],
     [hasApps],
@@ -511,6 +519,8 @@ export function DeveloperClient({
           </div>
         </div>
       </section>
+
+      <WebhooksCard webhooks={webhooks} events={webhookEvents} workspace={workspace} />
 
       {/* ── Tools reference (collapsible) ────────────────────── */}
       <details

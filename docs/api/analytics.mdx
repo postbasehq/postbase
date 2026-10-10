@@ -1,0 +1,60 @@
+---
+title: Analytics
+description: "How your published posts performed, per channel."
+---
+
+## Get analytics
+
+```bash
+curl "https://www.postbase.so/api/v1/analytics?from=2026-09-01&to=2026-09-30&sort=likes" \
+  -H "Authorization: Bearer pb_live_…"
+```
+
+`GET /analytics` returns published posts in a date range with each channel's
+latest metrics, plus totals for every post in the range.
+
+| Query | Notes |
+| ----- | ----- |
+| `from`, `to` | Days as `YYYY-MM-DD` (by publish time, UTC). Defaults to the last 30 days. Up to 366 days. |
+| `post_id` | Just this post (the dates are ignored). |
+| `channel_id` | Only this channel. |
+| `platform` | Only this network, e.g. `x` or `linkedin`. |
+| `sort` | `date` (default), `impressions`, `likes`, `comments`, `shares`, `saves` or `engagement`. |
+| `order` | `desc` (default) or `asc`. |
+| `limit`, `offset` | Page size (1 to 100, default 50) and where to start. `has_more` says if there are more. |
+
+```json Response
+{
+  "from": "2026-09-01",
+  "to": "2026-09-30",
+  "totals": { "posts": 14, "impressions": 18240, "likes": 412, "comments": 37, "shares": 21, "saves": 9, "engagement": 479 },
+  "posts": [
+    {
+      "post_id": "…",
+      "body": "Launching today 🚀",
+      "published_at": "2026-09-12T09:00:00+00:00",
+      "channels": [
+        {
+          "channel_id": "…",
+          "platform": "x",
+          "handle": "acme",
+          "url": "https://x.com/acme/status/…",
+          "metrics": { "impressions": 5120, "likes": 96, "comments": 8, "shares": 11 },
+          "metrics_updated_at": "2026-09-14T08:00:00+00:00"
+        }
+      ],
+      "totals": { "impressions": 5120, "likes": 96, "comments": 8, "shares": 11, "saves": 0, "engagement": 115 }
+    }
+  ],
+  "has_more": false
+}
+```
+
+`engagement` is likes + comments + shares + saves. `impressions` is `null`
+when none of the networks involved report views. Each channel only has the
+metrics its network provides.
+
+Postbase refreshes metrics for recent posts in the background, so a post
+published in the last hour may show little yet; `metrics_updated_at` says when
+a channel was last read. The same numbers appear on the **Analytics** page in
+the app.

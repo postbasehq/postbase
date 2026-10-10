@@ -48,15 +48,16 @@ Start a new chat and make sure the Postbase connector is switched on in the chat
 
 > Write an X post and a LinkedIn post announcing our new pricing page. Schedule the X one for tomorrow at 10am and the LinkedIn one for 11am.
 
-Claude will usually check which channels you have, write the posts and then ask before it calls the tool that schedules them. It has nine tools to work with:
+Claude will usually check which channels you have, write the posts and then ask before it calls the tool that schedules them. It has ten tools to work with:
 
-::demo tools caption="The nine tools Claude gets. It can't delete posts, disconnect accounts or change settings."
+::demo tools caption="The ten tools Claude gets. It can't delete posts, disconnect accounts or change settings."
 
 - **list_channels** tells Claude which accounts are connected, so it knows what "LinkedIn" means in your workspace.
 - **create_post** saves a draft, or schedules a post or thread for a specific time, with images or a video attached.
 - **get_post** checks how a post went on each channel: the live link, or why it failed.
 - **update_post** edits or reschedules a post before it goes out.
 - **retry_post** sends a post again to the channels where it failed.
+- **get_analytics** shows how your posts did: likes, views, comments and shares.
 - **list_media** finds images and videos in your Postbase media library, so Claude can attach them by name.
 - **add_media** adds an image or video from a public link to your media library.
 - **list_scheduled** shows what's already queued.

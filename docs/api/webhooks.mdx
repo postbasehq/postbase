@@ -1,0 +1,134 @@
+---
+title: Webhooks
+description: "Get a signed request when a post publishes or fails, or a channel needs reconnecting."
+---
+
+Webhooks tell your app what happened without polling. Postbase sends an HTTP
+`POST` to your endpoint when a post finishes publishing or a channel loses
+access.
+
+## Events
+
+| Event | When |
+| ----- | ---- |
+| `post.published` | The post went out on every channel. |
+| `post.partial` | It went out on some channels and failed on others, and Postbase has stopped retrying. |
+| `post.failed` | It failed on every channel, and Postbase has stopped retrying. |
+| `channel.needs_reconnect` | A channel's access was revoked or expired. Reconnect it in Postbase. |
+
+A post sends one final event, with every channel's result in it. A failed
+channel that Postbase is still retrying on its own doesn't send an event yet.
+If you retry a post later, its new outcome sends a new event.
+
+## Add an endpoint
+
+In Postbase, open **Developers → Webhooks**, enter an `https://` URL and pick
+the events. Or use the API:
+
+```bash
+curl -X POST https://www.postbase.so/api/v1/webhooks \
+  -H "Authorization: Bearer pb_live_…" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/webhooks/postbase",
+    "events": ["post.published", "post.partial", "post.failed"]
+  }'
+```
+
+The response includes the endpoint's signing secret (`whsec_…`). It's shown
+once, so store it. A workspace can have up to 10 endpoints.
+
+| Endpoint | |
+| -------- | - |
+| `GET /webhooks` | List endpoints, with each one's latest delivery |
+| `POST /webhooks` | Add an endpoint |
+| `GET /webhooks/{id}` | Its recent deliveries: status, attempts, response code, error |
+| `DELETE /webhooks/{id}` | Delete it |
+| `POST /webhooks/{id}/test` | Send a `webhook.test` event now and see the response |
+
+## The request
+
+```http
+POST /webhooks/postbase HTTP/1.1
+Content-Type: application/json
+User-Agent: Postbase-Webhooks/1.0
+Postbase-Event-Id: 3f0c…
+Postbase-Event-Type: post.partial
+Postbase-Timestamp: 1791651200
+Postbase-Signature: sha256=9a1f…
+```
+
+```json
+{
+  "id": "3f0c…",
+  "type": "post.partial",
+  "created_at": "2026-10-01T09:00:41.000Z",
+  "workspace_id": "…",
+  "data": {
+    "post": {
+      "id": "…",
+      "status": "failed",
+      "body": "Launching today 🚀",
+      "channels": [
+        { "channel_id": "…", "platform": "x", "status": "published", "url": "https://x.com/acme/status/…", "error": null },
+        { "channel_id": "…", "platform": "linkedin", "status": "failed", "url": null, "error": "LinkedIn needs reconnecting." }
+      ],
+      "summary": { "published": 1, "failed": 1, "pending": 0 }
+    }
+  }
+}
+```
+
+`data.post` has the same shape as [`GET /posts/{id}`](/api/posts#get-a-post).
+For `channel.needs_reconnect`, `data.channel` has the channel's `id`,
+`platform`, `handle` and the `error`.
+
+## Verify the signature
+
+Check every request before trusting it:
+
+1. Read the raw request body as text. Don't parse and re-serialize it first.
+2. Compute HMAC-SHA256 of `<Postbase-Timestamp>.<raw body>` with your secret,
+   as hex, and prefix it with `sha256=`.
+3. Compare it with `Postbase-Signature` in constant time.
+4. Reject timestamps more than 5 minutes old, so a captured request can't be
+   replayed.
+
+```ts Node.js
+import crypto from "node:crypto";
+
+export function verifyPostbase(rawBody: string, headers: Headers, secret: string): boolean {
+  const timestamp = headers.get("postbase-timestamp") ?? "";
+  const received = headers.get("postbase-signature") ?? "";
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return false;
+  const expected = "sha256=" + crypto.createHmac("sha256", secret).update(`${timestamp}.${rawBody}`).digest("hex");
+  const a = Buffer.from(expected);
+  const b = Buffer.from(received);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+```
+
+```python Python
+import hashlib, hmac, time
+
+def verify_postbase(raw_body: bytes, headers, secret: str) -> bool:
+    timestamp = headers.get("Postbase-Timestamp", "")
+    received = headers.get("Postbase-Signature", "")
+    if not timestamp.isdigit() or abs(time.time() - int(timestamp)) > 300:
+        return False
+    digest = hmac.new(secret.encode(), f"{timestamp}.".encode() + raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(f"sha256={digest}", received)
+```
+
+## Delivery and retries
+
+Return any `2xx` within 10 seconds; do slow work afterwards. Anything else
+(including a timeout or a redirect) counts as a failure and is retried after
+1 minute, 5 minutes, 30 minutes, 2 hours and 6 hours, then marked failed. You
+can see every attempt with `GET /webhooks/{id}` or on the Developers page.
+
+The same event can arrive more than once (for example if your endpoint saved it
+but answered slowly). Store the event `id` and skip ones you've already handled.
+
+Endpoints must be public `https://` URLs. Private and internal addresses are
+refused.

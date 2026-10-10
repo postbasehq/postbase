@@ -47,8 +47,8 @@ export default function McpPage() {
 
         <section className={section}>
           <SectionHead
-            title="Nine tools, nothing destructive"
-            sub="The agent can read your channels, media library and queue, create, edit and retry posts, check how each one went, and cancel one before it goes out. It can't delete anything."
+            title="Ten tools, nothing destructive"
+            sub="The agent can read your channels, media library and queue, create, edit and retry posts, check how each one went and how it performed, and cancel one before it goes out. It can't delete anything."
           />
           <McpTools />
         </section>

@@ -49,6 +49,12 @@ export const MCP_TOOLS: { name: string; kind: "read" | "write"; summary: string;
     args: "post_id.",
   },
   {
+    name: "get_analytics",
+    kind: "read",
+    summary: "How published posts performed: impressions, likes, comments, shares and saves per channel, with totals for the range.",
+    args: "from and to (YYYY-MM-DD, default the last 30 days), or post_id; channel_id, platform, sort (date or a metric), order, limit.",
+  },
+  {
     name: "list_media",
     kind: "read",
     summary: "The images and videos in your Postbase media library, newest first. The agent passes their ids to create_post to attach them.",

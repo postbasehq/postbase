@@ -64,6 +64,22 @@ it already published are left alone, so nothing goes out twice. Check
 `get_post` first: a channel whose connection expired needs reconnecting in
 Postbase before a retry can work.
 
+## `get_analytics`
+
+How published posts performed: each post's channels with their latest
+impressions, likes, comments, shares and saves (where the network reports
+them), and totals for the range. Defaults to the last 30 days, newest first.
+
+| Argument | Notes |
+| -------- | ----- |
+| `from`, `to` | Days as `YYYY-MM-DD`. Up to 366 days. |
+| `post_id` | Just this post. |
+| `channel_id`, `platform` | Only one channel or network. |
+| `sort`, `order` | `date` or a metric (`likes`, `impressions`, `engagement`…), `desc` or `asc`. |
+| `limit` | 1 to 100 (default 20). |
+
+Same data as the REST [analytics endpoint](/api/analytics).
+
 ## `list_media`
 
 List the images and videos in your Postbase [media library](/using/media),

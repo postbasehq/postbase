@@ -43,6 +43,7 @@ const CALL_LABEL: Record<string, string> = {
   get_post: "Get a post",
   update_post: "Edit a post",
   retry_post: "Retry failed channels",
+  get_analytics: "Get post analytics",
   list_media: "List media",
   add_media: "Add media from a URL",
   list_scheduled: "List scheduled posts",

@@ -277,8 +277,8 @@ export function DevGrid() {
         tone="amber"
         layout="bottom"
         label="Tools"
-        title="Nine tools, nothing surprising"
-        body="Create, edit and check posts and threads, retry what failed, add media and cancel a post. Your agent can't delete anything or change your account."
+        title="Ten tools, nothing surprising"
+        body="Create, edit and check posts and threads, retry what failed, read analytics, add media and cancel a post. Your agent can't delete anything or change your account."
       >
         <div className="pt-16">
           <ToolsShot />
@@ -436,6 +436,7 @@ const TOOLS = [
   { name: "get_post", desc: "Check each channel: published with its link, or why it failed." },
   { name: "update_post", desc: "Edit or reschedule a post before it goes out." },
   { name: "retry_post", desc: "Send a post again where it failed." },
+  { name: "get_analytics", desc: "See which posts did best: likes, views and more." },
   { name: "list_media", desc: "Find images and videos in your media library." },
   { name: "add_media", desc: "Add an image or video from a link." },
   { name: "list_scheduled", desc: "Review what's queued to publish." },

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { canManageOrg, getOrgRole, getUserOrgs, scopeOrgId, getSessionUser } from "@/lib/org";
 import { DeveloperClient } from "@/components/DeveloperClient";
 import { publicMcpUrl, listConnectedApps } from "@/lib/oauth";
+import { listEndpoints, WEBHOOK_EVENTS, WEBHOOK_EVENT_LABELS } from "@/lib/webhooks";
 
 export default async function DevelopersPage() {
   const supabase = await createClient();
@@ -12,7 +13,7 @@ export default async function DevelopersPage() {
   };
 
   // Everything at once: each is a round trip to the database.
-  const [{ data: keys }, user, role, connectedApps, orgs] = await Promise.all([
+  const [{ data: keys }, user, role, connectedApps, orgs, endpoints] = await Promise.all([
     // Never select hashed_key.
     supabase
       .from("api_keys")
@@ -23,9 +24,11 @@ export default async function DevelopersPage() {
     orgId ? getOrgRole(orgId) : null,
     loadConnectedApps(),
     getUserOrgs(),
+    orgId ? listEndpoints(orgId) : [],
   ]);
 
   const manager = orgId ? canManageOrg(role) : false;
+  const webhooks = endpoints.map(({ created_by, created_at: _c, ...w }) => ({ ...w, canManage: manager || (!!user && created_by === user.id) }));
   const rows = (keys ?? []).map(({ created_by, ...k }) => ({ ...k, canManage: manager || (!!user && created_by === user.id) }));
 
   // Keys and connections belong to one workspace; say which, since plans cover several.
@@ -45,6 +48,8 @@ export default async function DevelopersPage() {
         mcpUrl={publicMcpUrl()}
         connectedApps={connectedApps}
         workspace={workspace}
+        webhooks={webhooks}
+        webhookEvents={WEBHOOK_EVENTS.map((value) => ({ value, label: WEBHOOK_EVENT_LABELS[value] }))}
       />
     </div>
   );
