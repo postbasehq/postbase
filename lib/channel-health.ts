@@ -1,5 +1,4 @@
 import type { createAdminClient } from "@/lib/supabase/admin";
-import { emitChannelNeedsReconnect } from "@/lib/webhooks";
 
 type Db = ReturnType<typeof createAdminClient>;
 
@@ -46,10 +45,7 @@ export async function flagReconnect(db: Db, channelId: string, error: string): P
     .eq("id", channelId)
     .neq("status", "reconnect")
     .select("id");
-  const flagged = (data?.length ?? 0) > 0;
-  // Newly flagged: tell the workspace's webhooks too.
-  if (flagged) await emitChannelNeedsReconnect(channelId, error);
-  return flagged;
+  return (data?.length ?? 0) > 0;
 }
 
 /** A post went out, so the connection works: clear any reconnect flag. */

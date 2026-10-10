@@ -5,6 +5,7 @@ import { APP_URL, esc, excerpt, layout, list, list as listBlock, p } from "@/lib
 import { explainPostError, PLATFORM_LABEL } from "@/lib/post-errors";
 import { reconnectReason } from "@/lib/channel-health";
 import { PLANS, planForPrice } from "@/lib/plans";
+import { emitChannelNeedsReconnect } from "@/lib/webhooks";
 
 /*
  * Who gets which email, and when. Every function is best-effort (never
@@ -156,8 +157,9 @@ function manyPostsFailed(group: { body: string | null; failed: FailedTarget[] }[
   });
 }
 
-/** A channel was just flagged as needing a reconnect. */
-export function notifyReconnect(channelId: string): Promise<void> {
+/** A channel was just flagged as needing a reconnect: email the team, and tell the workspace's webhooks. */
+export async function notifyReconnect(channelId: string): Promise<void> {
+  await emitChannelNeedsReconnect(channelId);
   return guard(`reconnect ${channelId}`, async () => {
     const db = createAdminClient();
     const { data: ch } = await db

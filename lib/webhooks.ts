@@ -326,12 +326,17 @@ export async function emitPostOutcome(postId: string, status: string): Promise<v
   }
 }
 
-/** A channel was just flagged as needing reconnecting. */
-export async function emitChannelNeedsReconnect(channelId: string, error: string): Promise<void> {
+/** A channel was just flagged as needing reconnecting (called from notifyReconnect). */
+export async function emitChannelNeedsReconnect(channelId: string): Promise<void> {
   try {
     const db = createAdminClient();
-    const { data: ch } = await db.from("channels").select("id, org_id, platform, handle, status_at").eq("id", channelId).maybeSingle();
-    if (!ch) return;
+    const { data: ch } = await db
+      .from("channels")
+      .select("id, org_id, platform, handle, status, status_error, status_at")
+      .eq("id", channelId)
+      .maybeSingle();
+    if (!ch || ch.status !== "reconnect") return;
+    const error = (ch.status_error as string | null) ?? "The connection needs to be renewed.";
     await emitEvent(
       ch.org_id as string,
       "channel.needs_reconnect",
