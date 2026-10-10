@@ -213,9 +213,9 @@ export function ChannelsBoard({
         <div className="flex items-center gap-3 rounded-[14px] border border-line bg-surface-2 px-3.5 py-3">
           <BrandTile platform={p.id} size={36} radius={9} />
           <div className="min-w-0 flex-1">
-            <div className="truncate font-display text-[15px] font-semibold tracking-[-0.01em] text-ink">{label}</div>
+            <div className="truncate font-display text-[15px] font-semibold leading-tight tracking-[-0.01em] text-ink">{label}</div>
             {connected ? (
-              <div className="mt-0.5">
+              <div className="mt-1 leading-none">
                 <StatusPill status={health} />
               </div>
             ) : null}
