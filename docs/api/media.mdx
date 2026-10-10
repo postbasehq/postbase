@@ -1,6 +1,6 @@
 ---
 title: Media
-description: "List the images and videos you can attach to posts."
+description: "List and add the images and videos you can attach to posts."
 ---
 
 ## List media
@@ -29,4 +29,22 @@ file name. Pass the `id` values as `media_ids` when [creating a post](/api/posts
 }
 ```
 
-Files are uploaded in the Postbase app (**Media**); the API doesn't upload them.
+## Add media from a URL
+
+```bash
+curl -X POST https://www.postbase.so/api/v1/media \
+  -H "Authorization: Bearer pb_live_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "url": "https://example.com/launch.png", "name": "Launch banner" }'
+```
+
+`POST /media` downloads a file from a public `https://` link into your media
+library and returns it (`201 Created`, same shape as above). JPG, PNG, WebP,
+GIF, MP4, MOV or WebM, up to 200 MB. `name` is optional and defaults to the
+file name in the link. Links to private or internal addresses are refused.
+
+You can skip this step: `media_urls` on [create](/api/posts#create-a-post) and
+[edit](/api/posts#edit-a-post) does the same for each link. Files count toward
+your plan's storage, and up to 60 files an hour can be added from links per
+workspace. Bigger files can be uploaded in the Postbase app (**Media**), up to
+1 GB.

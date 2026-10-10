@@ -73,7 +73,7 @@ export function llmsTxt({ full = false } = {}): string {
     `## AI tools (MCP)`,
     [
       `- Hosted MCP server: ${MCP_URL} (OAuth sign-in, no API key needed). Also on npm as @postbasehq/mcp for API-key setups.`,
-      `- Tools: list_channels, create_post (single posts or threads, scheduled or as a draft, with images or video from the media library), list_media, list_scheduled, cancel_post. TikTok can only be drafted.`,
+      `- Tools: list_channels, create_post (single posts or threads, scheduled or as a draft, per-channel text, images or video from the media library or a public link, idempotency keys), get_post (per-channel status, live link or error), update_post, retry_post, list_media, add_media, list_scheduled, cancel_post. TikTok can only be drafted.`,
       link("/mcp", "The MCP server", "endpoint, sign-in, tools and limits"),
       ...MCP_NETWORKS.map((m) => link(`/mcp/${m.slug}`, m.metaTitle)),
       link("/ai", "Connect an AI tool"),

@@ -48,23 +48,27 @@ Start a new chat and make sure the Postbase connector is switched on in the chat
 
 > Write an X post and a LinkedIn post announcing our new pricing page. Schedule the X one for tomorrow at 10am and the LinkedIn one for 11am.
 
-Claude will usually check which channels you have, write the posts and then ask before it calls the tool that schedules them. It has five tools to work with:
+Claude will usually check which channels you have, write the posts and then ask before it calls the tool that schedules them. It has nine tools to work with:
 
-::demo tools caption="The five tools Claude gets. It can't delete posts, disconnect accounts or change settings."
+::demo tools caption="The nine tools Claude gets. It can't delete posts, disconnect accounts or change settings."
 
 - **list_channels** tells Claude which accounts are connected, so it knows what "LinkedIn" means in your workspace.
 - **create_post** saves a draft, or schedules a post or thread for a specific time, with images or a video attached.
+- **get_post** checks how a post went on each channel: the live link, or why it failed.
+- **update_post** edits or reschedules a post before it goes out.
+- **retry_post** sends a post again to the channels where it failed.
 - **list_media** finds images and videos in your Postbase media library, so Claude can attach them by name.
+- **add_media** adds an image or video from a public link to your media library.
 - **list_scheduled** shows what's already queued.
 - **cancel_post** pulls a scheduled post back to a draft.
 
 ## Getting a different version for each network
 
-A single `create_post` call sends the same text to every channel you pick. That's fine for a short announcement, but LinkedIn and X usually want different posts. Just ask for it:
+A single `create_post` call sends the same text to every channel you pick, unless it gives some channels their own. That's fine for a short announcement, but LinkedIn and X usually want different posts. Just ask for it:
 
-> Write a short X version and a longer LinkedIn version, then schedule them separately.
+> Write a short X version and a longer LinkedIn version, and schedule them together.
 
-Claude then calls `create_post` once per network, each with its own text. The same goes for threads: ask for "a 5-post X thread" and Claude sends the posts as a thread, which Postbase publishes as a chain of replies.
+Claude then gives each channel its own text in one post (`channel_bodies`), so both versions sit together on your calendar. The same goes for threads: ask for "a 5-post X thread" and Claude sends the posts as a thread, which Postbase publishes as a chain of replies.
 
 Keep the character limits in mind, or ask Claude to: 280 per post on X, 300 on Bluesky, 500 on Mastodon and 3,000 on LinkedIn.
 

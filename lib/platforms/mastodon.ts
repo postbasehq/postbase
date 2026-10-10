@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { fetchMedia, MAX_IMAGE_BYTES, MAX_VIDEO_BYTES } from "@/lib/platforms/fetch-media";
+import { isPublicIp } from "@/lib/safe-fetch";
 
 /**
  * Mastodon integration — raw REST over fetch (SDK-free, matching the codebase).
@@ -55,23 +56,6 @@ export async function isPublicInstance(instanceUrl: string): Promise<boolean> {
   } catch {
     return false;
   }
-}
-
-function isPublicIp(ip: string): boolean {
-  if (ip.includes(":")) {
-    const v = ip.toLowerCase();
-    if (v.startsWith("::ffff:")) return isPublicIp(v.slice(7));
-    return !(v === "::1" || v === "::" || /^f[cd]/.test(v) || /^fe[89ab]/.test(v));
-  }
-  const [a, b] = ip.split(".").map(Number);
-  return !(
-    a === 0 || a === 10 || a === 127 || a >= 224 ||
-    (a === 100 && b >= 64 && b <= 127) ||
-    (a === 169 && b === 254) ||
-    (a === 172 && b >= 16 && b <= 31) ||
-    (a === 192 && b === 168) ||
-    (a === 198 && (b === 18 || b === 19))
-  );
 }
 
 async function api<T>(

@@ -12,6 +12,8 @@ export const API_LIMITS = {
   requestsPerMinute: 120,
   /** Posts created per hour, per workspace (drafts and scheduled). */
   postsPerHour: 60,
+  /** Files fetched from URLs per hour, per workspace (media_urls and POST /v1/media). */
+  mediaImportsPerHour: 60,
   /** Failed authentications per minute, per IP (slows key guessing). */
   failedAuthPerMinute: 30,
 } as const;
@@ -35,6 +37,20 @@ export async function postLimit(orgId: string): Promise<LimitHit | null> {
         retryAfter: 3600,
         message: `Rate limit: ${API_LIMITS.postsPerHour} posts an hour per workspace through the API and AI tools. Try again later, or write posts in the Postbase composer.`,
       };
+}
+
+/** Count `n` files fetched from URLs for the workspace; returns the hit if it's over the limit. */
+export async function mediaImportLimit(orgId: string, n: number): Promise<LimitHit | null> {
+  for (let i = 0; i < n; i++) {
+    const ok = await rateLimit(`api:media:${orgId}`, 3600, API_LIMITS.mediaImportsPerHour, { failOpen: true });
+    if (!ok) {
+      return {
+        retryAfter: 3600,
+        message: `Rate limit: ${API_LIMITS.mediaImportsPerHour} files from URLs an hour per workspace. Try again later, or upload in the Postbase media library.`,
+      };
+    }
+  }
+  return null;
 }
 
 /**

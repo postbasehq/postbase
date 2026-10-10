@@ -8,7 +8,7 @@ import { LIVE_NETWORKS, type FactUi } from "@/lib/seo/networks";
  * limits) and /mcp/[network] (what each tool does on one network, with example
  * calls). The /ai pages cover setup in each AI tool; these are the reference.
  * Facts mirror app/api/mcp/route.ts and lib/api-core.ts; keep them in sync.
- * Media comes from the workspace's media library (list_media + media_ids).
+ * Media comes from the workspace's media library (list_media + media_ids), or fetched from a public link (media_urls / add_media).
  * TikTok has no page: its guidelines need the creator to schedule each post in
  * the composer, so agents can only draft there. Instagram and Facebook pages
  * are written but only built once those networks are live (see LIVE_NETWORKS).
@@ -28,13 +28,37 @@ export const MCP_TOOLS: { name: string; kind: "read" | "write"; summary: string;
     kind: "write",
     summary:
       "Saves a draft, or schedules a post or a thread, on one or more channels. The post lands on your Postbase calendar and publishes through each network's official API.",
-    args: "body or thread, channel_ids, scheduled_at (ISO 8601 with an offset) or schedule_in_minutes, and media_ids from list_media. Leave both times out to save a draft.",
+    args: "body or thread, channel_ids, scheduled_at (ISO 8601 with an offset) or schedule_in_minutes, media_ids from list_media or media_urls, channel_bodies for per-channel text, and an idempotency_key so a retried call can't post twice. Leave both times out to save a draft.",
+  },
+  {
+    name: "get_post",
+    kind: "read",
+    summary: "One post and how it went on each channel: published with its live link, or failed with the reason and when it will be retried.",
+    args: "post_id, from create_post or list_scheduled.",
+  },
+  {
+    name: "update_post",
+    kind: "write",
+    summary: "Edits or reschedules a draft or scheduled post before it goes out. Only the fields you pass change.",
+    args: "post_id, plus any of create_post's fields. scheduled_at null turns it back into a draft.",
+  },
+  {
+    name: "retry_post",
+    kind: "write",
+    summary: "Sends a post again to the channels where it failed. Channels where it already published are left alone.",
+    args: "post_id.",
   },
   {
     name: "list_media",
     kind: "read",
     summary: "The images and videos in your Postbase media library, newest first. The agent passes their ids to create_post to attach them.",
     args: "type (optional): image or video. search (optional): part of a file name.",
+  },
+  {
+    name: "add_media",
+    kind: "write",
+    summary: "Adds an image or video to your media library from a public link, for attaching to posts.",
+    args: "url (https). name (optional).",
   },
   {
     name: "list_scheduled",
@@ -70,7 +94,7 @@ export const MCP_GLANCE: { label: string; stat: string; value: string; tone: "bl
 export const MCP_FAQS: [string, string][] = [
   [
     "What is the Postbase MCP server?",
-    "A hosted Model Context Protocol server that lets AI tools like Claude, ChatGPT, Cursor and Claude Code list your social channels, save drafts, schedule posts and threads, and cancel scheduled posts. Everything it creates shows up on your Postbase calendar.",
+    "A hosted Model Context Protocol server that lets AI tools like Claude, ChatGPT, Cursor and Claude Code list your social channels, save drafts, schedule, edit and cancel posts and threads, and check whether each one published. Everything it creates shows up on your Postbase calendar.",
   ],
   [
     "Which networks can an AI post to through it?",
@@ -78,7 +102,7 @@ export const MCP_FAQS: [string, string][] = [
   ],
   [
     "Can the agent attach images and video?",
-    "Yes, from your Postbase media library. Upload files there, and the agent finds them with list_media and attaches them by id. It can't upload files of its own or fetch images from other websites.",
+    "Yes. It can attach files from your Postbase media library (found with list_media), or give a public https link to an image or video, which Postbase downloads into your library first. Files count toward your plan's storage.",
   ],
   [
     "Do I need an API key?",

@@ -6,6 +6,7 @@ import { refreshPostStats } from "@/app/(app)/stats-actions";
 import { Modal } from "@/components/Modal";
 import { BrandTile } from "@/components/BrandTile";
 import { PostPreview } from "@/components/PostPreview";
+import { postUrl } from "@/lib/post-urls";
 
 type Target = {
   id: string;
@@ -41,27 +42,6 @@ const PLATFORM_LABEL: Record<string, string> = {
 
 const isDelivered = (t: Target) => t.status === "published" || !!t.platform_post_id;
 const fmt = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
-
-function postUrl(platform: string, handle: string | null, id: string | null): string | null {
-  if (!id) return null;
-  const h = (handle ?? "").replace(/^@/, "");
-  switch (platform) {
-    case "x":
-      return h ? `https://x.com/${h}/status/${id}` : null;
-    case "youtube":
-      return `https://www.youtube.com/watch?v=${id}`;
-    case "bluesky": {
-      const rkey = id.split("/").pop();
-      return h && rkey ? `https://bsky.app/profile/${h}/post/${rkey}` : null;
-    }
-    case "mastodon":
-      return id.startsWith("http") ? id : null;
-    case "linkedin":
-      return `https://www.linkedin.com/feed/update/${id}`;
-    default:
-      return null;
-  }
-}
 
 const TITLE_ID = "post-stats-title";
 

@@ -40,6 +40,11 @@ function TwoZone({
 const CALL_LABEL: Record<string, string> = {
   list_channels: "List channels",
   create_post: "Create or schedule a post",
+  get_post: "Get a post",
+  update_post: "Edit a post",
+  retry_post: "Retry failed channels",
+  list_media: "List media",
+  add_media: "Add media from a URL",
   list_scheduled: "List scheduled posts",
   cancel_post: "Cancel a scheduled post",
 };

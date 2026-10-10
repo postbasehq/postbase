@@ -130,7 +130,11 @@ function SideMenu({ sections }: { sections: Section[] }) {
 const MCP_TOOLS = [
   { name: "list_channels", desc: "See connected accounts and their platforms." },
   { name: "create_post", desc: "Draft or schedule a post/thread, with media, to any channels." },
+  { name: "get_post", desc: "Check each channel: published with its link, or why it failed." },
+  { name: "update_post", desc: "Edit or reschedule a post before it goes out." },
+  { name: "retry_post", desc: "Send a post again where it failed." },
   { name: "list_media", desc: "Find images and videos in your media library." },
+  { name: "add_media", desc: "Add an image or video from a link." },
   { name: "list_scheduled", desc: "Review what's queued to publish." },
   { name: "cancel_post", desc: "Pull a scheduled post before it goes out." },
 ];

@@ -69,7 +69,7 @@ export default async function McpNetworkPage({ params }: { params: Params }) {
         </section>
 
         <section className={section}>
-          <SectionHead title="The tools" sub="The same five tools on every network." />
+          <SectionHead title="The tools" sub="The same nine tools on every network." />
           <McpTools />
         </section>
 

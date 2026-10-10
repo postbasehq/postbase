@@ -56,7 +56,7 @@ export function relatedCard(href: string): LinkCard | null {
     return c ? { href, title: c.eyebrow, client: c.logo, body: c.blurb } : null;
   }
   if (kind === "mcp") {
-    if (!slug) return { href, title: "The MCP server", mark: "#2b59d9", body: "Endpoint, sign-in, the five tools and their limits." };
+    if (!slug) return { href, title: "The MCP server", mark: "#2b59d9", body: "Endpoint, sign-in, the nine tools and their limits." };
     const m = MCP_NETWORKS.find((x) => x.slug === slug);
     const n = LIVE_NETWORKS.find((x) => x.slug === slug);
     return m && n ? { href, title: `${n.name} MCP server`, brand: n.id, body: m.behaviour[0].value } : null;

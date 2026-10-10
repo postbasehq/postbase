@@ -277,8 +277,8 @@ export function DevGrid() {
         tone="amber"
         layout="bottom"
         label="Tools"
-        title="Four tools, nothing surprising"
-        body="List channels, create posts and threads, check the queue and cancel a post. Your agent can't delete anything or change your account."
+        title="Nine tools, nothing surprising"
+        body="Create, edit and check posts and threads, retry what failed, add media and cancel a post. Your agent can't delete anything or change your account."
       >
         <div className="pt-16">
           <ToolsShot />
@@ -433,7 +433,11 @@ export function McpShot() {
 const TOOLS = [
   { name: "list_channels", desc: "See connected accounts and their platforms." },
   { name: "create_post", desc: "Draft or schedule a post/thread, with media, to any channels." },
+  { name: "get_post", desc: "Check each channel: published with its link, or why it failed." },
+  { name: "update_post", desc: "Edit or reschedule a post before it goes out." },
+  { name: "retry_post", desc: "Send a post again where it failed." },
   { name: "list_media", desc: "Find images and videos in your media library." },
+  { name: "add_media", desc: "Add an image or video from a link." },
   { name: "list_scheduled", desc: "Review what's queued to publish." },
   { name: "cancel_post", desc: "Pull a scheduled post before it goes out." },
 ];
@@ -474,6 +478,8 @@ export function ToolsShot() {
 const ENDPOINTS: [string, string, string][] = [
   ["List posts", "GET", "/api/v1/posts"],
   ["Create a post", "POST", "/api/v1/posts"],
+  ["Get a post", "GET", "/api/v1/posts/{id}"],
+  ["Edit a post", "PATCH", "/api/v1/posts/{id}"],
   ["List media", "GET", "/api/v1/media"],
   ["Cancel a post", "POST", "/api/v1/posts/{id}/cancel"],
 ];

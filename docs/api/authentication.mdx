@@ -23,6 +23,19 @@ Every request must include `Authorization: Bearer <your key>`. Requests without
 a valid key return `401 Unauthorized`. A key is scoped to the workspace it was
 created in.
 
+## Check a key
+
+```bash
+curl https://www.postbase.so/api/v1/me \
+  -H "Authorization: Bearer pb_live_…"
+```
+
+`GET /me` returns the workspace the key acts for and how many channels it has:
+
+```json Response
+{ "workspace": { "id": "…", "name": "Acme" }, "channels": 3 }
+```
+
 <Warning>
   Keys are shown once at creation. Store yours securely; rotate or revoke it
   from **AI & API** if it leaks.
@@ -37,6 +50,7 @@ together:
 | ----- | ----- |
 | Requests | 120 a minute |
 | Posts created (drafts and scheduled) | 60 an hour |
+| Files added from links (`media_urls`, `POST /media`) | 60 an hour |
 | Failed authentications | 30 a minute per IP address |
 
 Over a limit, the API returns `429 Too Many Requests` with a `Retry-After`

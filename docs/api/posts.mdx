@@ -1,6 +1,6 @@
 ---
 title: Posts
-description: "Create, list, and cancel scheduled posts."
+description: "Create, check, edit, retry and cancel posts."
 ---
 
 All requests require an [API key](/api/authentication).
@@ -50,14 +50,122 @@ curl -X POST https://www.postbase.so/api/v1/posts \
 | `thread` | string[] | Posts to publish as a thread (takes precedence over `body`). |
 | `channel_ids` | string[] | Channels to publish to (from [Channels](/api/channels)). |
 | `scheduled_at` | string \| null | ISO 8601 time with a timezone: `Z` or an offset, e.g. `2026-10-01T09:00:00+01:00`. A time without one is refused. Omit or `null` to save a draft. |
+| `schedule_in_minutes` | number | Publish this many minutes from now, on the server's clock. Instead of `scheduled_at`. |
+| `channel_bodies` | object | Text for particular channels instead of `body`, keyed by channel id, e.g. a shorter version for X. Each is a single post, not a thread. |
 | `media_ids` | string[] | Files from your [media library](/api/media) to attach, in order. |
+| `media_urls` | string[] | Public `https://` links to images or a video, attached after `media_ids`. Postbase downloads each into your media library (up to 10 per request, 200 MB each). |
 | `youtube` | object | `title`, `privacy` (`public`, `unlisted` or `private`) and `made_for_kids` (required to schedule to YouTube). |
+| `idempotency_key` | string | Or send an `Idempotency-Key` header. See [Retrying safely](#retrying-safely). |
 
 TikTok posts can only be saved as drafts through the API: TikTok requires the
 creator to choose who sees each post in the Postbase composer.
 
 Returns the created post with `201 Created`. Invalid channel ids or media ids, an empty
-post, or a post a network would reject return `400` with the reason.
+post, or a post a network would reject return `400` with the reason; with no
+active plan, scheduling returns `402`. Error bodies look like
+`{ "error": "<readable message>", "code": "<code>" }`.
+
+### Retrying safely
+
+If a request times out, you can't tell whether the post was made. Send an
+`Idempotency-Key` header (any unique string, such as a UUID or your own record's
+id) and retry with the same key: the first request creates the post, and any
+repeat returns that post with `200 OK` and `"idempotent_replay": true` instead
+of creating another. Keys are scoped to your workspace and don't expire.
+
+```bash
+curl -X POST https://www.postbase.so/api/v1/posts \
+  -H "Authorization: Bearer pb_live_…" \
+  -H "Idempotency-Key: launch-2026-10-01" \
+  -H "Content-Type: application/json" \
+  -d '{ "body": "Launching today 🚀", "channel_ids": ["<channel-id>"], "scheduled_at": "2026-10-01T09:00:00Z" }'
+```
+
+## Get a post
+
+```bash
+curl https://www.postbase.so/api/v1/posts/<id> \
+  -H "Authorization: Bearer pb_live_…"
+```
+
+`GET /posts/{id}` returns the post and how it went on each channel.
+
+```json Response
+{
+  "post": {
+    "id": "…",
+    "status": "failed",
+    "body": "Launching today 🚀",
+    "thread": ["Launching today 🚀"],
+    "scheduled_at": "2026-10-01T09:00:00+00:00",
+    "created_at": "2026-09-30T18:12:00+00:00",
+    "media": [],
+    "channels": [
+      {
+        "channel_id": "…",
+        "platform": "x",
+        "handle": "postbase",
+        "status": "published",
+        "url": "https://x.com/postbase/status/…",
+        "error": null,
+        "warning": null,
+        "retry_at": null,
+        "body": "Shorter X version",
+        "metrics": { "likes": 12, "impressions": 840 }
+      },
+      {
+        "channel_id": "…",
+        "platform": "linkedin",
+        "status": "failed",
+        "url": null,
+        "error": "LinkedIn needs reconnecting.",
+        "retry_at": null,
+        "body": null,
+        "metrics": null
+      }
+    ],
+    "summary": { "published": 1, "failed": 1, "pending": 0 }
+  }
+}
+```
+
+A channel's `url` is set once it's published, `error` says why it failed, and
+`retry_at` is when Postbase will try it again on its own (null once it has
+stopped retrying). `warning` means it went out with something to know. `metrics`
+holds the latest numbers where the network reports them.
+
+## Edit a post
+
+```bash
+curl -X PATCH https://www.postbase.so/api/v1/posts/<id> \
+  -H "Authorization: Bearer pb_live_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "scheduled_at": "2026-10-02T09:00:00+01:00" }'
+```
+
+`PATCH /posts/{id}` edits a draft or scheduled post. It takes the same fields as
+creating one, and only the fields you send change: send just `scheduled_at` to
+reschedule, or `"scheduled_at": null` to turn it back into a draft. The same
+checks apply as when creating. Returns the post as `GET /posts/{id}` does. A
+post that has started publishing returns `409`.
+
+## Retry a post
+
+```bash
+curl -X POST https://www.postbase.so/api/v1/posts/<id>/retry \
+  -H "Authorization: Bearer pb_live_…"
+```
+
+`POST /posts/{id}/retry` sends the post again, right away, to the channels where
+it failed. Channels where it published are left alone, so nothing goes out
+twice. Returns `202 Accepted` with the channels being retried:
+
+```json Response
+{ "id": "…", "retrying": ["<channel-id>"] }
+```
+
+With no failed channels it returns `409`. Check `GET /posts/{id}` first: a
+channel whose connection expired needs reconnecting in Postbase.
 
 ## Cancel a post
 
@@ -66,4 +174,5 @@ curl -X POST https://www.postbase.so/api/v1/posts/<id>/cancel \
   -H "Authorization: Bearer pb_live_…"
 ```
 
-`POST /posts/{id}/cancel` reverts a scheduled post to a draft.
+`POST /posts/{id}/cancel` reverts a scheduled post to a draft. Reschedule it
+later with `PATCH /posts/{id}`.

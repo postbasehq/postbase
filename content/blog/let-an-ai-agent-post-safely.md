@@ -25,7 +25,7 @@ For posting, the agent needs to:
 
 It doesn't need to delete published posts, disconnect accounts, invite people to your workspace or touch billing. If a tool offers those to an AI, think twice.
 
-::demo tools caption="Postbase gives AI tools five tools and nothing else. There's no delete, disconnect or settings tool to misuse."
+::demo tools caption="Postbase gives AI tools nine tools and nothing else. There's no delete, disconnect or settings tool to misuse."
 
 ## 2. Connect with a sign-in, not a shared password
 

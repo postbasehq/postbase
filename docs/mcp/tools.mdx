@@ -22,10 +22,13 @@ Draft or schedule a post or thread.
 | `channel_ids` | string[] | Channels to publish to (from `list_channels`). |
 | `scheduled_at` | string | ISO 8601 time to publish, with a timezone (`Z` or an offset like `+01:00`). Omit for a draft. |
 | `schedule_in_minutes` | number | Publish this many minutes from now, on the server's clock. Used for relative times like "in 10 minutes". |
+| `channel_bodies` | object | Text for particular channels instead of `body`, keyed by channel id (each a single post). |
 | `media_ids` | string[] | Files from `list_media` to attach, in order. |
+| `media_urls` | string[] | Public `https://` links to images or a video, attached after `media_ids`. Each file is added to your media library (up to 10 per call, 200 MB each). |
+| `idempotency_key` | string | Any unique string for this post. Calling again with the same key returns the first post instead of creating another. |
 | `youtube` | object | `title` (up to 100 characters), `privacy` (`public`, `unlisted` or `private`) and `made_for_kids` (required to schedule to YouTube). |
 
-Provide `body`, `thread` or `media_ids`. Omit `scheduled_at` and `schedule_in_minutes` to save a draft.
+Provide `body`, `thread`, `media_ids` or `media_urls`. Omit `scheduled_at` and `schedule_in_minutes` to save a draft.
 
 Media follows each network's rules: up to 4 images or one video on X, up to 4
 images on Bluesky and Mastodon, up to 20 images on LinkedIn, and one video on
@@ -37,13 +40,42 @@ YouTube. A scheduled post that a network would reject is refused with the reason
   TikTok drafts yourself in the Postbase composer.
 </Note>
 
+## `get_post`
+
+Get one post by `post_id`, with how it went on each channel: `status`
+(`draft`, `scheduled`, `publishing`, `published` or `failed`), the live `url`
+once it's published, the `error` if it failed and `retry_at` if it will be
+tried again automatically, the channel's own text, and its latest `metrics`
+(likes, views and so on) where the network reports them. A `summary` counts
+published, failed and pending channels.
+
+## `update_post`
+
+Edit a draft or scheduled post by `post_id`. It takes the same fields as
+`create_post` (except `idempotency_key`), and only the ones you pass change.
+Pass `scheduled_at` or `schedule_in_minutes` to reschedule, or to schedule a
+draft; `scheduled_at: null` turns the post back into a draft. A post that has
+started publishing can't be edited. Returns the post as `get_post` does.
+
+## `retry_post`
+
+Send a post again, right away, to the channels where it failed. Channels where
+it already published are left alone, so nothing goes out twice. Check
+`get_post` first: a channel whose connection expired needs reconnecting in
+Postbase before a retry can work.
+
 ## `list_media`
 
 List the images and videos in your Postbase [media library](/using/media),
 newest first (up to 50). Filter with `type` (`image` or `video`) or `search`
 (part of a file name). Pass the returned ids to `create_post` as `media_ids`.
 
-The agent can't upload files itself: upload them in Postbase first.
+## `add_media`
+
+Add an image or video to your media library from a public `https://` link,
+and get back its id for `media_ids`. JPG, PNG, WebP, GIF, MP4, MOV or WebM, up
+to 200 MB. Files count toward your plan's storage. (`create_post` and
+`update_post` also take `media_urls` directly.)
 
 ## `list_scheduled`
 
@@ -52,7 +84,8 @@ or `draft`).
 
 ## `cancel_post`
 
-Cancel a scheduled post by `post_id` — it reverts to a draft.
+Cancel a scheduled post by `post_id` — it reverts to a draft, which you can
+reschedule with `update_post`.
 
 <Tip>
   You rarely call these by name — just ask in plain language, e.g. "what's

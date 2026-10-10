@@ -123,8 +123,8 @@ export function ClientTiles({ name }: { name: string }) {
         tone="amber"
         layout="bottom"
         label="Tools"
-        title="Four tools, nothing surprising"
-        body={`${name} can list your channels, create posts and threads, check the queue and cancel a post. It can't delete anything or change your account.`}
+        title="Nine tools, nothing surprising"
+        body={`${name} can create, edit and check posts and threads, retry what failed, add media and cancel a post. It can't delete anything or change your account.`}
       >
         <div className="pt-16">
           <ToolsShot />

@@ -89,9 +89,9 @@ On LinkedIn, the parts after the first become the first comment.
 
 ## Things to watch
 
-- **Character limits differ:** 280 on X, 300 on Bluesky, 500 on Mastodon, 3,000 on LinkedIn. One `body` goes to every channel in the request, so either keep it short, or send one request per network with its own text. Check lengths with our [character counter](/tools/character-counter).
-- **Media:** upload images and videos to your Postbase media library, then pass their ids as `media_ids` (list them with `GET /api/v1/media`). The API can't upload files itself.
-- **Duplicates:** if your trigger can fire twice for the same item, add a **Remove Duplicates** node (or check a "posted" column) before the HTTP Request. X in particular rejects identical posts.
+- **Character limits differ:** 280 on X, 300 on Bluesky, 500 on Mastodon, 3,000 on LinkedIn. One `body` goes to every channel in the request, so either keep it short, or give channels their own text with `channel_bodies`. Check lengths with our [character counter](/tools/character-counter).
+- **Media:** pass public image or video links as `media_urls` and Postbase fetches them into your media library, or attach library files by id with `media_ids` (list them with `GET /api/v1/media`).
+- **Duplicates:** if your trigger can fire twice for the same item, send an `Idempotency-Key` header (the item's id works): a repeat returns the first post instead of creating another. X in particular rejects identical posts.
 - **Timezones:** `scheduled_at` is ISO 8601. `$now.toISO()` includes your n8n instance's timezone offset, so the time is exact.
 
 ## Prefer AI tools to workflows?
