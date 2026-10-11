@@ -22,6 +22,14 @@ export type BotChannel = { id: string; platform: string; handle: string | null }
 const BLUE = "#2b59d9";
 const LETTERS = "ABCDE";
 
+/** Shown on a bot with no messages yet, so the first turn has a clear job. */
+const STARTERS = [
+  "Watch Reddit and Hacker News for people asking for a product like mine",
+  "Draft this week's posts for my channels",
+  "Keep an eye on news in my industry and tell me what's worth posting about",
+  "Research what people in my niche are talking about this week",
+];
+
 const TOOL_STATUS: Record<string, string> = {
   run_sweep: "is checking its sources",
   web_search: "is searching the web",
@@ -229,6 +237,28 @@ export function BotChat({
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 pb-6 pt-2">
+          {messages.length === 0 && !pending ? (
+            <div className="flex flex-col items-center pt-[12vh] text-center">
+              <BotAvatar color={bot.color} size={72} />
+              <h1 className="mt-4 font-display text-xl font-semibold tracking-[-0.02em] text-ink md:text-2xl">What should this bot do?</h1>
+              <p className="mt-1.5 max-w-md text-[15px] leading-relaxed text-muted">
+                Pick a job to start, or type your own. It sets itself up from there.
+              </p>
+              <div className="mt-6 w-full max-w-xl overflow-hidden rounded-2xl border border-line">
+                {STARTERS.map((s, i) => (
+                  <button
+                    key={s}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void send(s)}
+                    className={`flex w-full items-center gap-3 border-line bg-surface px-4 py-3.5 text-left text-[15px] text-ink transition hover:bg-surface-2 disabled:opacity-50 ${i ? "border-t" : ""}`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
           {messages.map((m, i) => {
             const prev = messages[i - 1];
             const showDay = !prev || new Date(m.createdAt).getTime() - new Date(prev.createdAt).getTime() > 3 * 3_600_000;

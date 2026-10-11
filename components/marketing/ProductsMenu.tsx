@@ -45,8 +45,8 @@ function McpIcon() {
   );
 }
 
-/** Each product's mark in the list. */
-function ProductIcon({ id }: { id: ProductId }) {
+/** Each product's mark in the list (also used by the mobile drawer). */
+export function ProductIcon({ id }: { id: ProductId }) {
   if (id === "mcp") return <McpIcon />;
   if (id === "scheduler") {
     return (

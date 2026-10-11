@@ -9,7 +9,7 @@ import { NavAuthButtons } from "./NavAuthButtons";
 import { MobileNav } from "./MobileNav";
 import { NETWORKS } from "@/lib/seo/networks";
 import { CLIENTS } from "@/lib/seo/clients";
-import { ProductsPanel } from "@/components/marketing/ProductsMenu";
+import { ProductIcon, ProductsPanel } from "@/components/marketing/ProductsMenu";
 import { PRODUCTS } from "@/lib/seo/products";
 
 const LINKS = [
@@ -235,7 +235,7 @@ function SiteMobileMenu() {
             href="/login"
             className="block rounded-full bg-blue px-4 py-3 text-center font-display text-[15px] font-semibold text-on-blue shadow-sm"
           >
-            Start your 7-day free trial
+            Start free trial
           </Link>
         </div>
       }
@@ -245,9 +245,12 @@ function SiteMobileMenu() {
         <ul className="flex flex-col">
           {PRODUCTS.map((p) => (
             <li key={p.id}>
-              <Link href={p.href} className="flex items-baseline gap-2 rounded-xl px-3 py-2 text-[15px] font-medium text-ink hover:bg-surface-2">
-                {p.name}
-                <span className="truncate text-[13px] font-normal text-muted">{p.line}</span>
+              <Link href={p.href} className="flex items-center gap-3 rounded-xl px-3 py-2 hover:bg-surface-2">
+                <ProductIcon id={p.id} />
+                <span className="min-w-0">
+                  <span className="block text-[15px] font-semibold text-ink">{p.name}</span>
+                  <span className="block truncate text-[13px] text-muted">{p.line}</span>
+                </span>
               </Link>
             </li>
           ))}

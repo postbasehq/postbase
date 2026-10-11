@@ -174,7 +174,7 @@ function Hero() {
   const h = HERO[audience];
   return (
     <section className="relative isolate">
-      {audience === "developers" ? null : <HeroPostbots />}
+      <HeroPostbots />
       <div className={`${wrap} pt-14 text-center md:pt-20`}>
         <Swap k={audience}>
           {audience === "creators" ? <IconStack items={NETWORK_ICONS} /> : <IconStack items={AGENT_ICONS} agents />}
