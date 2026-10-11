@@ -33,12 +33,7 @@ export function AppShell({
 }) {
   return (
     <div
-      className={`flex h-full overflow-hidden rounded-2xl border border-line ${className}`}
-      style={{
-        // Same backdrop as the real app layout.
-        background:
-          "radial-gradient(1000px 520px at 12% -8%, color-mix(in oklab, var(--blue-soft) 65%, transparent), transparent 70%), radial-gradient(900px 600px at 100% 110%, color-mix(in oklab, var(--blue-soft) 40%, transparent), transparent 65%), var(--ground)",
-      }}
+      className={`flex h-full overflow-hidden rounded-2xl border border-line bg-ground ${className}`}
     >
       {/* sidebar — transparent, on the backdrop */}
       <aside className={`hidden w-[224px] shrink-0 flex-col py-1.5 ${sidebar ? "lg:flex" : ""}`}>

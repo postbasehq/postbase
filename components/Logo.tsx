@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-export function Logo({ href = "/" }: { href?: string }) {
+/** The Postbase mark with a wordmark; `name` swaps the word (Postbots uses its own). */
+export function Logo({ href = "/", name = "Postbase" }: { href?: string; name?: string }) {
   return (
     <Link
       href={href}
@@ -14,7 +15,7 @@ export function Logo({ href = "/" }: { href?: string }) {
           className="size-full object-cover"
         />
       </span>
-      Postbase
+      {name}
     </Link>
   );
 }

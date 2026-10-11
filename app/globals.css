@@ -748,6 +748,14 @@ body {
 @keyframes pbot-question { 0%, 100% { transform: scaleY(1); } 20%, 65% { transform: scaleY(0.62); } 80% { transform: scaleY(1.12); } }
 @keyframes pbot-scan { 0%, 100% { transform: translateX(var(--bot-scan-left)); } 35%, 55% { transform: translateX(var(--bot-scan-right)); } 75% { transform: translate(0, var(--bot-face-lift)); } }
 @keyframes pbot-focus { 0%, 100% { transform: scaleY(0.76); } 35%, 65% { transform: scaleY(0.96); } 46%, 53% { transform: scaleY(0.12); } 49% { transform: scaleY(0.78); } }
+/* The Postbots icon in the app header: just the eyes, blinking and glancing
+   now and then (app/(app)/layout.tsx). */
+.pbot-icon-look { animation: pbot-icon-glance 9s ease-in-out infinite; }
+.pbot-icon-blink { animation: pbot-blink 5.2s infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes pbot-icon-glance { 0%, 20%, 50%, 70%, 100% { transform: translate(0, 0); } 28%, 42% { transform: translate(7px, -3px); } 78%, 90% { transform: translateX(-6px); } }
+@media (prefers-reduced-motion: reduce) {
+  .pbot-icon-look, .pbot-icon-blink { animation: none; }
+}
 @media (prefers-reduced-motion: reduce) {
   .pbot .pbot-body, .pbot .pbot-face, .pbot .pbot-eyes, .pbot .pbot-eye-far { animation: none !important; }
 }

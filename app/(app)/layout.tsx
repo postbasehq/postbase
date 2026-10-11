@@ -133,11 +133,7 @@ export default async function AppLayout({
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
       <div
-        className="flex min-h-0 flex-1 overflow-hidden"
-        style={{
-          background:
-            "radial-gradient(1000px 520px at 12% -8%, color-mix(in oklab, var(--blue-soft) 65%, transparent), transparent 70%), radial-gradient(900px 600px at 100% 110%, color-mix(in oklab, var(--blue-soft) 40%, transparent), transparent 65%), var(--ground)",
-        }}
+        className="flex min-h-0 flex-1 overflow-hidden bg-ground"
       >
         <TimezoneSync />
         {/* sidebar — transparent, sits on the backdrop (a layer behind the panel) */}
@@ -193,6 +189,22 @@ export default async function AppLayout({
                     className="flex size-9 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-ink"
                   >
                     <AgentSparkIcon size={18} />
+                  </Link>
+                  <Link
+                    href="/bots"
+                    aria-label="Open Postbots"
+                    title="Postbots"
+                    className="flex size-9 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-ink"
+                  >
+                    {/* The Postbot's two eyes, as in the Products menu, in the icon colour; they blink and glance. */}
+                    <svg width="18" height="18" viewBox="36 36 88 88" fill="currentColor" overflow="visible" aria-hidden>
+                      <g className="pbot-icon-look">
+                        <g className="pbot-icon-blink">
+                          <rect x="51" y="57" width="26" height="46" rx="13" transform="rotate(-28 64 80)" />
+                          <rect x="92" y="45.5" width="19" height="37" rx="9.5" transform="rotate(-28 101.5 64)" />
+                        </g>
+                      </g>
+                    </svg>
                   </Link>
                   <FeedbackNavButton
                     label="Report a bug or send feedback"

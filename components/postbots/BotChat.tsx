@@ -4,9 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { renderSafeMarkdown } from "@/lib/safe-markdown";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { BotAvatar } from "@/components/postbots/BotAvatar";
+import { usePublishActivity } from "@/components/postbots/BotActivity";
 import { BrandTile } from "@/components/BrandTile";
-import { botMessages, deleteBot, markBotRead, saveBotDraft } from "@/app/(bots)/bots/actions";
+import { botMessages, deleteBot, markBotRead, renameBot, saveBotDraft } from "@/app/(bots)/bots/actions";
+import { firstMessageKey } from "@/components/postbots/NewChat";
 import {
   SOURCE_LABEL,
   type Bot,
@@ -19,7 +22,6 @@ import {
 
 export type BotChannel = { id: string; platform: string; handle: string | null };
 
-const BLUE = "#2b59d9";
 const LETTERS = "ABCDE";
 
 /** Shown on a bot with no messages yet, so the first turn has a clear job. */
@@ -38,6 +40,7 @@ const TOOL_STATUS: Record<string, string> = {
   list_channels: "is looking at your channels",
   list_posts: "is looking at your posts",
   draft_post: "is drafting",
+  apps: "is working in your apps",
 };
 
 /** True after the first client render. Dates are formatted in the viewer's
@@ -60,6 +63,24 @@ async function quietly<T>(fn: () => Promise<T>): Promise<T | null> {
   } catch {
     return null;
   }
+}
+
+/** A bot message as one short line, for quoting in a reply. */
+function quoteOf(text: string): string {
+  const flat = text.replace(/[*_`#>]/g, "").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/\s+/g, " ").trim();
+  return flat.length > 160 ? `${flat.slice(0, 160).trimEnd()}…` : flat;
+}
+
+/** Splits a user message into the quote it replies to (leading "> " lines) and the rest. */
+function splitQuote(content: string): { quote: string | null; body: string } {
+  const m = content.match(/^((?:> ?.*(?:\n|$))+)\n*([\s\S]*)$/);
+  if (!m) return { quote: null, body: content };
+  return { quote: m[1].replace(/^> ?/gm, "").trim(), body: m[2] };
+}
+
+function lastUserIndexOf(messages: BotMessage[]): number {
+  for (let i = messages.length - 1; i >= 0; i--) if (messages[i].role === "user") return i;
+  return -1;
 }
 
 function dayLabel(iso: string): string {
@@ -88,11 +109,16 @@ export function BotChat({
   const [status, setStatus] = useState<string | null>(null);
   /** What the bot's face shows: thinking until it answers, working while it runs a tool. */
   const [activity, setActivity] = useState<"thinking" | "working" | null>(null);
+  usePublishActivity(initialBot.id, activity);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [input, setInput] = useState("");
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [menuOpen, setMenuOpen] = useState(false);
+  /** The bot message the next message replies to. */
+  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  /** The name being edited in the header, or null when not renaming. */
+  const [naming, setNaming] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const mounted = useMounted();
 
@@ -100,18 +126,35 @@ export function BotChat({
     void quietly(() => markBotRead(bot.id));
   }, [bot.id]);
 
+  // A bot made from the new-chat screen with a message: send it as the first turn.
+  useEffect(() => {
+    let first: string | null = null;
+    try {
+      first = sessionStorage.getItem(firstMessageKey(initialBot.id));
+      // Removed before sending, so a second run of this effect finds nothing.
+      sessionStorage.removeItem(firstMessageKey(initialBot.id));
+    } catch {
+      // Storage blocked: nothing to send.
+    }
+    if (first) void send(first);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialBot.id]);
+
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
   }, [messages, pending, status]);
 
-  const lastUserIndex = useMemo(() => {
-    for (let i = messages.length - 1; i >= 0; i--) if (messages[i].role === "user") return i;
-    return -1;
-  }, [messages]);
+  const lastUserIndex = useMemo(() => lastUserIndexOf(messages), [messages]);
+  /** A question card is waiting on the latest reply, so the message box can answer it. */
+  const questionOpen =
+    !busy && messages.slice(lastUserIndex + 1).some((m) => m.role === "bot" && m.cards.some((c) => c.type === "question"));
 
   async function send(text: string) {
-    const t = text.trim();
-    if (!t || busy) return;
+    const typed = text.trim();
+    if (!typed || busy) return;
+    // A reply carries the quoted line, so the bot (and the chat) know what it answers.
+    const t = replyTo ? `> ${replyTo}\n\n${typed}` : typed;
+    setReplyTo(null);
     setBusy(true);
     setError(null);
     setInput("");
@@ -188,22 +231,64 @@ export function BotChat({
     }
   }
 
+  async function saveName() {
+    const next = (naming ?? "").trim();
+    setNaming(null);
+    if (!next || next === bot.name) return;
+    const res = await quietly(() => renameBot(bot.id, next));
+    if (!res) return;
+    if ("error" in res) {
+      setError(res.error);
+      return;
+    }
+    setBot((b) => ({ ...b, name: res.name }));
+    router.refresh();
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="relative flex h-16 shrink-0 items-center justify-center px-14">
-        <span className="flex items-center gap-2 rounded-full border border-line bg-surface py-1.5 pl-2 pr-4 shadow-sm">
-          <BotAvatar color={bot.color} size={28} state={activity ?? "resting"} />
-          <span className="font-display text-[15px] font-semibold text-ink">{bot.name}</span>
+      <header className="flex h-16 shrink-0 items-center gap-2 pl-14 pr-3 md:gap-3 md:px-6">
+        <span className="flex min-w-0 items-center gap-2.5">
+          <BotAvatar color={bot.color} size={30} state={activity ?? "resting"} />
+          {naming !== null ? (
+            <input
+              autoFocus
+              value={naming}
+              maxLength={40}
+              aria-label="Bot name"
+              onChange={(e) => setNaming(e.target.value)}
+              onFocus={(e) => e.target.select()}
+              onBlur={() => void saveName()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+                if (e.key === "Escape") setNaming(null);
+              }}
+              className="h-9 w-56 min-w-0 rounded-lg border border-line bg-surface px-2 font-display text-[17px] font-semibold tracking-[-0.01em] text-ink outline-none focus:border-blue"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setNaming(bot.name)}
+              title="Rename"
+              className="truncate rounded-lg px-1 font-display text-[17px] font-semibold tracking-[-0.01em] text-ink transition hover:bg-surface-2"
+            >
+              {bot.name}
+            </button>
+          )}
           {bot.status === "paused" ? (
-            <span className="text-[12px] text-muted">Paused</span>
+            <span className="shrink-0 text-[13px] text-muted">Paused</span>
           ) : null}
         </span>
-        <div className="absolute right-3 top-3">
+        <div className="relative ml-auto flex shrink-0 items-center gap-1 md:gap-3">
+          {/* On phones the theme toggle lives in the menu drawer. */}
+          <div className="hidden md:block">
+            <ThemeToggle />
+          </div>
           <button
             type="button"
             onClick={() => setMenuOpen((o) => !o)}
             aria-label="Bot options"
-            className="flex size-10 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-ink"
+            className="flex size-9 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-ink"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
               <circle cx="5" cy="12" r="1.8" />
@@ -212,7 +297,17 @@ export function BotChat({
             </svg>
           </button>
           {menuOpen ? (
-            <div className="absolute right-0 z-20 mt-1 w-48 rounded-xl border border-line bg-surface p-1 shadow-lg">
+            <div className="absolute right-0 top-full z-20 mt-1 w-48 rounded-xl border border-line bg-surface p-1 shadow-lg">
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setNaming(bot.name);
+                }}
+                className="w-full rounded-lg px-3 py-2 text-left text-sm text-ink transition hover:bg-surface-2"
+              >
+                Rename
+              </button>
               <button
                 type="button"
                 onClick={async () => {
@@ -236,22 +331,22 @@ export function BotChat({
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4">
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 pb-6 pt-2">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-2 pb-6 pt-2">
           {messages.length === 0 && !pending ? (
             <div className="flex flex-col items-center pt-[12vh] text-center">
-              <BotAvatar color={bot.color} size={72} />
+              <BotAvatar color={bot.color} size={72} follow />
               <h1 className="mt-4 font-display text-xl font-semibold tracking-[-0.02em] text-ink md:text-2xl">What should this bot do?</h1>
               <p className="mt-1.5 max-w-md text-[15px] leading-relaxed text-muted">
                 Pick a job to start, or type your own. It sets itself up from there.
               </p>
-              <div className="mt-6 w-full max-w-xl overflow-hidden rounded-2xl border border-line">
-                {STARTERS.map((s, i) => (
+              <div className="mt-6 flex w-full max-w-xl flex-col gap-0.5 rounded-2xl bg-surface-2 p-1.5">
+                {STARTERS.map((s) => (
                   <button
                     key={s}
                     type="button"
                     disabled={busy}
                     onClick={() => void send(s)}
-                    className={`flex w-full items-center gap-3 border-line bg-surface px-4 py-3.5 text-left text-[15px] text-ink transition hover:bg-surface-2 disabled:opacity-50 ${i ? "border-t" : ""}`}
+                    className="flex w-full items-center rounded-xl px-4 py-3 text-left text-[15px] text-ink transition hover:bg-surface hover:shadow-sm disabled:opacity-50"
                   >
                     {s}
                   </button>
@@ -271,9 +366,11 @@ export function BotChat({
                   answer={answer}
                   live={i > lastUserIndex}
                   busy={busy}
-                  dismissed={dismissed}
-                  onDismiss={(key) => setDismissed((d) => new Set(d).add(key))}
                   onSend={send}
+                  onReply={(quote) => {
+                    setReplyTo(quote);
+                    inputRef.current?.focus();
+                  }}
                   botId={bot.id}
                   channels={channels}
                 />
@@ -286,8 +383,6 @@ export function BotChat({
               answer={null}
               live={false}
               busy
-              dismissed={dismissed}
-              onDismiss={() => undefined}
               onSend={send}
               botId={bot.id}
               channels={channels}
@@ -315,13 +410,35 @@ export function BotChat({
           e.preventDefault();
           void send(input);
         }}
-        className="mx-auto mb-3 flex w-full max-w-3xl shrink-0 items-center gap-2 px-4"
+        className="mx-auto mb-3 flex w-full max-w-4xl shrink-0 flex-col gap-2 px-4"
       >
+        {replyTo ? (
+          <div className="flex items-center gap-2 rounded-xl bg-surface-2 py-2 pl-3 pr-1.5">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted" aria-hidden>
+              <path d="M9 14 4 9l5-5" />
+              <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
+            </svg>
+            <p className="min-w-0 flex-1 truncate text-[13px] text-muted">
+              Replying to <span className="text-ink">{replyTo}</span>
+            </p>
+            <button
+              type="button"
+              onClick={() => setReplyTo(null)}
+              aria-label="Cancel reply"
+              className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-surface hover:text-ink"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                <path d="M6 6l12 12M18 6 6 18" />
+              </svg>
+            </button>
+          </div>
+        ) : null}
         <div className="flex min-w-0 flex-1 items-center rounded-full border border-line bg-surface pl-5 pr-1.5 shadow-sm focus-within:border-blue">
           <input
+            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={`Message ${bot.name}`}
+            placeholder={questionOpen ? "Or type your own answer" : `Message ${bot.name}`}
             maxLength={4000}
             className="h-12 min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-muted"
           />
@@ -329,8 +446,7 @@ export function BotChat({
             type="submit"
             disabled={busy || !input.trim()}
             aria-label="Send"
-            className="flex size-9 items-center justify-center rounded-full text-white transition disabled:opacity-40"
-            style={{ background: BLUE }}
+            className="flex size-9 bg-blue items-center justify-center rounded-full text-on-blue transition disabled:opacity-40"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M12 19V5M5 12l7-7 7 7" />
@@ -347,9 +463,8 @@ function MessageView({
   answer,
   live,
   busy,
-  dismissed,
-  onDismiss,
   onSend,
+  onReply,
   botId,
   channels,
 }: {
@@ -359,41 +474,46 @@ function MessageView({
   /** True for bot messages after the user's last message (their questions are open). */
   live: boolean;
   busy: boolean;
-  dismissed: Set<string>;
-  onDismiss: (key: string) => void;
   onSend: (text: string) => void;
+  /** Reply to this message (absent while it's still streaming). */
+  onReply?: (quote: string) => void;
   botId: string;
   channels: BotChannel[];
 }) {
   const html = useMemo(() => (message.content ? renderSafeMarkdown(message.content) : ""), [message.content]);
   if (message.role === "user") {
+    const { quote, body } = splitQuote(message.content);
     return (
       <div className="flex justify-end">
-        <p className="max-w-[80%] whitespace-pre-wrap rounded-3xl px-4 py-2.5 text-[15px] leading-relaxed text-white" style={{ background: BLUE }}>
-          {message.content}
-        </p>
+        <div className="max-w-[80%] rounded-2xl bg-blue px-4 py-2.5 text-[15px] leading-relaxed text-on-blue">
+          {quote ? (
+            <p className="mb-1.5 line-clamp-2 border-l-2 border-current pl-2 text-[13px] opacity-75">{quote}</p>
+          ) : null}
+          <p className="whitespace-pre-wrap">{body}</p>
+        </div>
       </div>
     );
   }
   return (
-    <div className="flex max-w-[88%] flex-col gap-2 md:max-w-[80%]">
+    <div className="flex max-w-[92%] flex-col gap-2 md:max-w-[88%]">
       {html ? (
-        <div
-          className="agent-prose rounded-3xl bg-surface-2 px-4 py-3 text-[15px] leading-relaxed text-ink"
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
+        <div className="group flex items-center gap-1">
+          <div
+            className="agent-prose min-w-0 rounded-2xl bg-surface-2 px-4 py-3 text-[15px] leading-relaxed text-ink"
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+          {onReply ? <MessageActions text={message.content} onReply={() => onReply(quoteOf(message.content))} /> : null}
+        </div>
       ) : null}
       {message.cards.map((card, ci) => {
         const key = `${message.id}:${ci}`;
         if (card.type === "question") {
-          if (dismissed.has(key)) return null;
           return (
             <QuestionView
               key={key}
               card={card}
               answer={answer}
               open={live && !busy}
-              onDismiss={() => onDismiss(key)}
               onSend={onSend}
             />
           );
@@ -405,27 +525,73 @@ function MessageView({
   );
 }
 
-function CardShell({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-3xl bg-surface-2 p-4">{children}</div>;
+/** Copy and Reply beside a bot message: on hover with a mouse, always on touch screens. */
+function MessageActions({ text, onReply }: { text: string; onReply: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const btn = "flex size-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-ink";
+  return (
+    <div className="flex shrink-0 items-center opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100">
+      <button
+        type="button"
+        aria-label={copied ? "Copied" : "Copy"}
+        title={copied ? "Copied" : "Copy"}
+        className={btn}
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(text);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          } catch {
+            // Clipboard blocked (insecure origin or permissions): nothing to show.
+          }
+        }}
+      >
+        {copied ? (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M5 12.5l4.5 4.5L19 7.5" />
+          </svg>
+        ) : (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <rect x="8" y="8" width="13" height="13" rx="2.5" />
+            <path d="M16 8V5.5A2.5 2.5 0 0 0 13.5 3h-8A2.5 2.5 0 0 0 3 5.5v8A2.5 2.5 0 0 0 5.5 16H8" />
+          </svg>
+        )}
+      </button>
+      <button type="button" aria-label="Reply" title="Reply" className={btn} onClick={onReply}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M9 14 4 9l5-5" />
+          <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
+        </svg>
+      </button>
+    </div>
+  );
 }
 
+function CardShell({ children }: { children: React.ReactNode }) {
+  return <div className="rounded-2xl bg-surface-2 p-4">{children}</div>;
+}
+
+/**
+ * A question from the bot: its line in the display font, and the answers as a
+ * stack of rows, each its own tile. The pick fills solid blue with a tick.
+ * Anything else goes in the main message box, which says so while it's open.
+ */
 function QuestionView({
   card,
   answer,
   open,
-  onDismiss,
   onSend,
 }: {
   card: QuestionCard;
   answer: string | null;
   open: boolean;
-  onDismiss: () => void;
   onSend: (text: string) => void;
 }) {
   const [picked, setPicked] = useState<string[]>([]);
-  const [own, setOwn] = useState("");
-  const chosen = answer ? card.options.filter((o) => answer.split(/,\s*|\s+and\s+/).includes(o)) : [];
-  const answeredOther = answer !== null && chosen.length === 0;
+  // A multi-pick answer is the options joined with commas (or "and" when typed), but
+  // an option can contain "and" itself, so a whole-answer match counts too.
+  const parts = answer ? answer.split(/,\s*|\s+and\s+/) : [];
+  const chosen = answer ? card.options.filter((o) => o === answer.trim() || parts.includes(o)) : [];
 
   const choose = (o: string) => {
     if (!open) return;
@@ -434,35 +600,30 @@ function QuestionView({
   };
 
   return (
-    <CardShell>
-      <div className="flex items-start gap-3">
-        <p className="flex-1 text-[15px] font-semibold text-ink">{card.question}</p>
-        {open ? (
-          <button type="button" onClick={onDismiss} aria-label="Dismiss question" className="text-muted transition hover:text-ink">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
-              <path d="M6 6l12 12M18 6 6 18" />
-            </svg>
-          </button>
-        ) : null}
-      </div>
+    <div className="w-full max-w-lg px-1 pt-1">
+      <p className="font-display text-[16px] font-semibold tracking-[-0.01em] text-ink">{card.question}</p>
       {card.multiSelect && open ? <p className="mt-0.5 text-[13px] text-muted">Pick any that apply.</p> : null}
-      <div className="mt-3 overflow-hidden rounded-2xl border border-line">
-        {card.options.map((o, i) => {
+      <div className="mt-3 flex flex-col gap-1.5">
+        {card.options.map((o) => {
           const on = open ? picked.includes(o) : chosen.includes(o);
           return (
             <button
               key={o}
               type="button"
               disabled={!open}
+              aria-pressed={card.multiSelect ? on : undefined}
               onClick={() => choose(o)}
-              className={`flex w-full items-center gap-3 border-line bg-surface px-3 py-3 text-left text-[15px] transition ${i ? "border-t" : ""} ${open ? "hover:bg-surface-2" : ""} ${!open && !on ? "text-muted" : "text-ink"}`}
+              className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-[15px] font-medium transition ${
+                on
+                  ? "bg-blue text-on-blue shadow-sm"
+                  : open
+                    ? "bg-surface-2 text-ink hover:bg-line"
+                    : "bg-surface-2 text-muted opacity-60"
+              }`}
             >
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-md border border-line text-[12px] font-medium text-muted">
-                {LETTERS[i]}
-              </span>
-              <span className="flex-1">{o}</span>
+              <span className="min-w-0 flex-1">{o}</span>
               {on ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-label="Chosen">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-label="Chosen">
                   <path d="M5 12.5l4.5 4.5L19 7.5" />
                 </svg>
               ) : null}
@@ -470,36 +631,18 @@ function QuestionView({
           );
         })}
       </div>
-      {open ? (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (own.trim()) onSend(own);
-            else if (picked.length) onSend(picked.join(", "));
-          }}
-          className="mt-3 flex items-center gap-2"
-        >
-          <input
-            value={own}
-            onChange={(e) => setOwn(e.target.value)}
-            placeholder="Type your own answer"
-            className="h-11 min-w-0 flex-1 rounded-xl border border-line bg-surface px-3 text-[15px] text-ink outline-none placeholder:text-muted focus:border-blue"
-          />
-          {card.multiSelect || own.trim() ? (
-            <button
-              type="submit"
-              disabled={!own.trim() && picked.length === 0}
-              className="h-11 shrink-0 rounded-xl px-4 font-display text-sm font-semibold text-white transition disabled:opacity-40"
-              style={{ background: BLUE }}
-            >
-              Send
-            </button>
-          ) : null}
-        </form>
-      ) : answeredOther ? (
-        <p className="mt-3 text-[13px] text-muted">You answered: {answer}</p>
+      {card.multiSelect && open && picked.length ? (
+        <div className="mt-2 flex justify-end">
+          <button
+            type="button"
+            onClick={() => onSend(picked.join(", "))}
+            className="rounded-xl bg-blue px-5 py-2.5 font-display text-[14px] font-semibold text-on-blue shadow-sm"
+          >
+            Send
+          </button>
+        </div>
       ) : null}
-    </CardShell>
+    </div>
   );
 }
 
@@ -630,8 +773,7 @@ function DraftView({ card, botId, channels }: { card: DraftCard; botId: string; 
                 type="button"
                 disabled={state.saving || !body.trim() || selected.length === 0}
                 onClick={() => save(true)}
-                className="rounded-full px-4 py-2 text-[13px] font-semibold text-white transition disabled:opacity-50"
-                style={{ background: BLUE }}
+                className="rounded-full bg-blue px-4 py-2 text-[13px] font-semibold text-on-blue transition disabled:opacity-50"
               >
                 Schedule for {when.toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" })}
               </button>

@@ -32,6 +32,8 @@ export const SOURCE_LABEL: Record<ListenSource, string> = {
 export type BotConfig = Partial<ListenConfig> & {
   /** The bot's job in one line, in its own words (e.g. "Finds distribution openings among Postbase's competitors"). */
   job?: string;
+  /** The person named the bot themselves, so it keeps that name. */
+  namedByUser?: boolean;
 };
 
 export type ListenConfig = {

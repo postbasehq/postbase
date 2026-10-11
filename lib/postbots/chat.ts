@@ -5,6 +5,7 @@ import { cleanTimes, nextRunAfter, validTimeZone } from "@/lib/postbots/schedule
 import { runSweep, listenConfig } from "@/lib/postbots/sweep";
 import type { BotRow } from "@/lib/postbots/store";
 import { formatInTz } from "@/lib/tz-core";
+import { runAppTool, type AppToolSession } from "@/lib/postbots/apps";
 import {
   LISTEN_SOURCES,
   SOURCE_LABEL,
@@ -24,6 +25,7 @@ import {
  *   Listen    scheduled sweeps of Reddit, Hacker News, Bluesky and Google News
  *   Research  web search, on request, in the chat
  *   Postbase  read channels and posts; draft posts the user saves or schedules
+ *   Apps      the workspace's connected apps (Notion, Slack, GitHub…) via Composio
  *
  * The bot never posts anywhere: drafts come back as cards for the human.
  */
@@ -42,7 +44,7 @@ const sourceList = LISTEN_SOURCES.map((s) => `"${s}" (${SOURCE_LABEL[s]})`).join
 function describeSetup(bot: BotRow): string {
   const c = (bot.config ?? {}) as BotConfig;
   const parts = [
-    `Name: ${bot.name}${bot.name === "New Bot" ? " (not named yet)" : ""}.`,
+    `Name: ${bot.name}${c.namedByUser ? " (they chose it; keep it unless they ask)" : bot.name === "New Bot" ? " (not named yet)" : ""}.`,
     `Job: ${c.job || "not agreed yet"}.`,
   ];
   if (c.keywords?.length) {
@@ -71,6 +73,8 @@ export type BotContext = {
   memory?: string;
   /** The workspace's other bots and their jobs. */
   otherBots?: { name: string; job: string | null }[];
+  /** Names of the apps the workspace connected (lib/postbots/apps.ts). */
+  apps?: string[];
 };
 
 /** The most the shared memory holds, so it stays a short brief. */
@@ -90,12 +94,14 @@ These are everything you can do. Use them in whatever combination the job needs.
 1. Listen: watch the web on a schedule and message the user when something new and worth their time turns up. Sources: ${sourceList}. Set it up with save_listen_setup; check right away with run_sweep; pause or resume with set_status.
 2. Research: search the web right now with web_search, then give a short, sourced answer (competitors, what people say about a topic, where a conversation is happening). Research runs only when asked in chat; there's no scheduled research, so for ongoing tracking use Listen.
 3. Postbase: see their connected channels (list_channels) and their scheduled posts and drafts (list_posts); draft a post with draft_post for them to save or schedule.
+4. Apps: work in the apps they connected (listed under Context), e.g. read a Notion brief, check Google Calendar, post a summary to Slack, turn GitHub releases into posts. Use the COMPOSIO_ tools: search for the right tool first, then run it. If they ask for an app that isn't connected, tell them to connect it with "Connect apps" at the bottom of the sidebar.
 
 ## What you can't do
 Say so in one or two plain sentences, then offer the closest thing you can do. Don't attempt it or pretend.
 - You can't read or search X, LinkedIn, Instagram, Facebook, TikTok or YouTube directly: their search is paid or closed, and you never sign in as the user. For "track competitors on X", explain this and offer to research them on the open web and listen for them on Reddit, Hacker News, Bluesky and the news, where the same conversations often happen in public.
 - You can't send DMs, reply, like, follow or post anything yourself. You draft; the user posts.
-- You can't log into accounts, see their analytics outside Postbase, or work with files.
+- You can't log into accounts, see their analytics outside Postbase, or use apps they haven't connected.
+- You can't delete anything in their apps.
 - Anything unrelated to growing their audience or business on social media (writing code, homework, general trivia): say it's outside what Postbots does.
 
 ## How to work
@@ -108,12 +114,14 @@ Say so in one or two plain sentences, then offer the closest thing you can do. D
 - For research: search, then answer briefly with the few things that matter and where they came from. Offer one useful next step (listen for it, draft a post).
 - For drafts: call list_channels first for real channel ids; never invent one. Never claim anything is posted or scheduled; the user does that from the card.
 - When they tell you something lasting about themselves (their product or company and its website, who their customers are, their competitors, their voice), call remember with the full updated note, so every bot knows it. Keep it a short factual brief; don't store anything sensitive.
+- In their apps, read freely. Before anything that changes something there (sending a message, creating or editing a page, doc, issue, event or contact), say exactly what you'll do and wait for their yes, unless they just asked for that exact thing.
 - Never make up results, mentions, numbers or links. Only report what your tools returned.
 
 ## Context
 - This bot: ${describeSetup(bot)}
 - Who you work for: ${ctx.userName || "the user"}, workspace ${describeWorkspace(ctx.workspace)}
 - What you know about them (shared by all their bots): ${ctx.memory?.trim() || "nothing yet. Early on, ask what they're building or who they are (one question), then remember it."}
+- Connected apps: ${ctx.apps?.length ? ctx.apps.join(", ") : "none yet"}
 - Their other bots: ${ctx.otherBots?.length ? ctx.otherBots.map((b) => `${b.name}${b.job ? ` (${b.job})` : ""}`).join("; ") : "none"}
 - Current time: ${ctx.now.toISOString()} (${ctx.now.toLocaleString("en-GB", { timeZone: ctx.timezone })})
 - User's timezone: ${ctx.timezone}`;
@@ -260,6 +268,12 @@ async function runTool(
       const job = String(input.job ?? "").trim().slice(0, 200);
       if (!newName) return { forModel: "A name can't be empty." };
       const next: BotConfig = { ...config, job: job || config.job };
+      // A name they chose stays; only the job is saved.
+      if (config.namedByUser) {
+        await db.from("bots").update({ config: next }).eq("id", bot.id);
+        bot.config = next;
+        return { forModel: `Job saved. They named you "${bot.name}", so that stays.` };
+      }
       await db.from("bots").update({ name: newName, config: next }).eq("id", bot.id);
       bot.name = newName;
       bot.config = next;
@@ -381,7 +395,11 @@ export async function runBotTurn(opts: {
   send: SendFn;
   /** Save the reply so far as its own message (before a sweep posts its own). */
   persist: (text: string, cards: BotCard[]) => Promise<void>;
+  /** The workspace's connected apps, when it has any. */
+  apps?: AppToolSession | null;
 }): Promise<BotTurnResult> {
+  const appTools = new Set((opts.apps?.tools ?? []).map((t) => t.name));
+  const tools: Anthropic.ToolUnion[] = [...BOT_TOOLS, ...(opts.apps?.tools ?? [])];
   const anthropic = new Anthropic({ apiKey: opts.apiKey });
   const messages = opts.history.slice();
   const cut = opts.system.indexOf("\n## Context");
@@ -398,7 +416,7 @@ export async function runBotTurn(opts: {
       model: opts.model,
       max_tokens: MAX_OUTPUT_TOKENS,
       system,
-      tools: BOT_TOOLS,
+      tools,
       messages,
     });
     run.on("text", (delta) => {
@@ -438,7 +456,7 @@ export async function runBotTurn(opts: {
     const results: Anthropic.ToolResultBlockParam[] = [];
     let stop = false;
     for (const tu of toolUses) {
-      opts.send({ type: "tool", name: tu.name });
+      opts.send({ type: "tool", name: appTools.has(tu.name) ? "apps" : tu.name });
       if (tu.name === "run_sweep" && (text.trim() || cards.length)) {
         await opts.persist(text.trim(), cards.splice(0));
         text = "";
@@ -446,7 +464,11 @@ export async function runBotTurn(opts: {
       }
       let out: ToolOutcome;
       try {
-        out = await runTool(opts.bot, tu.name, (tu.input ?? {}) as Record<string, unknown>, { timezone: opts.timezone });
+        const input = (tu.input ?? {}) as Record<string, unknown>;
+        out =
+          opts.apps && appTools.has(tu.name)
+            ? { forModel: await runAppTool(opts.apps.id, tu.name, input) }
+            : await runTool(opts.bot, tu.name, input, { timezone: opts.timezone });
       } catch (e) {
         out = { forModel: e instanceof Error ? e.message : "Tool failed." };
       }
