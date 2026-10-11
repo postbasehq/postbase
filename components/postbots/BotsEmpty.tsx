@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { BotAvatar } from "@/components/postbots/BotAvatar";
 import { useStartBot } from "@/components/postbots/useStartBot";
 import { botsHref } from "@/lib/hosts";
@@ -77,35 +79,49 @@ export function FirstBot() {
   );
 }
 
-const PLAN_JOBS: { color: BotColor; text: string }[] = [
-  { color: "blue", text: "Listen for your name on Reddit, Hacker News and Bluesky" },
-  { color: "amber", text: "Find people asking for what you make" },
-  { color: "red", text: "Draft posts for your channels, ready to schedule" },
-];
+/**
+ * Postbots need a plan: the bots, the headline, and the plan cards to pick
+ * one right here (`cards`, from the layout), or a note for members who can't
+ * buy for the workspace.
+ */
+export function PlanGate({ cards }: { cards: React.ReactNode | null }) {
+  const router = useRouter();
+  // Back from checkout: Stripe's notice that the plan is live can take a few
+  // seconds, so say so and check again until the bots open (about a minute at most).
+  const [paid, setPaid] = useState(false);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("checkout") !== "success") return;
+    setPaid(true);
+    let tries = 0;
+    const t = setInterval(() => {
+      if (++tries > 30) return clearInterval(t);
+      router.refresh();
+    }, 2000);
+    return () => clearInterval(t);
+  }, [router]);
 
-/** Postbots need a plan: what they do, and the way to one. */
-export function PlanGate() {
-  return (
-    <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-10">
-      <div className="w-full max-w-lg">
-        <Heading title="Postbots come with every Postbase plan" sub="Bots you build by chatting. They listen, research and draft for you on a schedule." />
-        <ul className="mt-8 flex flex-col gap-1.5">
-          {PLAN_JOBS.map((j) => (
-            <li key={j.text} className={row}>
-              <BotAvatar color={j.color} size={26} />
-              <span className="min-w-0 flex-1">{j.text}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="mt-6 flex justify-center">
-          <Link
-            href="/billing"
-            className="rounded-full bg-blue px-6 py-3 font-display text-[15px] font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
-          >
-            See plans
-          </Link>
+  if (paid) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-12">
+        <div className="w-full max-w-lg">
+          <Heading title="You're subscribed" sub="Getting your bots ready. This page opens them in a moment." />
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-1 flex-col items-center overflow-y-auto px-4 py-12 md:py-16">
+      <div className="w-full max-w-lg">
+        <Heading title="Postbots come with every Postbase plan" sub="Bots you build by chatting. They listen, research and draft for you on a schedule." />
+      </div>
+      {cards ? (
+        <div className="mt-10 w-full max-w-[1180px]">{cards}</div>
+      ) : (
+        <p className="mt-8 max-w-md text-balance text-center text-[15px] text-muted">
+          Ask an owner or admin of this workspace to pick a plan, and your bots will be ready.
+        </p>
+      )}
     </div>
   );
 }

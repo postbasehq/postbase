@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { hostConfig, splitOn } from "@/lib/hosts";
 
 /**
  * Server-side Stripe client, lazily created so the module can be imported at
@@ -25,6 +26,13 @@ export const billingUrls = {
   cancel: `${APP_URL}/billing?checkout=cancelled`,
   return: `${APP_URL}/billing`,
 };
+
+/** Checkout started from Postbots' plan screen comes back to Postbots. */
+export function botsCheckoutUrls(): { success: string; cancel: string } {
+  const hosts = hostConfig();
+  const base = splitOn(hosts) ? `https://${hosts.bots}/` : `${APP_URL}/bots`;
+  return { success: `${base}?checkout=success`, cancel: base };
+}
 
 /**
  * Checkout uses Managed Payments (Stripe as merchant of record) unless

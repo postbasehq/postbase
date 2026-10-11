@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import type Stripe from "stripe";
-import { getStripe, stripeConfigured, billingUrls, managedPayments } from "@/lib/stripe";
+import { getStripe, stripeConfigured, billingUrls, botsCheckoutUrls, managedPayments } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { canManageOrg, getCurrentOrgId, getOrgRole } from "@/lib/org";
@@ -79,6 +79,8 @@ export async function startCheckout(formData: FormData) {
   // The 7-day trial is once per workspace (lib/trial.ts, the same rule the
   // billing page uses to promise it), decided before a customer is created.
   const eligible = await trialEligible(orgId);
+  // Only a fixed token, never a URL: started from Postbots, it comes back there.
+  const back = formData.get("return") === "bots" ? botsCheckoutUrls() : billingUrls;
   const customer = await ensureCustomer(orgId, user.email);
   const trial = eligible ? { trial_period_days: 7 } : {};
   // Managed Payments: Stripe is merchant of record (tax/VAT, fraud, disputes).
@@ -89,8 +91,8 @@ export async function startCheckout(formData: FormData) {
     customer,
     line_items: [{ price, quantity: 1 }],
     subscription_data: { ...trial, metadata: { org_id: orgId } },
-    success_url: billingUrls.success,
-    cancel_url: billingUrls.cancel,
+    success_url: back.success,
+    cancel_url: back.cancel,
     // Promo codes are monthly-only: a "N months off" coupon applies to the first
     // invoice, which on an annual plan covers the whole year.
     allow_promotion_codes: interval === "month",

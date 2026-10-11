@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { botsHref, cleanBotsPath, cookieDomainFor, hostConfig, routeHost, type HostConfig } from "@/lib/hosts";
+import { botsCheckoutUrls } from "@/lib/stripe";
 
 const on: HostConfig = hostConfig({
   NEXT_PUBLIC_APP_HOST: "app.postbase.so",
@@ -68,5 +69,11 @@ describe("host split", () => {
     expect(cleanBotsPath("/botsy")).toBe("/botsy");
     // No split in tests' env: links stay as they are.
     expect(botsHref("/bots/abc")).toBe("/bots/abc");
+  });
+
+  it("brings checkout started in Postbots back to Postbots", () => {
+    // One host in tests: Postbots is at /bots on the app URL.
+    expect(botsCheckoutUrls().success).toMatch(/\/bots\?checkout=success$/);
+    expect(botsCheckoutUrls().cancel).toMatch(/\/bots$/);
   });
 });

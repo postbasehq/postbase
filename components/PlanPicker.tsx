@@ -59,6 +59,7 @@ export function PlanPicker({
   chosenPlan,
   showSelfHost = false,
   trial = true,
+  returnTo,
 }: {
   action?: (formData: FormData) => Promise<void>;
   currentPlan?: string | null;
@@ -73,6 +74,8 @@ export function PlanPicker({
   chosenPlan?: string | null;
   /** Marketing pages: add the self-host card under the plans. */
   showSelfHost?: boolean;
+  /** Where checkout comes back to: Postbots' plan screen returns there, not to billing. */
+  returnTo?: "bots";
 }) {
   const [interval, setInterval] = useState<Interval>(initialInterval);
   const chosen = chosenPlan != null && chosenPlan in PLANS ? chosenPlan : null;
@@ -93,6 +96,7 @@ export function PlanPicker({
               badge={featured ? (chosen ? "Your pick" : "Recommended") : undefined}
               currentPlan={currentPlan}
               action={action}
+              returnTo={returnTo}
               trial={trial}
             />
           );
@@ -177,6 +181,7 @@ export function PlanCard({
   action,
   className = "",
   trial = true,
+  returnTo,
 }: {
   id: keyof typeof PLANS;
   interval?: Interval;
@@ -188,6 +193,8 @@ export function PlanCard({
   className?: string;
   /** Checking out starts the free trial (see PlanPicker). */
   trial?: boolean;
+  /** Where checkout comes back to (see PlanPicker). */
+  returnTo?: "bots";
 }) {
   const p = PLANS[id];
   const y = interval === "year";
@@ -244,6 +251,7 @@ export function PlanCard({
             <form action={action}>
               <input type="hidden" name="plan" value={id} />
               <input type="hidden" name="interval" value={interval} />
+              {returnTo ? <input type="hidden" name="return" value={returnTo} /> : null}
               <SubmitButton disabled={isCurrent} pendingLabel="Opening checkout…" className={buttonCls}>
                 {cta}
               </SubmitButton>

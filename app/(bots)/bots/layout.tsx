@@ -7,7 +7,10 @@ import { BotsShell } from "@/components/postbots/BotsShell";
 import type { SidebarBot } from "@/components/postbots/BotsSidebar";
 import { TimezoneSync } from "@/components/TimezoneSync";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentOrgId, getSessionUser } from "@/lib/org";
+import { canManageOrg, getCurrentOrgId, getOrgRole, getSessionUser } from "@/lib/org";
+import { PlanPicker } from "@/components/PlanPicker";
+import { trialEligible } from "@/lib/trial";
+import { startCheckout } from "@/app/(app)/billing-actions";
 import { needsTwoFactor, VERIFY_PATH } from "@/lib/mfa";
 import { billingEnforced, billingGroup, orgHasAccess } from "@/lib/billing-guard";
 import { BOT_COLUMNS, toBot, type BotRow } from "@/lib/postbots/store";
@@ -34,6 +37,9 @@ export default async function BotsLayout({ children }: { children: React.ReactNo
   const orgId = await getCurrentOrgId();
   if (!orgId) redirect("/calendar");
   if (billingEnforced() && !orgHasAccess(await billingGroup(orgId))) {
+    // Owners and admins can pick a plan right here (checkout is theirs alone).
+    const isManager = canManageOrg(await getOrgRole(orgId));
+    const trial = isManager ? await trialEligible(orgId) : true;
     // The Postbots frame, with what bots do and the way to a plan.
     return (
       <div className="flex h-dvh flex-col bg-ground p-2 md:p-3">
@@ -41,7 +47,7 @@ export default async function BotsLayout({ children }: { children: React.ReactNo
           <Logo href={botsHref("/bots")} name="Postbots" />
         </div>
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_18px_50px_-20px_rgba(16,24,40,0.35)]">
-          <PlanGate />
+          <PlanGate cards={isManager ? <PlanPicker trial={trial} action={startCheckout} returnTo="bots" /> : null} />
         </main>
       </div>
     );
