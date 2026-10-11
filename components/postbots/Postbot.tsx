@@ -12,6 +12,8 @@ export type PostbotState = "resting" | "thinking" | "working" | "tracking";
  *   tracking  eyes hold still (still blinking) so `eyesRef` can move them,
  *             e.g. to follow the cursor (FooterWordmark)
  * `viewBox` defaults to the full stage, with room for the bob and the wave.
+ * `inverted` is the upside-down P (assets/postbots/postbot-upside-down-*.svg):
+ * the body turned half round so it stands on its flat side, eyes on the tall part.
  */
 export function Postbot({
   color,
@@ -21,6 +23,8 @@ export function Postbot({
   style,
   title,
   eyesRef,
+  inverted = false,
+  edge,
 }: {
   /** A group around the face, in the body's units, for moving the eyes from outside. */
   eyesRef?: React.Ref<SVGGElement>;
@@ -30,18 +34,26 @@ export function Postbot({
   className?: string;
   style?: React.CSSProperties;
   title?: string;
+  inverted?: boolean;
+  /** A thin outline, for a body that would vanish into the page (white on light, black on dark). */
+  edge?: string;
 }) {
   const id = useId().replace(/:/g, "");
   const [x, y, w, h] = viewBox.split(/\s+/).map(Number);
   return (
     <svg viewBox={viewBox} className={className} style={style} role={title ? "img" : undefined} aria-hidden={title ? undefined : true}>
       {title ? <title>{title}</title> : null}
-      <g className="pbot" data-state={state} style={{ color }}>
+      <g
+        className="pbot"
+        data-state={state}
+        // The upside-down body bobs around its own base, as in the asset.
+        style={{ color, ...(inverted ? ({ "--bot-body-pivot": "203px 193px" } as React.CSSProperties) : {}) }}
+      >
         <g className="pbot-body">
           <defs>
             <mask id={`pbot-eyes-${id}`} className="pbot-eye-mask" maskUnits="userSpaceOnUse" x={x} y={y} width={w} height={h}>
               <rect className="pbot-mask-base" x={x} y={y} width={w} height={h} />
-              <g transform="translate(8 16)">
+              <g transform={inverted ? "translate(128 0)" : "translate(8 16)"}>
                 <g ref={eyesRef}>
                   <g className="pbot-face">
                     <g className="pbot-eyes">
@@ -58,7 +70,13 @@ export function Postbot({
             </mask>
           </defs>
           <g mask={`url(#pbot-eyes-${id})`}>
-            <path fill="currentColor" d="M10 0H270Q278 0 278 8C274 58 249 88 214 88C180 88 150 64 150 32V118A75 75 0 0 1 0 118V10Q0 0 10 0Z" />
+            <path
+              transform={inverted ? "rotate(180 139 96.5)" : undefined}
+              fill="currentColor"
+              stroke={edge}
+              strokeWidth={edge ? 9 : undefined}
+              d="M10 0H270Q278 0 278 8C274 58 249 88 214 88C180 88 150 64 150 32V118A75 75 0 0 1 0 118V10Q0 0 10 0Z"
+            />
           </g>
         </g>
       </g>

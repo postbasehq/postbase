@@ -127,3 +127,14 @@ describe("sweep findings", () => {
     expect(pickFindings(t, [raw(0)])).toEqual([]);
   });
 });
+
+describe("bot poses", () => {
+  it("gives each bot the same pose every time, and a mix across bots", async () => {
+    const { botFlipped } = await import("@/components/postbots/BotAvatar");
+    const ids = Array.from({ length: 20 }, (_, i) => `9bff2486-5a81-476f-b02a-baaf63093f${String(i).padStart(2, "0")}`);
+    expect(ids.map(botFlipped)).toEqual(ids.map(botFlipped));
+    const flipped = ids.filter(botFlipped).length;
+    expect(flipped).toBeGreaterThan(0);
+    expect(flipped).toBeLessThan(ids.length);
+  });
+});

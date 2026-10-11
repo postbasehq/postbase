@@ -13,10 +13,16 @@ export const BOT_COLORS = {
   blue: "#2b59d9",
   amber: "#e3a72c",
   red: "#d14a3e",
+  white: "#ffffff",
+  black: "#202124",
+  // Older bots only; new ones never get these.
   green: "#188038",
   gray: "#8a8f98",
 } as const;
 export type BotColor = keyof typeof BOT_COLORS;
+
+/** The Postbots palette (assets/postbots), cycled through as bots are made. */
+export const NEW_BOT_COLORS: BotColor[] = ["blue", "amber", "red", "white", "black"];
 
 export const LISTEN_SOURCES = ["hackernews", "reddit", "bluesky", "news"] as const;
 export type ListenSource = (typeof LISTEN_SOURCES)[number];

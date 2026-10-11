@@ -104,5 +104,5 @@ export function BotsSidebar({ bots }: { bots: SidebarBot[] }) {
 /** A bot's face in the list: thinking or working while its open chat is busy. */
 function SidebarAvatar({ bot }: { bot: SidebarBot }) {
   const state = useBotActivity(bot.id);
-  return <BotAvatar color={bot.color} size={38} state={state} dot={bot.status === "active" ? "green" : bot.status === "paused" ? "amber" : null} />;
+  return <BotAvatar color={bot.color} seed={bot.id} size={38} state={state} dot={bot.status === "active" ? "green" : bot.status === "paused" ? "amber" : null} />;
 }

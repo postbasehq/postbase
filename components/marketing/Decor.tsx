@@ -53,13 +53,13 @@ export function HeroDecor() {
  * sit in their own layer above the hero content (the decor layer behind it
  * can't take clicks) and link to Postbots.
  */
-export function HeroPostbots() {
+export function HeroPostbots({ linked = true }: { linked?: boolean }) {
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-10 hidden h-0 xl:block">
-      <HeroPostbot edge="top" color="#d14a3e" state="thinking" width={104} className="left-[17%] top-0 -scale-x-100" />
-      <HeroPostbot edge="top" color="#e3a72c" state="working" width={116} className="right-[15%] top-0" />
-      <HeroPostbot edge="left" color="#2b59d9" state="resting" width={110} className="left-0 top-[135px]" />
-      <HeroPostbot edge="right" color="var(--postbot-contrast)" state="thinking" width={130} className="right-0 top-[150px] -scale-y-100" />
+      <HeroPostbot linked={linked} edge="top" color="#d14a3e" state="thinking" width={104} className="left-[17%] top-0 -scale-x-100" />
+      <HeroPostbot linked={linked} edge="top" color="#e3a72c" state="working" width={116} className="right-[15%] top-0" />
+      <HeroPostbot linked={linked} edge="left" color="#2b59d9" state="resting" width={110} className="left-0 top-[135px]" />
+      <HeroPostbot linked={linked} edge="right" color="var(--postbot-contrast)" state="thinking" width={130} className="right-0 top-[150px] -scale-y-100" />
     </div>
   );
 }
@@ -70,15 +70,18 @@ const BOT_BOX = { w: 302, h: 205, viewBox: "-12 0 302 205" };
 /**
  * One hero Postbot, flush with the top, left or right edge of the page (turned
  * so its flat side meets the edge, like the plain marks). `width` is how wide
- * it is on the page once turned. Links to Postbots.
+ * it is on the page once turned. Links to Postbots unless `linked` is false
+ * (inside Postbots itself, where it would go nowhere new).
  */
 function HeroPostbot({
+  linked,
   edge,
   color,
   state,
   width,
   className,
 }: {
+  linked: boolean;
   edge: "top" | "left" | "right";
   color: string;
   state: "resting" | "thinking" | "working";
@@ -89,14 +92,8 @@ function HeroPostbot({
   // Size of the bot before turning: across the page for "top", along it otherwise.
   const along = turned ? (width * BOT_BOX.w) / BOT_BOX.h : width;
   const across = (along * BOT_BOX.h) / BOT_BOX.w;
-  return (
-    <Link
-      href="/bots"
-      aria-label="Meet Postbots"
-      title="Meet Postbots"
-      className={`pointer-events-auto absolute block ${className}`}
-      style={{ width: turned ? across : along, height: turned ? along : across }}
-    >
+  const box = { width: turned ? across : along, height: turned ? along : across };
+  const face = (
       <span
         className="absolute left-1/2 top-1/2 block transition-transform"
         style={{
@@ -107,6 +104,17 @@ function HeroPostbot({
       >
         <Postbot color={color} state={state} viewBox={BOT_BOX.viewBox} className="block size-full" />
       </span>
+  );
+  if (!linked) {
+    return (
+      <span aria-hidden className={`absolute block ${className}`} style={box}>
+        {face}
+      </span>
+    );
+  }
+  return (
+    <Link href="/bots" aria-label="Meet Postbots" title="Meet Postbots" className={`pointer-events-auto absolute block ${className}`} style={box}>
+      {face}
     </Link>
   );
 }

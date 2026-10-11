@@ -44,6 +44,9 @@
   --tile-edge: transparent;
   /* Postbot in the page's contrast colour: near black on light, white on dark. */
   --postbot-contrast: #202124;
+  /* Outline for a white or near-black bot, only where it would vanish. */
+  --bot-edge-white: #bdc1c6;
+  --bot-edge-black: transparent;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -65,11 +68,15 @@
     --green: #81c995;
     --tile-edge: rgba(255, 255, 255, 0.16);
     --postbot-contrast: #ffffff;
+    --bot-edge-white: transparent;
+    --bot-edge-black: #80868b;
   }
 }
 
 :root[data-theme="dark"] {
   --postbot-contrast: #ffffff;
+  --bot-edge-white: transparent;
+  --bot-edge-black: #80868b;
   --ground: #202124;
   --surface: #292a2d;
   --surface-2: #35363a;

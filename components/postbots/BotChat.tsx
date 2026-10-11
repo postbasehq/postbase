@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { renderSafeMarkdown } from "@/lib/safe-markdown";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { BugGlyph, FeedbackNavButton } from "@/components/FeedbackDialog";
 import { BotAvatar } from "@/components/postbots/BotAvatar";
 import { STARTERS } from "@/components/postbots/BotsEmpty";
 import { usePublishActivity } from "@/components/postbots/BotActivity";
@@ -243,7 +244,7 @@ export function BotChat({
     <div className="flex h-full min-h-0 flex-col">
       <header className="flex h-16 shrink-0 items-center gap-2 pl-14 pr-3 md:gap-3 md:px-6">
         <span className="flex min-w-0 items-center gap-2.5">
-          <BotAvatar color={bot.color} size={30} state={activity ?? "resting"} />
+          <BotAvatar color={bot.color} seed={bot.id} size={30} state={activity ?? "resting"} />
           {naming !== null ? (
             <input
               autoFocus
@@ -274,6 +275,14 @@ export function BotChat({
           ) : null}
         </span>
         <div className="relative ml-auto flex shrink-0 items-center gap-1 md:gap-3">
+          <FeedbackNavButton
+            label="Report a bug or send feedback"
+            className="flex size-9 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-ink"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <BugGlyph />
+            </svg>
+          </FeedbackNavButton>
           {/* On phones the theme toggle lives in the menu drawer. */}
           <div className="hidden md:block">
             <ThemeToggle />
@@ -328,13 +337,13 @@ export function BotChat({
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-2 pb-6 pt-2">
           {messages.length === 0 && !pending ? (
             <div className="flex flex-col items-center pt-[12vh] text-center">
-              <BotAvatar color={bot.color} size={72} follow />
+              <BotAvatar color={bot.color} seed={bot.id} size={72} follow />
               <h1 className="mt-4 font-display text-xl font-semibold tracking-[-0.02em] text-ink md:text-2xl">What should this bot do?</h1>
               <p className="mt-1.5 max-w-md text-[15px] leading-relaxed text-muted">
                 Pick a job to start, or type your own. It sets itself up from there.
               </p>
               <div className="mt-6 flex w-full max-w-lg flex-col gap-1.5">
-                {STARTERS.map((s) => (
+                {STARTERS.map((s, i) => (
                   <button
                     key={s.text}
                     type="button"
@@ -342,7 +351,7 @@ export function BotChat({
                     onClick={() => void send(s.text)}
                     className="flex w-full items-center gap-3 rounded-xl bg-surface-2 px-4 py-3 text-left text-[15px] font-medium text-ink transition hover:bg-line disabled:opacity-50"
                   >
-                    <BotAvatar color={s.color} size={26} />
+                    <BotAvatar color={s.color} inverted={i % 2 === 1} size={26} />
                     <span className="min-w-0 flex-1">{s.text}</span>
                   </button>
                 ))}
@@ -385,7 +394,7 @@ export function BotChat({
           ) : null}
           {status ? (
             <div className="flex items-center gap-2 px-1 py-1">
-              <BotAvatar color={bot.color} size={26} state={activity ?? "thinking"} />
+              <BotAvatar color={bot.color} seed={bot.id} size={26} state={activity ?? "thinking"} />
               <span className="agent-shimmer text-[13px] font-medium">
                 {bot.name} {status}
               </span>

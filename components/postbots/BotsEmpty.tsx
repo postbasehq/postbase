@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BotAvatar } from "@/components/postbots/BotAvatar";
+import { HeroPostbots } from "@/components/marketing/Decor";
 import { useStartBot } from "@/components/postbots/useStartBot";
 import { botsHref } from "@/lib/hosts";
+import { SITE_URL } from "@/lib/site";
 import type { BotColor } from "@/lib/postbots/types";
 
 /** Jobs a new bot can start on: they send as its first message. */
@@ -15,28 +17,47 @@ export const STARTERS: { color: BotColor; text: string }[] = [
   { color: "red", text: "Tell me what's worth posting about in my industry this week" },
 ];
 
-/** Three Postbots in the brand colours, each up to something different:
- *  red thinking, blue watching the cursor, amber at work. */
+/** Three Postbots in the brand colours, the tall one in the middle upside
+ *  down, each up to something different: red thinking, blue watching the
+ *  cursor, amber at work. */
 function BotTrio() {
   return (
-    <div className="flex items-end justify-center gap-3" aria-hidden>
-      <BotAvatar color="red" size={60} state="thinking" />
-      <span className="-mb-1">
-        <BotAvatar color="blue" size={84} follow />
-      </span>
-      <BotAvatar color="amber" size={60} state="working" />
+    <div className="flex items-end justify-center gap-4" aria-hidden>
+      <BotAvatar color="red" size={76} state="thinking" />
+      <BotAvatar inverted color="blue" size={108} follow />
+      <BotAvatar color="amber" size={76} state="working" />
     </div>
   );
 }
 
-function Heading({ title, sub }: { title: string; sub: string }) {
+/**
+ * A headline and a line under it (with the bots on the plan page). `page` sets it at page scale (the
+ * plan gate, a page of its own, like /pricing); otherwise it sits in a panel.
+ */
+function Heading({ title, sub, page = false }: { title: string; sub: string; page?: boolean }) {
   return (
     <div className="text-center">
-      <BotTrio />
-      <h1 className="mt-6 text-balance font-display text-[28px] font-semibold leading-tight tracking-[-0.03em] text-ink md:text-[34px]">
-        {title}
-      </h1>
-      <p className="mx-auto mt-2 max-w-md text-balance text-[15px] leading-relaxed text-muted">{sub}</p>
+      {/* Only the plan page has the bots (and on wide screens they hang from its edges instead). */}
+      {page ? (
+        <div className="xl:hidden">
+          <BotTrio />
+        </div>
+      ) : null}
+      {page ? (
+        <>
+          <h1 className="mx-auto mt-8 max-w-[18ch] xl:mt-0 text-balance font-display text-[clamp(40px,5.6vw,68px)] font-semibold leading-[1.04] tracking-[-0.04em] text-ink">
+            {title}
+          </h1>
+          <p className="mx-auto mt-5 max-w-[52ch] text-balance text-[17px] leading-relaxed text-muted md:text-[19px]">{sub}</p>
+        </>
+      ) : (
+        <>
+          <h1 className="text-balance font-display text-[28px] font-semibold leading-tight tracking-[-0.03em] text-ink md:text-[34px]">
+            {title}
+          </h1>
+          <p className="mx-auto mt-2 max-w-md text-balance text-[15px] leading-relaxed text-muted">{sub}</p>
+        </>
+      )}
     </div>
   );
 }
@@ -52,7 +73,7 @@ export function FirstBot() {
       <div className="w-full max-w-lg">
         <Heading title="Make your first bot" sub="Give it a job. It sets itself up, gets on with it, and messages you when there's something to look at." />
         <div className="mt-8 flex flex-col gap-1.5">
-          {STARTERS.map((s) => (
+          {STARTERS.map((s, i) => (
             <button
               key={s.text}
               type="button"
@@ -60,7 +81,7 @@ export function FirstBot() {
               onClick={() => startBot({ firstMessage: s.text })}
               className={`${row} transition hover:bg-line disabled:opacity-60`}
             >
-              <BotAvatar color={s.color} size={26} />
+              <BotAvatar color={s.color} inverted={i % 2 === 1} size={26} />
               <span className="min-w-0 flex-1">{s.text}</span>
             </button>
           ))}
@@ -103,25 +124,47 @@ export function PlanGate({ cards }: { cards: React.ReactNode | null }) {
   if (paid) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-4 py-12">
-        <div className="w-full max-w-lg">
-          <Heading title="You're subscribed" sub="Getting your bots ready. This page opens them in a moment." />
+        <div className="w-full max-w-4xl">
+          <Heading page title="You're subscribed" sub="Getting your bots ready. This page opens them in a moment." />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center overflow-y-auto px-4 py-12 md:py-16">
-      <div className="w-full max-w-lg">
-        <Heading title="Postbots come with every Postbase plan" sub="Bots you build by chatting. They listen, research and draft for you on a schedule." />
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto">
+      {/* The homepage's Postbots, hanging from the top and sides (wide screens). */}
+      <HeroPostbots linked={false} />
+      <div className="relative z-20 flex shrink-0 justify-end px-5 pt-4 md:px-8 md:pt-5">
+        {/* Bots-host aware: /calendar there goes to the app. */}
+        <Link href="/calendar" className="rounded-full px-3 py-1.5 text-[14px] font-medium text-muted transition hover:bg-surface-2 hover:text-ink">
+          Back to Postbase
+        </Link>
       </div>
-      {cards ? (
-        <div className="mt-10 w-full max-w-[1180px]">{cards}</div>
-      ) : (
-        <p className="mt-8 max-w-md text-balance text-center text-[15px] text-muted">
-          Ask an owner or admin of this workspace to pick a plan, and your bots will be ready.
-        </p>
-      )}
+      <div className="flex flex-1 flex-col items-center px-4 pb-16 pt-6 md:px-8 md:pt-10 xl:pt-20">
+        <div className="w-full max-w-4xl">
+          <Heading
+            page
+            title="Postbots come with every Postbase plan"
+            sub="Bots you build by chatting. They listen for you, find people asking for what you make, and draft posts, on a schedule."
+          />
+        </div>
+        {cards ? (
+          <>
+            <div className="mt-12 w-full max-w-[1320px]">{cards}</div>
+            <p className="mt-8 text-center text-[14px] text-muted">
+              Every plan includes Postbots, the scheduler and the AI agent.{" "}
+              <a href={`${SITE_URL}/pricing`} className="font-medium text-ink underline underline-offset-2 hover:text-blue-ink">
+                Compare plans
+              </a>
+            </p>
+          </>
+        ) : (
+          <p className="mt-8 max-w-md text-balance text-center text-[15px] text-muted">
+            Ask an owner or admin of this workspace to pick a plan, and your bots will be ready.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { Logo } from "@/components/Logo";
 import { PlanGate } from "@/components/postbots/BotsEmpty";
-import { botsHref } from "@/lib/hosts";
 import { redirect } from "next/navigation";
 import { BotsShell } from "@/components/postbots/BotsShell";
 import type { SidebarBot } from "@/components/postbots/BotsSidebar";
@@ -40,15 +38,10 @@ export default async function BotsLayout({ children }: { children: React.ReactNo
     // Owners and admins can pick a plan right here (checkout is theirs alone).
     const isManager = canManageOrg(await getOrgRole(orgId));
     const trial = isManager ? await trialEligible(orgId) : true;
-    // The Postbots frame, with what bots do and the way to a plan.
+    // A page of its own: the bots, the headline and the plans.
     return (
-      <div className="flex h-dvh flex-col bg-ground p-2 md:p-3">
-        <div className="flex h-14 shrink-0 items-center px-3">
-          <Logo href={botsHref("/bots")} name="Postbots" />
-        </div>
-        <main className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_18px_50px_-20px_rgba(16,24,40,0.35)]">
-          <PlanGate cards={isManager ? <PlanPicker trial={trial} action={startCheckout} returnTo="bots" /> : null} />
-        </main>
+      <div className="flex h-dvh flex-col bg-ground">
+        <PlanGate cards={isManager ? <PlanPicker trial={trial} action={startCheckout} returnTo="bots" /> : null} />
       </div>
     );
   }

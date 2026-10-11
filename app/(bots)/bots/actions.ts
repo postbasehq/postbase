@@ -6,7 +6,7 @@ import { botsHref } from "@/lib/hosts";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentOrgId, getSessionUser } from "@/lib/org";
 import { addMessage, loadBot, recentMessages } from "@/lib/postbots/store";
-import { BOT_COLORS, type BotConfig, type BotMessage, type DraftCard } from "@/lib/postbots/types";
+import { NEW_BOT_COLORS, type BotConfig, type BotMessage, type DraftCard } from "@/lib/postbots/types";
 import { scheduleProposedPost } from "@/app/(app)/agent/confirm-actions";
 
 /** Bots one workspace can have at once. */
@@ -32,7 +32,7 @@ export async function createBot(opts: { name?: string; greet?: boolean } = {}): 
   if ((count ?? 0) >= MAX_BOTS) return { error: `A workspace can have up to ${MAX_BOTS} bots. Delete one to make another.` };
 
   const name = cleanName(opts.name);
-  const colors = Object.keys(BOT_COLORS);
+  const colors = NEW_BOT_COLORS;
   const { data: bot, error } = await db
     .from("bots")
     .insert({

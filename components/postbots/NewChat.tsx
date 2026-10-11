@@ -129,7 +129,7 @@ export function NewChat({ bots }: { bots: PickerBot[] }) {
                 onHover={setActive}
                 onPick={choose}
                 disabled={pending}
-                icon={<BotAvatar color={b.color} size={26} />}
+                icon={<BotAvatar color={b.color} seed={b.id} size={26} />}
                 label={b.name}
               />
             ))}
