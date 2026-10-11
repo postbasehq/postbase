@@ -7,6 +7,7 @@ import { UserMenu } from "@/components/UserMenu";
 import { BotActivityProvider } from "@/components/postbots/BotActivity";
 import { ConnectApps } from "@/components/postbots/ConnectApps";
 import { BotsSidebar, type SidebarBot } from "@/components/postbots/BotsSidebar";
+import { botsHref } from "@/lib/hosts";
 
 /**
  * The Postbots app frame, in the same frame as the Postbase app: bots on the
@@ -30,7 +31,7 @@ export function BotsShell({
         >
           <aside className="hidden w-72 shrink-0 flex-col md:flex">
             <div className="flex h-16 shrink-0 items-center px-5">
-              <Logo href="/bots" name="Postbots" />
+              <Logo href={botsHref("/bots")} name="Postbots" />
             </div>
             <BotsSidebar bots={bots} />
             <div className="shrink-0 px-3 pt-1">
@@ -44,7 +45,7 @@ export function BotsShell({
               {/* Phones: the bots list opens as a drawer from here. */}
               <div className="absolute left-3 top-3.5 z-10 md:hidden">
                 <MobileNav
-                  header={<Logo href="/bots" name="Postbots" />}
+                  header={<Logo href={botsHref("/bots")} name="Postbots" />}
                   footer={
                     <div className="flex items-end gap-1 pr-3">
                       <div className="min-w-0 flex-1">

@@ -11,7 +11,8 @@ import { billingEnforced, billingGroup, orgHasAccess } from "@/lib/billing-guard
 import { BOT_COLUMNS, toBot, type BotRow } from "@/lib/postbots/store";
 
 export const metadata: Metadata = {
-  title: { default: "Postbots", template: "%s · Postbots" },
+  // absolute: the site-wide "%s · Postbase" would make every tab "Postbots · Postbase".
+  title: { absolute: "Postbots", template: "%s · Postbots" },
   robots: { index: false, follow: false },
 };
 

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { BotAvatar } from "@/components/postbots/BotAvatar";
 import { createBot } from "@/app/(bots)/bots/actions";
+import { botsHref } from "@/lib/hosts";
 import type { BotColor } from "@/lib/postbots/types";
 
 export type PickerBot = { id: string; name: string; color: BotColor };
@@ -59,13 +60,13 @@ export function NewChat({ bots }: { bots: PickerBot[] }) {
           // Storage blocked: the chat opens without it, and they can send it again.
         }
       }
-      router.push(`/bots/${res.id}`);
+      router.push(botsHref(`/bots/${res.id}`));
     });
   }
 
   function choose(i: number) {
     if (i === 0) make();
-    else router.push(`/bots/${matches[i - 1].id}`);
+    else router.push(botsHref(`/bots/${matches[i - 1].id}`));
   }
 
   useEffect(() => {

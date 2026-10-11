@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { scopeOrgId } from "@/lib/org";
 import { BotAvatar } from "@/components/postbots/BotAvatar";
 import Link from "next/link";
+import { botsHref } from "@/lib/hosts";
 
 /** Opens your most recent bot, or invites you to make one. */
 export default async function BotsHome() {
@@ -13,7 +14,7 @@ export default async function BotsHome() {
     .eq("org_id", await scopeOrgId())
     .order("updated_at", { ascending: false })
     .limit(1);
-  if (data?.[0]) redirect(`/bots/${data[0].id}`);
+  if (data?.[0]) redirect(botsHref(`/bots/${data[0].id}`));
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
       <BotAvatar color="blue" size={88} />
@@ -21,7 +22,7 @@ export default async function BotsHome() {
       <p className="mt-2 max-w-md text-[15px] leading-relaxed text-muted">
         Tell it what you need in chat. It sets itself up, gets on with the job, and messages you when there&apos;s something to look at.
       </p>
-      <Link href="/bots/new" className="mt-6 rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm">
+      <Link href={botsHref("/bots/new")} className="mt-6 rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm">
         New bot
       </Link>
     </div>

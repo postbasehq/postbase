@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { botsHref } from "@/lib/hosts";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentOrgId, getSessionUser } from "@/lib/org";
 import { addMessage, loadBot, recentMessages } from "@/lib/postbots/store";
@@ -88,7 +89,7 @@ export async function deleteBot(botId: string): Promise<void> {
   if (!orgId || !(await loadBot(orgId, botId))) return;
   await createAdminClient().from("bots").delete().eq("id", botId).eq("org_id", orgId);
   revalidatePath("/bots");
-  redirect("/bots");
+  redirect(botsHref("/bots"));
 }
 
 export async function markBotRead(botId: string): Promise<void> {

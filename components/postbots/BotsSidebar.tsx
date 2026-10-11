@@ -6,6 +6,10 @@ import { usePathname } from "next/navigation";
 import { BotAvatar } from "@/components/postbots/BotAvatar";
 import { useBotActivity } from "@/components/postbots/BotActivity";
 import type { BotColor, BotStatus } from "@/lib/postbots/types";
+import { botsHref } from "@/lib/hosts";
+
+/** On the bots host the address is the clean path ("/abc"), elsewhere "/bots/abc". */
+const isAt = (pathname: string, botsPath: string) => pathname === botsPath || pathname === botsHref(botsPath);
 
 export type SidebarBot = {
   id: string;
@@ -54,11 +58,11 @@ export function BotsSidebar({ bots }: { bots: SidebarBot[] }) {
           </button>
         ) : null}
         <Link
-          href="/bots/new"
+          href={botsHref("/bots/new")}
           aria-label="New chat"
           title="New chat"
           className={`flex size-9 items-center justify-center rounded-full transition hover:bg-surface-2 hover:text-ink ${
-            pathname === "/bots/new" ? "bg-surface-2 text-ink" : "text-muted"
+            isAt(pathname, "/bots/new") ? "bg-surface-2 text-ink" : "text-muted"
           }`}
         >
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
@@ -72,11 +76,11 @@ export function BotsSidebar({ bots }: { bots: SidebarBot[] }) {
           <p className="px-3 py-6 text-sm text-muted">{q ? "No bots match." : "No bots yet."}</p>
         ) : (
           shown.map((b) => {
-            const active = pathname === `/bots/${b.id}`;
+            const active = isAt(pathname, `/bots/${b.id}`);
             return (
               <Link
                 key={b.id}
-                href={`/bots/${b.id}`}
+                href={botsHref(`/bots/${b.id}`)}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2 transition ${active ? "bg-surface shadow-sm" : "hover:bg-surface-2"}`}
               >
                 <SidebarAvatar bot={b} />
