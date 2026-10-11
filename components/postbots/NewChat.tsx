@@ -1,16 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BotAvatar } from "@/components/postbots/BotAvatar";
-import { createBot } from "@/app/(bots)/bots/actions";
+import { useStartBot } from "@/components/postbots/useStartBot";
 import { botsHref } from "@/lib/hosts";
 import type { BotColor } from "@/lib/postbots/types";
 
 export type PickerBot = { id: string; name: string; color: BotColor };
-
-/** sessionStorage key for a first message the new bot's chat sends once it opens. */
-export const firstMessageKey = (botId: string) => `pb:first-message:${botId}`;
 
 /**
  * "+": start a chat. "To:" picks who it's with: an existing bot (opens its
@@ -23,8 +20,7 @@ export function NewChat({ bots }: { bots: PickerBot[] }) {
   const [message, setMessage] = useState("");
   const [open, setOpen] = useState(true);
   const [active, setActive] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, start] = useTransition();
+  const { startBot, pending, error } = useStartBot();
   const toRef = useRef<HTMLInputElement>(null);
 
   const q = to.trim();
@@ -38,31 +34,7 @@ export function NewChat({ bots }: { bots: PickerBot[] }) {
 
   useEffect(() => setActive(0), [q]);
 
-  function make(firstMessage?: string) {
-    setError(null);
-    start(async () => {
-      let res: { error: string } | { id: string };
-      try {
-        res = await createBot({ name: q || undefined, greet: !firstMessage });
-      } catch {
-        // Usually a lapsed sign-in: reloading sends them to sign in again.
-        window.location.reload();
-        return;
-      }
-      if ("error" in res) {
-        setError(res.error);
-        return;
-      }
-      if (firstMessage) {
-        try {
-          sessionStorage.setItem(firstMessageKey(res.id), firstMessage);
-        } catch {
-          // Storage blocked: the chat opens without it, and they can send it again.
-        }
-      }
-      router.push(botsHref(`/bots/${res.id}`));
-    });
-  }
+  const make = (firstMessage?: string) => startBot({ name: q, firstMessage });
 
   function choose(i: number) {
     if (i === 0) make();

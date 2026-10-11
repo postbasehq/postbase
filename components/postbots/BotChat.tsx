@@ -6,10 +6,11 @@ import Link from "next/link";
 import { renderSafeMarkdown } from "@/lib/safe-markdown";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { BotAvatar } from "@/components/postbots/BotAvatar";
+import { STARTERS } from "@/components/postbots/BotsEmpty";
 import { usePublishActivity } from "@/components/postbots/BotActivity";
 import { BrandTile } from "@/components/BrandTile";
 import { botMessages, deleteBot, markBotRead, renameBot, saveBotDraft } from "@/app/(bots)/bots/actions";
-import { firstMessageKey } from "@/components/postbots/NewChat";
+import { firstMessageKey } from "@/components/postbots/useStartBot";
 import {
   SOURCE_LABEL,
   type Bot,
@@ -24,13 +25,6 @@ export type BotChannel = { id: string; platform: string; handle: string | null }
 
 const LETTERS = "ABCDE";
 
-/** Shown on a bot with no messages yet, so the first turn has a clear job. */
-const STARTERS = [
-  "Watch Reddit and Hacker News for people asking for a product like mine",
-  "Draft this week's posts for my channels",
-  "Keep an eye on news in my industry and tell me what's worth posting about",
-  "Research what people in my niche are talking about this week",
-];
 
 const TOOL_STATUS: Record<string, string> = {
   run_sweep: "is checking its sources",
@@ -339,16 +333,17 @@ export function BotChat({
               <p className="mt-1.5 max-w-md text-[15px] leading-relaxed text-muted">
                 Pick a job to start, or type your own. It sets itself up from there.
               </p>
-              <div className="mt-6 flex w-full max-w-xl flex-col gap-0.5 rounded-2xl bg-surface-2 p-1.5">
+              <div className="mt-6 flex w-full max-w-lg flex-col gap-1.5">
                 {STARTERS.map((s) => (
                   <button
-                    key={s}
+                    key={s.text}
                     type="button"
                     disabled={busy}
-                    onClick={() => void send(s)}
-                    className="flex w-full items-center rounded-xl px-4 py-3 text-left text-[15px] text-ink transition hover:bg-surface hover:shadow-sm disabled:opacity-50"
+                    onClick={() => void send(s.text)}
+                    className="flex w-full items-center gap-3 rounded-xl bg-surface-2 px-4 py-3 text-left text-[15px] font-medium text-ink transition hover:bg-line disabled:opacity-50"
                   >
-                    {s}
+                    <BotAvatar color={s.color} size={26} />
+                    <span className="min-w-0 flex-1">{s.text}</span>
                   </button>
                 ))}
               </div>

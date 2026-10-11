@@ -42,7 +42,7 @@ export function BotsSidebar({ bots }: { bots: SidebarBot[] }) {
             className="h-9 min-w-0 flex-1 rounded-full border border-line bg-surface px-4 text-sm text-ink outline-none placeholder:text-muted focus:border-blue"
           />
         ) : (
-          <span className="flex-1 text-[11px] font-semibold uppercase tracking-wide text-muted/70">Your bots</span>
+          <span className="flex-1 text-[13px] font-semibold text-muted">Your bots</span>
         )}
         {!searching ? (
           <button
@@ -73,7 +73,8 @@ export function BotsSidebar({ bots }: { bots: SidebarBot[] }) {
 
       <nav className="min-h-0 flex-1 overflow-y-auto px-3 pb-2">
         {shown.length === 0 ? (
-          <p className="px-3 py-6 text-sm text-muted">{q ? "No bots match." : "No bots yet."}</p>
+          // With no bots at all the main panel says so; only a search needs a note.
+          q ? <p className="px-3 py-6 text-sm text-muted">No bots match.</p> : null
         ) : (
           shown.map((b) => {
             const active = isAt(pathname, `/bots/${b.id}`);

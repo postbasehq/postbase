@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Logo } from "@/components/Logo";
+import { PlanGate } from "@/components/postbots/BotsEmpty";
+import { botsHref } from "@/lib/hosts";
 import { redirect } from "next/navigation";
 import { BotsShell } from "@/components/postbots/BotsShell";
 import type { SidebarBot } from "@/components/postbots/BotsSidebar";
@@ -32,15 +34,15 @@ export default async function BotsLayout({ children }: { children: React.ReactNo
   const orgId = await getCurrentOrgId();
   if (!orgId) redirect("/calendar");
   if (billingEnforced() && !orgHasAccess(await billingGroup(orgId))) {
+    // The Postbots frame, with what bots do and the way to a plan.
     return (
-      <div className="flex h-dvh items-center justify-center bg-ground px-4">
-        <div className="max-w-md text-center">
-          <h1 className="font-display text-2xl font-semibold text-ink">Postbots come with your Postbase plan</h1>
-          <p className="mt-2 text-[15px] leading-relaxed text-muted">Pick a plan to hire bots that listen, draft and report for you.</p>
-          <Link href="/billing" className="mt-6 inline-block rounded-full bg-blue px-5 py-2.5 font-display text-sm font-semibold text-on-blue">
-            See plans
-          </Link>
+      <div className="flex h-dvh flex-col bg-ground p-2 md:p-3">
+        <div className="flex h-14 shrink-0 items-center px-3">
+          <Logo href={botsHref("/bots")} name="Postbots" />
         </div>
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_18px_50px_-20px_rgba(16,24,40,0.35)]">
+          <PlanGate />
+        </main>
       </div>
     );
   }
