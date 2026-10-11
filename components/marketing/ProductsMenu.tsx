@@ -5,11 +5,10 @@ import Link from "next/link";
 import { CalendarDemo } from "@/components/marketing/CalendarDemo";
 import { DevShot } from "@/components/marketing/DevShot";
 import { PostbotsShot } from "@/components/marketing/PostbotsShot";
-import { Postbot } from "@/components/postbots/Postbot";
-import { CLIENTS } from "@/lib/seo/clients";
+import { ClientLogo } from "@/components/ClientLogo";
+import { McpInActionDemo } from "@/components/marketing/seo/McpDemo";
+import { MCP_SCENES } from "@/lib/seo/mcp-scenes";
 import { PRODUCTS, type ProductId } from "@/lib/seo/products";
-
-const CLAUDE = CLIENTS.find((c) => c.slug === "claude");
 
 /*
  * The "Products" dropdown: every Postbase product on the left, and a live
@@ -18,34 +17,61 @@ const CLAUDE = CLIENTS.find((c) => c.slug === "claude");
  * open, so they cost nothing until someone looks.
  */
 
+// The AI tools the MCP server works with, cycled in its icon.
+const MCP_CLIENTS = ["claude", "chatgpt", "cursor", "gemini", "vscode", "windsurf"];
+
+/** The MCP server's mark: the logos of the AI tools it works with, cross-fading in turn. */
+function McpIcon() {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const t = setInterval(() => setI((n) => (n + 1) % MCP_CLIENTS.length), 1800);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    // White tiles, so the black logos (ChatGPT, Cursor) still show in dark mode.
+    <span className="relative size-9 shrink-0">
+      {MCP_CLIENTS.map((c, n) => (
+        <span
+          key={c}
+          className={`absolute inset-0 transition-[opacity,transform] duration-500 [&>span]:!rounded-[10px] ${
+            n === i ? "scale-100 opacity-100" : "scale-75 opacity-0"
+          }`}
+        >
+          <ClientLogo id={c} size={36} />
+        </span>
+      ))}
+    </span>
+  );
+}
+
 /** Each product's mark in the list. */
 function ProductIcon({ id }: { id: ProductId }) {
-  if (id === "postbots") {
+  if (id === "mcp") return <McpIcon />;
+  if (id === "scheduler") {
     return (
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-2">
-        <Postbot color="#2b59d9" viewBox="-14 -24 306 240" className="size-7" />
+      <span className="size-9 shrink-0 overflow-hidden rounded-[10px] shadow-sm">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/postbase-icon.png" alt="" className="size-full object-cover" />
       </span>
     );
   }
-  const paths: Record<Exclude<ProductId, "postbots">, React.ReactNode> = {
-    scheduler: (
-      <>
-        <rect x="3.5" y="5" width="17" height="15" rx="3" />
-        <path d="M3.5 10h17M8 3v4M16 3v4" />
-      </>
-    ),
-    mcp: (
-      <>
-        <path d="M8 12h8M12 8v8" />
-        <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
-      </>
-    ),
-    api: <path d="m9 8-4 4 4 4M15 8l4 4-4 4" />,
-  };
+  if (id === "postbots") {
+    return (
+      // Just the Postbot's eyes, white on a brand-blue tile.
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] shadow-sm" style={{ background: "#2b59d9" }}>
+        <svg viewBox="36 36 88 88" className="size-7" fill="#fff" aria-hidden>
+          <rect x="51" y="57" width="26" height="46" rx="13" transform="rotate(-28 64 80)" />
+          <rect x="92" y="45.5" width="19" height="37" rx="9.5" transform="rotate(-28 101.5 64)" />
+        </svg>
+      </span>
+    );
+  }
+  // REST API: curly braces, white on the brand red, so it sits with the other solid tiles.
   return (
-    <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-2 text-ink">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        {paths[id]}
+    <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] shadow-sm" style={{ background: "#d14a3e" }}>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M8 4H7a2 2 0 0 0-2 2v3.5A2.5 2.5 0 0 1 2.5 12 2.5 2.5 0 0 1 5 14.5V18a2 2 0 0 0 2 2h1M16 4h1a2 2 0 0 1 2 2v3.5a2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0-2.5 2.5V18a2 2 0 0 1-2 2h-1" />
       </svg>
     </span>
   );
@@ -61,7 +87,14 @@ function Preview({ id }: { id: ProductId }) {
       <div className="absolute left-0 top-0 origin-top-left" style={{ width: W, height: H, transform: `scale(${scale})` }}>
         {id === "scheduler" ? <CalendarDemo productShot /> : null}
         {id === "postbots" ? <PostbotsShot /> : null}
-        {id === "mcp" ? <DevShot client={CLAUDE} /> : null}
+        {/* Claude scheduling over MCP, and the post landing on the calendar. */}
+        {id === "mcp" ? (
+          // Laid out at the frame's shape (928×568 inside the padding) but wider,
+          // so the calendar gets all seven days, then scaled down to fill it.
+          <div className="h-full p-4">
+            <McpInActionDemo scene={MCP_SCENES.hub} minWidth={1180} height={722} claudeWidth={400} />
+          </div>
+        ) : null}
         {id === "api" ? <DevShot /> : null}
       </div>
     </div>
@@ -100,7 +133,7 @@ export function ProductsPanel() {
   return (
     <div ref={rootRef} className="flex gap-6 whitespace-normal p-3">
       <div className="w-[290px] shrink-0">
-        <p className="px-3 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">Products</p>
+        <p className="px-3 pb-2 pt-1 text-[13px] font-semibold text-muted">Products</p>
         <ul className="flex flex-col gap-0.5">
           {PRODUCTS.map((p) => (
             <li key={p.id}>
@@ -128,7 +161,7 @@ export function ProductsPanel() {
         </ul>
       </div>
 
-      <div className="border-l border-line pl-6">
+      <div>
         <Link href={current.href} className="block" tabIndex={-1} aria-label={current.name}>
           {open ? (
             <Preview key={current.id} id={current.id} />

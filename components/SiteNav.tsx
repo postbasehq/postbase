@@ -32,7 +32,8 @@ export function SiteNav() {
             <Logo />
           </div>
           <div className="hidden items-center gap-5 whitespace-nowrap lg:flex xl:gap-7">
-            <NavMenu label="Products" href="/#features" width={880} align="start" bare>
+            {/* 820 = the panel's list (290) + gap (24) + preview (480) + padding and border. */}
+            <NavMenu label="Products" href="/#features" width={820} align="start" bare>
               <ProductsPanel />
             </NavMenu>
             <IntegrationsMenu />
@@ -216,7 +217,7 @@ const DRAWER_LINKS = [
 ];
 
 function DrawerHeading({ children }: { children: React.ReactNode }) {
-  return <p className="px-3 pb-1.5 pt-5 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">{children}</p>;
+  return <p className="px-3 pb-1.5 pt-5 text-[13px] font-semibold text-muted">{children}</p>;
 }
 
 /**

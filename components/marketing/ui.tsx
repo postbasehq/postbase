@@ -10,6 +10,8 @@ import { LogoMark } from "@/components/marketing/Decor";
  */
 
 export const wrap = "mx-auto max-w-[1180px] px-5 md:px-8";
+/** Wider page column, for rows of cards that need the room (pricing). */
+export const wideWrap = "mx-auto max-w-[1440px] px-5 md:px-8";
 export const card = "rounded-[24px] border border-line bg-surface";
 
 export function Heading({ title, sub, as: Tag = "h2" }: { title: React.ReactNode; sub?: React.ReactNode; as?: "h2" | "h3" }) {

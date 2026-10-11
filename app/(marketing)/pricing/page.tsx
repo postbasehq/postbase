@@ -1,11 +1,10 @@
-import { tiktokCaveat } from "@/lib/platforms/availability";
 import { SiteNav } from "@/components/SiteNav";
 import { pageMeta } from "@/lib/site";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PlanPicker } from "@/components/PlanPicker";
 import { JsonLd } from "@/components/marketing/JsonLd";
 import { PricingDecor } from "@/components/marketing/Decor";
-import { CtaBand, wrap } from "@/components/marketing/ui";
+import { CtaBand, wideWrap, wrap } from "@/components/marketing/ui";
 import { CompareTable, IncludedGrid, PricingFaq } from "@/components/marketing/PricingSections";
 
 export const metadata = {
@@ -29,15 +28,13 @@ export default function PricingPage() {
                 Simple pricing, seven days free
               </h1>
               <p className="mx-auto mt-5 max-w-[56ch] text-balance text-[17px] leading-relaxed text-muted md:text-[19px]">
-                Every plan includes X, LinkedIn, TikTok, YouTube, Bluesky and Mastodon, the AI agent and
-                the MCP server. Pick by how many workspaces, channels and people you need.
-                {tiktokCaveat(" TikTok posts are private for now, until TikTok approves public posting.")}
+                Every plan includes every network, the AI agent and the MCP server. Pick by how many
+                channels, people and workspaces you need.
               </p>
             </div>
-
-            <div className="mt-12">
-              <PlanPicker showSelfHost />
-            </div>
+          </div>
+          <div className={`${wideWrap} mt-12`}>
+            <PlanPicker showSelfHost />
           </div>
         </section>
 

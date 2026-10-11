@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
+import { GoogleIcon } from "@/components/auth/GoogleIcon";
+import { createClient } from "@/lib/supabase/client";
+import { track } from "@/lib/analytics";
 import { BrandTile, BRANDS } from "@/components/BrandTile";
+import { ClientLogo } from "@/components/ClientLogo";
 import { AudienceProvider, AudienceToggle, Swap, useAudience, type Audience } from "@/components/marketing/Audience";
 import { McpInActionDemo } from "@/components/marketing/seo/McpDemo";
 import { MCP_SCENES } from "@/lib/seo/mcp-scenes";
@@ -11,12 +15,11 @@ import { CalendarDemo } from "@/components/marketing/CalendarDemo";
 import { CreatorGrid } from "@/components/marketing/CreatorGrid";
 import { DevGrid, McpOrRest } from "@/components/marketing/DevGrid";
 import { HeroPostbots } from "@/components/marketing/Decor";
-import { DevFlow } from "@/components/marketing/DevFlow";
 import { Fit } from "@/components/marketing/Fit";
 import { WhoFor as WhoForList } from "@/components/marketing/WhoFor";
 import { PlanPicker } from "@/components/PlanPicker";
 import { FAQ } from "@/components/marketing/faq";
-import { Arrow, CtaBand, FaqList, Heading, Underlined, wrap } from "@/components/marketing/ui";
+import { CtaBand, FaqList, Heading, Underlined, wideWrap, wrap } from "@/components/marketing/ui";
 
 const NETWORKS = ["x", "linkedin", "instagram", "tiktok", "youtube", "reddit", "bluesky", "mastodon"];
 
@@ -84,13 +87,12 @@ const HERO: Record<
       </>
     ),
     sub: "The open-source distribution and growth platform. Schedule everywhere, find the conversations worth joining, and let AI agents run the rest of your marketing.",
-    cta: { label: "Start your 7-day free trial", href: "/login" },
+    cta: { label: "Start free trial", href: "/login" },
   },
   developers: {
     title: (
       <>
-        Social posting <br />
-        for <Underlined>AI agents</Underlined>.
+        Social posting for AI agents
       </>
     ),
     sub: "Connect Claude, Cursor or your own code over MCP or the REST API. Every post your agent schedules lands in your calendar.",
@@ -98,26 +100,72 @@ const HERO: Record<
   },
 };
 
-/** The networks as an overlapping row of tiles, above the headline. */
-function NetworkStack() {
+type StackIcon = { id: string; label: string; tile: React.ReactNode };
+
+const NETWORK_ICONS: StackIcon[] = NETWORKS.map((n) => ({
+  id: n,
+  label: BRANDS[n]?.label ?? n,
+  tile: <BrandTile platform={n} />,
+}));
+
+const AGENT_ICONS: StackIcon[] = [
+  ["claude", "Claude"],
+  ["chatgpt", "ChatGPT"],
+  ["cursor", "Cursor"],
+  ["vscode", "VS Code"],
+  ["windsurf", "Windsurf"],
+  ["gemini", "Gemini"],
+].map(([id, label]) => ({ id, label, tile: <ClientLogo id={id} /> }));
+
+/** An overlapping row of logo tiles above the headline (networks, or AI agents). */
+function IconStack({ items, agents = false }: { items: StackIcon[]; agents?: boolean }) {
   return (
     <span
       role="img"
-      aria-label={NETWORKS.map((n) => BRANDS[n]?.label).join(", ")}
+      aria-label={items.map((i) => i.label).join(", ")}
       data-hero-avoid
       className="mx-auto mb-5 flex w-fit text-[44px] md:mb-6 md:text-[56px]"
     >
-      {NETWORKS.map((n, i) => (
+      {items.map((icon, i) => (
         <span
-          key={n}
-          title={BRANDS[n]?.label}
-          style={{ zIndex: NETWORKS.length - i, marginLeft: i ? "-0.18em" : 0 }}
-          className="relative flex rounded-[0.24em] ring-[0.06em] ring-ground [&>span]:!size-[0.78em] [&>span]:!rounded-[0.22em] [&_svg]:!size-[0.42em]"
+          key={icon.id}
+          title={icon.label}
+          style={{ zIndex: items.length - i, marginLeft: i ? "-0.18em" : 0 }}
+          className={`relative flex rounded-[0.24em] ring-[0.06em] ring-ground [&>span]:!size-[0.78em] [&>span]:!rounded-[0.22em] ${
+            // Agent logos fill more of their white tile than network glyphs do.
+            agents ? "[&_svg]:!size-[0.5em]" : "[&_svg]:!size-[0.42em]"
+          }`}
         >
-          <BrandTile platform={n} />
+          {icon.tile}
         </span>
       ))}
     </span>
+  );
+}
+
+/** One-click sign-up: straight to Google, skipping the login page. */
+function GoogleCta() {
+  const [busy, setBusy] = useState(false);
+  async function go() {
+    setBusy(true);
+    track("generate_lead", { method: "google" });
+    const { error } = await createClient().auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    // On success the browser is redirected to Google; otherwise fall back to the login page.
+    if (error) window.location.href = "/login";
+  }
+  return (
+    <button
+      type="button"
+      onClick={go}
+      disabled={busy}
+      className="inline-flex items-center gap-2.5 rounded-full border border-line bg-surface px-7 py-3.5 font-display text-[15px] font-semibold text-ink shadow-sm transition-shadow hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:opacity-70"
+    >
+      <GoogleIcon />
+      {busy ? "Redirecting" : "Continue with Google"}
+    </button>
   );
 }
 
@@ -126,16 +174,15 @@ function Hero() {
   const h = HERO[audience];
   return (
     <section className="relative isolate">
-      {audience === "developers" ? <DevFlow /> : null}
       {audience === "developers" ? null : <HeroPostbots />}
       <div className={`${wrap} pt-14 text-center md:pt-20`}>
         <Swap k={audience}>
-          {audience === "creators" ? <NetworkStack /> : null}
+          {audience === "creators" ? <IconStack items={NETWORK_ICONS} /> : <IconStack items={AGENT_ICONS} agents />}
           <h1
             data-hero-avoid
             className={`mx-auto font-display font-semibold leading-[1.04] tracking-[-0.04em] text-ink ${
-              // The creators heading sits on one line from md up, so it runs smaller.
-              audience === "creators" ? "text-[clamp(36px,4.4vw,56px)] text-balance md:whitespace-nowrap" : "max-w-[15ch] text-[clamp(42px,6.8vw,84px)]"
+              // Both headings sit on one line from md up, so they run smaller.
+              "text-[clamp(36px,4.4vw,56px)] text-balance md:whitespace-nowrap"
             }`}
           >
             {h.title}
@@ -145,15 +192,14 @@ function Hero() {
           </p>
         </Swap>
 
-        <div data-hero-avoid className="mx-auto mt-8 w-fit">
+        <div data-hero-avoid className="mx-auto mt-8 flex w-fit flex-wrap items-center justify-center gap-3">
           <a
             href={h.cta.href}
             className="inline-flex items-center gap-2 rounded-full bg-blue px-7 py-3.5 font-display text-[15px] font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
           >
             {h.cta.label}
-            <Arrow />
           </a>
-          <p className="mt-3 text-[13px] text-muted">Cancel anytime · or self-host for free</p>
+          <GoogleCta />
         </div>
 
         <div id="hero-toggle" className="mt-10 flex justify-center">
@@ -292,7 +338,7 @@ function AiTools({ cards }: { cards?: React.ReactNode }) {
 
 function Pricing() {
   return (
-    <section id="pricing" className={`${wrap} scroll-mt-28 pt-28 md:pt-36`}>
+    <section id="pricing" className={`${wideWrap} scroll-mt-28 pt-28 md:pt-36`}>
       <Heading
         title="Simple pricing, seven days free"
         sub="Every plan includes every network, the AI agent and the MCP server. Or run Postbase yourself for free."

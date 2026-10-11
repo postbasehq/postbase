@@ -86,10 +86,11 @@ export function SiteFooter() {
   return (
     <footer className="pb-10 pt-14 text-[14px]">
       <div className="mx-auto max-w-[1180px] px-5 md:px-8">
-        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-[1.3fr_repeat(6,1fr)]">
-          <div>
+        {/* The logo and description get their own row, so the text isn't squeezed beside six link columns. */}
+        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+          <div className="sm:col-span-full">
             <Logo />
-            <p className="mt-3 max-w-[32ch] text-muted">
+            <p className="mt-3 max-w-[60ch] text-muted">
               The open-source distribution and growth platform. Grow on every network without living on social media.
             </p>
           </div>

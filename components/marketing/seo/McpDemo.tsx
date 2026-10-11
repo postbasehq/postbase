@@ -138,7 +138,18 @@ function ClaudeWindow({ scene, typed, sent, done, running, reply }: {
 }
 
 /** Claude scheduling through Postbase on the left; the post landing on the Postbase calendar on the right. */
-export function McpInActionDemo({ scene }: { scene: McpScene }) {
+export function McpInActionDemo({
+  scene,
+  minWidth = 1320,
+  height = 600,
+  claudeWidth = 470,
+}: {
+  scene: McpScene;
+  /** Width the demo is laid out at before scaling; smaller fits a narrower frame. */
+  minWidth?: number;
+  height?: number;
+  claudeWidth?: number;
+}) {
   const [typed, setTyped] = useState("");
   const [sent, setSent] = useState(false);
   const [done, setDone] = useState(0);
@@ -188,9 +199,9 @@ export function McpInActionDemo({ scene }: { scene: McpScene }) {
   const still = !motion;
   return (
     <div ref={ref}>
-      <Fit minWidth={1320} height={600} mobile={{ renderWidth: 1320, viewWidth: 470, x: 0, y: 0, height: 600 }}>
+      <Fit minWidth={minWidth} height={height} mobile={{ renderWidth: minWidth, viewWidth: claudeWidth, x: 0, y: 0, height }}>
         <div className="flex h-full gap-5">
-          <div className="w-[470px] shrink-0">
+          <div className="shrink-0" style={{ width: claudeWidth }}>
             <ClaudeWindow
               scene={scene}
               typed={still ? "" : typed}

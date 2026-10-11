@@ -65,13 +65,16 @@ gtag('config', '${GA_ID}');`}
           role="dialog"
           aria-live="polite"
           aria-label="Cookie preferences"
-          className="fixed inset-x-3 bottom-3 z-[60] mx-auto max-w-[560px] print:hidden rounded-2xl border border-line bg-surface p-4 shadow-[0_18px_50px_-18px_rgba(16,24,40,0.45)] sm:bottom-5"
+          className="fixed inset-x-3 bottom-3 z-[60] print:hidden rounded-2xl border border-line bg-surface p-4 shadow-[0_18px_50px_-18px_rgba(16,24,40,0.45)] sm:inset-x-auto sm:bottom-5 sm:right-5 sm:w-[340px]"
         >
-          <p className="text-[14px] leading-relaxed text-ink">
-            We&apos;d like to use Google Analytics cookies to see which pages people find useful. Nothing is set unless you
-            accept. <a href="/privacy#10-cookies" className="font-semibold text-blue-ink underline underline-offset-2">Privacy policy</a>
+          <p className="font-display text-[14px] font-semibold text-ink">Cookies</p>
+          <p className="mt-1 text-[13px] leading-relaxed text-muted">
+            Google Analytics helps us see which pages are useful. It only runs if you accept.{" "}
+            <a href="/privacy#10-cookies" className="text-ink underline underline-offset-2 hover:text-blue-ink">
+              Privacy policy
+            </a>
           </p>
-          <div className="mt-3 flex flex-wrap justify-end gap-2">
+          <div className="mt-3.5 grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => choose("denied")}
