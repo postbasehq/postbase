@@ -4,7 +4,6 @@ date: 2026-10-10
 type: new
 area: Developers
 summary: The REST API and MCP server can now check, edit, reschedule and retry posts, attach media and read analytics.
-draft: true
 ---
 
 You can now look up a post to see each channel's status, live link and any error, edit or reschedule a draft or scheduled post, and resend just the channels that failed. The same actions are available to Claude and other AI tools through the Postbase MCP server.

@@ -4,7 +4,6 @@ date: 2026-10-06
 type: fixed
 area: Publishing
 summary: If a post can't be saved, you see why and everything you typed stays in place.
-draft: true
 ---
 
 When a post couldn't be saved, for example because the scheduled time had passed while the tab was open, the composer was replaced by an error page and the post was lost. Now the reason appears in the action bar and your text, media and settings stay as they were.

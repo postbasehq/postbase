@@ -4,7 +4,6 @@ date: 2026-10-06
 type: fixed
 area: Publishing
 summary: One failed post no longer stops a repeating series, and editing a repeat keeps its original timezone.
-draft: true
 ---
 
 If one occurrence of a repeating post failed, for example because a channel was disconnected, the series used to stop. The next occurrence is now scheduled either way.

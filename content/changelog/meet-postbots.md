@@ -5,7 +5,6 @@ type: new
 area: AI
 summary: Build bots by chatting that watch the web for conversations about what you make and draft posts for you.
 headline: true
-draft: true
 ---
 
 Postbots is a chat app for building bots. Open it from the Postbots button in the app header, press **+**, and tell a new bot what you want it to do. It names itself and sets up what it needs. You can rename it from the chat header, and starter jobs are there if you're not sure where to begin.

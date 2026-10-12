@@ -4,7 +4,6 @@ date: 2026-09-30
 type: improved
 area: Calendar
 summary: Hover a post to preview it, and busy hours collapse into "+N more" instead of spilling over.
-draft: true
 ---
 
 Hover any post on the calendar to see its media, status, time, full text and networks without opening it.
