@@ -62,7 +62,7 @@ export default async function OpengraphImage() {
             <span style={STOP}>.</span>
           </div>
           <div style={{ marginTop: 26, fontSize: 28, fontWeight: 600, color: "#9aa0a6", letterSpacing: -0.3 }}>
-            The open-source distribution and social growth platform
+            The open-source social media scheduler and growth platform
           </div>
         </div>
 
