@@ -113,7 +113,7 @@ function HeroPostbot({
     );
   }
   return (
-    <Link href="/bots" aria-label="Meet Postbots" title="Meet Postbots" className={`pointer-events-auto absolute block ${className}`} style={box}>
+    <Link href="/postbots" aria-label="Meet Postbots" title="Meet Postbots" className={`pointer-events-auto absolute block ${className}`} style={box}>
       {face}
     </Link>
   );

@@ -97,7 +97,14 @@ export const MCP_GLANCE: { label: string; stat: string; value: string; tone: "bl
   },
 ];
 
+/** The short answer the /mcp page opens with (also its first FAQ, for the FAQ schema). */
+export const MCP_WHAT =
+  "A social media MCP server lets an AI assistant like Claude, ChatGPT or Cursor post to your social accounts for you. It speaks the Model Context Protocol, so the assistant can see your channels and draft, schedule and check posts. Postbase runs one at " +
+  MCP_URL +
+  ": add that URL to your AI tool, sign in, and it can schedule to X, LinkedIn, Bluesky, Mastodon and YouTube.";
+
 export const MCP_FAQS: [string, string][] = [
+  ["What is a social media MCP server?", MCP_WHAT],
   [
     "What is the Postbase MCP server?",
     "A hosted Model Context Protocol server that lets AI tools like Claude, ChatGPT, Cursor and Claude Code list your social channels, save drafts, schedule, edit and cancel posts and threads, and check whether each one published. Everything it creates shows up on your Postbase calendar.",

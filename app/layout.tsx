@@ -23,7 +23,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Postbase: the open-source distribution and social growth platform",
+    default: "Postbase: open-source social media scheduler and growth platform",
     template: "%s · Postbase",
   },
   description:

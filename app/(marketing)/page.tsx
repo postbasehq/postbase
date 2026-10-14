@@ -8,7 +8,7 @@ const DESCRIPTION =
   "Grow an audience on every network without living on social media. The open-source social media scheduler, listening bots and AI agents in one growth platform.";
 
 export const metadata: Metadata = {
-  title: { absolute: "Postbase: the open-source distribution and social growth platform" },
+  title: { absolute: "Postbase: open-source social media scheduler and growth platform" },
   description: DESCRIPTION,
   ...pageMeta("/"),
 };

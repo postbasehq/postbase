@@ -22,7 +22,7 @@ export const PRODUCTS: {
   {
     id: "postbots",
     name: "Postbots",
-    href: "/bots",
+    href: "/postbots",
     line: "Bots you build by chatting",
     isNew: true,
   },
