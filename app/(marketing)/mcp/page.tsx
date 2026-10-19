@@ -15,7 +15,7 @@ import { RelatedPosts } from "@/components/marketing/blog/RelatedPosts";
 
 const TITLE = "Social media MCP server (hosted, OAuth sign-in)";
 const DESCRIPTION =
-  "A social media MCP server lets Claude, ChatGPT or Cursor post for you. Postbase's is hosted at mcp.postbase.so/mcp and schedules to X, LinkedIn, Bluesky, Mastodon and YouTube.";
+  "A social media MCP server lets Claude, ChatGPT or Cursor post for you. Postbase's, at mcp.postbase.so/mcp, schedules to X, LinkedIn, Bluesky, Mastodon and YouTube.";
 const TRAIL = [{ label: "Home", href: "/" }, { label: "MCP server" }];
 
 export const metadata: Metadata = { title: TITLE, description: DESCRIPTION, ...pageMeta("/mcp", { ownImage: true }) };
