@@ -36,6 +36,7 @@ export async function runAnthropic(opts: RunOptions): Promise<RunResult> {
   let assistantText = "";
   let latestProposal: PostProposal | null = null;
   const usage = emptyUsage();
+  const turn = { cancels: 0 };
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
     const run = anthropic.messages.stream({
@@ -72,6 +73,7 @@ export async function runAnthropic(opts: RunOptions): Promise<RunResult> {
         (tu.input ?? {}) as Record<string, unknown>,
         opts.attachments,
         opts.send,
+        turn,
       );
       if (proposal) latestProposal = proposal;
       results.push({ type: "tool_result", tool_use_id: tu.id, content: forModel });

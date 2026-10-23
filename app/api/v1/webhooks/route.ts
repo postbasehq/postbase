@@ -24,6 +24,8 @@ export async function POST(req: Request) {
       url: payload.url,
       events: payload.events.filter((e): e is string => typeof e === "string"),
       description: typeof payload.description === "string" ? payload.description : null,
+      // The key's creator: the endpoint goes when they leave the workspace.
+      createdBy: auth.userId,
     });
     return NextResponse.json({ webhook: { ...endpoint, secret } }, { status: 201 });
   } catch (e) {

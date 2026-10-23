@@ -149,12 +149,14 @@ export async function removeMember(formData: FormData) {
   }
   await db.from("org_members").delete().eq("org_id", orgId).eq("user_id", targetUser);
   // Cut their programmatic access to this workspace too: connected MCP apps
-  // (tokens + pending codes) and the API keys they created. Scoped to exactly
-  // this user in this workspace; their access elsewhere is untouched.
+  // (tokens + pending codes), the API keys they created and the webhooks they
+  // registered (which would otherwise keep sending post data to their server).
+  // Scoped to exactly this user in this workspace; their access elsewhere is untouched.
   await Promise.all([
     db.from("oauth_tokens").delete().eq("org_id", orgId).eq("user_id", targetUser),
     db.from("oauth_codes").delete().eq("org_id", orgId).eq("user_id", targetUser),
     db.from("api_keys").delete().eq("org_id", orgId).eq("created_by", targetUser),
+    db.from("webhook_endpoints").delete().eq("org_id", orgId).eq("created_by", targetUser),
   ]);
   revalidatePath("/team");
 }

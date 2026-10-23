@@ -10,16 +10,20 @@ import { BotAvatar } from "@/components/postbots/BotAvatar";
 import { STARTERS } from "@/components/postbots/BotsEmpty";
 import { usePublishActivity } from "@/components/postbots/BotActivity";
 import { BrandTile } from "@/components/BrandTile";
-import { botMessages, deleteBot, markBotRead, renameBot, saveBotDraft } from "@/app/(bots)/bots/actions";
+import { answerAppAction, answerRoutine, botMessages, deleteBot, deleteRoutine, markBotRead, renameBot, saveBotDraft } from "@/app/(bots)/bots/actions";
+import { describeRoutineWhen } from "@/lib/postbots/schedule";
 import { firstMessageKey } from "@/components/postbots/useStartBot";
 import {
   SOURCE_LABEL,
+  type AppActionCard,
   type Bot,
   type BotCard,
   type BotMessage,
   type DraftCard,
   type FindingsCard,
   type QuestionCard,
+  type Routine,
+  type RoutineCard,
 } from "@/lib/postbots/types";
 
 export type BotChannel = { id: string; platform: string; handle: string | null };
@@ -92,10 +96,13 @@ export function BotChat({
   bot: initialBot,
   initialMessages,
   channels,
+  routines = [],
 }: {
   bot: Bot;
   initialMessages: BotMessage[];
   channels: BotChannel[];
+  /** Its scheduled jobs (refreshed after each turn, so a new one shows up). */
+  routines?: Routine[];
 }) {
   const router = useRouter();
   const [bot, setBot] = useState(initialBot);
@@ -333,6 +340,8 @@ export function BotChat({
         </div>
       </header>
 
+      <RoutineList botId={bot.id} routines={routines} />
+
       <div className="min-h-0 flex-1 overflow-y-auto px-4">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-2 pb-6 pt-2">
           {messages.length === 0 && !pending ? (
@@ -462,6 +471,45 @@ export function BotChat({
   );
 }
 
+/** The bot's routines, one slim line each under the header, with a way to remove them. */
+function RoutineList({ botId, routines }: { botId: string; routines: Routine[] }) {
+  const router = useRouter();
+  const [removed, setRemoved] = useState<Set<string>>(new Set());
+  const shown = routines.filter((r) => !removed.has(r.id));
+  if (shown.length === 0) return null;
+  return (
+    <div className="mx-auto w-full max-w-4xl shrink-0 px-4 pb-2">
+      <ul className="flex flex-col gap-1">
+        {shown.map((r) => (
+          <li key={r.id} className="group flex items-center gap-2.5 rounded-xl bg-surface-2 py-1.5 pl-3 pr-1.5 text-[13px]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted" aria-hidden>
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7v5l3 2" />
+            </svg>
+            <span className="shrink-0 font-medium text-ink">{describeRoutineWhen(r.days, r.times)}</span>
+            <span className="min-w-0 flex-1 truncate text-muted">{r.instruction}</span>
+            <button
+              type="button"
+              aria-label="Remove routine"
+              title="Remove routine"
+              onClick={() => {
+                if (!confirm(`Remove this routine?\n\n${r.instruction}`)) return;
+                setRemoved((s) => new Set(s).add(r.id));
+                void quietly(() => deleteRoutine(botId, r.id)).then(() => router.refresh());
+              }}
+              className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-surface hover:text-ink"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+                <path d="M6 6l12 12M18 6 6 18" />
+              </svg>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function MessageView({
   message,
   answer,
@@ -523,7 +571,11 @@ function MessageView({
           );
         }
         if (card.type === "findings") return <FindingsView key={key} card={card} busy={busy} onSend={onSend} />;
-        return <DraftView key={key} card={card} botId={botId} channels={channels} />;
+        // Saved messages have a real id; a streaming one ("pending", "local-…") doesn't yet.
+        const from = /^[0-9a-f-]{36}$/i.test(message.id) ? { messageId: message.id, cardIndex: ci } : undefined;
+        if (card.type === "app_action") return <AppActionView key={key} card={card} botId={botId} from={from} />;
+        if (card.type === "routine") return <RoutineView key={key} card={card} botId={botId} from={from} />;
+        return <DraftView key={key} card={card} botId={botId} channels={channels} from={from} />;
       })}
     </div>
   );
@@ -650,7 +702,8 @@ function QuestionView({
   );
 }
 
-function FindingsView({ card, busy, onSend }: { card: FindingsCard; busy: boolean; onSend: (text: string) => void }) {
+/** What a listen check or a routine found, each with a link and a next step (in a chat, and in the team inbox). */
+export function FindingsView({ card, busy, onSend }: { card: FindingsCard; busy: boolean; onSend: (text: string) => void }) {
   return (
     <CardShell>
       <ul className="flex flex-col gap-3">
@@ -695,7 +748,21 @@ function FindingsView({ card, busy, onSend }: { card: FindingsCard; busy: boolea
   );
 }
 
-function DraftView({ card, botId, channels }: { card: DraftCard; botId: string; channels: BotChannel[] }) {
+/** A post draft to edit, then save or schedule into Postbase (in a chat, and in the team inbox). */
+export function DraftView({
+  card,
+  botId,
+  channels,
+  from,
+  onSaved,
+}: {
+  card: DraftCard;
+  botId: string;
+  channels: BotChannel[];
+  /** The card's place in the chat, so saving it clears it from the inbox. */
+  from?: { messageId: string; cardIndex: number };
+  onSaved?: () => void;
+}) {
   const [body, setBody] = useState(card.body);
   const known = new Set(channels.map((c) => c.id));
   const [selected, setSelected] = useState<string[]>(card.channelIds.filter((id) => known.has(id)));
@@ -705,12 +772,13 @@ function DraftView({ card, botId, channels }: { card: DraftCard; botId: string; 
 
   async function save(schedule: boolean) {
     setState({ saving: true, saved: null, error: null });
-    const res = await quietly(() => saveBotDraft(botId, { body, channelIds: selected, scheduledAt: schedule ? card.scheduledAt : null }));
+    const res = await quietly(() => saveBotDraft(botId, { body, channelIds: selected, scheduledAt: schedule ? card.scheduledAt : null }, from));
     if (!res) {
       setState({ saving: false, saved: null, error: "Couldn't reach Postbase. Refresh the page and try again." });
       return;
     }
     setState(res.ok ? { saving: false, saved: res.status, error: null } : { saving: false, saved: null, error: res.error });
+    if (res.ok) onSaved?.();
   }
 
   return (
@@ -783,6 +851,128 @@ function DraftView({ card, botId, channels }: { card: DraftCard; botId: string; 
               </button>
             ) : null}
           </>
+        )}
+      </div>
+    </CardShell>
+  );
+}
+
+const APP_ACTION_DONE: Record<Exclude<AppActionCard["status"], "pending">, string> = {
+  done: "Approved and done.",
+  denied: "Denied. Nothing was changed.",
+  failed: "Approved, but it didn't work.",
+};
+
+/**
+ * Something the bot wants to send or change in a connected app. Composio holds
+ * it until someone here approves; it runs on the click, not in the bot's turn.
+ */
+function AppActionView({ card, botId, from }: { card: AppActionCard; botId: string; from?: { messageId: string; cardIndex: number } }) {
+  const [current, setCurrent] = useState(card);
+  const [state, setState] = useState<{ busy: boolean; error: string | null }>({ busy: false, error: null });
+  const router = useRouter();
+
+  async function answer(decision: "approve" | "deny") {
+    if (!from) return;
+    setState({ busy: true, error: null });
+    const res = await quietly(() => answerAppAction(botId, from.messageId, from.cardIndex, decision));
+    if (!res) return setState({ busy: false, error: "Couldn't reach Postbase. Refresh the page and try again." });
+    if (!res.ok) return setState({ busy: false, error: res.error });
+    setCurrent(res.card);
+    setState({ busy: false, error: null });
+    router.refresh();
+  }
+
+  return (
+    <CardShell>
+      <p className="text-[13px] font-semibold text-ink">Wants to run in your apps</p>
+      <pre className="mt-2 max-h-56 overflow-auto whitespace-pre-wrap break-words rounded-xl border border-line bg-surface p-3 font-mono text-[12.5px] leading-relaxed text-ink">
+        {current.summary}
+      </pre>
+      <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+        {state.error ? (
+          <p className="mr-auto text-[13px]" style={{ color: "#d14a3e" }}>
+            {state.error}
+          </p>
+        ) : null}
+        {current.status === "pending" ? (
+          <>
+            <button
+              type="button"
+              disabled={state.busy || !from}
+              onClick={() => answer("deny")}
+              className="rounded-full border border-line bg-surface px-4 py-2 text-[13px] font-semibold text-ink transition hover:bg-surface-2 disabled:opacity-50"
+            >
+              Deny
+            </button>
+            <button
+              type="button"
+              disabled={state.busy || !from}
+              onClick={() => answer("approve")}
+              className="rounded-full bg-blue px-4 py-2 text-[13px] font-semibold text-on-blue transition disabled:opacity-50"
+            >
+              {state.busy ? "Running" : "Approve"}
+            </button>
+          </>
+        ) : (
+          <p className="mr-auto text-[13px] text-muted" style={current.status === "failed" ? { color: "#d14a3e" } : undefined}>
+            {APP_ACTION_DONE[current.status]}
+            {current.status === "failed" && current.outcome ? ` ${current.outcome.slice(0, 200)}` : ""}
+          </p>
+        )}
+      </div>
+    </CardShell>
+  );
+}
+
+/** A routine the bot proposed: it stays off until someone turns it on. */
+function RoutineView({ card, botId, from }: { card: RoutineCard; botId: string; from?: { messageId: string; cardIndex: number } }) {
+  const [current, setCurrent] = useState(card);
+  const [state, setState] = useState<{ busy: boolean; error: string | null }>({ busy: false, error: null });
+  const router = useRouter();
+
+  async function answer(decision: "on" | "discard") {
+    if (!from) return;
+    setState({ busy: true, error: null });
+    const res = await quietly(() => answerRoutine(botId, from.messageId, from.cardIndex, decision));
+    if (!res) return setState({ busy: false, error: "Couldn't reach Postbase. Refresh the page and try again." });
+    if (!res.ok) return setState({ busy: false, error: res.error });
+    setCurrent(res.card);
+    setState({ busy: false, error: null });
+    router.refresh();
+  }
+
+  return (
+    <CardShell>
+      <p className="text-[13px] font-semibold text-ink">New routine</p>
+      <p className="mt-1 text-[15px] leading-relaxed text-ink">{current.summary}</p>
+      <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+        {state.error ? (
+          <p className="mr-auto text-[13px]" style={{ color: "#d14a3e" }}>
+            {state.error}
+          </p>
+        ) : null}
+        {current.status === "pending" ? (
+          <>
+            <button
+              type="button"
+              disabled={state.busy || !from}
+              onClick={() => answer("discard")}
+              className="rounded-full border border-line bg-surface px-4 py-2 text-[13px] font-semibold text-ink transition hover:bg-surface-2 disabled:opacity-50"
+            >
+              Discard
+            </button>
+            <button
+              type="button"
+              disabled={state.busy || !from}
+              onClick={() => answer("on")}
+              className="rounded-full bg-blue px-4 py-2 text-[13px] font-semibold text-on-blue transition disabled:opacity-50"
+            >
+              Turn on
+            </button>
+          </>
+        ) : (
+          <p className="mr-auto text-[13px] text-muted">{current.status === "on" ? "On. It runs on its schedule." : "Discarded."}</p>
         )}
       </div>
     </CardShell>

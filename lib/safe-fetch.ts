@@ -12,21 +12,33 @@ import net from "node:net";
  * The body is capped while streaming (Content-Length can lie or be missing).
  */
 
+// IPv6: only global unicast (2000::/3) counts as public, minus the ranges that
+// tunnel or translate to IPv4 (6to4, Teredo) and documentation. That rejects
+// every IPv4-mapped (::ffff:…), NAT64 (64:ff9b::…) and compatible (::7f00:1)
+// form, which an allowlist of "not private" prefixes would miss.
+const V6_GLOBAL = new net.BlockList();
+V6_GLOBAL.addSubnet("2000::", 3, "ipv6");
+const V6_NOT_PUBLIC = new net.BlockList();
+V6_NOT_PUBLIC.addSubnet("2002::", 16, "ipv6");
+V6_NOT_PUBLIC.addSubnet("2001::", 32, "ipv6");
+V6_NOT_PUBLIC.addSubnet("2001:db8::", 32, "ipv6");
+
 /** False for loopback, private, link-local, CGNAT, multicast and other non-public addresses. */
 export function isPublicIp(ip: string): boolean {
-  if (ip.includes(":")) {
-    const v = ip.toLowerCase();
-    if (v.startsWith("::ffff:")) return isPublicIp(v.slice(7));
-    return !(v === "::1" || v === "::" || /^f[cd]/.test(v) || /^fe[89ab]/.test(v));
-  }
-  const [a, b] = ip.split(".").map(Number);
+  const kind = net.isIP(ip);
+  if (kind === 6) return V6_GLOBAL.check(ip, "ipv6") && !V6_NOT_PUBLIC.check(ip, "ipv6");
+  if (kind !== 4) return false;
+  const [a, b, c] = ip.split(".").map(Number);
   return !(
     a === 0 || a === 10 || a === 127 || a >= 224 ||
     (a === 100 && b >= 64 && b <= 127) ||
     (a === 169 && b === 254) ||
     (a === 172 && b >= 16 && b <= 31) ||
     (a === 192 && b === 168) ||
-    (a === 198 && (b === 18 || b === 19))
+    (a === 192 && b === 0 && (c === 0 || c === 2)) ||
+    (a === 198 && (b === 18 || b === 19)) ||
+    (a === 198 && b === 51 && c === 100) ||
+    (a === 203 && b === 0 && c === 113)
   );
 }
 

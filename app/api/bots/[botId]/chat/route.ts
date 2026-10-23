@@ -4,10 +4,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { reserveAgentMessage, NO_PLAN_MESSAGE } from "@/lib/billing-guard";
 import { estimateCostUsd } from "@/lib/agent/models";
 import { addMessage, loadBot, POSTBOTS_MODEL, recentMessages } from "@/lib/postbots/store";
-import { botSystemPrompt, buildBotHistory, runBotTurn, SEARCH_COST_USD } from "@/lib/postbots/chat";
+import { buildBotHistory, runBotTurn, SEARCH_COST_USD } from "@/lib/postbots/chat";
+import { botTurnContext } from "@/lib/postbots/context";
 import { validTimeZone } from "@/lib/postbots/schedule";
 import type { BotCard } from "@/lib/postbots/types";
-import { appName, connectedApps, openAppTools, type AppToolSession } from "@/lib/postbots/apps";
 
 export const runtime = "nodejs";
 // A turn can include a sweep or a few web searches.
@@ -63,29 +63,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ botId: 
   const tzCookie = (await cookies()).get("pb_tz")?.value;
   const timezone = validTimeZone(tzCookie ? decodeURIComponent(tzCookie) : null) ?? "UTC";
   const admin = createAdminClient();
-  // Apps are a bonus: if Composio is down, the bot still works without them.
-  const appsReady = connectedApps(orgId)
-    .then(async (slugs) => ({ slugs, session: await openAppTools(orgId, slugs) }))
-    .catch((e) => {
-      console.error("[postbots] apps unavailable", e);
-      return { slugs: [] as string[], session: null as AppToolSession | null };
-    });
-  const [{ data: org }, { data: channels }, { data: memory }, { data: others }, apps] = await Promise.all([
-    admin.from("orgs").select("name").eq("id", orgId).maybeSingle(),
-    admin.from("channels").select("platform, handle").eq("org_id", orgId),
-    admin.from("bot_memory").select("notes").eq("org_id", orgId).maybeSingle(),
-    admin.from("bots").select("name, config").eq("org_id", orgId).neq("id", bot.id).limit(10),
-    appsReady,
-  ]);
-  const system = botSystemPrompt(bot, {
-    now: new Date(),
-    timezone,
-    userName,
-    workspace: { name: org?.name ?? "", channels: channels ?? [] },
-    memory: memory?.notes ?? "",
-    otherBots: (others ?? []).map((b) => ({ name: b.name as string, job: ((b.config ?? {}) as { job?: string }).job ?? null })),
-    apps: apps.session ? apps.slugs.map(appName) : [],
-  });
+  const { system, apps } = await botTurnContext(bot, { timezone, userName });
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -101,7 +79,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ botId: 
           history,
           timezone,
           send,
-          apps: apps.session,
+          apps,
           persist: async (t, c) => {
             if (t || c.length) await addMessage(bot, "bot", t, c);
           },

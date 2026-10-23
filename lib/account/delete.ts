@@ -4,6 +4,7 @@ import { getStripe, stripeConfigured } from "@/lib/stripe";
 import { r2Client, r2Bucket } from "@/lib/r2";
 import { MEDIA_BUCKET } from "@/lib/media-storage";
 import { revokeChannelAccess } from "@/lib/channel-revoke";
+import { disconnectAllApps } from "@/lib/postbots/apps";
 
 /*
  * Self-serve account deletion (Settings → Delete account). In order:
@@ -139,6 +140,8 @@ export async function purgeWorkspace(orgId: string, opts: { billingCancelled?: b
 
   await removeBucketFiles(db, orgId).catch((e) => console.error(`[delete] files for ${orgId}:`, e));
   await removeR2Files(orgId).catch((e) => console.error(`[delete] R2 for ${orgId}:`, e));
+  // Postbots' app tokens live at Composio, not here: revoke them with the workspace.
+  await disconnectAllApps(orgId).catch((e) => console.error(`[delete] Composio apps for ${orgId}:`, e));
 
   await db.from("oauth_tokens").delete().eq("org_id", orgId);
   await db.from("oauth_codes").delete().eq("org_id", orgId);
@@ -153,6 +156,7 @@ export async function leaveWorkspace(db: Db, orgId: string, userId: string): Pro
     db.from("oauth_tokens").delete().eq("org_id", orgId).eq("user_id", userId),
     db.from("oauth_codes").delete().eq("org_id", orgId).eq("user_id", userId),
     db.from("api_keys").delete().eq("org_id", orgId).eq("created_by", userId),
+    db.from("webhook_endpoints").delete().eq("org_id", orgId).eq("created_by", userId),
   ]);
 }
 

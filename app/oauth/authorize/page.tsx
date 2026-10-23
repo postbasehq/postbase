@@ -3,7 +3,7 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { ClientLogo } from "@/components/ClientLogo";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrgId, getUserOrgs } from "@/lib/org";
-import { getClient } from "@/lib/oauth";
+import { clientIdentity, getClient } from "@/lib/oauth";
 import { needsTwoFactor, verifyUrl } from "@/lib/mfa";
 import { approveAuthorization, denyAuthorization } from "./actions";
 
@@ -32,18 +32,6 @@ function ErrorCard({ title, detail }: { title: string; detail: string }) {
       </div>
     </AuthShell>
   );
-}
-
-/** Match a client's registered name to one of our bundled tool logos. */
-function logoFor(name: string): string | null {
-  const n = name.toLowerCase();
-  if (n.includes("claude code")) return "claude-code";
-  if (n.includes("claude")) return "claude";
-  if (n.includes("cursor")) return "cursor";
-  if (n.includes("vs code") || n.includes("visual studio") || n.includes("copilot")) return "vscode";
-  if (n.includes("windsurf")) return "windsurf";
-  if (n.includes("gemini")) return "gemini";
-  return null;
 }
 
 export default async function AuthorizePage({
@@ -117,7 +105,7 @@ export default async function AuthorizePage({
     resource,
   };
 
-  const logo = logoFor(appName);
+  const { logo, destination, impostor } = clientIdentity(appName, redirectUri);
   return (
     <AuthShell {...SHELL}>
       <div className="swap-in">
@@ -150,6 +138,18 @@ export default async function AuthorizePage({
         <h1 className="mt-6 font-display text-[28px] font-semibold leading-tight tracking-[-0.025em] text-ink">
           {appName} wants to connect to Postbase
         </h1>
+        <p className="mt-2 text-[13.5px] text-muted">
+          Approving sends you back to <span className="font-semibold text-ink">{destination}</span>.
+        </p>
+        {impostor ? (
+          <div className="mt-4 rounded-xl border border-[#d14a3e] px-3.5 py-3 text-[13.5px] leading-relaxed text-ink">
+            <p className="font-semibold text-[#d14a3e]">Unverified app</p>
+            <p className="mt-0.5">
+              This app calls itself {appName}, but it doesn&apos;t send you back to {appName}. Only continue if you started this
+              connection yourself and trust {destination}.
+            </p>
+          </div>
+        ) : null}
         <div className="mt-4 flex items-center gap-2.5 rounded-xl border border-line bg-surface px-3.5 py-2.5">
           <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-ink font-display text-[13px] font-semibold text-surface">
             {(user.email ?? "?").charAt(0).toUpperCase()}

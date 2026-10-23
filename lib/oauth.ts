@@ -8,11 +8,15 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 
 export const CODE_TTL_SECONDS = 60; // authorization codes are exchanged immediately
-export const ACCESS_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
+// A day: a leaked access token stops working soon; clients refresh silently.
+export const ACCESS_TTL_SECONDS = 60 * 60 * 24;
 // A refresh token is good for 90 days from its last rotation: a client that
 // keeps refreshing stays connected; one idle for 90 days has to re-authorize.
 export const REFRESH_IDLE_SECONDS = 60 * 60 * 24 * 90;
 export const MCP_SCOPE = "mcp";
+// A spent refresh token presented again within this window is a client retry
+// (a lost response, two tabs at once), not theft: refused, but nothing revoked.
+export const REFRESH_REPLAY_GRACE_SECONDS = 120;
 
 /** The public origin of this deployment (the OAuth issuer + resource base). */
 export function issuer(): string {
@@ -70,11 +74,8 @@ export function verifyPkce(
   challenge: string,
   method = "S256",
 ): boolean {
-  if (!verifier || !challenge) return false;
-  if (method === "plain") {
-    // OAuth 2.1 discourages plain; support only if a client insists.
-    return crypto.timingSafeEqual(Buffer.from(verifier), Buffer.from(challenge));
-  }
+  // S256 only (OAuth 2.1): "plain" would let a stolen challenge redeem the code.
+  if (!verifier || !challenge || method !== "S256") return false;
   const computed = b64urlSha256(verifier);
   if (computed.length !== challenge.length) return false;
   return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(challenge));
@@ -119,6 +120,53 @@ export function isSafeRedirectUri(u: string): boolean {
   if (scheme === "http:") return LOOPBACK_HOSTS.has(url.hostname);
   if (BLOCKED_SCHEMES.has(scheme)) return false;
   return /^[a-z][a-z0-9+.-]*:$/.test(scheme);
+}
+
+/**
+ * AI clients the consent page shows a logo for, and the hosts their web
+ * sign-in returns to. Anyone can register a client named "Claude" (DCR is
+ * open), so the logo needs the redirect to match too.
+ */
+const KNOWN_CLIENTS: { logo: string; name: RegExp; hosts: string[] }[] = [
+  { logo: "claude-code", name: /claude code/i, hosts: ["claude.ai", "claude.com"] },
+  { logo: "claude", name: /claude/i, hosts: ["claude.ai", "claude.com"] },
+  { logo: "cursor", name: /cursor/i, hosts: ["cursor.com", "cursor.sh"] },
+  { logo: "vscode", name: /vs code|visual studio|copilot/i, hosts: ["vscode.dev", "github.com"] },
+  { logo: "windsurf", name: /windsurf/i, hosts: ["windsurf.com", "codeium.com"] },
+  { logo: "gemini", name: /gemini/i, hosts: ["google.com"] },
+];
+
+/** Names a third-party client can't register under. */
+export const RESERVED_CLIENT_NAME = /postbase/i;
+
+export type ClientIdentity = {
+  /** Our bundled logo, only when the name and the redirect agree. */
+  logo: string | null;
+  /** Where approving sends the code: a web host, or an app on this device. */
+  destination: string;
+  /** Claims a known app's name but sends the code somewhere else. */
+  impostor: boolean;
+};
+
+/** How the consent page presents a client: never on its self-chosen name alone. */
+export function clientIdentity(name: string, redirectUri: string): ClientIdentity {
+  let url: URL | null = null;
+  try {
+    url = new URL(redirectUri);
+  } catch {
+    url = null;
+  }
+  // Loopback and private-use schemes return to software on this machine (RFC 8252).
+  const local = !url || url.protocol !== "https:";
+  const host = url?.hostname.toLowerCase() ?? "";
+  const brand = KNOWN_CLIENTS.find((c) => c.name.test(name));
+  const hostOk = brand?.hosts.some((h) => host === h || host.endsWith(`.${h}`)) ?? false;
+  const logo = brand && (local || hostOk) ? brand.logo : null;
+  return {
+    logo,
+    destination: local ? "an app on this device" : host,
+    impostor: Boolean(brand) && !logo,
+  };
 }
 
 export async function registerClient(input: {
@@ -260,7 +308,11 @@ export async function refreshTokens(refreshToken: string, clientId: string) {
     .select("id, client_id, org_id, user_id, scope, created_at")
     .eq("refresh_token_hash", sha256(refreshToken))
     .maybeSingle();
-  if (!data || data.client_id !== clientId) return null;
+  if (!data) {
+    await revokeOnReplay(db, sha256(refreshToken), clientId);
+    return null;
+  }
+  if (data.client_id !== clientId) return null;
   // created_at is the last rotation (each refresh inserts a fresh row).
   const idle = Date.now() - new Date(data.created_at as string).getTime() > REFRESH_IDLE_SECONDS * 1000;
   const member = await stillMember(db, data.org_id as string, data.user_id as string);
@@ -270,12 +322,40 @@ export async function refreshTokens(refreshToken: string, clientId: string) {
   // refreshes with the same token can't both succeed.
   const { data: consumed } = await db.from("oauth_tokens").delete().eq("id", data.id).select("id");
   if (!consumed?.length || idle || !member) return null;
+  await db.from("oauth_spent_refresh").insert({
+    refresh_token_hash: sha256(refreshToken),
+    client_id: data.client_id,
+    org_id: data.org_id,
+    user_id: data.user_id,
+  });
   return issueTokens({
     clientId: data.client_id as string,
     orgId: data.org_id as string,
     userId: data.user_id as string,
     scope: (data.scope as string) ?? MCP_SCOPE,
   });
+}
+
+/**
+ * A spent refresh token came back after the grace window: someone besides the
+ * client holds it. Revoke that one connection (exactly this client, user and
+ * workspace), so the thief's rotated tokens die too and the user reconnects.
+ */
+async function revokeOnReplay(db: ReturnType<typeof createAdminClient>, hash: string, clientId: string): Promise<void> {
+  const { data: spent } = await db
+    .from("oauth_spent_refresh")
+    .select("client_id, org_id, user_id, spent_at")
+    .eq("refresh_token_hash", hash)
+    .maybeSingle();
+  if (!spent || spent.client_id !== clientId) return;
+  if (Date.now() - new Date(spent.spent_at as string).getTime() < REFRESH_REPLAY_GRACE_SECONDS * 1000) return;
+  console.warn(`[oauth] refresh token replayed for client ${clientId}; revoking that connection`);
+  await db
+    .from("oauth_tokens")
+    .delete()
+    .eq("client_id", spent.client_id)
+    .eq("org_id", spent.org_id)
+    .eq("user_id", spent.user_id);
 }
 
 /** Apps the given user has authorized (one row per live OAuth token). */

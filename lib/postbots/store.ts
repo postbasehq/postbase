@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { BOT_COLORS, type Bot, type BotCard, type BotColor, type BotMessage } from "@/lib/postbots/types";
+import { BOT_COLORS, type Bot, type BotCard, type BotColor, type BotMessage, type Routine } from "@/lib/postbots/types";
 
 /*
  * Server-side reads and writes for Postbots. Writes use the service role (RLS
@@ -83,7 +83,55 @@ export async function addMessage(
     .select("id, role, content, cards, created_at")
     .single();
   await db.from("bots").update({ updated_at: new Date().toISOString() }).eq("id", bot.id);
+  // Drafts and findings also land in the team inbox, wherever they came from.
+  const inbox = role === "bot" && data ? inboxRows(bot, (data as MessageRow).id, cards) : [];
+  if (inbox.length) await db.from("bot_inbox").upsert(inbox, { onConflict: "message_id,card_index", ignoreDuplicates: true });
   return data ? toMessage(data as MessageRow) : null;
+}
+
+/** The inbox entries a bot message makes: one per draft or findings card. */
+export function inboxRows(bot: Pick<BotRow, "id" | "org_id">, messageId: string, cards: BotCard[]) {
+  return cards.flatMap((c, i) =>
+    c.type === "draft" || (c.type === "findings" && c.items.length > 0)
+      ? [{ org_id: bot.org_id, bot_id: bot.id, message_id: messageId, card_index: i, kind: c.type }]
+      : [],
+  );
+}
+
+type RoutineRow = {
+  id: string;
+  instruction: string;
+  days: number[] | null;
+  times: string[] | null;
+  timezone: string;
+  active: boolean;
+  next_run_at: string | null;
+  last_run_at: string | null;
+};
+
+export const ROUTINE_COLUMNS = "id, instruction, days, times, timezone, active, next_run_at, last_run_at";
+
+export function toRoutine(r: RoutineRow): Routine {
+  return {
+    id: r.id,
+    instruction: r.instruction,
+    days: r.days ?? [],
+    times: r.times ?? [],
+    timezone: r.timezone,
+    active: r.active,
+    nextRunAt: r.next_run_at,
+    lastRunAt: r.last_run_at,
+  };
+}
+
+/** A bot's routines, oldest first. */
+export async function botRoutines(botId: string): Promise<Routine[]> {
+  const { data } = await createAdminClient()
+    .from("bot_routines")
+    .select(ROUTINE_COLUMNS)
+    .eq("bot_id", botId)
+    .order("created_at", { ascending: true });
+  return ((data ?? []) as RoutineRow[]).map(toRoutine);
 }
 
 /** The latest messages, oldest first. */

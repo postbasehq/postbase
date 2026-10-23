@@ -1,4 +1,4 @@
-import { getCurrentOrgId } from "@/lib/org";
+import { canManageOrg, getCurrentOrgId, getOrgRole } from "@/lib/org";
 import { appsEnabled, createConnectLink, disconnectApp, isAppSlug, listConnections } from "@/lib/postbots/apps";
 
 /*
@@ -6,12 +6,22 @@ import { appsEnabled, createConnectLink, disconnectApp, isAppSlug, listConnectio
  *   GET     which apps are connected
  *   POST    { slug } → a sign-in link for that app
  *   DELETE  { slug } → disconnect it
+ * Every bot in the workspace can use a connection, so like channels only
+ * owners and admins connect or disconnect.
  */
 
 export const runtime = "nodejs";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
+
+/** The workspace, if the caller may manage its apps. */
+async function managedOrg(): Promise<{ orgId: string } | { error: Response }> {
+  const orgId = await getCurrentOrgId();
+  if (!orgId) return { error: json({ error: "Sign in again." }, 401) };
+  if (!canManageOrg(await getOrgRole(orgId))) return { error: json({ error: "Only workspace owners and admins can connect apps." }, 403) };
+  return { orgId };
+}
 
 async function slugFrom(req: Request): Promise<string | null> {
   try {
@@ -36,8 +46,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const orgId = await getCurrentOrgId();
-  if (!orgId) return json({ error: "Sign in again." }, 401);
+  const who = await managedOrg();
+  if ("error" in who) return who.error;
+  const { orgId } = who;
   if (!appsEnabled()) return json({ error: "Apps aren't switched on yet." }, 503);
   const slug = await slugFrom(req);
   if (!slug) return json({ error: "Unknown app." }, 400);
@@ -51,8 +62,9 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const orgId = await getCurrentOrgId();
-  if (!orgId) return json({ error: "Sign in again." }, 401);
+  const who = await managedOrg();
+  if ("error" in who) return who.error;
+  const { orgId } = who;
   if (!appsEnabled()) return json({ error: "Apps aren't switched on yet." }, 503);
   const slug = await slugFrom(req);
   if (!slug) return json({ error: "Unknown app." }, 400);

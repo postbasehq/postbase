@@ -31,6 +31,14 @@ export type RunResult = {
   usage: TokenUsage;
 };
 
+/**
+ * One turn's tool state. Cancelling has no confirm card, and post bodies the
+ * agent reads (teammates', API clients') could ask it to cancel everything, so
+ * a turn cancels at most one post.
+ */
+export type TurnState = { cancels: number };
+export const MAX_CANCELS_PER_TURN = 1;
+
 /** Run a tool, merge attachments into any proposal, emit its events. */
 export async function execAgentTool(
   orgId: string,
@@ -38,7 +46,11 @@ export async function execAgentTool(
   input: Record<string, unknown>,
   attachments: Attachment[],
   send: SendFn,
+  turn: TurnState = { cancels: 0 },
 ): Promise<{ forModel: string; proposal: PostProposal | null }> {
+  if (name === "cancel_post" && ++turn.cancels > MAX_CANCELS_PER_TURN) {
+    return { forModel: "One cancel per message. Tell the user which post you cancelled and ask them to confirm the next one.", proposal: null };
+  }
   let out;
   try {
     out = await runAgentTool(orgId, name, input);

@@ -47,6 +47,8 @@ export async function approveAuthorization(formData: FormData) {
   const redirectUri = String(formData.get("redirect_uri") ?? "");
   const codeChallenge = String(formData.get("code_challenge") ?? "");
   const codeChallengeMethod = String(formData.get("code_challenge_method") ?? "S256");
+  // The consent page only renders for S256; never mint a code for anything else.
+  if (codeChallengeMethod !== "S256" || !codeChallenge) redirect(reAuthorizeUrl(formData));
   const state = String(formData.get("state") ?? "");
   const scope = String(formData.get("scope") ?? "");
   const resource = String(formData.get("resource") ?? "");

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isSafeRedirectUri, registerClient } from "@/lib/oauth";
+import { isSafeRedirectUri, registerClient, RESERVED_CLIENT_NAME } from "@/lib/oauth";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 
 // RFC 7591 — Dynamic Client Registration. MCP clients register themselves to
@@ -44,6 +44,13 @@ export async function POST(req: Request) {
         error_description:
           "Between 1 and 10 redirect_uris are required: https, http on loopback, or a native app scheme.",
       },
+      { status: 400, headers: cors },
+    );
+  }
+
+  if (typeof body.client_name === "string" && RESERVED_CLIENT_NAME.test(body.client_name)) {
+    return NextResponse.json(
+      { error: "invalid_client_metadata", error_description: "client_name can't use the Postbase name." },
       { status: 400, headers: cors },
     );
   }

@@ -8,7 +8,7 @@ import { hashApiKey } from "@/lib/apikey";
  */
 export async function authenticateApiKey(
   req: Request,
-): Promise<{ orgId: string } | null> {
+): Promise<{ orgId: string; userId: string } | null> {
   const header = req.headers.get("authorization") ?? "";
   const match = header.match(/^Bearer\s+(.+)$/i);
   if (!match) return null;
@@ -26,17 +26,16 @@ export async function authenticateApiKey(
   if (!data) return null;
 
   // A key acts for the member who made it: once they've left the workspace it
-  // stops working (removeMember also deletes it). Keys predating created_by
-  // have no creator and stay valid.
-  if (data.created_by) {
-    const { data: member, error } = await db
-      .from("org_members")
-      .select("user_id")
-      .eq("org_id", data.org_id)
-      .eq("user_id", data.created_by)
-      .maybeSingle();
-    if (error || !member) return null;
-  }
+  // stops working (removeMember also deletes it). Every key has a creator now
+  // (the one older key was backfilled), so a key without one is refused.
+  if (!data.created_by) return null;
+  const { data: member, error } = await db
+    .from("org_members")
+    .select("user_id")
+    .eq("org_id", data.org_id)
+    .eq("user_id", data.created_by)
+    .maybeSingle();
+  if (error || !member) return null;
 
   // best-effort usage timestamp; don't block the request on it
   void db
@@ -44,5 +43,5 @@ export async function authenticateApiKey(
     .update({ last_used_at: new Date().toISOString() })
     .eq("id", data.id);
 
-  return { orgId: data.org_id };
+  return { orgId: data.org_id, userId: data.created_by };
 }

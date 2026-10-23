@@ -34,6 +34,7 @@ export async function runOpenAI(opts: RunOptions): Promise<RunResult> {
   let assistantText = "";
   let latestProposal: PostProposal | null = null;
   const usage = emptyUsage();
+  const turn = { cancels: 0 };
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
     const stream = await openai.chat.completions.create({
@@ -95,6 +96,7 @@ export async function runOpenAI(opts: RunOptions): Promise<RunResult> {
         input,
         opts.attachments,
         opts.send,
+        turn,
       );
       if (proposal) latestProposal = proposal;
       messages.push({ role: "tool", tool_call_id: c.id, content: forModel });

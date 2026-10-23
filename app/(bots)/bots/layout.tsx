@@ -47,7 +47,7 @@ export default async function BotsLayout({ children }: { children: React.ReactNo
   }
 
   // RLS covers every workspace the user is in; show the active one's bots.
-  const [{ data: rows }, { data: latest }] = await Promise.all([
+  const [{ data: rows }, { data: latest }, { count: inboxCount }] = await Promise.all([
     supabase.from("bots").select(BOT_COLUMNS).eq("org_id", orgId).order("updated_at", { ascending: false }),
     supabase
       .from("bot_messages")
@@ -55,6 +55,8 @@ export default async function BotsLayout({ children }: { children: React.ReactNo
       .eq("org_id", orgId)
       .order("created_at", { ascending: false })
       .limit(200),
+    // Open items in the team inbox, for the sidebar.
+    supabase.from("bot_inbox").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("status", "open"),
   ]);
   const lastByBot = new Map<string, { role: string; content: string; cards: unknown; created_at: string }>();
   const lastBotAt = new Map<string, string>();
@@ -81,7 +83,7 @@ export default async function BotsLayout({ children }: { children: React.ReactNo
   return (
     <>
       <TimezoneSync />
-      <BotsShell bots={bots} user={profile}>
+      <BotsShell bots={bots} inboxCount={inboxCount ?? 0} user={profile}>
         {children}
       </BotsShell>
     </>

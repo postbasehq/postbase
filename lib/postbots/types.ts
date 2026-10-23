@@ -99,7 +99,31 @@ export type DraftCard = {
   scheduledAt: string | null;
 };
 
-export type BotCard = QuestionCard | FindingsCard | DraftCard;
+/**
+ * A change in a connected app (send, post, create, edit) that Composio held
+ * back: it runs only if someone in the workspace clicks Approve.
+ */
+export type AppActionCard = {
+  type: "app_action";
+  /** What would run, as Composio describes it. */
+  summary: string;
+  status: "pending" | "done" | "denied" | "failed";
+  /** What happened, once answered. */
+  outcome?: string;
+  /** The paused call. Server use only, and useless without our Composio key. */
+  call: { sessionId: string; slug: string; arguments: Record<string, unknown>; requestState: string; requestIds: string[] };
+};
+
+/** A routine the bot proposed; it's saved switched off until someone turns it on. */
+export type RoutineCard = {
+  type: "routine";
+  routineId: string;
+  /** When it runs and what it does, in words. */
+  summary: string;
+  status: "pending" | "on" | "discarded";
+};
+
+export type BotCard = QuestionCard | FindingsCard | DraftCard | AppActionCard | RoutineCard;
 
 export type BotMessage = {
   id: string;
@@ -107,4 +131,17 @@ export type BotMessage = {
   content: string;
   cards: BotCard[];
   createdAt: string;
+};
+
+/** A job a bot does on a schedule (bot_routines). */
+export type Routine = {
+  id: string;
+  instruction: string;
+  /** 0 = Sunday … 6 = Saturday; empty means every day. */
+  days: number[];
+  times: string[];
+  timezone: string;
+  active: boolean;
+  nextRunAt: string | null;
+  lastRunAt: string | null;
 };

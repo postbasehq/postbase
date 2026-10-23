@@ -236,6 +236,15 @@ describe("fetching media from URLs", () => {
     for (const ip of ["8.8.8.8", "104.16.0.1", "2606:4700::1"]) expect(isPublicIp(ip)).toBe(true);
   });
 
+  it("rejects IPv6 spellings of private IPv4 addresses", () => {
+    // URL() rewrites [::ffff:169.254.169.254] to [::ffff:a9fe:a9fe].
+    expect(urlProblem("https://[::ffff:169.254.169.254]/latest")).toMatch(/private/);
+    expect(urlProblem("https://[::ffff:7f00:1]/")).toMatch(/private/);
+    for (const ip of ["::ffff:a9fe:a9fe", "64:ff9b::a9fe:a9fe", "::7f00:1", "2002:a9fe:a9fe::1", "2001:0:4136:e378::1", "2001:db8::1", "fe80::1", "ff02::1", "not-an-ip"]) {
+      expect(isPublicIp(ip)).toBe(false);
+    }
+  });
+
   it("takes the type from the server, or the extension when the server is vague", () => {
     expect(mediaTypeFor("image/png", "https://a.com/x")).toBe("image/png");
     expect(mediaTypeFor("application/octet-stream", "https://a.com/clip.MP4")).toBe("video/mp4");

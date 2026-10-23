@@ -71,7 +71,7 @@ describe("workspace leave and delete", () => {
     world({ members: [{ org_id: SHARED, user_id: U, role: "member" }, { org_id: SHARED, user_id: OTHER, role: "owner" }], dependants: [] });
     expect((await planWorkspaceRemoval(U, SHARED))?.deleteBlocker).toMatch(/Only owners/);
     await leaveWorkspaceAs(U, SHARED);
-    expect(writes()).toEqual(expect.arrayContaining(["DELETE org_members ?org_id=eq.SHARED&user_id=eq.USER", "DELETE api_keys ?org_id=eq.SHARED&created_by=eq.USER"]));
+    expect(writes()).toEqual(expect.arrayContaining(["DELETE org_members ?org_id=eq.SHARED&user_id=eq.USER", "DELETE api_keys ?org_id=eq.SHARED&created_by=eq.USER", "DELETE webhook_endpoints ?org_id=eq.SHARED&created_by=eq.USER"]));
   });
   it("the only owner of a team can't leave; nobody can remove their only workspace", async () => {
     world({ members: [{ org_id: SHARED, user_id: U, role: "owner" }, { org_id: SHARED, user_id: OTHER, role: "member" }], dependants: [] });

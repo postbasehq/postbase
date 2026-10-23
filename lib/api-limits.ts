@@ -77,10 +77,10 @@ export function tooManyRequests(hit: LimitHit, headers: Record<string, string> =
  * Authenticate a REST API request and apply the limits. Returns the workspace,
  * or the response to send (401, or 429 when over a limit).
  */
-export async function guardApiRequest(
+export async function guardApiRequest<A extends { orgId: string }>(
   req: Request,
-  authenticate: (req: Request) => Promise<{ orgId: string } | null>,
-): Promise<{ orgId: string } | NextResponse> {
+  authenticate: (req: Request) => Promise<A | null>,
+): Promise<A | NextResponse> {
   const auth = await authenticate(req);
   if (!auth) {
     if (await failedAuthLimited(req)) {

@@ -16,10 +16,13 @@ import { botsHref } from "@/lib/hosts";
  */
 export function BotsShell({
   bots,
+  inboxCount,
   user,
   children,
 }: {
   bots: SidebarBot[];
+  /** Open items in the team inbox. */
+  inboxCount: number;
   user: { name: string; email: string; avatarUrl?: string };
   children: React.ReactNode;
 }) {
@@ -33,7 +36,7 @@ export function BotsShell({
             <div className="flex h-16 shrink-0 items-center px-5">
               <Logo href={botsHref("/bots")} name="Postbots" />
             </div>
-            <BotsSidebar bots={bots} />
+            <BotsSidebar bots={bots} inboxCount={inboxCount} />
             <div className="shrink-0 px-3 pt-1">
               <ConnectApps />
             </div>
@@ -57,7 +60,7 @@ export function BotsShell({
                     </div>
                   }
                 >
-                  <BotsSidebar bots={bots} />
+                  <BotsSidebar bots={bots} inboxCount={inboxCount} />
                   <div className="shrink-0 px-3 pt-1">
                     <ConnectApps />
                   </div>
