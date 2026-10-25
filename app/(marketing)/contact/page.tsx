@@ -123,15 +123,9 @@ function WayCard({ way, tone }: { way: Way; tone: string }) {
     <a
       href={way.href}
       {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
-      className={`${card} group relative isolate flex h-full flex-col overflow-hidden p-7 transition-colors hover:border-[var(--tone)]`}
+      className={`rounded-[24px] border border-line bg-surface-2 group relative isolate flex h-full flex-col overflow-hidden p-7 transition-colors hover:border-[var(--tone)]`}
       style={{ "--tone": tone } as React.CSSProperties}
     >
-      {/* One colour only: light falling from the icon tile, spreading a little on hover. */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute -left-24 -top-24 -z-10 size-[340px] opacity-[0.16] transition-[opacity,transform] duration-700 ease-out group-hover:scale-110 group-hover:opacity-25"
-        style={{ background: `radial-gradient(closest-side, ${tone}, transparent)` }}
-      />
       <span
         className="flex size-12 items-center justify-center rounded-2xl text-white transition-transform duration-300 group-hover:-rotate-6"
         style={{ backgroundColor: tone, color: tone === "#e3a72c" ? "#14161a" : "#fff" }}
