@@ -379,22 +379,6 @@ export function LinkCards({ items }: { items: LinkCard[] }) {
         const tone = cardTone(l);
         const inner = (
           <>
-            {tone ? (
-              <>
-                {/* A wash of the logo's colour from the top left… */}
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 opacity-20 transition-opacity duration-500 group-hover:opacity-30"
-                  style={{ background: `radial-gradient(110% 90% at 0% 0%, ${tone}, transparent 60%)` }}
-                />
-                {/* …and a glow behind the logo that swells on hover. */}
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute -bottom-20 -right-20 size-[260px] rounded-full opacity-30 blur-2xl transition-[opacity,transform] duration-700 ease-out group-hover:scale-125 group-hover:opacity-60"
-                  style={{ background: `radial-gradient(circle, ${tone}, transparent 70%)` }}
-                />
-              </>
-            ) : null}
             {l.mark ? (
               <LogoMark
                 color={l.mark}
@@ -431,7 +415,7 @@ export function LinkCards({ items }: { items: LinkCard[] }) {
             </div>
           </>
         );
-        const cls = `${card} relative block h-full min-h-[130px] overflow-hidden p-6 sm:min-h-[170px]`;
+        const cls = `rounded-[24px] border border-line bg-surface-2 relative block h-full min-h-[130px] overflow-hidden p-6 sm:min-h-[170px]`;
         return (
           <li key={l.href}>
             {l.soon ? (
