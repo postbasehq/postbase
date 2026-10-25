@@ -4,7 +4,7 @@ seo_title: Cross-post to X, Bluesky, Mastodon and LinkedIn
 description: One draft, a version per network: how to cross-post to X, Bluesky, Mastodon and LinkedIn with each network's limits and habits in mind.
 date: 2026-09-26
 category: Guides
-related: /integrations/bluesky, /integrations/mastodon, /tools/character-counter
+related: /integrations/bluesky, /integrations/mastodon, /tools/character-counter, /blog/bluesky-vs-mastodon-vs-threads, /blog/how-to-schedule-mastodon-posts
 ---
 
 Most people now post to more than one network: X, Bluesky, Mastodon, LinkedIn, often all four. The lazy way is to paste the same text everywhere. It works, but it shows. A thread cut off mid-sentence on Bluesky, a LinkedIn post that reads like a tweet, hashtags that do nothing on X.

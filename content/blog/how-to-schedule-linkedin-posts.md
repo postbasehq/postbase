@@ -5,7 +5,7 @@ description: LinkedIn has built-in scheduling up to 3 months ahead. How to use i
 date: 2026-09-27
 updated: 2026-10-06
 category: Guides
-related: /integrations/linkedin, /mcp/linkedin, /ai/claude/linkedin, /tools/character-counter, /tools/best-time-to-post
+related: /integrations/linkedin, /mcp/linkedin, /ai/claude/linkedin, /tools/character-counter, /tools/best-time-to-post, /blog/linkedin-link-in-first-comment
 ---
 
 Good news first: you don't need any tool to schedule a LinkedIn post. LinkedIn has built-in scheduling on desktop, in the app and on company Pages. This guide shows how to use it, the limits that trip people up, what it can't do, and when a scheduling tool is worth it.

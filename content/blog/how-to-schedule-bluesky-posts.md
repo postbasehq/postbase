@@ -5,7 +5,7 @@ description: Bluesky's app has no built-in scheduling. Three ways to schedule Bl
 date: 2026-09-27
 updated: 2026-10-06
 category: Guides
-related: /integrations/bluesky, /mcp/bluesky, /ai/claude/bluesky, /blog/bluesky-api-post, /tools/character-counter
+related: /integrations/bluesky, /mcp/bluesky, /ai/claude/bluesky, /blog/bluesky-api-post, /tools/character-counter, /blog/how-to-grow-on-bluesky
 ---
 
 **Short answer: not in the Bluesky app itself.** As of October 2026, the official Bluesky app publishes a post the moment you tap Post. There's no scheduling option in its settings, and native scheduling is still an open feature request with no announced date. You can still schedule Bluesky posts, though. You need something that posts for you at the right time.
