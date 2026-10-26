@@ -61,12 +61,12 @@ export function NavAuthButtons() {
       >
         Log in
       </Link>
+      {/* Not on phones: the menu drawer has the trial button there. */}
       <Link
         href="/login"
-        className="whitespace-nowrap rounded-full bg-blue px-4 py-2 font-display text-[14px] font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md"
+        className="hidden whitespace-nowrap rounded-full bg-blue px-4 py-2 font-display text-[14px] font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md sm:inline"
       >
-        <span className="sm:hidden">Try free</span>
-        <span className="hidden sm:inline">Start free trial</span>
+        Start 7-day trial
       </Link>
     </>
   );

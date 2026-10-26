@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 /**
  * The app sidebar on phones. Below `md` the sidebar is hidden, so this puts a
  * menu button in the header that opens the same sidebar (search, workspace
- * switcher, nav, account menu) as a drawer from the left.
+ * switcher, nav, account menu) as a drawer from the left (or the right, via `side`).
  *
  * The drawer's contents only mount while it's open, so the sidebar's global
  * shortcuts (⌘K search) aren't registered twice. It closes on navigation,
@@ -21,12 +21,15 @@ export function MobileNav({
   children,
   footer,
   hideAt = "md",
+  side = "left",
 }: {
   header: React.ReactNode;
   children: React.ReactNode;
   footer: React.ReactNode;
   /** Breakpoint from which the full nav shows and this menu hides: md for the app, lg for the marketing site. */
   hideAt?: keyof typeof HIDE;
+  /** Edge the drawer slides in from: left for the app sidebar, right for the marketing nav. */
+  side?: "left" | "right";
 }) {
   const [open, setOpen] = useState(false);
   const [shown, setShown] = useState(false); // drives the slide-in after mount
@@ -67,7 +70,7 @@ export function MobileNav({
         aria-label="Open menu"
         aria-expanded={open}
         aria-controls="mobile-nav"
-        className={`-ml-1 flex size-9 shrink-0 items-center justify-center rounded-full text-ink transition hover:bg-surface-2 ${HIDE[hideAt]}`}
+        className={`${side === "left" ? "-ml-1" : "-mr-1"} flex size-9 shrink-0 items-center justify-center rounded-full text-ink transition hover:bg-surface-2 ${HIDE[hideAt]}`}
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
           <path d="M4 7h16M4 12h16M4 17h16" />
@@ -84,7 +87,9 @@ export function MobileNav({
                 aria-hidden
               />
               <div
-                className={`absolute inset-y-0 left-0 flex w-[86vw] max-w-[300px] flex-col bg-ground shadow-2xl transition-transform duration-200 ease-out ${shown ? "translate-x-0" : "-translate-x-full"}`}
+                className={`absolute inset-y-0 flex w-[86vw] max-w-[300px] flex-col bg-ground shadow-2xl transition-transform duration-200 ease-out ${
+                  side === "left" ? `left-0 ${shown ? "translate-x-0" : "-translate-x-full"}` : `right-0 ${shown ? "translate-x-0" : "translate-x-full"}`
+                }`}
                 // Tapping a link closes the drawer even when it's the page you're on.
                 onClickCapture={(e) => {
                   if ((e.target as HTMLElement).closest("a[href]")) setOpen(false);

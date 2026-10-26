@@ -221,12 +221,12 @@ export function CompareTable({
                             ? "Current plan"
                             : billing.currentPlan
                               ? `Switch to ${p.name}`
-                              : "Start free trial"}
+                              : "Start 7-day trial"}
                         </SubmitButton>
                       </form>
                     ) : (
                       <a href={`/billing?plan=${id}&interval=month`} className={`mt-4 inline-block w-full max-w-[180px] ${btn}`}>
-                        Start free trial
+                        Start 7-day trial
                       </a>
                     )}
                   </th>

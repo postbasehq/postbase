@@ -126,7 +126,7 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
               <p className="text-[13.5px] text-muted">Every network, the MCP server and the API on every plan.</p>
             </div>
             <Link href="/login" className="ml-auto rounded-full bg-blue px-5 py-2.5 font-display text-[14px] font-semibold text-on-blue shadow-sm">
-              Start free trial
+              Start 7-day trial
             </Link>
           </div>
         </main>

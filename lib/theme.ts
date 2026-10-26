@@ -1,5 +1,5 @@
 /*
- * Theme choice, shared by the header toggle and the Settings picker. Dark is the
+ * Theme choice, shared by the header toggle and the Settings picker. Light is the
  * default (see components/ThemeScript.tsx); "system" drops the attribute so the
  * prefers-color-scheme rules in globals.css apply. Browser-only.
  */
@@ -12,9 +12,9 @@ export type ThemeChoice = "dark" | "light" | "system";
 export function readThemeChoice(): ThemeChoice {
   try {
     const t = localStorage.getItem(THEME_KEY);
-    if (t === "light" || t === "system") return t;
+    if (t === "dark" || t === "system") return t;
   } catch {}
-  return "dark";
+  return "light";
 }
 
 export function applyTheme(choice: ThemeChoice) {

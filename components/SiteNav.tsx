@@ -28,7 +28,6 @@ export function SiteNav() {
             on lg there isn't room for that, so they follow the logo. */}
         <div className="flex h-16 items-center gap-4 px-5 md:gap-6 md:px-8 xl:grid xl:grid-cols-[1fr_auto_1fr]">
           <div className="flex items-center gap-2">
-            <SiteMobileMenu />
             <Logo />
           </div>
           <div className="hidden items-center gap-5 whitespace-nowrap lg:flex xl:gap-7">
@@ -49,8 +48,12 @@ export function SiteNav() {
             <span className="max-sm:hidden lg:max-xl:hidden">
               <GitHubButton />
             </span>
-            <ThemeToggle />
+            {/* Below lg the theme toggle lives in the menu drawer instead. */}
+            <span className="max-lg:hidden">
+              <ThemeToggle />
+            </span>
             <NavAuthButtons />
+            <SiteMobileMenu />
           </div>
         </div>
       </nav>
@@ -228,15 +231,19 @@ function SiteMobileMenu() {
   return (
     <MobileNav
       hideAt="lg"
+      side="right"
       header={<Logo />}
       footer={
-        <div className="border-t border-line p-4">
+        <div className="flex items-center gap-3 border-t border-line p-4">
           <Link
             href="/login"
-            className="block rounded-full bg-blue px-4 py-3 text-center font-display text-[15px] font-semibold text-on-blue shadow-sm"
+            className="flex-1 rounded-full bg-blue px-4 py-3 text-center font-display text-[15px] font-semibold text-on-blue shadow-sm"
           >
-            Start free trial
+            Start 7-day trial
           </Link>
+          <span className="rounded-full border border-line p-1">
+            <ThemeToggle />
+          </span>
         </div>
       }
     >
