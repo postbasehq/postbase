@@ -244,6 +244,7 @@ export function PostForm({
     if (activeTab !== "base" && !selected.has(activeTab)) setActiveTab("base");
   }, [selected, activeTab]);
   const [tiktokValid, setTiktokValid] = useState(true);
+  const [tiktokHint, setTiktokHint] = useState<string | null>(null);
   const [youtubeValid, setYoutubeValid] = useState(true);
   const [settingsTab, setSettingsTab] = useState<"tiktok" | "youtube">("tiktok");
   const [scheduleLocal, setScheduleLocal] = useState(
@@ -407,6 +408,8 @@ export function PostForm({
   // Not ready to publish if a platform check fails OR the TikTok settings are
   // incomplete — keep the status indicator consistent with the disabled button.
   const notReady = hasBlocking || !tiktokOk || !youtubeOk || !!overPlan;
+  // TikTok's own reason the post can't go yet (shown on hover, as TikTok requires).
+  const tiktokBlock = tiktokChannel && !isDraft ? tiktokHint : null;
 
   /* actions */
   const updateTweet = (i: number, v: string) =>
@@ -927,6 +930,7 @@ export function PostForm({
                     ...(initial?.tiktokOptions ?? {}),
                   }}
                   onValidChange={setTiktokValid}
+                  onHintChange={setTiktokHint}
                 />
               </div>
             ) : null}
@@ -1173,19 +1177,24 @@ export function PostForm({
             <span className="hidden text-xs text-[#d14a3e] sm:inline">
               {hasBlocking
                 ? "Fix the flagged channels, or clear the time to save a draft."
-                : `Finish the ${unfinished.join(" and ")} settings, or clear the time to save a draft.`}
+                : tiktokBlock
+                  ? tiktokBlock
+                  : `Finish the ${unfinished.join(" and ")} settings, or clear the time to save a draft.`}
             </span>
           ) : null}
           <Link href="/queue" className="text-sm font-medium text-muted hover:text-ink">
             Cancel
           </Link>
-          <SubmitButton
-            disabled={!canSubmit}
-            pendingLabel={isDraft ? "Saving…" : "Scheduling…"}
-            className="rounded-full bg-blue px-6 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isDraft ? "Save draft" : submitLabel}
-          </SubmitButton>
+          {/* Disabled buttons don't get hover events everywhere, so the hint sits on a wrapper. */}
+          <span title={!canSubmit && tiktokBlock ? tiktokBlock : undefined}>
+            <SubmitButton
+              disabled={!canSubmit}
+              pendingLabel={isDraft ? "Saving…" : "Scheduling…"}
+              className="rounded-full bg-blue px-6 py-2.5 font-display text-sm font-semibold text-on-blue shadow-sm transition-shadow hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isDraft ? "Save draft" : submitLabel}
+            </SubmitButton>
+          </span>
         </div>
         </div>
       </div>

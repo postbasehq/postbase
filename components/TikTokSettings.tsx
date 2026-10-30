@@ -51,6 +51,9 @@ function formatSec(sec: number): string {
 
 const MUSIC_URL = "https://www.tiktok.com/legal/page/global/music-usage-confirmation/en";
 const BC_POLICY_URL = "https://www.tiktok.com/legal/page/global/bc-policy/en";
+const DISCLOSE_HINT =
+  "You need to indicate if your content promotes yourself, a third party, or both.";
+const BC_PRIVATE_NOTICE = "Branded content visibility cannot be set to private.";
 
 export function TikTokSettings({
   channelId,
@@ -59,6 +62,7 @@ export function TikTokSettings({
   videoUrl,
   initial,
   onValidChange,
+  onHintChange,
 }: {
   channelId: string | null;
   channelHandle: string | null;
@@ -66,6 +70,8 @@ export function TikTokSettings({
   videoUrl?: string | null;
   initial?: TikTokInitial;
   onValidChange: (valid: boolean) => void;
+  /** Why publishing is blocked, for the composer's disabled-button hover. */
+  onHintChange?: (hint: string | null) => void;
 }) {
   const [info, setInfo] = useState<CreatorInfo | null>(null);
   const [loading, setLoading] = useState(false);
@@ -168,6 +174,13 @@ export function TikTokSettings({
   useEffect(() => {
     onValidChange(valid);
   }, [valid, onValidChange]);
+
+  // TikTok requires a hover notice on the disabled publish button when the
+  // disclosure is on but neither option is picked.
+  const hint = channelId && discloseIncomplete ? DISCLOSE_HINT : null;
+  useEffect(() => {
+    onHintChange?.(hint);
+  }, [hint, onHintChange]);
 
   // Branded content can't be private — clear a "Only me" selection so it truly
   // disappears and the user must pick a wider audience (matches TikTok's UI).
@@ -280,7 +293,7 @@ export function TikTokSettings({
                           aria-selected={isSel}
                           aria-disabled={off}
                           disabled={off}
-                          title={off ? "Branded content visibility cannot be set to private." : undefined}
+                          title={off ? BC_PRIVATE_NOTICE : undefined}
                           onClick={() => {
                             setPrivacy(o);
                             setPrivacyOpen(false);
@@ -292,9 +305,7 @@ export function TikTokSettings({
                           <span>
                             {PRIVACY_LABEL[o] ?? o}
                             {off ? (
-                              <span className="block text-[11px] font-normal">
-                                Branded content visibility cannot be set to private.
-                              </span>
+                              <span className="block text-[11px] font-normal">{BC_PRIVATE_NOTICE}</span>
                             ) : null}
                           </span>
                           {isSel ? (
@@ -390,15 +401,25 @@ export function TikTokSettings({
                   />
                   Your brand — promoting yourself or your own business
                 </label>
-                <label className="flex items-center gap-2 text-[13px]">
+                {/* Branded content can't be private: lock it while "Only me" is picked. */}
+                <label
+                  className="flex items-center gap-2 text-[13px]"
+                  title={privacy === "SELF_ONLY" ? BC_PRIVATE_NOTICE : undefined}
+                >
                   <input
                     type="checkbox"
                     className={check}
                     checked={brandedContent}
+                    disabled={privacy === "SELF_ONLY" && !brandedContent}
                     onChange={(e) => setBrandedContent(e.target.checked)}
                   />
                   Branded content — promoting another brand (paid partnership)
                 </label>
+                {privacy === "SELF_ONLY" && !brandedContent ? (
+                  <p className="text-xs text-muted">
+                    {BC_PRIVATE_NOTICE} Choose a wider audience to select Branded content.
+                  </p>
+                ) : null}
                 {yourBrand || brandedContent ? (
                   <p className="text-xs text-muted">
                     Your {isPhoto ? "photo" : "video"} will be labeled as “
@@ -406,9 +427,7 @@ export function TikTokSettings({
                   </p>
                 ) : null}
                 {discloseIncomplete ? (
-                  <p className="text-xs text-[#d14a3e]">
-                    Select at least one: Your brand, Branded content, or both.
-                  </p>
+                  <p className="text-xs text-[#d14a3e]">{DISCLOSE_HINT}</p>
                 ) : null}
                 {brandedPrivate ? (
                   <p className="text-xs text-[#d14a3e]">
