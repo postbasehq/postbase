@@ -9,4 +9,6 @@ Sentry.init({
   enabled: Boolean(dsn),
   // Browser noise that isn't ours to fix.
   ignoreErrors: ["ResizeObserver loop limit exceeded", "ResizeObserver loop completed with undelivered notifications", "Non-Error promise rejection captured"],
+  // Scripts injected by extensions / in-app browsers / automation tools, not our bundles.
+  denyUrls: [/^app:\/\/\/executors\//],
 });
