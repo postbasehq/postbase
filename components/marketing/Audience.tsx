@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 
 export type Audience = "creators" | "developers";
 
@@ -11,24 +11,17 @@ const AudienceContext = createContext<{
 
 export const useAudience = () => useContext(AudienceContext);
 
-/** Holds the homepage's creators/developers view, mirrored to `/` vs `/developers`. */
+/** Holds the homepage's creators/developers view, mirrored to `/creators` vs `/`. */
 export function AudienceProvider({ initial = "creators", children }: { initial?: Audience; children: React.ReactNode }) {
   const [audience, setState] = useState<Audience>(initial);
 
-  // Old links used ?for=developers; honour them.
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("for") === "developers") {
-      setState("developers");
-    }
-  }, []);
-
-  // The two views live at / and /developers; switching updates the address in
+  // The two views live at /creators and /; switching updates the address in
   // place (both routes render the same page) so each view has a real URL.
   const setAudience = useCallback((a: Audience) => {
     setState(a);
     const url = new URL(window.location.href);
     url.searchParams.delete("for");
-    url.pathname = a === "developers" ? "/developers" : "/";
+    url.pathname = a === "creators" ? "/creators" : "/";
     window.history.replaceState(null, "", url);
   }, []);
 

@@ -36,6 +36,10 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    // The developer view moved to the homepage.
+    return [{ source: "/developers", destination: "/", permanent: true }];
+  },
   async rewrites() {
     // mcp.postbase.so serves the MCP server at /mcp (and /). beforeFiles so
     // "/" on that host doesn't hit the marketing homepage.

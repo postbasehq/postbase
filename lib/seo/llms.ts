@@ -54,10 +54,10 @@ export function llmsTxt({ full = false } = {}): string {
     NOT,
     `## Product`,
     [
-      link("/", "Home", "what Postbase does"),
+      link("/", "Home", "what Postbase does, with the MCP server and REST API"),
       link("/pricing", "Pricing", "plans from $29/month, 7-day free trial"),
       `- [Pricing as Markdown](${SITE_URL}/pricing.md)`,
-      link("/developers", "Developers", "MCP server and REST API"),
+      link("/creators", "For creators", "the social media scheduler and growth platform"),
       link("/integrations", "Integrations", "supported networks"),
       ...live.map((n) => link(`/integrations/${n.slug}`, `${n.name} scheduling`, n.blurb)),
     ].join("\n"),

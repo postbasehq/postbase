@@ -54,7 +54,7 @@ The catch is that they only post to Mastodon, scheduled posts often can't be edi
 
 If you're a developer, scheduling is one request. Send `POST /api/v1/statuses` to your server with your post text and a `scheduled_at` date in ISO 8601 format. Mastodon requires the time to be **at least five minutes in the future**, allows up to 25 waiting posts per day and 300 in total, and returns a "scheduled status" you can later list, change or cancel through `/api/v1/scheduled_statuses`.
 
-You'll need an access token with write access, which you can create on your server under **Preferences, then Development**. For threads, you'll have to wait for each post to publish before you can reply to it, which is where a tool or our [REST API](/developers) saves time.
+You'll need an access token with write access, which you can create on your server under **Preferences, then Development**. For threads, you'll have to wait for each post to publish before you can reply to it, which is where a tool or our [REST API](/) saves time.
 
 ## Mastodon limits to plan around
 

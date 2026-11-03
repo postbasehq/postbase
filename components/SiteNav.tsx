@@ -31,8 +31,7 @@ export function SiteNav() {
             <Logo />
           </div>
           <div className="hidden items-center gap-5 whitespace-nowrap lg:flex xl:gap-7">
-            {/* 820 = the panel's list (290) + gap (24) + preview (480) + padding and border. */}
-            <NavMenu label="Products" href="/#features" width={820} align="start" bare>
+            <NavMenu label="Products" href="/#features" width="min(1240px, calc(100vw - 32px))" align="page" bare>
               <ProductsPanel />
             </NavMenu>
             <IntegrationsMenu />
@@ -75,15 +74,19 @@ function NavMenu({
 }: {
   label: string;
   href: string;
-  width: number;
-  /** "start" lines the panel up with the label's left edge (for wide panels near the left of the nav). */
-  align?: "center" | "start";
+  width: number | string;
+  /**
+   * "start" lines the panel up with the label's left edge (for wide panels near
+   * the left of the nav). "page" centres it on the nav, for panels too wide to
+   * hang off their label.
+   */
+  align?: "center" | "start" | "page";
   /** No inner padding: the content lays itself out. */
   bare?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <div className="group relative">
+    <div className={`group ${align === "page" ? "" : "relative"}`}>
       <Link
         href={href}
         className="flex items-center gap-1 text-[14px] font-medium text-muted transition-colors hover:text-ink group-hover:text-ink group-focus-within:text-ink"
@@ -108,7 +111,10 @@ function NavMenu({
 
       {/* pt-4 bridges the gap so the menu stays open while the pointer moves down */}
       <div
-        className={`invisible absolute top-full z-50 pt-4 opacity-0 transition-[opacity,visibility] duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 ${align === "start" ? "-left-16 xl:-left-6" : "left-1/2 -translate-x-1/2"}`}
+        className={`invisible absolute z-50 pt-4 opacity-0 transition-[opacity,visibility] duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 ${
+          // "page" measures from the nav's bottom edge, so step back up to the label's.
+          align === "page" ? "top-[calc(100%-22px)]" : "top-full"
+        } ${align === "start" ? "-left-16 xl:-left-6" : "left-1/2 -translate-x-1/2"}`}
       >
         <div
           style={{ width }}

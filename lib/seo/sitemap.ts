@@ -36,7 +36,7 @@ export const SITEMAPS: Record<string, () => SitemapEntry[]> = {
   pages: () => [
     page("/", 1, "weekly"),
     page("/pricing", 0.8, "monthly"),
-    page("/developers", 0.9, "weekly"),
+    page("/creators", 0.9, "weekly"),
     page("/postbots", 0.9, "monthly"),
     page("/contact", 0.5, "yearly"),
     page("/terms", 0.3, "yearly"),

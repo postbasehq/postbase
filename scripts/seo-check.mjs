@@ -36,7 +36,7 @@ const UA = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.h
 const CONCURRENCY = Number(flag("--concurrency") ?? 6);
 
 /** Buyer-intent pages: someone choosing or comparing a tool. Held to the strictest checks. */
-const BUYER = [/^\/$/, /^\/pricing$/, /^\/developers$/, /^\/integrations(\/|$)/, /^\/alternatives(\/|$)/, /^\/mcp(\/|$)/, /^\/ai(\/|$)/, /^\/for\//, /^\/tools(\/|$)/];
+const BUYER = [/^\/$/, /^\/pricing$/, /^\/creators$/, /^\/integrations(\/|$)/, /^\/alternatives(\/|$)/, /^\/mcp(\/|$)/, /^\/ai(\/|$)/, /^\/for\//, /^\/tools(\/|$)/];
 const isBuyer = (path) => BUYER.some((r) => r.test(path));
 /** Fewer words than this in the server HTML means the page relies on JS to show its content. */
 const MIN_WORDS = { buyer: 250, other: 120 };

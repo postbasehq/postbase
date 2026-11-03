@@ -16,6 +16,7 @@ const COLUMNS: { title: string; links: [string, string, Icon?][] }[] = [
       ["Channels", "/#channels"],
       ["Pricing", "/pricing"],
       ["FAQ", "/#faq"],
+      ["Social media scheduler", "/creators"],
       ["For creators", "/for/creators"],
       ["For founders", "/for/founders"],
       ["For agencies", "/for/agencies"],
@@ -65,7 +66,7 @@ const COLUMNS: { title: string; links: [string, string, Icon?][] }[] = [
   {
     title: "Developers",
     links: [
-      ["For developers", "/developers"],
+      ["For developers", "/"],
       ["MCP server", "/mcp"],
       ["Docs", "https://docs.postbase.so"],
       ["GitHub", "https://github.com/postbasehq"],

@@ -38,6 +38,7 @@ export function Landing({
       <SiteNav />
       <main>
         <Hero />
+        <NetworkStrip />
         <WhoFor />
         <Features />
         <Channels cards={networkCards} />
@@ -147,13 +148,11 @@ const HERO: Record<
   creators: {
     title: (
       <>
-        <span className="md:whitespace-nowrap">
-          <span className="whitespace-nowrap">
-            Your <LogoCycler marks={NETWORK_MARKS} /> posts,
-          </span>{" "}
-          planned,
+        Manage your{" "}
+        <span className="whitespace-nowrap">
+          <LogoCycler marks={NETWORK_MARKS} /> social media
         </span>
-        <br className="hidden md:inline" /> scheduled and published
+        <br className="hidden md:inline" /> content all in one&nbsp;place
       </>
     ),
     sub: "The open-source distribution and growth platform. Schedule everywhere, find the conversations worth joining, and let AI agents run the rest of your marketing.",
@@ -162,13 +161,15 @@ const HERO: Record<
   developers: {
     title: (
       <>
-        Social posting{" "}
+        Your social media run by
+        <br className="hidden md:inline" />{" "}
         <span className="whitespace-nowrap">
-          for <LogoCycler marks={AGENT_MARKS} /> AI agents
-        </span>
+          <LogoCycler marks={AGENT_MARKS} /> AI agents
+        </span>{" "}
+        every&nbsp;day
       </>
     ),
-    sub: "Connect Claude, Cursor or your own code over MCP or the REST API. Every post your agent schedules lands in your calendar.",
+    sub: "AI agents write and schedule your posts across your social channels. Use ours or connect your own, and change anything on your calendar before it goes live.",
     cta: { label: "Connect an agent", href: "/login" },
   },
 };
@@ -185,11 +186,11 @@ function LogoCycler({ marks }: { marks: Mark[] }) {
     <span
       role="img"
       aria-label={marks.map((m) => m.label).join(", ")}
-      className="relative -my-[0.1em] mx-[0.1em] inline-block size-[0.82em] align-[-0.1em]"
+      className="relative -my-[0.1em] mx-[0.08em] inline-block size-[1em] rounded-[0.26em] border border-line bg-surface align-[-0.17em] shadow-[0_0.05em_0.14em_rgba(0,0,0,0.1)]"
     >
       {/* Every logo is stacked in place and crossfaded, so the swap is soft. */}
       {marks.map((m, k) =>
-        m.draw(`absolute inset-0 size-full transition-opacity duration-700 ease-in-out ${k === i ? "opacity-100" : "opacity-0"}`),
+        m.draw(`absolute inset-[18%] size-[64%] transition-opacity duration-700 ease-in-out ${k === i ? "opacity-100" : "opacity-0"}`),
       )}
     </span>
   );
@@ -234,8 +235,9 @@ function Hero() {
           <h1
             data-hero-avoid
             className={`mx-auto font-display font-semibold leading-[1.15] tracking-[-0.04em] text-ink ${
-              // Balanced over two lines on wide screens.
-              "max-w-[1120px] text-[clamp(42px,4.8vw,64px)] text-balance"
+              // Balanced over two lines on wide screens. Not on phones: balancing the
+              // no-wrap logo group crashes the Chromium tab at phone widths.
+              "max-w-[1120px] text-[clamp(42px,4.8vw,64px)] md:text-balance"
             }`}
           >
             {h.title}
@@ -331,19 +333,14 @@ function Features() {
 
 // ── Channels ─────────────────────────────────────────────────────────────
 
-function Channels({ cards }: { cards?: React.ReactNode }) {
+/** Scrolling row of network logos under the hero. */
+function NetworkStrip() {
   // One run is the networks repeated to fill a wide screen; the track holds two
   // runs so shifting it by -50% loops seamlessly.
   const networks = [...NETWORKS, "facebook", "threads"];
   const run = [...networks, ...networks, ...networks];
   return (
-    <section id="channels" className="scroll-mt-28 pt-28 md:pt-36">
-      <div className={wrap}>
-        <Heading
-          title="The networks you post to"
-          sub="Connect an account once and publish to it from the composer, the calendar or your agent."
-        />
-      </div>
+    <section aria-label="Supported networks" className="pt-14 md:pt-20">
       <div
         className="overflow-hidden py-4"
         style={{
@@ -362,6 +359,19 @@ function Channels({ cards }: { cards?: React.ReactNode }) {
             </div>
           ))}
         </div>
+      </div>
+    </section>
+  );
+}
+
+function Channels({ cards }: { cards?: React.ReactNode }) {
+  return (
+    <section id="channels" className="scroll-mt-28 pt-28 md:pt-36">
+      <div className={wrap}>
+        <Heading
+          title="The networks you post to"
+          sub="Connect an account once and publish to it from the composer, the calendar or your agent."
+        />
       </div>
       {cards ? <div className={`${wrap} mt-12`}>{cards}</div> : null}
     </section>

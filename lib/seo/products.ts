@@ -16,7 +16,7 @@ export const PRODUCTS: {
   {
     id: "scheduler",
     name: "Scheduler",
-    href: "/#features",
+    href: "/creators",
     line: "One calendar for every network",
   },
   {
@@ -35,7 +35,7 @@ export const PRODUCTS: {
   {
     id: "api",
     name: "REST API",
-    href: "/developers",
+    href: "/",
     line: "Schedule posts from your code",
   },
 ];

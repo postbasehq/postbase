@@ -11,10 +11,10 @@ import { MCP_SCENES } from "@/lib/seo/mcp-scenes";
 import { PRODUCTS, type ProductId } from "@/lib/seo/products";
 
 /*
- * The "Products" dropdown: every Postbase product on the left, and a live
- * preview of the one you're hovering on the right (the same animated product
- * shots the site uses, scaled down). Previews only mount while the menu is
- * open, so they cost nothing until someone looks.
+ * The "Products" dropdown: every Postbase product side by side, each with its
+ * own live preview (the same animated product shots the site uses, scaled down
+ * to fit the column). Previews only mount while the menu is open, so they cost
+ * nothing until someone looks.
  */
 
 // The AI tools the MCP server works with, cycled in its icon.
@@ -77,39 +77,48 @@ export function ProductIcon({ id }: { id: ProductId }) {
   );
 }
 
-/** The live preview for a product, drawn at full size and scaled to fit. */
-function Preview({ id }: { id: ProductId }) {
+/** The live preview for a product, drawn at full size and scaled to its column. */
+function Preview({ id, live }: { id: ProductId; live: boolean }) {
   const W = 960;
   const H = 600;
-  const scale = 480 / W;
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0);
+
+  useEffect(() => {
+    if (!frameRef.current) return;
+    const ro = new ResizeObserver(([e]) => setScale(e.contentRect.width / W));
+    ro.observe(frameRef.current);
+    return () => ro.disconnect();
+  }, []);
+
   return (
-    <div className="relative overflow-hidden rounded-[16px] border border-line bg-ground" style={{ width: W * scale, height: H * scale }}>
-      <div className="absolute left-0 top-0 origin-top-left" style={{ width: W, height: H, transform: `scale(${scale})` }}>
-        {id === "scheduler" ? <CalendarDemo productShot /> : null}
-        {id === "postbots" ? <PostbotsShot /> : null}
-        {/* Claude scheduling over MCP, and the post landing on the calendar. */}
-        {id === "mcp" ? (
-          // Laid out at the frame's shape (928×568 inside the padding) but wider,
-          // so the calendar gets all seven days, then scaled down to fill it.
-          <div className="h-full p-4">
-            <McpInActionDemo scene={MCP_SCENES.hub} minWidth={1180} height={722} claudeWidth={400} />
-          </div>
-        ) : null}
-        {id === "api" ? <DevShot /> : null}
-      </div>
+    <div ref={frameRef} aria-hidden className="relative aspect-[8/5] overflow-hidden rounded-xl border border-line bg-ground">
+      {live && scale ? (
+        <div className="pointer-events-none absolute left-0 top-0 origin-top-left" style={{ width: W, height: H, transform: `scale(${scale})` }}>
+          {id === "scheduler" ? <CalendarDemo productShot /> : null}
+          {id === "postbots" ? <PostbotsShot /> : null}
+          {/* Claude scheduling over MCP, and the post landing on the calendar. */}
+          {id === "mcp" ? (
+            // Laid out at the frame's shape (928×568 inside the padding) but wider,
+            // so the calendar gets all seven days, then scaled down to fill it.
+            <div className="h-full p-4">
+              <McpInActionDemo scene={MCP_SCENES.hub} minWidth={1180} height={722} claudeWidth={400} />
+            </div>
+          ) : null}
+          {id === "api" ? <DevShot /> : null}
+        </div>
+      ) : null}
     </div>
   );
 }
 
 export function ProductsPanel() {
-  const [active, setActive] = useState<ProductId>("scheduler");
-  // Only mount the (animated) preview while the panel is open.
+  // Only mount the (animated) previews while the panel is open.
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const current = PRODUCTS.find((p) => p.id === active)!;
+  const rootRef = useRef<HTMLUListElement>(null);
 
   // The menu opens with CSS when its nav item is hovered or focused; follow the
-  // same item here so the preview is ready as soon as the panel shows.
+  // same item here so the previews are ready as soon as the panel shows.
   useEffect(() => {
     const item = rootRef.current?.closest(".group");
     if (!item) return;
@@ -118,6 +127,8 @@ export function ProductsPanel() {
       if (!item.matches(":hover") && !item.contains(document.activeElement)) setOpen(false);
     };
     const blur = () => setTimeout(hide, 0);
+    // The pointer may already be on the item when the page finishes loading.
+    if (item.matches(":hover")) show();
     item.addEventListener("mouseenter", show);
     item.addEventListener("mouseleave", hide);
     item.addEventListener("focusin", show);
@@ -131,45 +142,28 @@ export function ProductsPanel() {
   }, []);
 
   return (
-    <div ref={rootRef} className="flex gap-6 whitespace-normal p-3">
-      <div className="w-[290px] shrink-0">
-        <p className="px-3 pb-2 pt-1 text-[13px] font-semibold text-muted">Products</p>
-        <ul className="flex flex-col gap-0.5">
-          {PRODUCTS.map((p) => (
-            <li key={p.id}>
-              <Link
-                href={p.href}
-                onMouseEnter={() => setActive(p.id)}
-                onFocus={() => setActive(p.id)}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${active === p.id ? "bg-surface-2" : "hover:bg-surface-2"}`}
-              >
-                <ProductIcon id={p.id} />
-                <span className="min-w-0">
-                  <span className="flex items-center gap-2 text-[15px] font-semibold text-ink">
-                    {p.name}
-                    {p.isNew ? (
-                      <span className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-white" style={{ background: "#2b59d9" }}>
-                        New
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="block truncate text-[13px] text-muted">{p.line}</span>
+    <ul ref={rootRef} className="grid grid-cols-4 gap-1 whitespace-normal p-2">
+      {PRODUCTS.map((p) => (
+        <li key={p.id}>
+          <Link href={p.href} className="block h-full rounded-2xl p-2 transition-colors hover:bg-surface-2">
+            <Preview id={p.id} live={open} />
+            <span className="mt-3 flex items-start gap-3 px-1 pb-1">
+              <ProductIcon id={p.id} />
+              <span className="min-w-0">
+                <span className="flex items-center gap-2 text-[15px] font-semibold text-ink">
+                  {p.name}
+                  {p.isNew ? (
+                    <span className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-white" style={{ background: "#2b59d9" }}>
+                      New
+                    </span>
+                  ) : null}
                 </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div>
-        <Link href={current.href} className="block" tabIndex={-1} aria-label={current.name}>
-          {open ? (
-            <Preview key={current.id} id={current.id} />
-          ) : (
-            <div className="rounded-[16px] border border-line bg-ground" style={{ width: 480, height: 300 }} />
-          )}
-        </Link>
-      </div>
-    </div>
+                <span className="block text-[13px] leading-snug text-muted">{p.line}</span>
+              </span>
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }

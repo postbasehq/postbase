@@ -5,10 +5,10 @@ import { AiToolCards, NetworkCards } from "@/components/marketing/HomeCards";
 import { JsonLd } from "@/components/marketing/JsonLd";
 
 const DESCRIPTION =
-  "Grow an audience on every network without living on social media. The open-source social media scheduler, listening bots and AI agents in one growth platform.";
+  "Let Claude, Cursor or your own code post to social media. A hosted MCP server and REST API for scheduling to X, LinkedIn, Bluesky, Mastodon and YouTube.";
 
 export const metadata: Metadata = {
-  title: { absolute: "Postbase: open-source social media scheduler and growth platform" },
+  title: { absolute: "Postbase: social media scheduler and API for AI agents" },
   description: DESCRIPTION,
   ...pageMeta("/"),
 };
@@ -17,7 +17,7 @@ export default function Home() {
   return (
     <>
       <JsonLd withFaq description={DESCRIPTION} />
-      <Landing initialAudience="creators" networkCards={<NetworkCards />} aiToolCards={<AiToolCards />} />
+      <Landing initialAudience="developers" networkCards={<NetworkCards />} aiToolCards={<AiToolCards />} />
     </>
   );
 }

@@ -5,19 +5,19 @@ import { AiToolCards, NetworkCards } from "@/components/marketing/HomeCards";
 import { JsonLd } from "@/components/marketing/JsonLd";
 
 const DESCRIPTION =
-  "Let Claude, Cursor or your own code post to social media. A hosted MCP server and REST API for scheduling to X, LinkedIn, TikTok, YouTube and more.";
+  "Grow an audience on every network without living on social media. The open-source social media scheduler, listening bots and AI agents in one growth platform.";
 
 export const metadata: Metadata = {
-  title: "Social media API and MCP server for AI agents",
+  title: "Open-source social media scheduler and growth platform",
   description: DESCRIPTION,
-  ...pageMeta("/developers"),
+  ...pageMeta("/creators"),
 };
 
-export default function Developers() {
+export default function Creators() {
   return (
     <>
       <JsonLd description={DESCRIPTION} />
-      <Landing initialAudience="developers" networkCards={<NetworkCards />} aiToolCards={<AiToolCards />} />
+      <Landing initialAudience="creators" networkCards={<NetworkCards />} aiToolCards={<AiToolCards />} />
     </>
   );
 }
