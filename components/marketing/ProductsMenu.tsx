@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CalendarDemo } from "@/components/marketing/CalendarDemo";
-import { DevShot } from "@/components/marketing/DevShot";
+import { ApiShot } from "@/components/marketing/ApiShot";
 import { PostbotsShot } from "@/components/marketing/PostbotsShot";
 import { ClientLogo } from "@/components/ClientLogo";
 import { McpInActionDemo } from "@/components/marketing/seo/McpDemo";
@@ -105,7 +105,7 @@ function Preview({ id, live }: { id: ProductId; live: boolean }) {
               <McpInActionDemo scene={MCP_SCENES.hub} minWidth={1180} height={722} claudeWidth={400} />
             </div>
           ) : null}
-          {id === "api" ? <DevShot /> : null}
+          {id === "api" ? <ApiShot /> : null}
         </div>
       ) : null}
     </div>

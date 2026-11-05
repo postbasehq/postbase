@@ -28,13 +28,13 @@ export const PRODUCTS: {
   },
   {
     id: "mcp",
-    name: "MCP server",
+    name: "AI Agents",
     href: "/mcp",
     line: "Let Claude and ChatGPT post",
   },
   {
     id: "api",
-    name: "REST API",
+    name: "API",
     href: "/",
     line: "Schedule posts from your code",
   },
