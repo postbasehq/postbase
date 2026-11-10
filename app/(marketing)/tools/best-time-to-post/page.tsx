@@ -26,7 +26,7 @@ const at = (id: string) => ROWS.find((r) => r.id === id)!;
 const FAQS: [string, string][] = [
   [
     "What is the best time to post on social media?",
-    "For most accounts, weekday mornings to early afternoon, Tuesday to Thursday, in your audience's time zone. Professional networks like LinkedIn peak before and around work, while TikTok and YouTube do better in the afternoon and evening, when people have time to watch.",
+    "For most accounts, late morning to late afternoon, Tuesday to Thursday, in your audience's time zone. Sprout Social's 2026 data puts the overall peak on Tuesdays and Wednesdays between 11am and 6pm. LinkedIn is read during the working day, while TikTok and YouTube Shorts do better from the afternoon into the evening.",
   ],
   [
     "What is the best time to post on Instagram?",
@@ -68,8 +68,8 @@ const TIPS: [string, string][] = [
     "Posting three times a week at a good time does more than one post at the ideal time. Schedule a week ahead so it happens even when you're busy.",
   ],
   [
-    "Video needs a head start",
-    "Publish YouTube videos and long Reels two or three hours before your audience's evening, so they're processed and being recommended when people sit down to watch.",
+    "Long videos and short videos differ",
+    "Long YouTube videos do best in the morning, so they're processed and recommended by the time people choose something to watch. Shorts, Reels and TikToks do better from the afternoon into the evening.",
   ],
 ];
 

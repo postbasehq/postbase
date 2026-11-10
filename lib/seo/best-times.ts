@@ -7,6 +7,8 @@ import { localDateKey, zonedTimeToUtc } from "@/lib/tz-core";
  * published studies (Sprout Social, Hootsuite, Buffer, Later). A cell's score
  * is day × block, nudged by audience; the page shows the ranking, never the
  * raw numbers, because the studies disagree on detail and agree on shape.
+ * LinkedIn, X, Instagram, Facebook and YouTube follow Sprout Social's and Buffer's 2026
+ * data, which moved most peaks from early morning to midday and afternoon.
  */
 
 export const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as const;
@@ -34,8 +36,8 @@ export const NETWORK_TIMES: NetworkTimes[] = [
   {
     id: "instagram",
     name: "Instagram",
-    days: [0.85, 1, 1, 0.95, 0.85, 0.6, 0.55],
-    blocks: [0.4, 0.75, 1, 0.95, 0.8, 0.7, 0.75, 0.65, 0.35],
+    days: [0.9, 1, 1, 0.9, 0.75, 0.55, 0.5],
+    blocks: [0.25, 0.45, 0.7, 0.95, 1, 0.95, 0.85, 0.7, 0.4],
     tip: "Reels keep finding viewers for days, so timing matters most for feed posts and Stories.",
   },
   {
@@ -56,23 +58,24 @@ export const NETWORK_TIMES: NetworkTimes[] = [
   {
     id: "x",
     name: "X",
-    days: [0.9, 1, 1, 0.95, 0.8, 0.5, 0.45],
-    blocks: [0.5, 0.9, 1, 0.9, 0.7, 0.6, 0.55, 0.45, 0.3],
+    days: [0.9, 1, 1, 0.95, 0.75, 0.45, 0.4],
+    blocks: [0.3, 0.55, 0.8, 1, 0.95, 0.9, 0.6, 0.45, 0.3],
     tip: "Posts on X fade within hours. Post when your followers are online, and reply to the first comments quickly.",
   },
   {
     id: "facebook",
     name: "Facebook",
-    days: [0.9, 1, 1, 0.95, 0.85, 0.55, 0.5],
-    blocks: [0.45, 0.85, 1, 0.95, 0.75, 0.6, 0.55, 0.45, 0.25],
-    tip: "Weekday mornings work for most Pages. Local businesses often do better at lunch and early evening.",
+    days: [0.9, 1, 1, 0.9, 0.75, 0.5, 0.45],
+    blocks: [0.25, 0.5, 0.75, 1, 0.9, 0.85, 0.85, 0.8, 0.4],
+    tip: "Weekday lunchtimes into the evening work for most Pages, Tuesday and Wednesday especially.",
   },
   {
     id: "youtube",
     name: "YouTube",
-    days: [0.7, 0.7, 0.8, 0.9, 1, 0.95, 0.85],
-    blocks: [0.2, 0.35, 0.55, 0.8, 1, 0.95, 0.75, 0.55, 0.3],
-    tip: "Publish two or three hours before evening viewing so the video is indexed and suggested by the time people sit down.",
+    // Long videos, from Buffer's 2026 study of 1.8 million videos. Shorts peak in the evening instead (see the tip).
+    days: [0.85, 0.9, 0.75, 0.7, 0.8, 0.85, 1],
+    blocks: [0.6, 0.95, 1, 0.85, 0.55, 0.6, 0.55, 0.5, 0.55],
+    tip: "Long videos do best in the morning, Sunday especially. Shorts are the opposite: post them in the evening, around 6pm to 9pm.",
   },
   {
     id: "threads",

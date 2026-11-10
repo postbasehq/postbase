@@ -9,7 +9,7 @@ related: /tools/best-time-to-post, /integrations/linkedin, /blog/how-to-schedule
 
 **The best time to post on LinkedIn in 2026 is Tuesday to Thursday between 10am and 5pm in your audience's local time, and the best day is Wednesday.** Sprout Social's study of 2 billion engagements puts the peak between 11am and 5pm on weekdays; Buffer's study of 4.8 million posts found Wednesday at 4pm the single best slot. Weekends are the weakest days for almost everyone.
 
-If you've read that early mornings are best on LinkedIn, that was the old advice. The two largest 2026 datasets both moved the peak to late morning and afternoon. Here's the detail, checked on 10 November 2026.
+If you've read that early mornings are best on LinkedIn, that was the old advice. The two largest 2026 datasets both moved the peak to late morning and afternoon. Here's the detail, checked on 10 November 2026. For every network in one table, see the [best time to post on social media](/blog/best-time-to-post-on-social-media).
 
 ## Best times to post on LinkedIn at a glance
 

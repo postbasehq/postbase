@@ -95,7 +95,7 @@ If the same video also goes to TikTok, or you want your uploads on one calendar 
 
 ::demo composer network=youtube caption="Scheduling a YouTube video in Postbase: add the video, write the description and pick a time."
 
-For every other network's best times, converted to your time zone, use our free [best time to post tool](/tools/best-time-to-post). For TikTok specifically, see the [best time to post on TikTok](/blog/best-time-to-post-on-tiktok).
+For every other network's best times, see the [best time to post on social media](/blog/best-time-to-post-on-social-media) in one table, or convert them to your time zone with our free [best time to post tool](/tools/best-time-to-post). For TikTok specifically, see the [best time to post on TikTok](/blog/best-time-to-post-on-tiktok).
 
 ## Frequently asked questions
 
