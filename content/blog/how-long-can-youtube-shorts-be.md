@@ -101,7 +101,7 @@ YouTube doesn't set a minimum. Very short Shorts work, especially ones that loop
 
 ### Why did my vertical video upload as a regular video?
 
-Either it's longer than 3 minutes, or it isn't square or vertical (a 4:5 or 16:9 frame isn't). Videos uploaded before 15 October 2024 that were between 1 and 3 minutes also stayed regular videos.
+Either it's longer than 3 minutes, or it isn't square or vertical (a 16:9 landscape frame never counts). Videos uploaded before 15 October 2024 that were between 1 and 3 minutes also stayed regular videos.
 
 ### What resolution should a YouTube Short be?
 
