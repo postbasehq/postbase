@@ -252,7 +252,7 @@ body {
   font-size: 17px;
   line-height: 1.75;
 }
-.prose-blog h2 {
+.prose-blog h2:not(.not-prose *) {
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 28px;
@@ -261,72 +261,72 @@ body {
   margin: 2.8rem 0 1rem;
   scroll-margin-top: 130px;
 }
-.prose-blog > div:first-child > h2:first-child {
+.prose-blog > div:first-child > h2:first-child:not(.not-prose *) {
   margin-top: 0;
 }
-.prose-blog h2 a {
+.prose-blog h2 a:not(.not-prose *) {
   color: inherit;
   text-decoration: none;
 }
-.prose-blog h2 a:hover::after {
+.prose-blog h2 a:hover:not(.not-prose *)::after {
   content: " #";
   color: var(--muted);
 }
-.prose-blog h3 {
+.prose-blog h3:not(.not-prose *) {
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 20px;
   letter-spacing: -0.01em;
   margin: 2rem 0 0.6rem;
 }
-.prose-blog p {
+.prose-blog p:not(.not-prose *) {
   margin: 0 0 1.2rem;
 }
-.prose-blog ul,
-.prose-blog ol {
+.prose-blog ul:not(.not-prose *),
+.prose-blog ol:not(.not-prose *) {
   margin: 0 0 1.3rem;
   padding-left: 1.3rem;
 }
-.prose-blog ul {
+.prose-blog ul:not(.not-prose *) {
   list-style: disc;
 }
-.prose-blog ol {
+.prose-blog ol:not(.not-prose *) {
   list-style: decimal;
 }
-.prose-blog li {
+.prose-blog li:not(.not-prose *) {
   margin: 0.5rem 0;
   padding-left: 0.2rem;
 }
-.prose-blog li::marker {
+.prose-blog li:not(.not-prose *)::marker {
   color: var(--blue);
   font-weight: 600;
 }
-.prose-blog strong {
+.prose-blog strong:not(.not-prose *) {
   font-weight: 600;
 }
-.prose-blog a {
+.prose-blog a:not(.not-prose *) {
   color: var(--blue-ink);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.prose-blog blockquote {
+.prose-blog blockquote:not(.not-prose *) {
   margin: 0 0 1.3rem;
   padding: 0.9rem 1.2rem;
   border-left: 3px solid var(--blue);
   background: var(--ground);
   border-radius: 0 14px 14px 0;
 }
-.prose-blog blockquote p:last-child {
+.prose-blog blockquote p:last-child:not(.not-prose *) {
   margin-bottom: 0;
 }
-.prose-blog :not(pre) > code {
+.prose-blog :not(pre) > code:not(.not-prose *) {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.86em;
   background: var(--surface-2);
   padding: 0.12em 0.4em;
   border-radius: 6px;
 }
-.prose-blog pre {
+.prose-blog pre:not(.not-prose *) {
   margin: 0 0 1.4rem;
   padding: 1rem 1.2rem;
   overflow-x: auto;
@@ -337,7 +337,7 @@ body {
   font-size: 13.5px;
   line-height: 1.65;
 }
-.prose-blog table {
+.prose-blog table:not(.not-prose *) {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
@@ -350,24 +350,32 @@ body {
   display: block;
   overflow-x: auto;
 }
-.prose-blog th,
-.prose-blog td {
+.prose-blog th:not(.not-prose *),
+.prose-blog td:not(.not-prose *) {
   text-align: left;
   padding: 0.7rem 1rem;
   border-bottom: 1px solid var(--line);
   vertical-align: top;
 }
-.prose-blog tr:last-child td {
+.prose-blog tr:last-child td:not(.not-prose *) {
   border-bottom: 0;
 }
-.prose-blog th {
+.prose-blog th:not(.not-prose *) {
   font-family: var(--font-display);
   font-weight: 600;
   color: var(--muted);
   font-size: 13px;
   background: var(--ground);
 }
-.prose-blog hr {
+.prose-blog img:not(.not-prose *) {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0.4rem 0 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.prose-blog hr:not(.not-prose *) {
   border: 0;
   border-top: 1px solid var(--line);
   margin: 2.4rem 0;

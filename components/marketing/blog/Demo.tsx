@@ -3,6 +3,7 @@
 import { AgentShot } from "@/components/marketing/CreatorGrid";
 import { McpShot, RevokeShot, ToolsShot } from "@/components/marketing/DevGrid";
 import { CalendarHeroDemo, ClientSetupDemo, NetworkComposerDemo } from "@/components/marketing/seo/demos";
+import { BestTimeFinder } from "@/components/marketing/tools/BestTimeFinder";
 import { CLIENTS } from "@/lib/seo/clients";
 import { LIVE_NETWORKS } from "@/lib/seo/networks";
 
@@ -12,6 +13,7 @@ import { LIVE_NETWORKS } from "@/lib/seo/networks";
  *   ::demo composer network=bluesky
  *   ::demo agent prompt="…" channels=x,linkedin
  *   ::demo calendar | tools | revoke | mcp
+ *   ::demo best-time network=tiktok   (the live best-time finder, locked to one network)
  * Optional caption="…" on any of them.
  */
 
@@ -49,6 +51,8 @@ function render(name: string, p: Record<string, string>) {
       );
     case "calendar":
       return <CalendarHeroDemo />;
+    case "best-time":
+      return <BestTimeFinder network={p.network} />;
     case "tools":
       return (
         <Centered>

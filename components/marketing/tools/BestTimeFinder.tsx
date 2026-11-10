@@ -32,8 +32,13 @@ function slotIn(iso: string, tz: string, long = false) {
 
 const tzName = (tz: string) => tz.split("/").pop()!.replace(/_/g, " ");
 
-export function BestTimeFinder() {
-  const [network, setNetwork] = useState("instagram");
+/**
+ * `network` locks the finder to one network and hides the picker, for embedding
+ * in a post about that network (`::demo best-time network=tiktok`).
+ */
+export function BestTimeFinder({ network: locked }: { network?: string } = {}) {
+  const fixed = NETWORK_TIMES.some((x) => x.id === locked) ? locked! : null;
+  const [network, setNetwork] = useState(fixed ?? "instagram");
   const [audience, setAudience] = useState<Audience>("everyone");
   const [tz, setTz] = useState(FALLBACK_TZ);
   // Known only in the browser; until then nothing that depends on "now" or "you" renders.
@@ -64,28 +69,30 @@ export function BestTimeFinder() {
   return (
     <div className="flex flex-col gap-5">
       <div className="rounded-[24px] border border-line bg-surface p-4 md:p-6">
-        <div role="radiogroup" aria-label="Network" className="flex flex-wrap justify-center gap-2">
-          {NETWORK_TIMES.map((x) => {
-            const on = x.id === network;
-            return (
-              <button
-                key={x.id}
-                type="button"
-                role="radio"
-                aria-checked={on}
-                onClick={() => setNetwork(x.id)}
-                className={`inline-flex items-center gap-2 rounded-full border py-1.5 pl-1.5 pr-3.5 text-[13px] font-semibold transition-colors ${
-                  on ? "border-ink bg-ink text-ground" : "border-line bg-surface text-ink hover:border-ink"
-                }`}
-              >
-                <BrandTile platform={x.id} size={22} radius={11} />
-                {x.name}
-              </button>
-            );
-          })}
-        </div>
+        {fixed ? null : (
+          <div role="radiogroup" aria-label="Network" className="flex flex-wrap justify-center gap-2">
+            {NETWORK_TIMES.map((x) => {
+              const on = x.id === network;
+              return (
+                <button
+                  key={x.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => setNetwork(x.id)}
+                  className={`inline-flex items-center gap-2 rounded-full border py-1.5 pl-1.5 pr-3.5 text-[13px] font-semibold transition-colors ${
+                    on ? "border-ink bg-ink text-ground" : "border-line bg-surface text-ink hover:border-ink"
+                  }`}
+                >
+                  <BrandTile platform={x.id} size={22} radius={11} />
+                  {x.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
-        <div className="mt-5 grid gap-4 border-t border-line pt-5 sm:grid-cols-2">
+        <div className={`grid gap-4 sm:grid-cols-2 ${fixed ? "" : "mt-5 border-t border-line pt-5"}`}>
           <div>
             <span id="bt-audience" className="text-[13px] font-semibold text-ink">
               Who you post for
@@ -100,7 +107,7 @@ export function BestTimeFinder() {
                     role="radio"
                     aria-checked={on}
                     onClick={() => setAudience(a.id)}
-                    className={`rounded-lg px-2 py-2 text-[13px] font-semibold transition-colors ${
+                    className={`rounded-lg px-1 py-2 text-[12px] font-semibold sm:px-2 sm:text-[13px] transition-colors ${
                       on ? "bg-surface text-ink shadow-sm ring-1 ring-line" : "text-muted hover:text-ink"
                     }`}
                   >
