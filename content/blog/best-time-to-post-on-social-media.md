@@ -17,7 +17,7 @@ This page puts every network in one table and links to a full guide for each. Ev
 | --- | --- | --- | --- | --- |
 | TikTok | Tue to Thu (brands); Sat (creators) | 2pm to 6pm; creators also 9am Sun and evenings | Sunday for brands | [TikTok](/blog/best-time-to-post-on-tiktok) |
 | YouTube (long videos) | Sunday, then Tue and Mon | 8am to 11am; Sunday 10am | Wed and Thu | [YouTube](/blog/best-time-to-post-on-youtube) |
-| YouTube Shorts | Friday, then Sat and Thu | 6pm to 9pm; Friday 4pm | Mon and Tue | [YouTube](/blog/best-time-to-post-on-youtube) |
+| YouTube Shorts | Friday, then Sat and Thu | 6pm to 9pm; Friday 4pm | Mon and Tue | [Shorts](/blog/best-time-to-post-youtube-shorts) |
 | LinkedIn | Tue to Thu; Wednesday best | 10am to 5pm; Wednesday 4pm | Weekends | [LinkedIn](/blog/best-time-to-post-on-linkedin) |
 | X (Twitter) | Mon to Thu | 12pm to 6pm, Tue to Thu | Weekends | |
 | Instagram | Mon to Thu | 12pm to 7pm; Wednesday until 9pm | Weekends | |

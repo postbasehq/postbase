@@ -38,7 +38,7 @@ The three strongest hours for each day, best first.
 | Saturday | 12pm, 10am, 3pm | 7pm, 11am, 6pm |
 | Sunday | 10am, 9am, 12pm | 7pm, 8pm, 5pm |
 
-If you post one long video a week, the simplest rule from this data is **Sunday morning, or Tuesday morning if weekends don't suit you**. If you post Shorts, **post them in the evening, any day**, with Friday a little ahead.
+If you post one long video a week, the simplest rule from this data is **Sunday morning, or Tuesday morning if weekends don't suit you**. If you post Shorts, **post them in the evening, any day**, with Friday a little ahead. There's more in our guide to the [best time to post YouTube Shorts](/blog/best-time-to-post-youtube-shorts).
 
 ## Why long videos and Shorts have opposite peaks
 
