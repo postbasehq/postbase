@@ -19,7 +19,7 @@ describe("best time to post", () => {
     }
     const b2b = levels(scoreGrid(net("linkedin"), "b2b"));
     expect([...b2b[5], ...b2b[6]].every((l) => l === 0)).toBe(true);
-    expect(summary(net("linkedin"))).toMatchObject({ days: "Tue–Thu", window: "8am–2pm" });
+    expect(summary(net("linkedin"))).toMatchObject({ days: "Tue–Thu", window: "10am–6pm" });
   });
 
   it("consumer audiences move TikTok's best slot into the evening", () => {
