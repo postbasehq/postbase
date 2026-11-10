@@ -1,7 +1,7 @@
 ---
 title: "Claude Code agent teams: build a content team that drafts and schedules posts"
-seo_title: "Claude Code agent teams: a content team that schedules posts"
-description: A hands-on guide to Claude Code agent teams. Enable them, define a researcher, writer and editor, and have the team draft a week of social posts and schedule them in Postbase.
+seo_title: "Claude Code agent teams: a content team"
+description: "A hands-on guide to Claude Code agent teams: enable them, define a researcher, writer and editor, and have the team draft and schedule a week of posts."
 date: 2026-11-10
 category: AI agents
 related: /ai/claude-code, /mcp, /blog/announce-releases-with-claude-code, /blog/let-an-ai-agent-post-safely

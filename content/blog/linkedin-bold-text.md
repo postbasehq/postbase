@@ -1,7 +1,7 @@
 ---
 title: How to bold text on LinkedIn (and italics, lists, line breaks)
-seo_title: How to bold text on LinkedIn posts (and italics, lists) in 2026
-description: LinkedIn posts have no bold button. How to bold and italicise text with a free formatter, add bullet points, numbered lists and line breaks, and when formatting hurts more than it helps.
+seo_title: How to bold text on LinkedIn (and italics)
+description: LinkedIn posts have no bold button. How to bold and italicise text with a free formatter, add bullet points and line breaks, and when formatting hurts.
 date: 2026-11-10
 category: Guides
 related: /tools/linkedin-text-formatter, /tools/social-media-post-preview, /blog/how-to-preview-a-linkedin-post, /integrations/linkedin

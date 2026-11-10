@@ -1,7 +1,7 @@
 ---
 title: The best LinkedIn MCP servers in 2026
-seo_title: "Best LinkedIn MCP servers (2026): post safely from Claude"
-description: The LinkedIn MCP servers worth using in 2026, split into the ones that post through LinkedIn's official API and the ones that log in as you, with what each can do, prices and the account risks.
+seo_title: Best LinkedIn MCP servers in 2026
+description: "The LinkedIn MCP servers worth using in 2026: official-API servers that post safely versus ones that log in as you, with features, prices and risks."
 date: 2026-11-10
 category: AI agents
 related: /mcp/linkedin, /blog/what-is-an-mcp-server, /blog/best-mcp-servers-for-social-media, /blog/write-linkedin-posts-with-claude

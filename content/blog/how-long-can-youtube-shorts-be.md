@@ -1,7 +1,7 @@
 ---
 title: How long can YouTube Shorts be?
-seo_title: How long can YouTube Shorts be? (3-minute limit explained)
-description: YouTube Shorts can be up to 3 minutes long if the video is square or vertical. What happens past 3 minutes, the one-minute copyright rule, music limits and the best length.
+seo_title: How long can YouTube Shorts be? (2026)
+description: YouTube Shorts can be up to 3 minutes if square or vertical. What happens past 3 minutes, the one-minute copyright rule, music limits and the best length.
 date: 2026-11-10
 category: Guides
 related: /integrations/youtube, /blog/how-to-schedule-youtube-videos-and-shorts, /tools/social-media-image-sizes, /blog/youtube-thumbnail-size

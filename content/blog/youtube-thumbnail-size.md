@@ -1,7 +1,7 @@
 ---
 title: "YouTube thumbnail size: dimensions, file size and safe zones"
-seo_title: "YouTube thumbnail size (2026): dimensions, file size, safe zones"
-description: The right YouTube thumbnail size in 2026 (1280 × 720 or 4K), the new 50 MB file limit, Shorts thumbnails, safe zones to keep clear, and a free template to download.
+seo_title: YouTube thumbnail size (2026) and safe zones
+description: The right YouTube thumbnail size in 2026 (1280 × 720 or 4K), the new 50 MB limit, Shorts thumbnails, safe zones to keep clear, and a free template.
 date: 2026-11-10
 category: Guides
 related: /tools/social-media-image-sizes, /integrations/youtube, /blog/how-to-schedule-youtube-videos-and-shorts, /blog/youtube-api-upload-video

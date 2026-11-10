@@ -1,7 +1,7 @@
 ---
 title: Tweet templates that still work in 2026
-seo_title: "Tweet templates: 20 X post templates that still work (2026)"
-description: Twenty fill-in-the-blank tweet templates for announcements, lessons, how-tos, opinions, questions and threads, each with an example and a note on why it works.
+seo_title: Tweet templates that still work in 2026
+description: Twenty fill-in-the-blank tweet templates for announcements, lessons, how-tos, opinions, questions and threads, each with an example and why it works.
 date: 2026-11-10
 category: Guides
 related: /tools/character-counter, /integrations/x, /blog/how-to-write-an-x-thread, /blog/how-to-schedule-tweets

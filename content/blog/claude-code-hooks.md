@@ -1,7 +1,7 @@
 ---
 title: "Claude Code hooks: post a changelog every time you ship"
-seo_title: "Claude Code hooks: announce every release automatically"
-description: How Claude Code hooks work (events, matchers, exit codes, JSON output), and two copyable hooks that turn every release into social posts in Postbase, as drafts you approve.
+seo_title: "Claude Code hooks: announce every release"
+description: How Claude Code hooks work (events, matchers, exit codes, JSON), plus two copyable hooks that turn every release into social posts you approve.
 date: 2026-11-10
 category: AI agents
 related: /ai/claude-code, /blog/claude-code-subagents, /blog/announce-releases-with-claude-code, /blog/claude-code-agent-teams

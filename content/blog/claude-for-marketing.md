@@ -1,7 +1,7 @@
 ---
 title: "Claude for marketing: workflows that save hours"
-seo_title: "Claude for marketing: 7 workflows that save hours (with prompts)"
-description: Seven marketing workflows that work well in Claude, with prompts to copy: a brand voice project, repurposing, campaign plans, research, copy variants, performance reviews and scheduling posts straight from the chat.
+seo_title: "Claude for marketing: 7 workflows to copy"
+description: "Seven marketing workflows for Claude with prompts to copy: a brand voice project, repurposing, campaigns, research, copy tests, reviews and scheduling."
 date: 2026-11-10
 category: AI agents
 related: /ai/claude, /blog/post-to-social-media-from-claude, /blog/write-linkedin-posts-with-claude, /blog/ai-for-social-media

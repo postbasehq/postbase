@@ -1,7 +1,7 @@
 ---
 title: How to preview a LinkedIn post before you publish
-seo_title: How to preview a LinkedIn post before publishing (free tool)
-description: LinkedIn has no preview button. How to check where your post gets cut off, how formatting, images and link cards will look, and how to preview it on desktop and mobile before it goes live.
+seo_title: How to preview a LinkedIn post (free tool)
+description: LinkedIn has no preview button. How to check where your post gets cut off and how formatting, images and link cards will look, before it goes live.
 date: 2026-11-10
 category: Guides
 related: /tools/social-media-post-preview, /tools/linkedin-text-formatter, /blog/linkedin-post-inspector, /integrations/linkedin

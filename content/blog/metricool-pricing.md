@@ -1,7 +1,7 @@
 ---
 title: "Metricool pricing: plans, limits and hidden costs"
-seo_title: "Metricool pricing 2026: plans, limits and hidden costs"
-description: Metricool's Free, Starter, Advanced and Custom plans explained, with prices checked today, what a "brand" includes, the add-ons that cost extra (including X), and worked examples.
+seo_title: "Metricool pricing 2026: plans and hidden costs"
+description: Metricool's Free, Starter, Advanced and Custom plans with prices checked today, what a brand includes, the add-ons that cost extra (like X), and examples.
 date: 2026-11-10
 category: Guides
 related: /blog/best-buffer-alternatives, /blog/best-linkedin-post-schedulers, /alternatives/buffer, /integrations/x

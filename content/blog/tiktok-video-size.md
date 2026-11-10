@@ -1,7 +1,7 @@
 ---
 title: TikTok video size and dimensions
-seo_title: "TikTok video size 2026: 1080 × 1920, safe zone, photo and profile sizes"
-description: The right TikTok video size is 1080 × 1920 (9:16). Every TikTok spec in one table, the safe zone TikTok's buttons cover, photo post and profile picture sizes, and export settings.
+seo_title: "TikTok video size: 1080 × 1920 and safe zone"
+description: "The right TikTok video size is 1080 × 1920 (9:16). Every TikTok spec, the safe zone TikTok's buttons cover, photo and profile sizes, and export settings."
 date: 2026-11-10
 category: Guides
 related: /tools/social-media-image-sizes, /integrations/tiktok, /blog/how-long-can-tiktok-videos-be, /blog/how-to-schedule-tiktok-videos

@@ -1,7 +1,7 @@
 ---
 title: Best time to post on X (Twitter) in 2026
-seo_title: Best time to post on X (Twitter) in 2026 (by day and hour)
-description: The best time to post on X in 2026 is Tuesday to Thursday, late morning to early afternoon. What two big 2026 studies found, times for every day, and how to find your own.
+seo_title: Best time to post on X (Twitter) in 2026
+description: The best time to post on X in 2026 is Tuesday to Thursday, late morning to early afternoon. What two big studies found, times for every day, and more.
 date: 2026-11-10
 category: Guides
 related: /tools/best-time-to-post, /integrations/x, /blog/how-to-schedule-tweets, /blog/x-twitter-analytics

@@ -1,7 +1,7 @@
 ---
 title: How to check your X (Twitter) analytics
 seo_title: How to check your X (Twitter) analytics in 2026
-description: How to see analytics on X for free (per post) and with Premium (the account dashboard), on desktop and mobile, what every metric means, and what to do with the numbers.
+description: How to see X analytics for free (per post) or with Premium (the dashboard), on desktop and mobile, what each metric means and what to do with it.
 date: 2026-11-10
 category: Guides
 related: /integrations/x, /blog/how-to-schedule-tweets, /blog/how-to-write-an-x-thread, /tools/character-counter

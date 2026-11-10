@@ -1,7 +1,7 @@
 ---
 title: How long can TikTok videos be?
-seo_title: How long can TikTok videos be? (2026 limits by upload method)
-description: How long a TikTok can be in 2026: 10 minutes recorded in the app, up to 60 minutes uploaded from a computer on many accounts, and less through some tools. Plus the best length and why 1 minute matters.
+seo_title: How long can TikTok videos be? (2026)
+description: TikToks can be 10 minutes in the app and up to 60 from a computer on many accounts. The limits by upload method, the best length, and why 1 minute matters.
 date: 2026-11-10
 category: Guides
 related: /integrations/tiktok, /blog/how-to-schedule-tiktok-videos, /blog/tiktok-content-posting-api, /tools/social-media-image-sizes

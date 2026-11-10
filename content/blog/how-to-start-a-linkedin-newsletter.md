@@ -1,7 +1,7 @@
 ---
 title: How to start a LinkedIn newsletter
-seo_title: How to start a LinkedIn newsletter in 2026 (step by step)
-description: How to create a LinkedIn newsletter in 2026, who's eligible, how the first edition invites all your followers, how often to publish, and how to turn each issue into a week of posts.
+seo_title: How to start a LinkedIn newsletter (2026)
+description: "How to create a LinkedIn newsletter in 2026: who's eligible, how the first edition invites your followers, how often to publish, and how to promote it."
 date: 2026-11-10
 category: Guides
 related: /integrations/linkedin, /blog/best-time-to-post-on-linkedin, /blog/repurpose-youtube-video-into-social-posts, /blog/linkedin-image-sizes

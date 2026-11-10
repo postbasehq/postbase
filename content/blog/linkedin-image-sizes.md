@@ -1,7 +1,7 @@
 ---
 title: LinkedIn image sizes for posts, carousels and banners
-seo_title: "LinkedIn image sizes 2026: posts, carousels, banners, pages"
-description: Every LinkedIn image size in one place, from LinkedIn's own help pages: post images, multi-image posts, document carousels, link previews, profile banners, company pages and video, plus a free banner template.
+seo_title: "LinkedIn image sizes 2026: posts and banners"
+description: "Every LinkedIn image size from LinkedIn's help: posts, multi-image posts, carousels, link previews, banners, company pages and video, plus a template."
 date: 2026-11-10
 category: Guides
 related: /tools/social-media-image-sizes, /integrations/linkedin, /blog/how-to-preview-a-linkedin-post, /blog/linkedin-post-inspector

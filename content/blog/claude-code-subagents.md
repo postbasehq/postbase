@@ -1,7 +1,7 @@
 ---
 title: "Claude Code subagents: a social media subagent you can copy"
-seo_title: "Claude Code subagents: how they work, plus one you can copy"
-description: How Claude Code subagents work (files, frontmatter, tools, models, MCP), and a ready-to-copy social media subagent that drafts and schedules posts through Postbase.
+seo_title: Claude Code subagents, plus one to copy
+description: How Claude Code subagents work (files, front matter, tools, models, MCP), and a ready-to-copy social media subagent that drafts and schedules posts.
 date: 2026-11-10
 category: AI agents
 related: /ai/claude-code, /blog/claude-code-agent-teams, /blog/announce-releases-with-claude-code, /mcp

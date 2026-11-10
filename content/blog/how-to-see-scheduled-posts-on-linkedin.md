@@ -1,7 +1,7 @@
 ---
 title: How to see (and edit) scheduled posts on LinkedIn
-seo_title: How to see, edit and delete scheduled posts on LinkedIn
-description: Where LinkedIn keeps your scheduled posts on desktop and mobile, how to edit, reschedule or delete them, how it works for company pages, and the limits of LinkedIn's scheduler.
+seo_title: How to see scheduled posts on LinkedIn
+description: Where LinkedIn keeps scheduled posts on desktop and mobile, how to edit, reschedule or delete them, company pages, and the limits of LinkedIn's scheduler.
 date: 2026-11-10
 category: Guides
 related: /integrations/linkedin, /blog/how-to-schedule-linkedin-posts, /blog/best-linkedin-post-schedulers, /blog/linkedin-link-in-first-comment

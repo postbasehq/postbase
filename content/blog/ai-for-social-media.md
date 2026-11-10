@@ -1,7 +1,7 @@
 ---
 title: "AI for social media: what works in 2026"
-seo_title: "AI for social media in 2026: what works and what doesn't"
-description: Where AI genuinely helps with social media in 2026 (drafting, repurposing, scheduling with agents), where it still fails, the platforms' AI labelling rules, and a workflow that keeps you in control.
+seo_title: "AI for social media: what works in 2026"
+description: Where AI helps with social media in 2026 (drafting, repurposing, scheduling with agents), where it fails, platform labelling rules, and a safe workflow.
 date: 2026-11-10
 category: AI agents
 related: /blog/post-to-social-media-from-claude, /blog/let-an-ai-agent-post-safely, /blog/what-is-an-mcp-server, /blog/best-mcp-servers-for-social-media

@@ -1,7 +1,7 @@
 ---
 title: How to quote tweet on X (desktop and mobile)
-seo_title: How to quote tweet on X (desktop, iPhone and Android)
-description: How to quote a post on X on desktop, iPhone and Android, how to quote a tweet in a reply, how to see who quoted you, and why the Quote option sometimes isn't there.
+seo_title: How to quote tweet on X (desktop and mobile)
+description: How to quote a post on X on desktop, iPhone and Android, how to quote a tweet in a reply, how to see who quoted you, and why Quote is sometimes missing.
 date: 2026-11-10
 category: Guides
 related: /integrations/x, /tools/character-counter, /blog/x-twitter-analytics, /blog/how-to-write-an-x-thread

@@ -1,7 +1,7 @@
 ---
 title: Best time to post on TikTok on Sunday
 seo_title: Best time to post on TikTok on Sunday (2026 data)
-description: The best time to post on TikTok on a Sunday is 9am to 12pm local time. What the big studies say about Sundays, times for US time zones, and when to skip Sunday.
+description: The best time to post on TikTok on Sunday is 9am to 12pm local time. What the studies say about Sundays, US time zones, and when brands should skip it.
 date: 2026-11-10
 category: Guides
 related: /tools/best-time-to-post, /integrations/tiktok, /blog/best-time-to-post-on-tiktok, /blog/how-to-schedule-tiktok-videos

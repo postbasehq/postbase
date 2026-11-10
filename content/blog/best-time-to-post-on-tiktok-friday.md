@@ -1,7 +1,7 @@
 ---
 title: Best time to post on TikTok on Friday
 seo_title: Best time to post on TikTok on Friday (2026 data)
-description: The best time to post on TikTok on a Friday is 3pm to 6pm local time, the one window all three big studies agree on. Times by industry, US time zones and Friday night.
+description: The best time to post on TikTok on Friday is 3pm to 6pm local time, the window all three big studies agree on. Times by industry and US time zones.
 date: 2026-11-10
 category: Guides
 related: /tools/best-time-to-post, /integrations/tiktok, /blog/best-time-to-post-on-tiktok, /blog/how-to-schedule-tiktok-videos

@@ -1,7 +1,7 @@
 ---
 title: Bluesky character limit (and how links and images count)
-seo_title: "Bluesky character limit: 300 per post, links, bio and alt text"
-description: Bluesky posts are limited to 300 characters (graphemes). How emoji, links and images count, the limits for bios, display names, alt text and DMs, and how to fit more in.
+seo_title: "Bluesky character limit: posts, bio, alt text"
+description: Bluesky posts are limited to 300 characters (graphemes). How emoji, links and images count, the bio, name, alt text and DM limits, and how to fit more.
 date: 2026-11-10
 category: Guides
 related: /tools/character-counter, /integrations/bluesky, /blog/how-to-grow-on-bluesky, /blog/how-to-schedule-bluesky-posts

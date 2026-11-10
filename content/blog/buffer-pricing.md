@@ -1,7 +1,7 @@
 ---
 title: "Buffer pricing in 2026: every plan explained"
-seo_title: "Buffer pricing 2026: Free, Essentials and Team plans explained"
-description: Buffer's Free, Essentials and Team plans explained, with prices checked today, what you pay for 1 to 10 channels, what the free plan leaves out, and how it compares with flat-priced schedulers.
+seo_title: "Buffer pricing 2026: every plan explained"
+description: Buffer's Free, Essentials and Team plans with prices checked today, what 1 to 10 channels cost, what the free plan leaves out, and flat-price options.
 date: 2026-11-10
 category: Guides
 related: /alternatives/buffer, /blog/best-buffer-alternatives, /blog/metricool-pricing, /blog/best-linkedin-post-schedulers

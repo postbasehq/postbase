@@ -1,7 +1,7 @@
 ---
 title: "X (Twitter) character limit: posts, replies, DMs, bios and Premium"
-seo_title: "X (Twitter) character limit 2026: posts, DMs, bio, Premium"
-description: Every X character limit in one table, from the 280-character post to the 25,000-character Premium post, DMs, bios, names, polls and alt text, plus how X actually counts characters.
+seo_title: "X (Twitter) character limit: every limit"
+description: "Every X character limit in one table: 280-character posts, 25,000 with Premium, DMs, bios, names, polls and alt text, plus how X counts characters."
 date: 2026-11-10
 category: Guides
 related: /tools/character-counter, /integrations/x, /blog/how-to-write-an-x-thread, /blog/how-to-quote-tweet

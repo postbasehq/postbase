@@ -1,7 +1,7 @@
 ---
 title: "Claude Code MCP servers: how to add them, and which ones to use"
-seo_title: "Claude Code MCP: how to add MCP servers (and which to use)"
-description: How to add MCP servers to Claude Code with claude mcp add (HTTP and stdio), scopes and .mcp.json, sign-in with /mcp, environment variables, limits and fixes, plus the servers worth installing.
+seo_title: "Claude Code MCP: how to add MCP servers"
+description: How to add MCP servers to Claude Code with claude mcp add, scopes and .mcp.json, sign-in with /mcp, limits and fixes, plus the servers worth installing.
 date: 2026-11-10
 category: AI agents
 related: /ai/claude-code, /mcp, /blog/claude-code-subagents, /blog/what-is-an-mcp-server

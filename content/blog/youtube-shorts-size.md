@@ -1,7 +1,7 @@
 ---
 title: YouTube Shorts size and aspect ratio
-seo_title: "YouTube Shorts size (2026): 1080 × 1920, 9:16 and safe zones"
-description: The right YouTube Shorts size is 1080 × 1920 pixels, a 9:16 vertical frame. Every Shorts spec in one table, the safe zone the app's buttons cover, and how to turn a landscape video into a Short.
+seo_title: "YouTube Shorts size: 1080 × 1920 and safe zone"
+description: "The right YouTube Shorts size is 1080 × 1920, a 9:16 frame. Every Shorts spec, the safe zone YouTube's buttons cover, and how to reframe landscape video."
 date: 2026-11-10
 category: Guides
 related: /tools/social-media-image-sizes, /integrations/youtube, /blog/how-long-can-youtube-shorts-be, /blog/youtube-thumbnail-size

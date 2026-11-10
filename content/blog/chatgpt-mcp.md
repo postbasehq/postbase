@@ -1,7 +1,7 @@
 ---
 title: "ChatGPT MCP: how to connect MCP servers to ChatGPT"
-seo_title: "ChatGPT MCP: how to add a custom MCP server (2026 steps)"
-description: How to connect a custom MCP server to ChatGPT in 2026, which plans can use write actions, the exact steps in Plugins, OAuth, local servers, and fixes when the option is missing.
+seo_title: "ChatGPT MCP: how to add a custom MCP server"
+description: "How to connect a custom MCP server to ChatGPT in 2026: which plans allow write actions, the exact steps in Plugins, OAuth, local servers and fixes."
 date: 2026-11-10
 category: AI agents
 related: /ai/chatgpt, /blog/what-is-an-mcp-server, /blog/best-mcp-servers-for-social-media, /mcp

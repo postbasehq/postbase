@@ -1,7 +1,7 @@
 ---
 title: Twitter (X) image size guide
-seo_title: "Twitter (X) image size 2026: posts, header, profile, cards"
-description: Every X (Twitter) image size in one place: in-post images, multi-image posts, GIFs, the 1500 × 500 header, profile photo and link card images, with a free header template.
+seo_title: Twitter (X) image size guide for 2026
+description: "Every X (Twitter) image size: in-post images, multi-image posts, GIFs, the 1500 × 500 header, profile photo and link cards, plus a free header template."
 date: 2026-11-10
 category: Guides
 related: /tools/social-media-image-sizes, /integrations/x, /blog/x-character-limit, /tools/social-media-post-preview

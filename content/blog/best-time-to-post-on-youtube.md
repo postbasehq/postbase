@@ -1,7 +1,7 @@
 ---
 title: Best time to post on YouTube in 2026, for videos and Shorts
-seo_title: Best time to post on YouTube in 2026 (videos and Shorts)
-description: The best days and times to upload YouTube videos and Shorts in 2026, from a study of 1.8 million videos, a day-by-day table, and how to find your own channel's best time.
+seo_title: Best time to post on YouTube in 2026
+description: The best days and times to upload YouTube videos and Shorts in 2026, from a study of 1.8 million videos, a day-by-day table, and how to find your own.
 date: 2026-11-10
 category: Guides
 related: /tools/best-time-to-post, /integrations/youtube, /blog/how-to-schedule-youtube-videos-and-shorts, /blog/best-time-to-post-on-tiktok

@@ -1,7 +1,7 @@
 ---
 title: "LinkedIn Post Inspector: fix broken link previews"
-seo_title: "LinkedIn Post Inspector: how to fix link previews (2026)"
-description: How to use LinkedIn Post Inspector to refresh a stale or broken link preview, the four Open Graph tags LinkedIn needs, the 1200 × 627 image rule, and fixes for the usual problems.
+seo_title: "LinkedIn Post Inspector: fix link previews"
+description: Use LinkedIn Post Inspector to refresh a stale or broken link preview, set the four Open Graph tags LinkedIn needs, and fix the usual image problems.
 date: 2026-11-10
 category: Developers
 related: /integrations/linkedin, /blog/linkedin-link-in-first-comment, /tools/social-media-post-preview, /tools/social-media-image-sizes

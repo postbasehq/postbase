@@ -1,7 +1,7 @@
 ---
 title: Best time to post YouTube Shorts in 2026
-seo_title: Best time to post YouTube Shorts in 2026 (by day and hour)
-description: The best time to post YouTube Shorts is 6pm to 9pm, with Friday at 4pm the top slot, from a 2026 study of 1.8 million videos. Times for every day, why Shorts differ from long videos, and how to post to Shorts and TikTok together.
+seo_title: Best time to post YouTube Shorts in 2026
+description: Post YouTube Shorts between 6pm and 9pm, with Friday at 4pm the top slot, from a 2026 study of 1.8 million videos. Times for every day of the week.
 date: 2026-11-10
 category: Guides
 related: /tools/best-time-to-post, /integrations/youtube, /blog/best-time-to-post-on-youtube, /blog/how-long-can-youtube-shorts-be
