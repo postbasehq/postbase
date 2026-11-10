@@ -19,13 +19,13 @@ This page puts every network in one table and links to a full guide for each. Ev
 | YouTube (long videos) | Sunday, then Tue and Mon | 8am to 11am; Sunday 10am | Wed and Thu | [YouTube](/blog/best-time-to-post-on-youtube) |
 | YouTube Shorts | Friday, then Sat and Thu | 6pm to 9pm; Friday 4pm | Mon and Tue | [Shorts](/blog/best-time-to-post-youtube-shorts) |
 | LinkedIn | Tue to Thu; Wednesday best | 10am to 5pm; Wednesday 4pm | Weekends | [LinkedIn](/blog/best-time-to-post-on-linkedin) |
-| X (Twitter) | Mon to Thu | 12pm to 6pm, Tue to Thu | Weekends | |
+| X (Twitter) | Tue to Thu; Wednesday best | 9am to 11am (Buffer) or 12pm to 6pm (Sprout) | Weekends | [X](/blog/best-time-to-post-on-x) |
 | Instagram | Mon to Thu | 12pm to 7pm; Wednesday until 9pm | Weekends | |
 | Facebook | Mon to Thu | 12pm to 8pm, Tue and Wed | Weekends | |
 | Bluesky | Weekdays | Morning to early afternoon | Weekends | |
 | Mastodon | Weekdays | Morning to early afternoon | Weekends | |
 
-Sources: [Sprout Social](https://sproutsocial.com/insights/best-times-to-post-on-social-media/) (TikTok, LinkedIn, X, Instagram, Facebook; Nov 2025 to Feb 2026), and Buffer's 2026 studies of [TikTok](https://buffer.com/library/best-time-to-post-on-tiktok), [YouTube](https://buffer.com/resources/best-time-to-post-on-youtube/) and [LinkedIn](https://buffer.com/resources/best-time-to-post-on-linkedin/). No large study covers Bluesky or Mastodon yet; their times follow how their feeds work (see below).
+Sources: [Sprout Social](https://sproutsocial.com/insights/best-times-to-post-on-social-media/) (TikTok, LinkedIn, X, Instagram, Facebook; Nov 2025 to Feb 2026), and Buffer's 2026 studies of [TikTok](https://buffer.com/library/best-time-to-post-on-tiktok), [YouTube](https://buffer.com/resources/best-time-to-post-on-youtube/), [LinkedIn](https://buffer.com/resources/best-time-to-post-on-linkedin/) and [X](https://buffer.com/resources/best-time-to-post-on-twitter-x/). No large study covers Bluesky or Mastodon yet; their times follow how their feeds work (see below).
 
 ## Find the best time in your time zone
 

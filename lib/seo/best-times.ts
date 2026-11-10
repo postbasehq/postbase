@@ -58,8 +58,9 @@ export const NETWORK_TIMES: NetworkTimes[] = [
   {
     id: "x",
     name: "X",
+    // Buffer 2026 (8.7M posts) peaks 9-11am; Sprout 2026 peaks 12-6pm. This blends the overlap.
     days: [0.9, 1, 1, 0.95, 0.75, 0.45, 0.4],
-    blocks: [0.3, 0.55, 0.8, 1, 0.95, 0.9, 0.6, 0.45, 0.3],
+    blocks: [0.35, 0.75, 0.95, 1, 0.85, 0.75, 0.55, 0.45, 0.3],
     tip: "Posts on X fade within hours. Post when your followers are online, and reply to the first comments quickly.",
   },
   {
