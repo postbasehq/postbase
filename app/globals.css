@@ -367,6 +367,13 @@ body {
   font-size: 13px;
   background: var(--ground);
 }
+/* On phones, wide tables scroll sideways instead of squeezing every column. */
+@media (max-width: 640px) {
+  .prose-blog th:not(.not-prose *),
+  .prose-blog td:not(.not-prose *) {
+    min-width: 7.5rem;
+  }
+}
 .prose-blog img:not(.not-prose *) {
   display: block;
   width: 100%;
