@@ -3,6 +3,7 @@ title: How to post to LinkedIn with the API: images, first comments and gotchas
 seo_title: How to post to LinkedIn with the API
 description: LinkedIn's Posts API in practice: versioned headers, images, first comments, token expiry and the escaping rule that breaks most first attempts.
 date: 2026-09-25
+updated: 2026-11-10
 category: Developers
 related: /integrations/linkedin, /integrations/x
 ---
@@ -91,7 +92,7 @@ function escapeCommentary(text: string) {
 }
 ```
 
-The post then shows the text exactly as typed. The trade-off is that hashtags and mentions appear as plain text rather than links. To make real mentions, use the little text mention syntax with the person's URN instead of escaping.
+The post then shows the text exactly as typed. The trade-off is that hashtags and mentions appear as plain text rather than links. To keep hashtags clickable, write each one with LinkedIn's hashtag template, `{hashtag|\#|marketing}`, instead of escaping its `#`; the tag text inside still needs escaping. To make real mentions, use the little text mention syntax with the person's URN.
 
 ## Step 4: attach images
 
