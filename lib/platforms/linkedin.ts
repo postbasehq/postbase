@@ -140,13 +140,71 @@ export async function uploadImage(
   return initJson.value.image;
 }
 
+/** Escape every reserved "little text" character so it posts literally. */
+function escapeLittle(text: string): string {
+  return text.replace(/[\\<>#~@|{}[\]()*_]/g, (c) => `\\${c}`);
+}
+
+/** A run of LinkedIn post text: plain text, a link LinkedIn auto-links, or a hashtag. */
+export type LinkedInSegment =
+  | { kind: "text"; text: string }
+  | { kind: "link"; text: string }
+  | { kind: "hashtag"; text: string; sign: "#" | "＃"; tag: string };
+
+// Links are kept whole so a `#fragment` inside one never becomes a hashtag.
+const LINK_RE = /\b(?:https?:\/\/|www\.)\S+/giu;
+// A hashtag is `#` (or full-width `＃`) followed by letters/digits/underscores,
+// with at least one letter (so `#1` stays literal). It must not follow a word
+// character or URL/entity punctuation, so `C#`, `page#section`, `/#top`,
+// `&#38;` and `##` stay literal.
+const HASHTAG_RE = /(?<![\p{L}\p{N}\p{M}_&/\\#＃@=])([#＃])([\p{L}\p{N}\p{M}_]+)/gu;
+const HAS_LETTER = /\p{L}/u;
+
+function splitHashtags(text: string, out: LinkedInSegment[]): void {
+  let last = 0;
+  for (const m of text.matchAll(HASHTAG_RE)) {
+    const [whole, sign, tag] = m;
+    if (!HAS_LETTER.test(tag)) continue;
+    const at = m.index ?? 0;
+    if (at > last) out.push({ kind: "text", text: text.slice(last, at) });
+    out.push({ kind: "hashtag", text: whole, sign: sign as "#" | "＃", tag });
+    last = at + whole.length;
+  }
+  if (last < text.length) out.push({ kind: "text", text: text.slice(last) });
+}
+
 /**
- * LinkedIn commentary uses a "little text" format where these characters are
- * reserved. Escape them so arbitrary user text posts literally (hashtags/mentions
- * render as plain text rather than erroring the request).
+ * Split post text the way LinkedIn will show it: hashtags become real
+ * (clickable) hashtags, links stay links, everything else is plain text.
+ * Shared by the publisher and the composer's LinkedIn preview.
+ */
+export function linkedInSegments(text: string): LinkedInSegment[] {
+  const out: LinkedInSegment[] = [];
+  let last = 0;
+  for (const m of text.matchAll(LINK_RE)) {
+    const at = m.index ?? 0;
+    if (at > last) splitHashtags(text.slice(last, at), out);
+    out.push({ kind: "link", text: m[0] });
+    last = at + m[0].length;
+  }
+  if (last < text.length) splitHashtags(text.slice(last), out);
+  return out;
+}
+
+/**
+ * LinkedIn commentary uses a "little text" format where some characters are
+ * reserved. Hashtags become the `{hashtag|\#|tag}` template so they show as
+ * clickable hashtags; every other reserved character is escaped so arbitrary
+ * user text (mentions, `C#`, URL fragments, `*` bullets) posts literally.
  */
 export function escapeCommentary(text: string): string {
-  return text.replace(/[\\<>#~@|{}[\]()*_]/g, (c) => `\\${c}`);
+  return linkedInSegments(text)
+    .map((s) =>
+      s.kind === "hashtag"
+        ? `{hashtag|${s.sign === "#" ? "\\#" : "＃"}|${escapeLittle(s.tag)}}`
+        : escapeLittle(s.text),
+    )
+    .join("");
 }
 
 /**

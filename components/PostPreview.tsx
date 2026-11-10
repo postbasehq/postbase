@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { BrandTile, BRANDS } from "@/components/BrandTile";
+import { linkedInSegments } from "@/lib/platforms/linkedin";
 
 /**
  * Minimal video preview: no native browser chrome (or its dark gradient). It
@@ -606,7 +607,7 @@ function LinkedInPost({
       {/* body */}
       <div className="px-4 pt-2.5 text-[14px] leading-[1.45] text-ink">
         <span className={long ? "line-clamp-3 whitespace-pre-wrap" : "whitespace-pre-wrap"}>
-          {text.trim() || <span className="text-muted">(empty)</span>}
+          {text.trim() ? <LinkedInText text={text} /> : <span className="text-muted">(empty)</span>}
         </span>
         {long ? <span className="text-[13px] text-muted">…more</span> : null}
       </div>
@@ -1102,6 +1103,26 @@ function FbAction({ label, children }: { label: string; children: React.ReactNod
       </svg>
       {label}
     </span>
+  );
+}
+
+// LinkedIn body: colour exactly what the publisher turns into hashtags (and the
+// links LinkedIn auto-links), using the same rule, so `C#`, `#1` and URL
+// fragments stay plain here just as they do on LinkedIn. @mentions post as
+// plain text, so they aren't coloured.
+function LinkedInText({ text }: { text: string }) {
+  return (
+    <>
+      {linkedInSegments(text).map((s, i) =>
+        s.kind === "text" ? (
+          <span key={i}>{s.text}</span>
+        ) : (
+          <span key={i} className="font-semibold" style={{ color: "var(--li-link, #0a66c2)" }}>
+            {s.text}
+          </span>
+        ),
+      )}
+    </>
   );
 }
 
