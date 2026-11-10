@@ -1,8 +1,9 @@
 "use client";
 
-import { AgentShot } from "@/components/marketing/CreatorGrid";
+import { AgentShot, AnalyticsShot } from "@/components/marketing/CreatorGrid";
 import { McpShot, RevokeShot, ToolsShot } from "@/components/marketing/DevGrid";
 import { CalendarHeroDemo, ClientSetupDemo, NetworkComposerDemo } from "@/components/marketing/seo/demos";
+import { Fit } from "@/components/marketing/Fit";
 import { BestTimeFinder } from "@/components/marketing/tools/BestTimeFinder";
 import { CLIENTS } from "@/lib/seo/clients";
 import { LIVE_NETWORKS } from "@/lib/seo/networks";
@@ -12,7 +13,7 @@ import { LIVE_NETWORKS } from "@/lib/seo/networks";
  *   ::demo client-setup client=claude-code
  *   ::demo composer network=bluesky
  *   ::demo agent prompt="…" channels=x,linkedin
- *   ::demo calendar | tools | revoke | mcp
+ *   ::demo calendar | tools | revoke | mcp | analytics
  *   ::demo best-time network=tiktok   (the live best-time finder, locked to one network)
  * Optional caption="…" on any of them.
  */
@@ -53,6 +54,12 @@ function render(name: string, p: Record<string, string>) {
       return <CalendarHeroDemo />;
     case "best-time":
       return <BestTimeFinder network={p.network} />;
+    case "analytics":
+      return (
+        <Fit minWidth={800} height={446}>
+          <AnalyticsShot />
+        </Fit>
+      );
     case "tools":
       return (
         <Centered>
