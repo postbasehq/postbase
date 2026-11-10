@@ -33,17 +33,17 @@ For a general audience it lands on **Tuesday to Thursday, 2pm to 10pm**, with Th
 
 ## Best time to post on TikTok for each day of the week
 
-These are each study's best hours for every day, in your audience's local time.
+These are each study's best hours for every day, in your audience's local time. Monday, Friday, Saturday and Sunday each have their own page with times by industry and US time zones.
 
 | Day | Sprout Social | Buffer | Hootsuite |
 | --- | --- | --- | --- |
-| Monday | 3pm to 5pm | 1pm (also 11am, 8am) | 5pm |
+| [Monday](/blog/best-time-to-post-on-tiktok-monday) | 3pm to 5pm | 1pm (also 11am, 8am) | 5pm |
 | Tuesday | 2pm to 6pm | 6am (also 10pm, 7am) | 10am to 1pm |
 | Wednesday | 1pm to 8pm | 10pm (also 6am, 9pm) | 4pm to 6pm |
 | Thursday | 1pm to 5pm | 1pm (also 10pm, 6am) | 7am to 9am |
-| Friday | 3pm to 5pm | 6pm (also 10pm, 8pm) | 4pm to 6pm |
-| Saturday | Low engagement | 5pm (also 4pm, 3pm) | 10am to 7pm |
-| Sunday | Low engagement | 9am (also 1pm, 12pm) | 8am to 12pm |
+| [Friday](/blog/best-time-to-post-on-tiktok-friday) | 3pm to 5pm | 6pm (also 10pm, 8pm) | 4pm to 6pm |
+| [Saturday](/blog/best-time-to-post-on-tiktok-saturday) | Low engagement | 5pm (also 4pm, 3pm) | 10am to 7pm |
+| [Sunday](/blog/best-time-to-post-on-tiktok-sunday) | Low engagement | 9am (also 1pm, 12pm) | 8am to 12pm |
 
 A few patterns hold across all three:
 
