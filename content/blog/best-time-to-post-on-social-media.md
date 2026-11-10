@@ -1,6 +1,6 @@
 ---
 title: Best time to post on social media in 2026 (every platform, one table)
-seo_title: Best time to post on social media in 2026
+seo_title: "Best time to post on social media, by network"
 description: The best days and times to post on TikTok, YouTube, LinkedIn, X, Instagram, Facebook, Bluesky and Mastodon in 2026, in one table, plus how to find yours.
 date: 2026-11-10
 category: Guides
