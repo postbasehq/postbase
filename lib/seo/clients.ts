@@ -127,7 +127,7 @@ export const CLIENTS: AiClient[] = [
     kind: "chat",
     metaTitle: "Post to social media from ChatGPT (MCP connector)",
     metaDescription:
-      "Add Postbase to ChatGPT as a custom MCP app in developer mode and let ChatGPT draft and schedule posts to X, LinkedIn, Bluesky, Mastodon and YouTube. No API key.",
+      "Add Postbase to ChatGPT as a custom MCP server and let ChatGPT draft and schedule posts to X, LinkedIn, Bluesky, Mastodon and YouTube. No API key.",
     eyebrow: "Postbase for ChatGPT",
     h1: ["Let ChatGPT post to", "social media"],
     h1Icon: "ChatGPT",
@@ -136,12 +136,12 @@ export const CLIENTS: AiClient[] = [
       language: "url",
       code: MCP_URL,
       instruction:
-        "In ChatGPT, turn on developer mode, create a custom MCP app with this URL and choose OAuth. You'll sign in to Postbase in a browser window — no API key.",
+        "In ChatGPT on the web, open Plugins, choose Add custom MCP server, paste this URL and choose OAuth. You'll sign in to Postbase in a browser window — no API key.",
     },
     steps: [
       {
         title: "Add the app",
-        body: "In ChatGPT on the web, turn on developer mode in Settings, then create a custom MCP app. Name it Postbase, paste the server URL and choose OAuth.",
+        body: "In ChatGPT on the web, go to Plugins, select the plus button and choose Add custom MCP server. Name it Postbase, paste the server URL and choose OAuth.",
       },
       SIGN_IN_STEP,
       ASK_STEP("ChatGPT"),
@@ -155,7 +155,7 @@ export const CLIENTS: AiClient[] = [
     faqs: [
       [
         "Which ChatGPT plans can add Postbase?",
-        "Custom MCP apps need ChatGPT's developer mode, which OpenAI offers on paid plans. Where exactly the setting lives changes from time to time, so check OpenAI's help article on developer mode if you can't find it.",
+        "Full MCP support, including actions like scheduling a post, is on ChatGPT Business and Enterprise/Edu, on the web; on Business, a workspace admin adds the server. ChatGPT Pro can connect custom MCP servers with read-only access, so it can check your queue and analytics but not schedule. OpenAI changes this often, so check its help article on connecting custom MCP servers.",
       ],
       [
         "Can ChatGPT attach images or videos?",
