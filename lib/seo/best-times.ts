@@ -48,9 +48,10 @@ export const NETWORK_TIMES: NetworkTimes[] = [
   {
     id: "linkedin",
     name: "LinkedIn",
-    days: [0.85, 1, 1, 0.95, 0.7, 0.2, 0.2],
-    blocks: [0.45, 1, 0.95, 0.85, 0.65, 0.5, 0.3, 0.2, 0.1],
-    tip: "People read LinkedIn at work: before the first meeting and around lunch. Weekends are quiet.",
+    // 2026 data (Sprout Social, Buffer) moved the peak from early morning to late morning through mid-afternoon.
+    days: [0.8, 0.95, 1, 0.95, 0.8, 0.2, 0.2],
+    blocks: [0.3, 0.6, 0.9, 0.95, 1, 0.95, 0.5, 0.35, 0.2],
+    tip: "People read LinkedIn during the working day: late morning to mid-afternoon, Tuesday to Thursday, is strongest. Weekends are quiet.",
   },
   {
     id: "x",

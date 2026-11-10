@@ -34,7 +34,7 @@ const FAQS: [string, string][] = [
   ],
   [
     "What is the best time to post on LinkedIn?",
-    `${at("linkedin").days}, ${at("linkedin").window}. LinkedIn is read at work, so the start of the working day and lunchtime are strongest, and weekends are the quietest days of the week.`,
+    `${at("linkedin").days}, ${at("linkedin").window}. LinkedIn is read during the working day, so late morning to mid-afternoon is strongest, and weekends are the quietest days of the week.`,
   ],
   [
     "What is the best time to post on TikTok?",
