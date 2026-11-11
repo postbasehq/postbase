@@ -20,7 +20,7 @@ const FAQS: [string, string][] = [
   ],
   [
     "Why does my Bluesky post count differently from X?",
-    "Bluesky allows 300 graphemes, which is what a person would count as characters: an emoji with a skin tone is one, and links count at their full length. X uses weighted counting, so the same text gives two different numbers.",
+    "Bluesky allows 300 graphemes, which is what a person would count as characters: an emoji with a skin tone is one. Links drop the https:// and a long one is cut to about 30 characters, the way the Bluesky app shows it. X uses weighted counting, so the same text gives two different numbers.",
   ],
   [
     "How long can a LinkedIn post be?",
@@ -73,7 +73,7 @@ export default function CharacterCounterPage() {
               <tbody className="divide-y divide-line text-ink">
                 {[
                   ["X", "280 per post", "Weighted: links 23, emoji and CJK 2"],
-                  ["Bluesky", "300 per post", "Graphemes (what you'd count by eye)"],
+                  ["Bluesky", "300 per post", "Graphemes; long links shortened to ~30"],
                   ["Threads", "500 per post", "Characters"],
                   ["Mastodon", "500 per post (default)", "Links 23, remote mentions by name only"],
                   ["LinkedIn", "3,000 per post", "Characters"],

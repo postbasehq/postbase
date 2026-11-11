@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { shortenLinks } from "@/lib/bluesky-text";
 import { fetchMedia, MAX_IMAGE_BYTES as MAX_SOURCE_IMAGE_BYTES } from "@/lib/platforms/fetch-media";
 
 /**
@@ -94,24 +95,6 @@ export async function connectBluesky(
   return { service, identifier: id, app_password: password, did: session.did, handle: session.handle, profile };
 }
 
-// Link facets make URLs clickable. Bluesky indexes text by UTF-8 byte offsets.
-function linkFacets(text: string): unknown[] {
-  const enc = new TextEncoder();
-  const facets: unknown[] = [];
-  const re = /https?:\/\/[^\s]+/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text))) {
-    const url = m[0].replace(/[.,)\]]+$/, ""); // drop trailing punctuation
-    const byteStart = enc.encode(text.slice(0, m.index)).length;
-    const byteEnd = byteStart + enc.encode(url).length;
-    facets.push({
-      index: { byteStart, byteEnd },
-      features: [{ $type: "app.bsky.richtext.facet#link", uri: url }],
-    });
-  }
-  return facets;
-}
-
 async function compressForBluesky(bytes: ArrayBuffer): Promise<Buffer> {
   const src = Buffer.from(bytes);
   let quality = 90;
@@ -146,12 +129,15 @@ export async function createPost(
 ): Promise<{ uri: string; cid: string; url: string }> {
   const session = await createSession(tokens.service, tokens.identifier, tokens.app_password);
 
+  // Like the official app: long links show shortened in the text (and count
+  // that way toward the 300), with a link facet carrying the full URL.
+  const rich = shortenLinks(text);
   const record: Record<string, unknown> = {
     $type: "app.bsky.feed.post",
-    text,
+    text: rich.text,
     createdAt: new Date().toISOString(),
   };
-  const facets = linkFacets(text);
+  const facets = rich.facets;
   if (facets.length) record.facets = facets;
   if (reply) record.reply = reply;
 

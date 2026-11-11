@@ -97,8 +97,9 @@ describe("media on its own is a post", () => {
 });
 
 describe("the editor's counter reports the network with the least room", () => {
-  it("a long link is fine on X but over on Bluesky", () => {
-    const part = "a".repeat(200) + " https://example.com/" + "x".repeat(130);
+  it("a long link is fine on X but can be over on Bluesky", () => {
+    // X counts any link as 23; Bluesky shows host + 13 path characters + "...".
+    const part = "a".repeat(250) + " https://a-very-long-subdomain.example-company.com/" + "x".repeat(130);
     expect(partBudget(["x"], [part], 0)).toMatchObject({ platform: "x", limit: 280 });
     expect(partBudget(["x"], [part], 0)!.used).toBeLessThanOrEqual(280);
     const both = partBudget(["x", "bluesky"], [part], 0)!;

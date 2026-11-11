@@ -44,8 +44,9 @@ That's friendlier than X, where emoji and CJK characters count as 2. A Japanese 
 
 It depends on the app you post from:
 
-- **The official Bluesky app shortens long links before posting.** A long URL becomes the domain plus the start of the path, such as `example.com/blog/how-to-s...`, and only that shortened text counts. The link still goes to the full address.
-- **Other apps and tools** may post the full URL, so the whole address counts toward 300. Postbase currently does this, so use short links when you schedule through it.
+- **The official Bluesky app shortens long links before posting.** It drops the `https://` and, if the rest of the address after the domain is longer than 15 characters, keeps only its first 13 plus `...`, such as `example.com/blog/bluesky...`. Only that shortened text counts, so a long link costs about 30 characters. The link still goes to the full address.
+- **Postbase shortens links the same way**, and its counter counts the short form, so a post that fits in the Bluesky app fits when you schedule it.
+- **Some other apps and tools** post the full URL, so the whole address counts toward 300.
 - **A link card** (the preview with an image and title) doesn't count at all.
 
 If you're tight on space, put the link at the end and keep the URL short, or let the link card carry it.
@@ -75,7 +76,7 @@ Your **bio** can be 256 characters and your **display name** 64. Links in your b
 
 ## Scheduling Bluesky posts within the limit
 
-Bluesky's app doesn't have a scheduler. In Postbase you write a post once and adjust each network's version in its own tab, with a counter that follows each network's rules: graphemes for Bluesky, weighted characters for X. Posts over 300 are flagged before they're scheduled. Here's [how to schedule Bluesky posts](/blog/how-to-schedule-bluesky-posts).
+Bluesky's app doesn't have a scheduler. In Postbase you write a post once and adjust each network's version in its own tab, with a counter that follows each network's rules: graphemes with links shortened for Bluesky, weighted characters for X. Posts over 300 are flagged before they're scheduled. Here's [how to schedule Bluesky posts](/blog/how-to-schedule-bluesky-posts).
 
 ::demo composer network=bluesky caption="Writing a post in Postbase, with the Bluesky version counted against its 300-character limit."
 
@@ -91,7 +92,7 @@ Yes. Bluesky counts graphemes, so an emoji counts as one character even when it'
 
 ### Do links count toward the Bluesky character limit?
 
-Yes, as text. The official app shortens long links to the domain and the start of the path before posting, so only the short form counts. Some other apps post the full URL, which counts in full. Link cards don't count.
+Yes, as text. The official app and Postbase shorten long links to the domain and the first 13 characters of the path before posting, so only the short form counts. Some other apps post the full URL, which counts in full. Link cards don't count.
 
 ### How long can a Bluesky bio be?
 

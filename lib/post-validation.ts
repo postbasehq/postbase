@@ -38,7 +38,7 @@ export const NOTHING_TO_POST = "Nothing to post: write something or add media";
 
 const RULES: Record<string, Rules> = {
   x: { label: "X", limit: 280, rule: "x", shape: "thread", maxImages: 4, video: "alone" },
-  bluesky: { label: "Bluesky", limit: 300, rule: "graphemes", shape: "thread", maxImages: 4, video: "dropped" },
+  bluesky: { label: "Bluesky", limit: 300, rule: "bluesky", shape: "thread", maxImages: 4, video: "dropped" },
   mastodon: { label: "Mastodon", limit: 500, rule: "mastodon", shape: "thread", maxImages: 4, video: "alone" },
   linkedin: { label: "LinkedIn", limit: 3000, rule: "codepoints", shape: "lead+comment", maxImages: 20, video: "dropped", needsText: true },
   instagram: { label: "Instagram", limit: 2200, rule: "codepoints", shape: "caption", join: "\n\n", maxImages: 10, video: "first", needsMedia: true },

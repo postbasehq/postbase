@@ -1,17 +1,20 @@
 /*
  * Character counting the way each network does it, for the free counter at
  * /tools/character-counter. X follows twitter-text's weighted rules (v3 config);
- * Bluesky counts graphemes; Mastodon counts URLs as 23 and remote mentions by
- * their local part. Others count Unicode code points.
+ * Bluesky counts graphemes after shortening links the way its app does
+ * (lib/bluesky-text); Mastodon counts URLs as 23 and remote mentions by their
+ * local part. Others count Unicode code points.
  */
 
-export type CountRule = "x" | "graphemes" | "mastodon" | "codepoints";
+import { shortenLinks } from "@/lib/bluesky-text";
+
+export type CountRule = "x" | "bluesky" | "graphemes" | "mastodon" | "codepoints";
 
 export type NetworkLimit = { id: string; name: string; limit: number; rule: CountRule; what: string };
 
 export const LIMITS: NetworkLimit[] = [
   { id: "x", name: "X", limit: 280, rule: "x", what: "per post" },
-  { id: "bluesky", name: "Bluesky", limit: 300, rule: "graphemes", what: "per post" },
+  { id: "bluesky", name: "Bluesky", limit: 300, rule: "bluesky", what: "per post" },
   { id: "threads", name: "Threads", limit: 500, rule: "codepoints", what: "per post" },
   { id: "mastodon", name: "Mastodon", limit: 500, rule: "mastodon", what: "per post (default)" },
   { id: "linkedin", name: "LinkedIn", limit: 3000, rule: "codepoints", what: "per post" },
@@ -70,6 +73,8 @@ export function count(text: string, rule: CountRule): number {
   switch (rule) {
     case "x":
       return countX(text);
+    case "bluesky":
+      return graphemes(shortenLinks(text).text).length;
     case "graphemes":
       return graphemes(text).length;
     case "mastodon":
